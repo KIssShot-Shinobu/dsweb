@@ -139,16 +139,16 @@ export default function TreasuryPage() {
                 <div className="stat-card">
                     <div className="stat-card-header">
                         <span className="stat-label">Total Income</span>
-                        <div className="stat-icon" style={{ background: "rgba(34, 197, 94, 0.1)", color: "var(--dashboard-success)" }}>↑</div>
+                        <div className="stat-icon" style={{ background: "rgba(34, 197, 94, 0.1)", color: "#22c55e" }}>↑</div>
                     </div>
-                    <div className="stat-value" style={{ color: "var(--dashboard-success)" }}>{formatCurrency(income)}</div>
+                    <div className="stat-value" style={{ color: "#22c55e" }}>{formatCurrency(income)}</div>
                 </div>
                 <div className="stat-card">
                     <div className="stat-card-header">
                         <span className="stat-label">Total Expense</span>
-                        <div className="stat-icon" style={{ background: "rgba(239, 68, 68, 0.1)", color: "var(--dashboard-error)" }}>↓</div>
+                        <div className="stat-icon" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444" }}>↓</div>
                     </div>
-                    <div className="stat-value" style={{ color: "var(--dashboard-error)" }}>{formatCurrency(expense)}</div>
+                    <div className="stat-value" style={{ color: "#ef4444" }}>{formatCurrency(expense)}</div>
                 </div>
             </div>
 
@@ -159,77 +159,51 @@ export default function TreasuryPage() {
                             {editingId ? "Edit Transaction" : "Add New Transaction"}
                         </span>
                         <button
-                            className="btn btn-outline"
+                            className="btn btn-outline btn-sm"
                             onClick={resetForm}
-                            style={{ padding: "0.5rem 1rem" }}
                         >
                             Cancel
                         </button>
                     </div>
                     <div className="card-body">
                         <form onSubmit={handleSubmit}>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Type
-                                    </label>
+                            <div className="form-grid-3">
+                                <div className="form-group">
+                                    <label className="form-label">Type</label>
                                     <select
+                                        className="form-select"
                                         value={formData.type}
                                         onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                            background: "white",
-                                        }}
                                     >
                                         <option value="income">Income (Pemasukan)</option>
                                         <option value="expense">Expense (Pengeluaran)</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Amount (IDR) *
-                                    </label>
+                                <div className="form-group">
+                                    <label className="form-label">Amount (IDR) *</label>
                                     <input
                                         type="number"
+                                        className="form-input"
                                         value={formData.amount}
                                         onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
                                         required
                                         min="1"
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                        }}
                                         placeholder="10000"
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Description *
-                                    </label>
+                                <div className="form-group">
+                                    <label className="form-label">Description *</label>
                                     <input
                                         type="text"
+                                        className="form-input"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         required
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                        }}
                                         placeholder="e.g., Iuran bulanan, Hadiah tournament"
                                     />
                                 </div>
                             </div>
-                            <div style={{ marginTop: "1.5rem" }}>
+                            <div className="form-actions">
                                 <button
                                     type="submit"
                                     className="btn btn-primary"
@@ -259,28 +233,16 @@ export default function TreasuryPage() {
                     ) : (
                         <div style={{ display: "grid", gap: "0.5rem" }}>
                             {transactions.map((tx) => (
-                                <div
-                                    key={tx.id}
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "1rem",
-                                        padding: "1rem",
-                                        background: "var(--dashboard-bg)",
-                                        borderRadius: "10px",
-                                    }}
-                                >
+                                <div key={tx.id} className="list-item">
                                     <div
                                         className={`transaction-icon ${tx.amount >= 0 ? "income" : "expense"}`}
                                         style={{ width: 42, height: 42, fontSize: "1.25rem" }}
                                     >
                                         {tx.amount >= 0 ? "↑" : "↓"}
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 600, color: "var(--dashboard-text)", marginBottom: 4 }}>
-                                            {tx.description}
-                                        </div>
-                                        <div style={{ fontSize: "0.75rem", color: "var(--dashboard-text-muted)" }}>
+                                    <div className="list-item-info">
+                                        <div className="list-item-title">{tx.description}</div>
+                                        <div className="list-item-subtitle">
                                             {formatDate(tx.createdAt)}
                                             {tx.member && ` • by ${tx.member.name}`}
                                         </div>
@@ -289,22 +251,20 @@ export default function TreasuryPage() {
                                         style={{
                                             fontWeight: 600,
                                             fontSize: "1rem",
-                                            color: tx.amount >= 0 ? "var(--dashboard-success)" : "var(--dashboard-error)",
+                                            color: tx.amount >= 0 ? "#22c55e" : "#ef4444",
                                         }}
                                     >
                                         {tx.amount >= 0 ? "+" : ""}{formatCurrency(tx.amount)}
                                     </div>
                                     <button
-                                        className="btn btn-outline"
+                                        className="btn btn-outline btn-sm"
                                         onClick={() => handleEdit(tx)}
-                                        style={{ padding: "0.5rem 0.75rem" }}
                                     >
                                         Edit
                                     </button>
                                     <button
-                                        className="btn btn-outline"
+                                        className="btn btn-danger btn-sm"
                                         onClick={() => handleDelete(tx.id)}
-                                        style={{ padding: "0.5rem 0.75rem", color: "var(--dashboard-error)" }}
                                     >
                                         Delete
                                     </button>

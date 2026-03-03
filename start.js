@@ -7,6 +7,7 @@ function run(cmd) {
 
 run("npm install");
 run("npx prisma generate");
+run("npx prisma db push");
 run("npm run build");
 
 // Copy static files for standalone mode

@@ -152,133 +152,81 @@ export default function TournamentsPage() {
                             {editingId ? "Edit Tournament" : "Create New Tournament"}
                         </span>
                         <button
-                            className="btn btn-outline"
+                            className="btn btn-outline btn-sm"
                             onClick={resetForm}
-                            style={{ padding: "0.5rem 1rem" }}
                         >
                             Cancel
                         </button>
                     </div>
                     <div className="card-body">
                         <form onSubmit={handleSubmit}>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Title *
-                                    </label>
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label className="form-label">Title *</label>
                                     <input
                                         type="text"
+                                        className="form-input"
                                         value={formData.title}
                                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                         required
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                        }}
                                         placeholder="Tournament title"
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Game Type *
-                                    </label>
+                                <div className="form-group">
+                                    <label className="form-label">Game Type *</label>
                                     <select
+                                        className="form-select"
                                         value={formData.gameType}
                                         onChange={(e) => setFormData({ ...formData, gameType: e.target.value })}
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                            background: "white",
-                                        }}
                                     >
                                         <option value="Duel Links">Duel Links</option>
                                         <option value="Master Duel">Master Duel</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Start Date *
-                                    </label>
+                                <div className="form-group">
+                                    <label className="form-label">Start Date *</label>
                                     <input
                                         type="date"
+                                        className="form-input"
                                         value={formData.startDate}
                                         onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                                         required
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                        }}
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Prize Pool (IDR)
-                                    </label>
+                                <div className="form-group">
+                                    <label className="form-label">Prize Pool (IDR)</label>
                                     <input
                                         type="number"
+                                        className="form-input"
                                         value={formData.prizePool}
                                         onChange={(e) => setFormData({ ...formData, prizePool: Number(e.target.value) })}
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                        }}
                                         placeholder="0"
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Status
-                                    </label>
+                                <div className="form-group">
+                                    <label className="form-label">Status</label>
                                     <select
+                                        className="form-select"
                                         value={formData.status}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                            background: "white",
-                                        }}
                                     >
                                         <option value="UPCOMING">Upcoming</option>
                                         <option value="ONGOING">Ongoing</option>
                                         <option value="COMPLETED">Completed</option>
                                     </select>
                                 </div>
-                                <div style={{ gridColumn: "1 / -1" }}>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Description
-                                    </label>
+                                <div className="form-group full-width">
+                                    <label className="form-label">Description</label>
                                     <textarea
+                                        className="form-textarea"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         rows={3}
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                            resize: "vertical",
-                                        }}
                                         placeholder="Tournament description"
                                     />
                                 </div>
                             </div>
-                            <div style={{ marginTop: "1.5rem" }}>
+                            <div className="form-actions">
                                 <button
                                     type="submit"
                                     className="btn btn-primary"
@@ -308,17 +256,7 @@ export default function TournamentsPage() {
                     ) : (
                         <div style={{ display: "grid", gap: "0.5rem" }}>
                             {tournaments.map((tournament) => (
-                                <div
-                                    key={tournament.id}
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "1rem",
-                                        padding: "1rem",
-                                        background: "var(--dashboard-bg)",
-                                        borderRadius: "10px",
-                                    }}
-                                >
+                                <div key={tournament.id} className="list-item">
                                     <div
                                         style={{
                                             width: 48,
@@ -335,11 +273,9 @@ export default function TournamentsPage() {
                                     >
                                         {tournament.gameType.includes("Master") ? "🎴" : "📱"}
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 600, color: "var(--dashboard-text)", marginBottom: 4 }}>
-                                            {tournament.title}
-                                        </div>
-                                        <div style={{ fontSize: "0.75rem", color: "var(--dashboard-text-muted)" }}>
+                                    <div className="list-item-info">
+                                        <div className="list-item-title">{tournament.title}</div>
+                                        <div className="list-item-subtitle">
                                             {formatDate(tournament.startDate)} • {formatCurrency(tournament.prizePool)}
                                         </div>
                                     </div>
@@ -347,16 +283,14 @@ export default function TournamentsPage() {
                                         {tournament.status}
                                     </span>
                                     <button
-                                        className="btn btn-outline"
+                                        className="btn btn-outline btn-sm"
                                         onClick={() => handleEdit(tournament)}
-                                        style={{ padding: "0.5rem 0.75rem" }}
                                     >
                                         Edit
                                     </button>
                                     <button
-                                        className="btn btn-outline"
+                                        className="btn btn-danger btn-sm"
                                         onClick={() => handleDelete(tournament.id)}
-                                        style={{ padding: "0.5rem 0.75rem", color: "var(--dashboard-error)" }}
                                     >
                                         Delete
                                     </button>
