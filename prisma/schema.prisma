@@ -5,10 +5,42 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../app/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Member {
+  id        String   @id @default(cuid())
+  name      String
+  gameId    String   @unique // ID untuk Duel Links / Master Duel
+  rank      String?  // Contoh: Platinum, Legend, King of Games
+  role      String   @default("MEMBER") // LEADER, OFFICER, MEMBER
+  joinedAt  DateTime @default(now())
+  transactions Treasury[]
+}
+
+model Tournament {
+  id          String   @id @default(cuid())
+  title       String
+  gameType    String   // "Duel Links" atau "Master Duel"
+  status      String   @default("UPCOMING") // UPCOMING, ONGOING, COMPLETED
+  startDate   DateTime
+  prizePool   Int      @default(0)
+  description String?
+}
+
+model Treasury {
+  id          String   @id @default(cuid())
+  amount      Int      // Positif untuk pemasukan, negatif untuk pengeluaran
+  description String   // Contoh: "Iuran bulanan" atau "Hadiah Tournament A"
+  createdAt   DateTime @default(now())
+  
+  // Relasi opsional: mencatat siapa yang melakukan transaksi jika itu member
+  memberId    String?  
+  member      Member?  @relation(fields: [memberId], references: [id])
 }
