@@ -1,5 +1,7 @@
 "use client";
 
+import { ThemeToggle } from "./theme-toggle";
+
 export function Header() {
     return (
         <header className="dashboard-header">
@@ -21,6 +23,7 @@ export function Header() {
             </div>
 
             <div className="header-actions">
+                <ThemeToggle />
                 <button className="header-icon-btn" title="Messages">
                     <svg
                         width="20"

@@ -130,87 +130,53 @@ export default function MembersPage() {
                             {editingId ? "Edit Member" : "Add New Member"}
                         </span>
                         <button
-                            className="btn btn-outline"
+                            className="btn btn-outline btn-sm"
                             onClick={resetForm}
-                            style={{ padding: "0.5rem 1rem" }}
                         >
                             Cancel
                         </button>
                     </div>
                     <div className="card-body">
                         <form onSubmit={handleSubmit}>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Name *
-                                    </label>
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label className="form-label">Name *</label>
                                     <input
                                         type="text"
+                                        className="form-input"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         required
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                        }}
                                         placeholder="Member name"
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Game ID *
-                                    </label>
+                                <div className="form-group">
+                                    <label className="form-label">Game ID *</label>
                                     <input
                                         type="text"
+                                        className="form-input"
                                         value={formData.gameId}
                                         onChange={(e) => setFormData({ ...formData, gameId: e.target.value })}
                                         required
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                        }}
                                         placeholder="Duel Links / Master Duel ID"
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Rank
-                                    </label>
+                                <div className="form-group">
+                                    <label className="form-label">Rank</label>
                                     <input
                                         type="text"
+                                        className="form-input"
                                         value={formData.rank}
                                         onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                        }}
                                         placeholder="e.g., Legend, King of Games"
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--dashboard-text)" }}>
-                                        Role
-                                    </label>
+                                <div className="form-group">
+                                    <label className="form-label">Role</label>
                                     <select
+                                        className="form-select"
                                         value={formData.role}
                                         onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                        style={{
-                                            width: "100%",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--dashboard-border)",
-                                            fontSize: "0.875rem",
-                                            background: "white",
-                                        }}
                                     >
                                         <option value="MEMBER">Member</option>
                                         <option value="OFFICER">Officer</option>
@@ -218,7 +184,7 @@ export default function MembersPage() {
                                     </select>
                                 </div>
                             </div>
-                            <div style={{ marginTop: "1.5rem" }}>
+                            <div className="form-actions">
                                 <button
                                     type="submit"
                                     className="btn btn-primary"
@@ -248,15 +214,11 @@ export default function MembersPage() {
                     ) : (
                         <div style={{ display: "grid", gap: "0.5rem" }}>
                             {members.map((member) => (
-                                <div
-                                    key={member.id}
-                                    className="member-item"
-                                    style={{ padding: "1rem", background: "var(--dashboard-bg)", borderRadius: "10px", border: "none" }}
-                                >
+                                <div key={member.id} className="list-item">
                                     <div className="member-avatar">{getInitials(member.name)}</div>
-                                    <div className="member-info" style={{ flex: 1 }}>
-                                        <div className="member-name">{member.name}</div>
-                                        <div className="member-role">
+                                    <div className="list-item-info">
+                                        <div className="list-item-title">{member.name}</div>
+                                        <div className="list-item-subtitle">
                                             ID: {member.gameId} {member.rank && `• ${member.rank}`}
                                         </div>
                                     </div>
@@ -264,16 +226,14 @@ export default function MembersPage() {
                                         {member.role}
                                     </span>
                                     <button
-                                        className="btn btn-outline"
+                                        className="btn btn-outline btn-sm"
                                         onClick={() => handleEdit(member)}
-                                        style={{ padding: "0.5rem 0.75rem", marginLeft: "0.5rem" }}
                                     >
                                         Edit
                                     </button>
                                     <button
-                                        className="btn btn-outline"
+                                        className="btn btn-danger btn-sm"
                                         onClick={() => handleDelete(member.id)}
-                                        style={{ padding: "0.5rem 0.75rem", color: "var(--dashboard-error)" }}
                                     >
                                         Delete
                                     </button>

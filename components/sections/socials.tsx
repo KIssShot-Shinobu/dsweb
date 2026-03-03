@@ -3,8 +3,6 @@
 import { motion } from "framer-motion";
 import { Twitter, Youtube } from "lucide-react";
 
-
-// Simple Discord Icon Component
 const DiscordIcon = ({ className }: { className?: string }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -44,14 +42,14 @@ export function Socials() {
     ];
 
     return (
-        <section id="socials" className="py-24 bg-black relative">
+        <section id="socials" className="py-24 bg-[#1A1A1A] relative">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 text-white tracking-tight">
                     Join the Conversation
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {socials.map((social, index) => (
+                    {socials.map((social) => (
                         <motion.a
                             key={social.name}
                             href={social.link}
