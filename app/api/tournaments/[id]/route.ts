@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
     try {
         const { id } = await params;
         const body = await request.json();
-        const { title, gameType, startDate, prizePool, description, status } = body;
+        const { title, gameType, startDate, prizePool, description, status, image } = body;
 
         const tournament = await prisma.tournament.update({
             where: { id },
@@ -44,6 +44,7 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
                 ...(prizePool !== undefined && { prizePool }),
                 ...(description !== undefined && { description }),
                 ...(status && { status }),
+                ...(image !== undefined && { image }),
             },
         });
 

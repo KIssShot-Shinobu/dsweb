@@ -32,7 +32,7 @@ console.log("\n=== Copying static files ===");
 copyDir(".next/static", ".next/standalone/.next/static");
 copyDir("public", ".next/standalone/public");
 
-// Copy database and prisma files to standalone
+// Copy database and config files to standalone
 console.log("\n=== Copying database files ===");
 if (fs.existsSync("dev.db")) {
     fs.copyFileSync("dev.db", ".next/standalone/dev.db");
@@ -45,6 +45,10 @@ if (fs.existsSync("prisma")) {
 if (fs.existsSync(".env")) {
     fs.copyFileSync(".env", ".next/standalone/.env");
     console.log("Copied .env to standalone");
+}
+if (fs.existsSync("public/uploads")) {
+    copyDir("public/uploads", ".next/standalone/public/uploads");
+    console.log("Copied public/uploads/ to standalone");
 }
 
 console.log("\n=== Starting server ===");
