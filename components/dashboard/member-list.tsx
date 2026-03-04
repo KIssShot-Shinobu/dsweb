@@ -11,6 +11,17 @@ interface Member {
     joinedAt: string;
 }
 
+const getRoleBadge = (role: string) => {
+    switch (role.toUpperCase()) {
+        case "LEADER":
+            return "bg-ds-amber/20 text-ds-amber border-ds-amber/30";
+        case "OFFICER":
+            return "bg-purple-500/10 text-purple-400 border-purple-400/20";
+        default:
+            return "bg-blue-500/10 text-blue-400 border-blue-400/20";
+    }
+};
+
 export function MemberList() {
     const [members, setMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
@@ -25,39 +36,22 @@ export function MemberList() {
             .catch(() => setLoading(false));
     }, []);
 
-    const getInitials = (name: string) => {
-        return name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase()
-            .slice(0, 2);
-    };
-
-    const getRoleClass = (role: string) => {
-        switch (role.toUpperCase()) {
-            case "LEADER":
-                return "leader";
-            case "OFFICER":
-                return "officer";
-            default:
-                return "member";
-        }
-    };
+    const getInitials = (name: string) =>
+        name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
     if (loading) {
         return (
-            <div className="card">
-                <div className="card-header">
-                    <span className="card-title">Team Members</span>
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5">
+                    <span className="text-base font-semibold text-gray-900 dark:text-white">Team Members</span>
                 </div>
-                <div className="card-body">
+                <div className="p-5 space-y-3">
                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="member-item">
-                            <div className="skeleton" style={{ width: 42, height: 42, borderRadius: "50%" }} />
-                            <div style={{ flex: 1 }}>
-                                <div className="skeleton" style={{ width: "60%", height: 16, marginBottom: 8 }} />
-                                <div className="skeleton" style={{ width: "40%", height: 12 }} />
+                        <div key={i} className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 animate-pulse" />
+                            <div className="flex-1 space-y-2">
+                                <div className="h-3 bg-gray-100 dark:bg-white/5 rounded-full w-3/5 animate-pulse" />
+                                <div className="h-2.5 bg-gray-100 dark:bg-white/5 rounded-full w-2/5 animate-pulse" />
                             </div>
                         </div>
                     ))}
@@ -67,33 +61,37 @@ export function MemberList() {
     }
 
     return (
-        <div className="card">
-            <div className="card-header">
-                <span className="card-title">Team Members</span>
-                <a href="/dashboard/members" className="btn btn-outline" style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}>
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5">
+                <span className="text-base font-semibold text-gray-900 dark:text-white">Team Members</span>
+                <a href="/dashboard/members" className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-600 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/5 transition-all">
                     + Add Member
                 </a>
             </div>
-            <div className="card-body">
+            <div className="p-5">
                 {members.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-state-icon">👥</div>
-                        <div className="empty-state-title">No members yet</div>
-                        <p>Add your first guild member</p>
+                    <div className="text-center py-8">
+                        <div className="text-3xl mb-2">👥</div>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">No members yet</div>
+                        <p className="text-xs text-gray-400">Add your first guild member</p>
                     </div>
                 ) : (
-                    members.map((member) => (
-                        <div key={member.id} className="member-item">
-                            <div className="member-avatar">{getInitials(member.name)}</div>
-                            <div className="member-info">
-                                <div className="member-name">{member.name}</div>
-                                <div className="member-role">ID: {member.gameId}</div>
+                    <div className="space-y-2">
+                        {members.map((member) => (
+                            <div key={member.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors">
+                                <div className="w-9 h-9 rounded-full bg-ds-amber flex items-center justify-center text-black text-xs font-bold flex-shrink-0">
+                                    {getInitials(member.name)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{member.name}</div>
+                                    <div className="text-xs text-gray-400 dark:text-white/40 truncate">ID: {member.gameId}</div>
+                                </div>
+                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getRoleBadge(member.role)}`}>
+                                    {member.role}
+                                </span>
                             </div>
-                            <span className={`member-status ${getRoleClass(member.role)}`}>
-                                {member.role}
-                            </span>
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 )}
             </div>
         </div>

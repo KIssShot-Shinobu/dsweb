@@ -3,7 +3,6 @@
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import { ThemeProvider } from "@/context/ThemeContext";
-import "./dashboard.css";
 
 export default function DashboardLayout({
     children,
@@ -12,11 +11,11 @@ export default function DashboardLayout({
 }) {
     return (
         <ThemeProvider>
-            <div className="dashboard-layout">
+            <div className="flex h-screen bg-gray-50 dark:bg-[#0f0f0f]">
                 <Sidebar />
-                <main className="dashboard-main">
+                <main className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
                     <Header />
-                    <div className="dashboard-content">{children}</div>
+                    <div className="flex-1 overflow-y-auto p-6">{children}</div>
                 </main>
             </div>
         </ThemeProvider>

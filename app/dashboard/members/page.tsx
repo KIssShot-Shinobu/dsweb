@@ -11,232 +11,153 @@ interface Member {
     joinedAt: string;
 }
 
+// Shared Tailwind classes
+const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all";
+const labelCls = "block text-xs font-semibold text-gray-600 dark:text-white/50 uppercase tracking-wider mb-1.5";
+const btnPrimary = "px-4 py-2 rounded-xl bg-ds-amber hover:bg-ds-gold text-black font-semibold text-sm transition-all disabled:opacity-50";
+const btnOutline = "px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-600 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/5 transition-all";
+const btnDanger = "px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all";
+
+const getRoleBadge = (role: string) => {
+    switch (role.toUpperCase()) {
+        case "LEADER": return "bg-ds-amber/20 text-ds-amber border-ds-amber/30";
+        case "OFFICER": return "bg-purple-500/10 text-purple-400 border-purple-400/20";
+        default: return "bg-blue-500/10 text-blue-400 border-blue-400/20";
+    }
+};
+
 export default function MembersPage() {
     const [members, setMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
-    const [formData, setFormData] = useState({
-        name: "",
-        gameId: "",
-        rank: "",
-        role: "MEMBER",
-    });
+    const [formData, setFormData] = useState({ name: "", gameId: "", rank: "", role: "MEMBER" });
     const [editingId, setEditingId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     const fetchMembers = () => {
         fetch("/api/members")
             .then((res) => res.json())
-            .then((data) => {
-                setMembers(Array.isArray(data) ? data : []);
-                setLoading(false);
-            })
+            .then((data) => { setMembers(Array.isArray(data) ? data : []); setLoading(false); })
             .catch(() => setLoading(false));
     };
 
-    useEffect(() => {
-        fetchMembers();
-    }, []);
+    useEffect(() => { fetchMembers(); }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
-
-        const url = editingId ? `/api/members/${editingId}` : "/api/members";
-        const method = editingId ? "PUT" : "POST";
-
         try {
-            const res = await fetch(url, {
-                method,
+            const res = await fetch(editingId ? `/api/members/${editingId}` : "/api/members", {
+                method: editingId ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
             });
-
-            if (res.ok) {
-                fetchMembers();
-                resetForm();
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setSubmitting(false);
-        }
+            if (res.ok) { fetchMembers(); resetForm(); }
+        } catch (e) { console.error(e); }
+        finally { setSubmitting(false); }
     };
 
-    const handleEdit = (member: Member) => {
-        setFormData({
-            name: member.name,
-            gameId: member.gameId,
-            rank: member.rank || "",
-            role: member.role,
-        });
-        setEditingId(member.id);
+    const handleEdit = (m: Member) => {
+        setFormData({ name: m.name, gameId: m.gameId, rank: m.rank || "", role: m.role });
+        setEditingId(m.id);
         setShowForm(true);
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this member?")) return;
-
-        try {
-            await fetch(`/api/members/${id}`, { method: "DELETE" });
-            fetchMembers();
-        } catch (error) {
-            console.error(error);
-        }
+        if (!confirm("Delete this member?")) return;
+        await fetch(`/api/members/${id}`, { method: "DELETE" });
+        fetchMembers();
     };
 
-    const resetForm = () => {
-        setFormData({ name: "", gameId: "", rank: "", role: "MEMBER" });
-        setEditingId(null);
-        setShowForm(false);
-    };
-
-    const getInitials = (name: string) => {
-        return name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase()
-            .slice(0, 2);
-    };
-
-    const getRoleClass = (role: string) => {
-        switch (role.toUpperCase()) {
-            case "LEADER":
-                return "leader";
-            case "OFFICER":
-                return "officer";
-            default:
-                return "member";
-        }
-    };
+    const resetForm = () => { setFormData({ name: "", gameId: "", rank: "", role: "MEMBER" }); setEditingId(null); setShowForm(false); };
+    const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
     return (
         <>
-            <div className="page-header">
+            {/* Page Header */}
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="page-title">Members</h1>
-                    <p className="page-subtitle">Manage guild members</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Members</h1>
+                    <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Manage guild members</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-                    + Add Member
-                </button>
+                <button className={btnPrimary} onClick={() => setShowForm(true)}>+ Add Member</button>
             </div>
 
+            {/* Form */}
             {showForm && (
-                <div className="card" style={{ marginBottom: "1.5rem" }}>
-                    <div className="card-header">
-                        <span className="card-title">
+                <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 mb-5">
+                    <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5">
+                        <span className="text-base font-semibold text-gray-900 dark:text-white">
                             {editingId ? "Edit Member" : "Add New Member"}
                         </span>
-                        <button
-                            className="btn btn-outline btn-sm"
-                            onClick={resetForm}
-                        >
-                            Cancel
-                        </button>
+                        <button className={btnOutline} onClick={resetForm}>Cancel</button>
                     </div>
-                    <div className="card-body">
+                    <div className="p-5">
                         <form onSubmit={handleSubmit}>
-                            <div className="form-grid">
-                                <div className="form-group">
-                                    <label className="form-label">Name *</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        required
-                                        placeholder="Member name"
-                                    />
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className={labelCls}>Name *</label>
+                                    <input type="text" className={inputCls} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="Member name" />
                                 </div>
-                                <div className="form-group">
-                                    <label className="form-label">Game ID *</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        value={formData.gameId}
-                                        onChange={(e) => setFormData({ ...formData, gameId: e.target.value })}
-                                        required
-                                        placeholder="Duel Links / Master Duel ID"
-                                    />
+                                <div>
+                                    <label className={labelCls}>Game ID *</label>
+                                    <input type="text" className={inputCls} value={formData.gameId} onChange={(e) => setFormData({ ...formData, gameId: e.target.value })} required placeholder="Duel Links / Master Duel ID" />
                                 </div>
-                                <div className="form-group">
-                                    <label className="form-label">Rank</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        value={formData.rank}
-                                        onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
-                                        placeholder="e.g., Legend, King of Games"
-                                    />
+                                <div>
+                                    <label className={labelCls}>Rank</label>
+                                    <input type="text" className={inputCls} value={formData.rank} onChange={(e) => setFormData({ ...formData, rank: e.target.value })} placeholder="e.g., Legend, King of Games" />
                                 </div>
-                                <div className="form-group">
-                                    <label className="form-label">Role</label>
-                                    <select
-                                        className="form-select"
-                                        value={formData.role}
-                                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                    >
+                                <div>
+                                    <label className={labelCls}>Role</label>
+                                    <select className={inputCls} value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
                                         <option value="MEMBER">Member</option>
                                         <option value="OFFICER">Officer</option>
                                         <option value="LEADER">Leader</option>
                                     </select>
                                 </div>
                             </div>
-                            <div className="form-actions">
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary"
-                                    disabled={submitting}
-                                >
-                                    {submitting ? "Saving..." : editingId ? "Update Member" : "Add Member"}
-                                </button>
-                            </div>
+                            <button type="submit" className={btnPrimary} disabled={submitting}>
+                                {submitting ? "Saving..." : editingId ? "Update Member" : "Add Member"}
+                            </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            <div className="card">
-                <div className="card-header">
-                    <span className="card-title">All Members ({members.length})</span>
+            {/* List */}
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5">
+                    <span className="text-base font-semibold text-gray-900 dark:text-white">All Members ({members.length})</span>
                 </div>
-                <div className="card-body">
+                <div className="p-5">
                     {loading ? (
-                        <div>Loading...</div>
+                        <div className="text-sm text-gray-400 dark:text-white/40">Loading...</div>
                     ) : members.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">👥</div>
-                            <div className="empty-state-title">No members yet</div>
-                            <p>Add your first guild member</p>
+                        <div className="text-center py-12">
+                            <div className="text-4xl mb-3">👥</div>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">No members yet</div>
+                            <p className="text-xs text-gray-400">Add your first guild member</p>
                         </div>
                     ) : (
-                        <div style={{ display: "grid", gap: "0.5rem" }}>
+                        <div className="space-y-2">
                             {members.map((member) => (
-                                <div key={member.id} className="list-item">
-                                    <div className="member-avatar">{getInitials(member.name)}</div>
-                                    <div className="list-item-info">
-                                        <div className="list-item-title">{member.name}</div>
-                                        <div className="list-item-subtitle">
-                                            ID: {member.gameId} {member.rank && `• ${member.rank}`}
+                                <div key={member.id} className="flex items-center gap-4 p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
+                                    <div className="w-10 h-10 rounded-full bg-ds-amber flex items-center justify-center text-black text-xs font-bold flex-shrink-0">
+                                        {getInitials(member.name)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{member.name}</div>
+                                        <div className="text-xs text-gray-400 dark:text-white/40 truncate">
+                                            ID: {member.gameId}{member.rank && ` · ${member.rank}`}
                                         </div>
                                     </div>
-                                    <span className={`member-status ${getRoleClass(member.role)}`}>
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getRoleBadge(member.role)}`}>
                                         {member.role}
                                     </span>
-                                    <button
-                                        className="btn btn-outline btn-sm"
-                                        onClick={() => handleEdit(member)}
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        className="btn btn-danger btn-sm"
-                                        onClick={() => handleDelete(member.id)}
-                                    >
-                                        Delete
-                                    </button>
+                                    <div className="flex gap-2 flex-shrink-0">
+                                        <button className={btnOutline} onClick={() => handleEdit(member)}>Edit</button>
+                                        <button className={btnDanger} onClick={() => handleDelete(member.id)}>Delete</button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
