@@ -209,13 +209,11 @@ export default function TournamentsPage() {
 
                                 {imagePreview ? (
                                     <div className="tournament-image-preview">
-                                        <Image
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
                                             src={imagePreview}
                                             alt="Tournament preview"
-                                            width={800}
-                                            height={200}
                                             className="tournament-preview-img"
-                                            unoptimized
                                         />
                                         <button
                                             type="button"
