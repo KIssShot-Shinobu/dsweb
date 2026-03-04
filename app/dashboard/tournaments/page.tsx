@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 interface Tournament {
     id: string;
@@ -10,6 +11,7 @@ interface Tournament {
     startDate: string;
     prizePool: number;
     description: string | null;
+    image: string | null;
 }
 
 export default function TournamentsPage() {
@@ -23,9 +25,14 @@ export default function TournamentsPage() {
         prizePool: 0,
         description: "",
         status: "UPCOMING",
+        image: "",
     });
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [dragging, setDragging] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchTournaments = () => {
         fetch("/api/tournaments")
@@ -40,6 +47,50 @@ export default function TournamentsPage() {
     useEffect(() => {
         fetchTournaments();
     }, []);
+
+    const handleImageUpload = async (file: File) => {
+        if (!file) return;
+        setUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const res = await fetch("/api/upload", { method: "POST", body: fd });
+            const data = await res.json();
+            if (data.url) {
+                setFormData((prev) => ({ ...prev, image: data.url }));
+                setImagePreview(data.url);
+            }
+        } catch (e) {
+            console.error("Upload failed", e);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) handleImageUpload(file);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) handleImageUpload(file);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragging(true);
+    };
+
+    const handleDragLeave = () => setDragging(false);
+
+    const removeImage = () => {
+        setFormData((prev) => ({ ...prev, image: "" }));
+        setImagePreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,14 +128,15 @@ export default function TournamentsPage() {
             prizePool: tournament.prizePool,
             description: tournament.description || "",
             status: tournament.status,
+            image: tournament.image || "",
         });
+        setImagePreview(tournament.image || null);
         setEditingId(tournament.id);
         setShowForm(true);
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this tournament?")) return;
-
         try {
             await fetch(`/api/tournaments/${id}`, { method: "DELETE" });
             fetchTournaments();
@@ -101,37 +153,31 @@ export default function TournamentsPage() {
             prizePool: 0,
             description: "",
             status: "UPCOMING",
+            image: "",
         });
+        setImagePreview(null);
         setEditingId(null);
         setShowForm(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     const getStatusClass = (status: string) => {
         switch (status.toUpperCase()) {
-            case "ONGOING":
-                return "ongoing";
-            case "COMPLETED":
-                return "completed";
-            default:
-                return "upcoming";
+            case "ONGOING": return "ongoing";
+            case "COMPLETED": return "completed";
+            default: return "upcoming";
         }
     };
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
+    const formatDate = (dateString: string) =>
+        new Date(dateString).toLocaleDateString("id-ID", {
+            day: "numeric", month: "long", year: "numeric",
         });
-    };
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat("id-ID", {
-            style: "currency",
-            currency: "IDR",
-            minimumFractionDigits: 0,
+    const formatCurrency = (amount: number) =>
+        new Intl.NumberFormat("id-ID", {
+            style: "currency", currency: "IDR", minimumFractionDigits: 0,
         }).format(amount);
-    };
 
     return (
         <>
@@ -151,15 +197,65 @@ export default function TournamentsPage() {
                         <span className="card-title">
                             {editingId ? "Edit Tournament" : "Create New Tournament"}
                         </span>
-                        <button
-                            className="btn btn-outline btn-sm"
-                            onClick={resetForm}
-                        >
+                        <button className="btn btn-outline btn-sm" onClick={resetForm}>
                             Cancel
                         </button>
                     </div>
                     <div className="card-body">
                         <form onSubmit={handleSubmit}>
+                            {/* Image Upload Zone */}
+                            <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+                                <label className="form-label">Tournament Banner / Poster</label>
+
+                                {imagePreview ? (
+                                    <div className="tournament-image-preview">
+                                        <Image
+                                            src={imagePreview}
+                                            alt="Tournament preview"
+                                            width={800}
+                                            height={200}
+                                            className="tournament-preview-img"
+                                            unoptimized
+                                        />
+                                        <button
+                                            type="button"
+                                            className="tournament-image-remove"
+                                            onClick={removeImage}
+                                        >
+                                            ✕ Remove
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div
+                                        className={`image-dropzone${dragging ? " dragging" : ""}${uploading ? " uploading" : ""}`}
+                                        onDrop={handleDrop}
+                                        onDragOver={handleDragOver}
+                                        onDragLeave={handleDragLeave}
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <div className="image-dropzone-icon">
+                                            {uploading ? "⏳" : "🖼️"}
+                                        </div>
+                                        <div className="image-dropzone-text">
+                                            {uploading
+                                                ? "Uploading..."
+                                                : "Drag & drop image here, or click to browse"}
+                                        </div>
+                                        <div className="image-dropzone-hint">
+                                            JPEG, PNG, WEBP, GIF — max 5MB
+                                        </div>
+                                    </div>
+                                )}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                    onChange={handleFileChange}
+                                    style={{ display: "none" }}
+                                />
+                            </div>
+
+                            {/* Other Fields */}
                             <div className="form-grid">
                                 <div className="form-group">
                                     <label className="form-label">Title *</label>
@@ -222,16 +318,12 @@ export default function TournamentsPage() {
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         rows={3}
-                                        placeholder="Tournament description"
+                                        placeholder="Tournament description, rules, prizes..."
                                     />
                                 </div>
                             </div>
                             <div className="form-actions">
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary"
-                                    disabled={submitting}
-                                >
+                                <button type="submit" className="btn btn-primary" disabled={submitting || uploading}>
                                     {submitting ? "Saving..." : editingId ? "Update Tournament" : "Create Tournament"}
                                 </button>
                             </div>
@@ -240,6 +332,7 @@ export default function TournamentsPage() {
                 </div>
             )}
 
+            {/* Tournament Cards Grid */}
             <div className="card">
                 <div className="card-header">
                     <span className="card-title">All Tournaments ({tournaments.length})</span>
@@ -254,46 +347,57 @@ export default function TournamentsPage() {
                             <p>Create your first tournament</p>
                         </div>
                     ) : (
-                        <div style={{ display: "grid", gap: "0.5rem" }}>
+                        <div className="tournament-cards-grid">
                             {tournaments.map((tournament) => (
-                                <div key={tournament.id} className="list-item">
-                                    <div
-                                        style={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: 10,
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            fontSize: "1.5rem",
-                                            background: tournament.gameType.includes("Master")
-                                                ? "rgba(168, 85, 247, 0.1)"
-                                                : "rgba(59, 130, 246, 0.1)",
-                                        }}
-                                    >
-                                        {tournament.gameType.includes("Master") ? "🎴" : "📱"}
+                                <div key={tournament.id} className="tournament-card">
+                                    {/* Banner Image */}
+                                    <div className="tournament-card-banner">
+                                        {tournament.image ? (
+                                            <Image
+                                                src={tournament.image}
+                                                alt={tournament.title}
+                                                fill
+                                                className="tournament-card-img"
+                                                unoptimized
+                                            />
+                                        ) : (
+                                            <div className="tournament-card-placeholder">
+                                                <span>{tournament.gameType.includes("Master") ? "🎴" : "📱"}</span>
+                                            </div>
+                                        )}
+                                        <span className={`tournament-status ${getStatusClass(tournament.status)} tournament-card-status`}>
+                                            {tournament.status}
+                                        </span>
                                     </div>
-                                    <div className="list-item-info">
-                                        <div className="list-item-title">{tournament.title}</div>
-                                        <div className="list-item-subtitle">
-                                            {formatDate(tournament.startDate)} • {formatCurrency(tournament.prizePool)}
+
+                                    {/* Card Body */}
+                                    <div className="tournament-card-body">
+                                        <div className="tournament-card-game-type">
+                                            {tournament.gameType}
+                                        </div>
+                                        <h3 className="tournament-card-title">{tournament.title}</h3>
+                                        {tournament.description && (
+                                            <p className="tournament-card-desc">{tournament.description}</p>
+                                        )}
+                                        <div className="tournament-card-meta">
+                                            <span>📅 {formatDate(tournament.startDate)}</span>
+                                            <span>💰 {formatCurrency(tournament.prizePool)}</span>
+                                        </div>
+                                        <div className="tournament-card-actions">
+                                            <button
+                                                className="btn btn-outline btn-sm"
+                                                onClick={() => handleEdit(tournament)}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                className="btn btn-danger btn-sm"
+                                                onClick={() => handleDelete(tournament.id)}
+                                            >
+                                                Delete
+                                            </button>
                                         </div>
                                     </div>
-                                    <span className={`tournament-status ${getStatusClass(tournament.status)}`}>
-                                        {tournament.status}
-                                    </span>
-                                    <button
-                                        className="btn btn-outline btn-sm"
-                                        onClick={() => handleEdit(tournament)}
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        className="btn btn-danger btn-sm"
-                                        onClick={() => handleDelete(tournament.id)}
-                                    >
-                                        Delete
-                                    </button>
                                 </div>
                             ))}
                         </div>

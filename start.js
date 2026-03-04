@@ -32,6 +32,15 @@ console.log("\n=== Copying static files ===");
 copyDir(".next/static", ".next/standalone/.next/static");
 copyDir("public", ".next/standalone/public");
 
+if (fs.existsSync("prisma")) {
+    copyDir("prisma", ".next/standalone/prisma");
+    console.log("Copied prisma/ to standalone");
+}
+if (fs.existsSync("public/uploads")) {
+    copyDir("public/uploads", ".next/standalone/public/uploads");
+    console.log("Copied public/uploads/ to standalone");
+}
+
 console.log("\n=== Starting server ===");
 process.env.PORT = process.env.PORT || "5116";
 process.env.HOSTNAME = "0.0.0.0";
