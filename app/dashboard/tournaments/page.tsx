@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Pagination } from "@/components/dashboard/pagination";
+
+const PER_PAGE = 10;
 
 interface Tournament {
     id: string;
@@ -31,6 +34,8 @@ export default function TournamentsPage() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [page, setPage] = useState(1);
+    const [statusFilter, setStatusFilter] = useState<"ALL" | "UPCOMING" | "ONGOING" | "COMPLETED">("ALL");
     const [formData, setFormData] = useState({ title: "", gameType: "Duel Links", startDate: "", prizePool: 0, description: "", status: "UPCOMING", image: "" });
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -106,9 +111,9 @@ export default function TournamentsPage() {
     return (
         <>
             {/* Page Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tournaments</h1>
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Tournaments</h1>
                     <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Manage guild tournaments</p>
                 </div>
                 <button className={btnPrimary} onClick={() => setShowForm(true)}>+ New Tournament</button>
@@ -123,7 +128,7 @@ export default function TournamentsPage() {
                         </span>
                         <button className={btnOutline} onClick={resetForm}>Cancel</button>
                     </div>
-                    <div className="p-5">
+                    <div className="p-4 md:p-5">
                         <form onSubmit={handleSubmit}>
                             {/* Image Upload */}
                             <div className="mb-5">
@@ -138,7 +143,7 @@ export default function TournamentsPage() {
                                     </div>
                                 ) : (
                                     <div
-                                        className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${dragging ? "border-ds-amber bg-ds-amber/5" : "border-gray-200 dark:border-white/10 hover:border-ds-amber hover:bg-ds-amber/5 dark:hover:border-ds-amber/50"} ${uploading ? "opacity-60 pointer-events-none" : ""}`}
+                                        className={`border-2 border-dashed rounded-xl p-6 md:p-10 text-center cursor-pointer transition-all ${dragging ? "border-ds-amber bg-ds-amber/5" : "border-gray-200 dark:border-white/10 hover:border-ds-amber hover:bg-ds-amber/5 dark:hover:border-ds-amber/50"} ${uploading ? "opacity-60 pointer-events-none" : ""}`}
                                         onDrop={handleDrop}
                                         onDragOver={handleDragOver}
                                         onDragLeave={() => setDragging(false)}
@@ -155,7 +160,7 @@ export default function TournamentsPage() {
                             </div>
 
                             {/* Fields */}
-                            <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label className={labelCls}>Title *</label>
                                     <input type="text" className={inputCls} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required placeholder="Tournament title" />
@@ -199,51 +204,88 @@ export default function TournamentsPage() {
 
             {/* List */}
             <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
-                <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5">
-                    <span className="text-base font-semibold text-gray-900 dark:text-white">All Tournaments ({tournaments.length})</span>
+                <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5 gap-3 flex-wrap">
+                    <span className="text-base font-semibold text-gray-900 dark:text-white">
+                        All Tournaments ({statusFilter === "ALL" ? tournaments.length : tournaments.filter(t => t.status === statusFilter).length})
+                    </span>
+                    {/* Status filter */}
+                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 rounded-xl p-1">
+                        {(["ALL", "UPCOMING", "ONGOING", "COMPLETED"] as const).map((s) => (
+                            <button
+                                key={s}
+                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${statusFilter === s
+                                    ? "bg-ds-amber text-black"
+                                    : "text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/5"
+                                    }`}
+                                onClick={() => { setStatusFilter(s); setPage(1); }}
+                            >
+                                {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+                            </button>
+                        ))}
+                    </div>
                 </div>
                 <div className="p-5">
-                    {loading ? (
-                        <div className="text-sm text-gray-400 dark:text-white/40">Loading...</div>
-                    ) : tournaments.length === 0 ? (
-                        <div className="text-center py-12">
-                            <div className="text-4xl mb-3">🏆</div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">No tournaments yet</div>
-                            <p className="text-xs text-gray-400">Create your first tournament</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {tournaments.map((t) => (
-                                <div key={t.id} className="flex items-center gap-4 p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
-                                    {/* Thumbnail */}
-                                    <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-[#1a1a2e] flex items-center justify-center">
-                                        {t.image ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img src={t.image} alt={t.title} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span className="text-lg">{t.gameType.includes("Master") ? "🎴" : "📱"}</span>
-                                        )}
-                                    </div>
-                                    {/* Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{t.title}</div>
-                                        <div className="text-xs text-gray-400 dark:text-white/40">
-                                            {t.gameType} · {formatDate(t.startDate)} · {formatCurrency(t.prizePool)}
+                    {(() => {
+                        const filtered = statusFilter === "ALL" ? tournaments : tournaments.filter(t => t.status === statusFilter);
+                        const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+                        const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+                        if (loading) return (
+                            <div className="space-y-2">
+                                {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-14 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />)}
+                            </div>
+                        );
+                        if (filtered.length === 0) return (
+                            <div className="text-center py-12">
+                                <div className="text-4xl mb-3">🏆</div>
+                                <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">No tournaments</div>
+                                <p className="text-xs text-gray-400">
+                                    {statusFilter !== "ALL" ? `No ${statusFilter.toLowerCase()} tournaments` : "Create your first tournament"}
+                                </p>
+                            </div>
+                        );
+                        return (
+                            <>
+                                <div className="space-y-2">
+                                    {paginated.map((t) => (
+                                        <div key={t.id} className="flex items-center gap-4 p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
+                                            {/* Thumbnail */}
+                                            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-[#1a1a2e] flex items-center justify-center">
+                                                {t.image ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img src={t.image} alt={t.title} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-lg">{t.gameType.includes("Master") ? "🎴" : "📱"}</span>
+                                                )}
+                                            </div>
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{t.title}</div>
+                                                <div className="text-xs text-gray-400 dark:text-white/40">
+                                                    {t.gameType} · {formatDate(t.startDate)} · {formatCurrency(t.prizePool)}
+                                                </div>
+                                            </div>
+                                            {/* Status */}
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex-shrink-0 ${getStatusBadge(t.status)}`}>
+                                                {t.status}
+                                            </span>
+                                            {/* Actions */}
+                                            <div className="flex gap-2 flex-shrink-0">
+                                                <button className={btnOutline} onClick={() => handleEdit(t)}>Edit</button>
+                                                <button className={btnDanger} onClick={() => handleDelete(t.id)}>Delete</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    {/* Status */}
-                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex-shrink-0 ${getStatusBadge(t.status)}`}>
-                                        {t.status}
-                                    </span>
-                                    {/* Actions */}
-                                    <div className="flex gap-2 flex-shrink-0">
-                                        <button className={btnOutline} onClick={() => handleEdit(t)}>Edit</button>
-                                        <button className={btnDanger} onClick={() => handleDelete(t.id)}>Delete</button>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                                <Pagination
+                                    page={page}
+                                    totalPages={totalPages}
+                                    total={filtered.length}
+                                    perPage={PER_PAGE}
+                                    onPage={setPage}
+                                />
+                            </>
+                        );
+                    })()}
                 </div>
             </div>
         </>

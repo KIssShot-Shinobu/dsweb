@@ -1,20 +1,40 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Users, Trophy, BookOpen, ShieldCheck } from "lucide-react";
 
 export function About() {
+    const [memberCount, setMemberCount] = useState<number | null>(null);
+    const [tournamentCount, setTournamentCount] = useState<number | null>(null);
+
+    useEffect(() => {
+        fetch("/api/members")
+            .then((r) => r.json())
+            .then((data) => setMemberCount(Array.isArray(data) ? data.length : 0))
+            .catch(() => setMemberCount(0));
+
+        fetch("/api/tournaments")
+            .then((r) => r.json())
+            .then((data) => setTournamentCount(Array.isArray(data) ? data.length : 0))
+            .catch(() => setTournamentCount(0));
+    }, []);
+
     const cards = [
         {
             title: "Community First",
             icon: Users,
-            description: "Join thousands of duelists sharing decks, strategies, and replays daily.",
+            description: memberCount !== null
+                ? `${memberCount} registered duelists sharing decks, strategies, and replays daily.`
+                : "Join duelists sharing decks, strategies, and replays daily.",
             color: "bg-[#FFC916]/10 text-[#FFC916]",
         },
         {
             title: "Competitive Play",
             icon: Trophy,
-            description: "Weekly tournaments for Duel Links and Master Duel with seasonal leaderboards.",
+            description: tournamentCount !== null
+                ? `${tournamentCount} tournaments held for Duel Links and Master Duel with seasonal leaderboards.`
+                : "Tournaments for Duel Links and Master Duel with seasonal leaderboards.",
             color: "bg-[#FFC000]/10 text-[#FFC000]",
         },
         {
@@ -35,6 +55,26 @@ export function About() {
         <section id="about" className="py-24 bg-[#1A1A1A] relative overflow-hidden">
             <div className="absolute inset-0 bg-grid-white/[0.02] bg-[length:50px_50px]" />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                {/* Real stats banner */}
+                {(memberCount !== null || tournamentCount !== null) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="flex justify-center gap-12 mb-16"
+                    >
+                        <div className="text-center">
+                            <div className="text-4xl font-extrabold text-[#FFC916]">{memberCount ?? "—"}</div>
+                            <div className="text-sm text-[#E6E6E6]/50 mt-1 uppercase tracking-wider font-semibold">Members</div>
+                        </div>
+                        <div className="w-px bg-[#3A3A3A]" />
+                        <div className="text-center">
+                            <div className="text-4xl font-extrabold text-[#FFC916]">{tournamentCount ?? "—"}</div>
+                            <div className="text-sm text-[#E6E6E6]/50 mt-1 uppercase tracking-wider font-semibold">Tournaments</div>
+                        </div>
+                    </motion.div>
+                )}
+
                 <div className="text-center mb-16">
                     <h2 className="text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FFC916] to-[#E6E6E6] mb-4">
                         Where Duelists Unite
@@ -58,9 +98,7 @@ export function About() {
                                 <card.icon className="w-8 h-8" />
                             </div>
                             <h3 className="text-xl font-bold text-[#E6E6E6] mb-2">{card.title}</h3>
-                            <p className="text-[#E6E6E6]/50 text-sm leading-relaxed">
-                                {card.description}
-                            </p>
+                            <p className="text-[#E6E6E6]/50 text-sm leading-relaxed">{card.description}</p>
                         </motion.div>
                     ))}
                 </div>

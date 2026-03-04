@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Pagination } from "@/components/dashboard/pagination";
 
 interface Transaction {
     id: string;
@@ -10,6 +11,8 @@ interface Transaction {
     memberId: string | null;
     member: { name: string } | null;
 }
+
+const PER_PAGE = 10;
 
 const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all";
 const labelCls = "block text-xs font-semibold text-gray-600 dark:text-white/50 uppercase tracking-wider mb-1.5";
@@ -25,6 +28,8 @@ export default function TreasuryPage() {
     const [formData, setFormData] = useState({ amount: 0, description: "", type: "income" });
     const [editingId, setEditingId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [page, setPage] = useState(1);
+    const [filter, setFilter] = useState<"all" | "income" | "expense">("all");
 
     const fetchTreasury = () => {
         fetch("/api/treasury")
@@ -73,19 +78,32 @@ export default function TreasuryPage() {
     const income = transactions.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
     const expense = Math.abs(transactions.filter((t) => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
 
+    // Filter + paginate
+    const filtered = transactions.filter((t) => {
+        if (filter === "income") return t.amount > 0;
+        if (filter === "expense") return t.amount < 0;
+        return true;
+    });
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+    const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+    const handleFilter = (f: typeof filter) => { setFilter(f); setPage(1); };
+
+    const filterBtn = (f: typeof filter, label: string) =>
+        `px-3 py-1 rounded-lg text-xs font-medium transition-all ${filter === f ? "bg-ds-amber text-black" : "text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/5"}`;
+
     return (
         <>
             {/* Page Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Treasury</h1>
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Treasury</h1>
                     <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Manage guild finances</p>
                 </div>
                 <button className={btnPrimary} onClick={() => setShowForm(true)}>+ Add Transaction</button>
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-4 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-5">
                 <div className="rounded-2xl p-5 bg-ds-amber border border-ds-amber">
                     <div className="text-xs font-semibold uppercase tracking-wider text-black/60 mb-2">Current Balance</div>
                     <div className="text-2xl font-bold text-black">{formatCurrency(balance)}</div>
@@ -115,9 +133,9 @@ export default function TreasuryPage() {
                         </span>
                         <button className={btnOutline} onClick={resetForm}>Cancel</button>
                     </div>
-                    <div className="p-5">
+                    <div className="p-4 md:p-5">
                         <form onSubmit={handleSubmit}>
-                            <div className="grid grid-cols-3 gap-4 mb-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                 <div>
                                     <label className={labelCls}>Type</label>
                                     <select className={inputCls} value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
@@ -144,41 +162,60 @@ export default function TreasuryPage() {
 
             {/* Transactions List */}
             <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
-                <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5">
-                    <span className="text-base font-semibold text-gray-900 dark:text-white">All Transactions ({transactions.length})</span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 border-b border-gray-100 dark:border-white/5 gap-3">
+                    <span className="text-base font-semibold text-gray-900 dark:text-white">
+                        All Transactions ({filtered.length})
+                    </span>
+                    {/* Filter tabs */}
+                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 rounded-xl p-1 overflow-x-auto">
+                        <button className={filterBtn("all", "All")} onClick={() => handleFilter("all")}>All</button>
+                        <button className={filterBtn("income", "Income")} onClick={() => handleFilter("income")}>↑ Income</button>
+                        <button className={filterBtn("expense", "Expense")} onClick={() => handleFilter("expense")}>↓ Expense</button>
+                    </div>
                 </div>
                 <div className="p-5">
                     {loading ? (
-                        <div className="text-sm text-gray-400 dark:text-white/40">Loading...</div>
-                    ) : transactions.length === 0 ? (
+                        <div className="space-y-2">
+                            {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-14 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />)}
+                        </div>
+                    ) : filtered.length === 0 ? (
                         <div className="text-center py-12">
                             <div className="text-4xl mb-3">💰</div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">No transactions yet</div>
-                            <p className="text-xs text-gray-400">Add your first transaction</p>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">No transactions</div>
+                            <p className="text-xs text-gray-400">No {filter !== "all" ? filter : ""} transactions found</p>
                         </div>
                     ) : (
-                        <div className="space-y-2">
-                            {transactions.map((tx) => (
-                                <div key={tx.id} className="flex items-center gap-4 p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${tx.amount >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
-                                        {tx.amount >= 0 ? "↑" : "↓"}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{tx.description}</div>
-                                        <div className="text-xs text-gray-400 dark:text-white/40">
-                                            {formatDate(tx.createdAt)}{tx.member && ` · by ${tx.member.name}`}
+                        <>
+                            <div className="space-y-2">
+                                {paginated.map((tx) => (
+                                    <div key={tx.id} className="flex items-center gap-3 p-3 md:p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
+                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${tx.amount >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
+                                            {tx.amount >= 0 ? "↑" : "↓"}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{tx.description}</div>
+                                            <div className="text-xs text-gray-400 dark:text-white/40 truncate">
+                                                {formatDate(tx.createdAt)}{tx.member && ` · by ${tx.member.name}`}
+                                            </div>
+                                        </div>
+                                        <div className={`text-sm font-bold flex-shrink-0 ${tx.amount >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                                            {tx.amount >= 0 ? "+" : ""}{formatCurrency(tx.amount)}
+                                        </div>
+                                        <div className="flex gap-1.5 flex-shrink-0">
+                                            <button className={btnOutline} onClick={() => handleEdit(tx)}>Edit</button>
+                                            <button className={btnDanger} onClick={() => handleDelete(tx.id)}>Del</button>
                                         </div>
                                     </div>
-                                    <div className={`text-sm font-bold flex-shrink-0 ${tx.amount >= 0 ? "text-emerald-500" : "text-red-500"}`}>
-                                        {tx.amount >= 0 ? "+" : ""}{formatCurrency(tx.amount)}
-                                    </div>
-                                    <div className="flex gap-2 flex-shrink-0">
-                                        <button className={btnOutline} onClick={() => handleEdit(tx)}>Edit</button>
-                                        <button className={btnDanger} onClick={() => handleDelete(tx.id)}>Delete</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                            <Pagination
+                                page={page}
+                                totalPages={totalPages}
+                                total={filtered.length}
+                                perPage={PER_PAGE}
+                                onPage={setPage}
+                            />
+                        </>
                     )}
                 </div>
             </div>
