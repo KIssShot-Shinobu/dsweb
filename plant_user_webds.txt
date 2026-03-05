@@ -1,0 +1,759 @@
+# 🤖 AI AGENT CODING SPECIFICATION
+## Duel Standby Guild - Registration System
+
+**Version:** 1.0.0  
+**Last Updated:** 
+**Framework:** Next.js  (App Router)  
+**Language:** TypeScript  
+**Database:** MySQL/PostgreSQL * untuk dev kita gunakan sqlite dulu
+**ORM:** Prisma  
+
+---
+
+## 📋 TABLE OF CONTENTS
+
+1. Project Overview
+2. Tech Stack
+3. File Structure
+4. Database Schema
+5. API Endpoints
+6. Authentication Flow
+7. Validation Rules
+8. Coding Standards
+9. Environment Variables
+10. Testing Requirements
+11. Deployment Checklist
+12. Common Tasks
+
+---
+
+## 1. PROJECT OVERVIEW
+
+### 1.1 Purpose
+Web registration system for **Duel Standby Guild** - a Yu-Gi-Oh! online gaming community. Members register, get verified by admin, and access community features.
+
+### 1.2 Key Features
+- ✅ Member registration with game profile validation
+- ✅ Admin approval workflow (pending → active/rejected)
+- ✅ IGN validation (must start with `[DS]`)
+- ✅ Duplicate prevention (email, phone, game ID)
+- ✅ Screenshot upload for verification
+- ✅ Role-based access control (Member, Officer, Admin, Founder)
+- ✅ Email notifications
+
+### 1.3 User Roles
+| Role | Permissions |
+|------|-------------|
+| **USER** | View profile, edit personal info | * ini adalah user web tp bukan member guild karena mereka yang bukan member juga bisa ikut tourmanet di duelist
+| **MEMBER** | View profile, edit personal info | * ini adalah member guild yang sudah terverifikasi
+| **OFFICER** | Member permissions + view all members | * ini adalah officer guild yang sudah terverifikasi
+| **ADMIN** | Officer permissions + approve/reject members | * ini adalah admin guild yang sudah terverifikasi
+| **FOUNDER** | All permissions + manage admin accounts | * ini adalah founder guild yang sudah terverifikasi
+
+---
+
+## 2. TECH STACK
+
+### 2.1 Core Technologies
+{
+  "framework": "Next.js ",
+  "routing": "App Router",
+  "language": "TypeScript 5.x",
+  "database": "MySQL 8.0 / PostgreSQL 15", * untuk dev kita gunakan sqlite dulu
+  "orm": "Prisma 5.x",
+  "validation": "Zod 3.x",
+  "forms": "React Hook Form 7.x",
+  "auth": "NextAuth.js / Custom JWT",
+  "styling": "Tailwind CSS 3.x",
+  "ui": "shadcn/ui components",
+  "email": "Nodemailer / Resend",
+  "storage": "Cloudinary / AWS S3" * untuk dev kita gunkanan public folder public dulu 
+}
+
+### 2.2 Required Dependencies
+npm install next react react-dom
+npm install @prisma/client bcryptjs zod @hookform/resolvers react-hook-form
+npm install next-auth nodemailer cloudinary
+npm install -D prisma typescript @types/node @types/react @types/bcryptjs
+
+---
+
+## 3. FILE STRUCTURE
+
+duel-standby-web/
+├── .env                          # Environment variables (DO NOT COMMIT)
+├── .env.example                  # Environment template
+├── .gitignore
+├── next.config.js
+├── package.json
+├── tsconfig.json
+├── tailwind.config.ts
+├── prisma/
+│   ├── schema.prisma             # Database schema
+│   ├── seed.ts                   # Seed data
+│   └── migrations/               # Auto-generated migrations
+├── src/
+│   ├── app/
+│   │   ├── (auth)/               # Auth routes (public)
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx
+│   │   │   ├── register/
+│   │   │   │   └── page.tsx
+│   │   │   └── forgot-password/
+│   │   │       └── page.tsx
+│   │   ├── (dashboard)/          # Protected routes
+│   │   │   ├── member/
+│   │   │   │   └── page.tsx
+│   │   │   └── admin/
+│   │   │       ├── page.tsx
+│   │   │       ├── members/
+│   │   │       │   └── [id]/
+│   │   │       │       └── page.tsx
+│   │   │       └── logs/
+│   │   │           └── page.tsx
+│   │   ├── api/                  # API routes
+│   │   │   ├── auth/
+│   │   │   │   ├── register/
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── login/
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── logout/
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── me/
+│   │   │   │       └── route.ts
+│   │   │   ├── members/
+│   │   │   │   ├── route.ts
+│   │   │   │   ├── pending/
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── [id]/
+│   │   │   │       ├── route.ts
+│   │   │   │       └── status/
+│   │   │   │           └── route.ts
+│   │   │   └── upload/
+│   │   │       └── route.ts
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── globals.css
+│   ├── components/
+│   │   ├── ui/                   # Base UI components
+│   │   │   ├── button.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── checkbox.tsx
+│   │   │   ├── badge.tsx
+│   │   │   └── table.tsx
+│   │   ├── forms/                # Form components
+│   │   │   ├── register-form.tsx
+│   │   │   ├── login-form.tsx
+│   │   │   └── profile-form.tsx
+│   │   ├── tables/               # Table components
+│   │   │   └── members-table.tsx
+│   │   └── layout/
+│   │       ├── header.tsx
+│   │       ├── sidebar.tsx
+│   │       └── footer.tsx
+│   ├── lib/
+│   │   ├── prisma.ts             # Prisma client singleton
+│   │   ├── auth.ts               # Auth utilities
+│   │   ├── validators.ts         # Zod schemas
+│   │   ├── email.ts              # Email functions
+│   │   ├── upload.ts             # Upload utilities
+│   │   └── utils.ts              # Helper functions
+│   ├── types/
+│   │   ├── index.ts              # Shared types
+│   │   └── api.ts                # API response types
+│   ├── middleware.ts             # Auth middleware
+│   └── config/
+│       └── site.ts               # Site configuration
+├── public/
+│   ├── images/
+│   └── icons/
+└── tests/
+    ├── unit/
+    └── integration/
+
+---
+
+## 4. DATABASE SCHEMA
+
+### 4.1 Prisma Schema (prisma/schema.prisma)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MEMBER
+  OFFICER
+  ADMIN
+  FOUNDER
+}
+
+enum Status {
+  PENDING
+  ACTIVE
+  REJECTED
+  BANNED
+}
+
+enum GameType {
+  DUEL_LINKS
+  MASTER_DUEL
+}
+
+enum GuildStatus {
+  SOLO_PLAYER
+  LEFT_GUILD
+  NEW_PLAYER
+}
+
+model User {
+  id              BigInt      @id @default(autoincrement())
+  fullName        String
+  email           String      @unique
+  password        String
+  phoneWhatsapp   String?
+  city            String?
+  avatarUrl       String?
+  status          Status      @default(PENDING)
+  role            Role        @default(MEMBER)
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  deletedAt       DateTime?
+
+  gameProfiles    GameProfile[]
+  registrationLog RegistrationLog?
+  adminLogs       AdminLog[]
+
+  @@index([email])
+  @@index([phoneWhatsapp])
+  @@index([status])
+  @@index([role])
+}
+
+model GameProfile {
+  id            BigInt    @id @default(autoincrement())
+  userId        BigInt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameType      GameType
+  gameId        String
+  ign           String
+  screenshotUrl String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, gameType])
+  @@index([gameId])
+  @@index([ign])
+}
+
+model RegistrationLog {
+  id           BigInt      @id @default(autoincrement())
+  userId       BigInt      @unique
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceInfo   String?
+  prevGuild    String?
+  guildStatus  GuildStatus
+  socialMedia  Json?
+  agreement    Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+
+  @@index([userId])
+}
+
+model AdminLog {
+  id        BigInt   @id @default(autoincrement())
+  adminId   BigInt
+  admin     User     @relation(fields: [adminId], references: [id])
+  action    String
+  targetId  BigInt?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+### 4.2 ERD Diagram
+[User] 1──N [GameProfile]
+[User] 1──1 [RegistrationLog]
+[User] 1──N [AdminLog]
+
+---
+
+## 5. API ENDPOINTS
+
+### 5.1 Authentication APIs
+
+| Method | Endpoint | Auth | Description | Request Body | Response |
+|--------|----------|------|-------------|--------------|----------|
+| POST | /api/auth/register | ❌ | Register new member | RegisterInput | {success, userId} |
+| POST | /api/auth/login | ❌ | Login user | {email, password} | {success, token, user} |
+| POST | /api/auth/logout | ✅ | Logout user | - | {success} |
+| GET | /api/auth/me | ✅ | Get current user | - | {user} |
+| POST | /api/auth/forgot-password | ❌ | Request reset | {email} | {success} |
+| POST | /api/auth/reset-password | ❌ | Reset password | {token, password} | {success} |
+
+### 5.2 Member APIs (Admin Only)
+
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| GET | /api/members | ✅ | ADMIN | Get all members |
+| GET | /api/members/pending | ✅ | ADMIN | Get pending members |
+| GET | /api/members/:id | ✅ | ADMIN | Get member detail |
+| PUT | /api/members/:id/status | ✅ | ADMIN | Approve/Reject |
+| DELETE | /api/members/:id | ✅ | ADMIN | Delete member |
+| GET | /api/members/export | ✅ | ADMIN | Export to CSV |
+
+### 5.3 Upload APIs
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/upload | ✅ | Upload screenshot |
+| DELETE | /api/upload/:id | ✅ | Delete file |
+
+### 5.4 API Response Format
+
+Success Response:
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { ... }
+}
+
+Error Response:
+{
+  "success": false,
+  "message": "Error description",
+  "errors": [ ... ]
+}
+
+HTTP Status Codes:
+- 200 - Success
+- 201 - Created
+- 400 - Bad Request (validation error)
+- 401 - Unauthorized (not logged in)
+- 403 - Forbidden (insufficient role)
+- 404 - Not Found
+- 409 - Conflict (duplicate)
+- 500 - Server Error
+
+---
+
+## 6. AUTHENTICATION FLOW
+
+### 6.1 Registration Flow
+1. User Fill Form
+2. Frontend Validate (Zod)
+3. Backend Check Duplicates
+4. Database Insert User
+5. Backend Hash Password
+6. Backend Trigger Email
+7. Show Success to User
+
+### 6.2 Login Flow
+1. User enters email & password
+2. Frontend validates input (Zod)
+3. Backend finds user by email
+4. Backend compares password (bcrypt)
+5. Backend generates JWT/Session
+6. Backend sets cookie
+7. Frontend redirects to dashboard
+
+### 6.3 Admin Approval Flow
+1. Admin views pending members
+2. Admin reviews registration data
+3. Admin clicks Approve/Reject
+4. Backend updates user status
+5. Backend logs admin action
+6. Backend sends email to user
+7. Frontend refreshes list
+
+---
+
+## 7. VALIDATION RULES
+
+### 7.1 Zod Schemas (src/lib/validators.ts)
+
+import { z } from 'zod';
+
+// IGN must start with [DS]
+const IGN_REGEX = /^\[DS\].*/;
+
+// Phone must be valid format
+const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
+
+export const registerSchema = z.object({
+  fullName: z.string().min(3, 'Nama lengkap minimal 3 karakter'),
+  email: z.string().email('Email tidak valid'),
+  password: z.string()
+    .min(8, 'Password minimal 8 karakter')
+    .regex(/[A-Za-z]/, 'Password harus mengandung huruf')
+    .regex(/[0-9]/, 'Password harus mengandung angka'),
+  phoneWhatsapp: z.string()
+    .regex(PHONE_REGEX, 'Nomor WhatsApp tidak valid'),
+  city: z.string().min(2, 'Kota harus diisi'),
+  
+  // Game Profiles
+  duelLinksId: z.string().optional(),
+  masterDuelId: z.string().optional(),
+  duelLinksIgn: z.string().regex(IGN_REGEX, 'IGN wajib [DS] di depan').optional(),
+  masterDuelIgn: z.string().regex(IGN_REGEX, 'IGN wajib [DS] di depan').optional(),
+  
+  // Registration Info
+  sourceInfo: z.string().min(1, 'Sumber informasi harus diisi'),
+  prevGuild: z.string().optional(),
+  guildStatus: z.enum(['SOLO_PLAYER', 'LEFT_GUILD', 'NEW_PLAYER']),
+  socialMedia: z.array(z.string()).min(1, 'Pilih minimal 1 sosial media'),
+  agreement: z.literal(true, {
+    errorMap: () => ({ message: 'Anda harus menyetujui pernyataan' })
+  }),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email('Email tidak valid'),
+  password: z.string().min(1, 'Password harus diisi'),
+  rememberMe: z.boolean().optional(),
+});
+
+export const approveMemberSchema = z.object({
+  status: z.enum(['ACTIVE', 'REJECTED']),
+  reason: z.string().optional(),
+});
+
+// Type exports
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type ApproveMemberInput = z.infer<typeof approveMemberSchema>;
+
+### 7.2 Validation Checklist
+
+| Field | Rule | Error Message |
+|-------|------|---------------|
+| fullName | Min 3 chars | "Nama lengkap minimal 3 karakter" |
+| email | Valid email, unique | "Email sudah terdaftar" |
+| password | Min 8 chars, letters + numbers | "Password minimal 8 karakter" |
+| phoneWhatsapp | Valid format, unique | "Nomor WhatsApp sudah terdaftar" |
+| ign | Must start with [DS] | "IGN wajib menggunakan [DS] di depan" |
+| gameId | Unique per game type | "ID Game sudah terdaftar" |
+| agreement | Must be true | "Anda harus menyetujui pernyataan" |
+
+---
+
+## 8. CODING STANDARDS
+
+### 8.1 TypeScript Rules
+- Use strict mode ("strict": true in tsconfig.json)
+- No any type (use unknown if necessary)
+- Define types for all function parameters and returns
+- Use interfaces for objects, types for unions
+- Export types from src/types/index.ts
+
+### 8.2 Naming Conventions
+Files & Folders: kebab-case.tsx (Component files), kebab-case.ts (Utility files)
+Variables & Functions: camelCase (Variables and functions), PascalCase (Components and classes)
+Database: snake_case (Column names), PascalCase (Model names)
+
+### 8.3 Code Structure
+// GOOD: Component structure
+'use client';
+
+import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+
+// Types
+interface Props {
+  className?: string;
+}
+
+// Component
+export function MyComponent({ className }: Props) {
+  // Hooks
+  const [state, setState] = useState();
+  
+  // Handlers
+  const handleSubmit = () => {};
+  
+  // Render
+  return <div>...</div>;
+}
+
+// GOOD: API route structure
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { validateSchema } from '@/lib/validators';
+
+export async function POST(req: NextRequest) {
+  try {
+    // Validate
+    // Process
+    // Return
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ success: false }, { status: 500 });
+  }
+}
+
+### 8.4 Error Handling
+try {
+  const result = await prisma.user.create({ ... });
+  return NextResponse.json({ success: true, data: result });
+} catch (error) {
+  if (error instanceof ZodError) {
+    return NextResponse.json(
+      { success: false, errors: error.errors },
+      { status: 400 }
+    );
+  }
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return NextResponse.json(
+      { success: false, message: 'Database error' },
+      { status: 409 }
+    );
+  }
+  console.error('Unexpected error:', error);
+  return NextResponse.json(
+    { success: false, message: 'Server error' },
+    { status: 500 }
+  );
+}
+
+### 8.5 Security Rules
+| Rule | Implementation |
+|------|----------------|
+| Password Hashing | bcryptjs with 12 rounds |
+| SQL Injection | Use Prisma ORM (prepared statements) |
+| XSS Prevention | Sanitize all user inputs |
+| CSRF Protection | Use Next.js built-in protection |
+| Rate Limiting | Max 3 requests per IP per hour |
+| Session Timeout | 2 hours inactive |
+| HTTPS | Enforce in production |
+
+---
+
+## 9. ENVIRONMENT VARIABLES
+
+### 9.1 .env.example
+# Database
+DATABASE_URL="mysql://user:password@localhost:3306/duel_standby"
+
+# Next.js
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Email
+EMAIL_SERVER_HOST="smtp.gmail.com"
+EMAIL_SERVER_PORT=587
+EMAIL_SERVER_USER="your-email@gmail.com"
+EMAIL_SERVER_PASSWORD="your-app-password"
+EMAIL_FROM="Duel Standby <noreply@duelstandby.com>"
+
+# File Upload
+CLOUDINARY_CLOUD_NAME="your-cloud-name"
+CLOUDINARY_API_KEY="your-api-key"
+CLOUDINARY_API_SECRET="your-api-secret"
+
+# Rate Limiting
+RATE_LIMIT_MAX=3
+RATE_LIMIT_WINDOW=3600000
+
+### 9.2 Environment Setup Commands
+# Copy example file
+cp .env.example .env
+
+# Generate NextAuth secret
+openssl rand -base64 32
+
+# Edit .env with your credentials
+nano .env
+
+---
+
+## 10. TESTING REQUIREMENTS
+
+### 10.1 Test Coverage
+| Test Type | Coverage Target | Tools |
+|-----------|-----------------|-------|
+| Unit Tests | 80% | Jest, Vitest |
+| Integration Tests | Critical paths | Jest, Supertest |
+| E2E Tests | Main flows | Playwright, Cypress |
+
+### 10.2 Test Cases Checklist
+
+Registration:
+- [ ] Valid registration succeeds
+- [ ] Duplicate email fails
+- [ ] Duplicate phone fails
+- [ ] Duplicate game ID fails
+- [ ] Invalid IGN format fails
+- [ ] Missing agreement fails
+
+Login:
+- [ ] Valid credentials succeed
+- [ ] Invalid password fails
+- [ ] Unverified email fails
+- [ ] Banned user fails
+
+Admin:
+- [ ] Admin can view pending members
+- [ ] Admin can approve member
+- [ ] Admin can reject member
+- [ ] Non-admin cannot access admin routes
+
+### 10.3 Example Test File
+// tests/unit/validators.test.ts
+import { registerSchema } from '@/lib/validators';
+
+describe('Register Schema Validation', () => {
+  it('should pass with valid data', () => {
+    const validData = {
+      fullName: 'John Doe',
+      email: 'john@example.com',
+      password: 'Password123',
+      phoneWhatsapp: '+628123456789',
+      city: 'Jakarta',
+      guildStatus: 'SOLO_PLAYER',
+      socialMedia: ['WhatsApp'],
+      agreement: true,
+    };
+    expect(registerSchema.parse(validData)).toEqual(validData);
+  });
+
+  it('should fail with invalid IGN', () => {
+    const invalidData = {
+      // ... other fields
+      duelLinksIgn: 'InvalidIGN', // Missing [DS]
+    };
+    expect(() => registerSchema.parse(invalidData)).toThrow();
+  });
+});
+
+---
+
+## 11. DEPLOYMENT CHECKLIST
+
+### 11.1 Pre-Deployment
+- [ ] All environment variables set in production
+- [ ] Database migrations run
+- [ ] Admin user seeded
+- [ ] SSL certificate installed
+- [ ] Email service configured
+- [ ] File storage configured
+
+### 11.2 Deployment Commands
+# Install dependencies
+npm ci --only=production
+
+# Generate Prisma client
+npx prisma generate
+
+# Run migrations
+npx prisma migrate deploy
+
+# Seed database
+npx prisma db seed
+
+# Build Next.js
+npm run build
+
+# Start production server
+npm start
+
+### 11.3 Post-Deployment
+- [ ] Test registration flow
+- [ ] Test login flow
+- [ ] Test admin approval
+- [ ] Test email notifications
+- [ ] Test file uploads
+- [ ] Monitor error logs
+- [ ] Setup backup schedule
+
+---
+
+## 12. COMMON TASKS
+
+### 12.1 Add New Database Field
+# 1. Update schema.prisma
+# 2. Generate migration
+npx prisma migrate dev --name add_field_name
+
+# 3. Update TypeScript types
+# 4. Update validators
+# 5. Update forms
+
+### 12.2 Add New API Endpoint
+# 1. Create route file: src/app/api/new-endpoint/route.ts
+# 2. Add validation schema
+# 3. Implement handler
+# 4. Add middleware protection if needed
+# 5. Test with Postman
+# 6. Update API documentation
+
+### 12.3 Add New UI Component
+# 1. Create component file: src/components/ui/new-component.tsx
+# 2. Add TypeScript props interface
+# 3. Style with Tailwind
+# 4. Export from components index
+# 5. Use in pages
+
+### 12.4 Debug Common Issues
+
+Database Connection Error:
+# Check .env DATABASE_URL
+# Verify database server is running
+# Test connection: npx prisma db pull
+
+Migration Error:
+# Reset database (development only)
+npx prisma migrate reset
+
+# Or create new migration
+npx prisma migrate dev --name fix_issue
+
+TypeScript Error:
+# Check types
+npx tsc --noEmit
+
+# Fix strict mode errors
+# Add proper type annotations
+
+---
+
+## 📞 SUPPORT & CONTACT
+
+**Lead Developer:** [Your Name]  
+**Project Repository:** [GitHub URL]  
+**Documentation:** [Docs URL]  
+**Issue Tracker:** [GitHub Issues]  
+
+---
+
+## 📝 VERSION HISTORY
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0.0 | 2024 | Initial specification |
+
+---
+
+> ⚠️ IMPORTANT FOR AI AGENTS:
+> - Always follow the file structure defined above
+> - Use TypeScript strict mode
+> - Never commit .env files
+> - Always validate user input with Zod
+> - Never store passwords in plain text
+> - Log all errors for debugging
+> - Follow existing code patterns
+
+---
+
+END OF SPECIFICATION
