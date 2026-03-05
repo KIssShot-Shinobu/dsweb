@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Pagination } from "@/components/dashboard/pagination";
+import { Modal } from "@/components/dashboard/modal";
 
 interface Transaction {
     id: string;
@@ -24,7 +25,7 @@ export default function TreasuryPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [balance, setBalance] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [showForm, setShowForm] = useState(false);
+    const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ amount: 0, description: "", type: "income" });
     const [editingId, setEditingId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -58,7 +59,7 @@ export default function TreasuryPage() {
     const handleEdit = (tx: Transaction) => {
         setFormData({ amount: Math.abs(tx.amount), description: tx.description, type: tx.amount >= 0 ? "income" : "expense" });
         setEditingId(tx.id);
-        setShowForm(true);
+        setShowModal(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -67,7 +68,11 @@ export default function TreasuryPage() {
         fetchTreasury();
     };
 
-    const resetForm = () => { setFormData({ amount: 0, description: "", type: "income" }); setEditingId(null); setShowForm(false); };
+    const resetForm = () => {
+        setFormData({ amount: 0, description: "", type: "income" });
+        setEditingId(null);
+        setShowModal(false);
+    };
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
@@ -78,7 +83,6 @@ export default function TreasuryPage() {
     const income = transactions.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
     const expense = Math.abs(transactions.filter((t) => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
 
-    // Filter + paginate
     const filtered = transactions.filter((t) => {
         if (filter === "income") return t.amount > 0;
         if (filter === "expense") return t.amount < 0;
@@ -88,7 +92,7 @@ export default function TreasuryPage() {
     const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
     const handleFilter = (f: typeof filter) => { setFilter(f); setPage(1); };
 
-    const filterBtn = (f: typeof filter, label: string) =>
+    const filterBtn = (f: typeof filter) =>
         `px-3 py-1 rounded-lg text-xs font-medium transition-all ${filter === f ? "bg-ds-amber text-black" : "text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/5"}`;
 
     return (
@@ -99,7 +103,7 @@ export default function TreasuryPage() {
                     <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Treasury</h1>
                     <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Manage guild finances</p>
                 </div>
-                <button className={btnPrimary} onClick={() => setShowForm(true)}>+ Add Transaction</button>
+                <button className={btnPrimary} onClick={() => setShowModal(true)}>+ Add Transaction</button>
             </div>
 
             {/* Stats Row */}
@@ -124,56 +128,19 @@ export default function TreasuryPage() {
                 </div>
             </div>
 
-            {/* Form */}
-            {showForm && (
-                <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 mb-5">
-                    <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5">
-                        <span className="text-base font-semibold text-gray-900 dark:text-white">
-                            {editingId ? "Edit Transaction" : "Add New Transaction"}
-                        </span>
-                        <button className={btnOutline} onClick={resetForm}>Cancel</button>
-                    </div>
-                    <div className="p-4 md:p-5">
-                        <form onSubmit={handleSubmit}>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                <div>
-                                    <label className={labelCls}>Type</label>
-                                    <select className={inputCls} value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
-                                        <option value="income">Income (Pemasukan)</option>
-                                        <option value="expense">Expense (Pengeluaran)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Amount (IDR) *</label>
-                                    <input type="number" className={inputCls} value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })} required min="1" placeholder="10000" />
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Description *</label>
-                                    <input type="text" className={inputCls} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required placeholder="e.g., Iuran bulanan" />
-                                </div>
-                            </div>
-                            <button type="submit" className={btnPrimary} disabled={submitting}>
-                                {submitting ? "Saving..." : editingId ? "Update Transaction" : "Add Transaction"}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
-
             {/* Transactions List */}
             <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 border-b border-gray-100 dark:border-white/5 gap-3">
                     <span className="text-base font-semibold text-gray-900 dark:text-white">
                         All Transactions ({filtered.length})
                     </span>
-                    {/* Filter tabs */}
                     <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 rounded-xl p-1 overflow-x-auto">
-                        <button className={filterBtn("all", "All")} onClick={() => handleFilter("all")}>All</button>
-                        <button className={filterBtn("income", "Income")} onClick={() => handleFilter("income")}>↑ Income</button>
-                        <button className={filterBtn("expense", "Expense")} onClick={() => handleFilter("expense")}>↓ Expense</button>
+                        <button className={filterBtn("all")} onClick={() => handleFilter("all")}>All</button>
+                        <button className={filterBtn("income")} onClick={() => handleFilter("income")}>↑ Income</button>
+                        <button className={filterBtn("expense")} onClick={() => handleFilter("expense")}>↓ Expense</button>
                     </div>
                 </div>
-                <div className="p-5">
+                <div className="p-4 md:p-5">
                     {loading ? (
                         <div className="space-y-2">
                             {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-14 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />)}
@@ -208,17 +175,44 @@ export default function TreasuryPage() {
                                     </div>
                                 ))}
                             </div>
-                            <Pagination
-                                page={page}
-                                totalPages={totalPages}
-                                total={filtered.length}
-                                perPage={PER_PAGE}
-                                onPage={setPage}
-                            />
+                            <Pagination page={page} totalPages={totalPages} total={filtered.length} perPage={PER_PAGE} onPage={setPage} />
                         </>
                     )}
                 </div>
             </div>
+
+            {/* Modal Form */}
+            <Modal
+                open={showModal}
+                onClose={resetForm}
+                title={editingId ? "Edit Transaction" : "Add New Transaction"}
+            >
+                <form onSubmit={handleSubmit}>
+                    <div className="grid grid-cols-1 gap-4 mb-5">
+                        <div>
+                            <label className={labelCls}>Type</label>
+                            <select className={inputCls} value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
+                                <option value="income">Income (Pemasukan)</option>
+                                <option value="expense">Expense (Pengeluaran)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelCls}>Amount (IDR) *</label>
+                            <input type="number" className={inputCls} value={formData.amount || ""} onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })} required min="1" placeholder="10000" />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Description *</label>
+                            <input type="text" className={inputCls} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required placeholder="e.g., Iuran bulanan" />
+                        </div>
+                    </div>
+                    <div className="flex gap-3 justify-end">
+                        <button type="button" className={btnOutline} onClick={resetForm}>Cancel</button>
+                        <button type="submit" className={btnPrimary} disabled={submitting}>
+                            {submitting ? "Saving..." : editingId ? "Update" : "Add Transaction"}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
         </>
     );
 }

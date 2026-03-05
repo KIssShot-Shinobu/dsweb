@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Pagination } from "@/components/dashboard/pagination";
+import { Modal } from "@/components/dashboard/modal";
 
 interface Member {
     id: string;
@@ -31,7 +32,7 @@ const getRoleBadge = (role: string) => {
 export default function MembersPage() {
     const [members, setMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showForm, setShowForm] = useState(false);
+    const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ name: "", gameId: "", rank: "", role: "MEMBER" });
     const [editingId, setEditingId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -64,7 +65,7 @@ export default function MembersPage() {
     const handleEdit = (m: Member) => {
         setFormData({ name: m.name, gameId: m.gameId, rank: m.rank || "", role: m.role });
         setEditingId(m.id);
-        setShowForm(true);
+        setShowModal(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -73,16 +74,19 @@ export default function MembersPage() {
         fetchMembers();
     };
 
-    const resetForm = () => { setFormData({ name: "", gameId: "", rank: "", role: "MEMBER" }); setEditingId(null); setShowForm(false); };
+    const resetForm = () => {
+        setFormData({ name: "", gameId: "", rank: "", role: "MEMBER" });
+        setEditingId(null);
+        setShowModal(false);
+    };
+
     const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
-    // Filter + paginate
     const filtered = members.filter((m) =>
         !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.gameId.toLowerCase().includes(search.toLowerCase())
     );
     const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
     const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
     const handleSearch = (val: string) => { setSearch(val); setPage(1); };
 
     return (
@@ -93,49 +97,8 @@ export default function MembersPage() {
                     <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Members</h1>
                     <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Manage guild members</p>
                 </div>
-                <button className={btnPrimary} onClick={() => setShowForm(true)}>+ Add Member</button>
+                <button className={btnPrimary} onClick={() => setShowModal(true)}>+ Add Member</button>
             </div>
-
-            {/* Form */}
-            {showForm && (
-                <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 mb-5">
-                    <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5">
-                        <span className="text-base font-semibold text-gray-900 dark:text-white">
-                            {editingId ? "Edit Member" : "Add New Member"}
-                        </span>
-                        <button className={btnOutline} onClick={resetForm}>Cancel</button>
-                    </div>
-                    <div className="p-4 md:p-5">
-                        <form onSubmit={handleSubmit}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label className={labelCls}>Name *</label>
-                                    <input type="text" className={inputCls} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="Member name" />
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Game ID *</label>
-                                    <input type="text" className={inputCls} value={formData.gameId} onChange={(e) => setFormData({ ...formData, gameId: e.target.value })} required placeholder="Duel Links / Master Duel ID" />
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Rank</label>
-                                    <input type="text" className={inputCls} value={formData.rank} onChange={(e) => setFormData({ ...formData, rank: e.target.value })} placeholder="e.g., Legend, King of Games" />
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Role</label>
-                                    <select className={inputCls} value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
-                                        <option value="MEMBER">Member</option>
-                                        <option value="OFFICER">Officer</option>
-                                        <option value="LEADER">Leader</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button type="submit" className={btnPrimary} disabled={submitting}>
-                                {submitting ? "Saving..." : editingId ? "Update Member" : "Add Member"}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
 
             {/* List */}
             <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
@@ -143,7 +106,6 @@ export default function MembersPage() {
                     <span className="text-base font-semibold text-gray-900 dark:text-white">
                         All Members ({filtered.length})
                     </span>
-                    {/* Search */}
                     <input
                         type="text"
                         placeholder="Search name or ID..."
@@ -152,7 +114,7 @@ export default function MembersPage() {
                         className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm text-gray-700 dark:text-white/70 placeholder:text-gray-400 dark:placeholder:text-white/30 outline-none focus:border-ds-amber w-full sm:w-52 transition-all"
                     />
                 </div>
-                <div className="p-5">
+                <div className="p-4 md:p-5">
                     {loading ? (
                         <div className="space-y-2">
                             {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-14 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />)}
@@ -187,17 +149,49 @@ export default function MembersPage() {
                                     </div>
                                 ))}
                             </div>
-                            <Pagination
-                                page={page}
-                                totalPages={totalPages}
-                                total={filtered.length}
-                                perPage={PER_PAGE}
-                                onPage={setPage}
-                            />
+                            <Pagination page={page} totalPages={totalPages} total={filtered.length} perPage={PER_PAGE} onPage={setPage} />
                         </>
                     )}
                 </div>
             </div>
+
+            {/* Modal Form */}
+            <Modal
+                open={showModal}
+                onClose={resetForm}
+                title={editingId ? "Edit Member" : "Add New Member"}
+            >
+                <form onSubmit={handleSubmit}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                        <div>
+                            <label className={labelCls}>Name *</label>
+                            <input type="text" className={inputCls} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="Member name" />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Game ID *</label>
+                            <input type="text" className={inputCls} value={formData.gameId} onChange={(e) => setFormData({ ...formData, gameId: e.target.value })} required placeholder="Duel Links / Master Duel ID" />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Rank</label>
+                            <input type="text" className={inputCls} value={formData.rank} onChange={(e) => setFormData({ ...formData, rank: e.target.value })} placeholder="e.g., Legend, King of Games" />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Role</label>
+                            <select className={inputCls} value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
+                                <option value="MEMBER">Member</option>
+                                <option value="OFFICER">Officer</option>
+                                <option value="LEADER">Leader</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="flex gap-3 justify-end">
+                        <button type="button" className={btnOutline} onClick={resetForm}>Cancel</button>
+                        <button type="submit" className={btnPrimary} disabled={submitting}>
+                            {submitting ? "Saving..." : editingId ? "Update Member" : "Add Member"}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
         </>
     );
 }

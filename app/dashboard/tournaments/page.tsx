@@ -61,9 +61,19 @@ export default function TournamentsPage() {
             fd.append("file", file);
             const res = await fetch("/api/upload", { method: "POST", body: fd });
             const data = await res.json();
-            if (data.url) { setFormData((prev) => ({ ...prev, image: data.url })); setImagePreview(data.url); }
-        } catch (e) { console.error(e); }
-        finally { setUploading(false); }
+            if (data.url) {
+                setFormData((prev) => ({ ...prev, image: data.url }));
+                setImagePreview(data.url);
+            } else {
+                // Show error to user
+                alert(data.error || "Upload failed. Please try again.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Upload failed. Check your network connection.");
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,21 +152,24 @@ export default function TournamentsPage() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <div
-                                        className={`border-2 border-dashed rounded-xl p-6 md:p-10 text-center cursor-pointer transition-all ${dragging ? "border-ds-amber bg-ds-amber/5" : "border-gray-200 dark:border-white/10 hover:border-ds-amber hover:bg-ds-amber/5 dark:hover:border-ds-amber/50"} ${uploading ? "opacity-60 pointer-events-none" : ""}`}
+                                    /* Use <label> with htmlFor to open file picker on ALL devices (mobile + desktop)
+                                       programmatic .click() on file inputs is blocked by some mobile browsers */
+                                    <label
+                                        htmlFor="tournament-image-input"
+                                        className={`block border-2 border-dashed rounded-xl p-6 md:p-10 text-center cursor-pointer transition-all ${dragging ? "border-ds-amber bg-ds-amber/5" : "border-gray-200 dark:border-white/10 hover:border-ds-amber hover:bg-ds-amber/5 dark:hover:border-ds-amber/50"} ${uploading ? "opacity-60 pointer-events-none" : ""}`}
                                         onDrop={handleDrop}
                                         onDragOver={handleDragOver}
                                         onDragLeave={() => setDragging(false)}
-                                        onClick={() => fileInputRef.current?.click()}
                                     >
                                         <div className="text-3xl mb-2">{uploading ? "⏳" : "🖼️"}</div>
                                         <div className="text-sm font-medium text-gray-600 dark:text-white/50 mb-1">
-                                            {uploading ? "Uploading..." : "Drag & drop image here, or click to browse"}
+                                            {uploading ? "Uploading..." : "Tap to select image or drag & drop"}
                                         </div>
-                                        <div className="text-xs text-gray-400 dark:text-white/30">JPEG, PNG, WEBP, GIF — max 5MB</div>
-                                    </div>
+                                        <div className="text-xs text-gray-400 dark:text-white/30">JPEG, PNG, WEBP, HEIC — max 10MB</div>
+                                    </label>
                                 )}
-                                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFileChange} className="hidden" />
+                                {/* id must match label htmlFor above */}
+                                <input id="tournament-image-input" ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                             </div>
 
                             {/* Fields */}
