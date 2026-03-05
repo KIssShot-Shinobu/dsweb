@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pagination } from "@/components/dashboard/pagination";
 import { Modal } from "@/components/dashboard/modal";
+import { useToast } from "@/components/dashboard/toast";
+import { ConfirmModal } from "@/components/dashboard/confirm-modal";
+import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
 
 interface Member {
     id: string;
@@ -14,6 +17,7 @@ interface Member {
 }
 
 const PER_PAGE = 10;
+const UNDO_DURATION = 5000;
 
 const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all";
 const labelCls = "block text-xs font-semibold text-gray-600 dark:text-white/50 uppercase tracking-wider mb-1.5";
@@ -38,6 +42,10 @@ export default function MembersPage() {
     const [submitting, setSubmitting] = useState(false);
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
+    const { success, error } = useToast();
+    const [confirmState, setConfirmState] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: "", name: "" });
+    const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string; item: Member } | null>(null);
+    const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchMembers = () => {
         fetch("/api/members")
@@ -48,6 +56,9 @@ export default function MembersPage() {
 
     useEffect(() => { fetchMembers(); }, []);
 
+    // Cleanup timer on unmount
+    useEffect(() => () => { if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current); }, []);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
@@ -57,9 +68,18 @@ export default function MembersPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
             });
-            if (res.ok) { fetchMembers(); resetForm(); }
-        } catch (e) { console.error(e); }
-        finally { setSubmitting(false); }
+            if (res.ok) {
+                fetchMembers();
+                resetForm();
+                success(editingId ? "Member updated successfully." : "New member added.");
+            } else {
+                error("Failed to save. Please try again.");
+            }
+        } catch {
+            error("Network error. Please check your connection.");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handleEdit = (m: Member) => {
@@ -68,10 +88,49 @@ export default function MembersPage() {
         setShowModal(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Delete this member?")) return;
-        await fetch(`/api/members/${id}`, { method: "DELETE" });
-        fetchMembers();
+    const handleDeleteClick = (id: string, name: string) => {
+        // If another delete is already pending, commit it immediately
+        if (pendingDelete && deleteTimerRef.current) {
+            clearTimeout(deleteTimerRef.current);
+            executePermanentDelete(pendingDelete.id);
+        }
+        setConfirmState({ open: true, id, name });
+    };
+
+    const executePermanentDelete = async (id: string) => {
+        setPendingDelete(null);
+        try {
+            const res = await fetch(`/api/members/${id}`, { method: "DELETE" });
+            if (!res.ok) { fetchMembers(); error("Failed to delete member."); }
+        } catch { fetchMembers(); error("Network error. Member restored."); }
+    };
+
+    const handleConfirmDelete = () => {
+        const { id, name } = confirmState;
+        const item = members.find((m) => m.id === id);
+        if (!item) return;
+        setConfirmState({ open: false, id: "", name: "" });
+
+        // Optimistic: remove from UI immediately
+        setMembers((prev) => prev.filter((m) => m.id !== id));
+        setPendingDelete({ id, name, item });
+
+        // Start 5s timer then call DELETE
+        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+        deleteTimerRef.current = setTimeout(() => executePermanentDelete(id), UNDO_DURATION);
+    };
+
+    const handleUndo = () => {
+        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+        if (pendingDelete) {
+            // Restore the item back to its original position
+            setMembers((prev) => {
+                const restored = [pendingDelete.item, ...prev];
+                return restored.sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime());
+            });
+            success(`"${pendingDelete.name}" restored.`);
+        }
+        setPendingDelete(null);
     };
 
     const resetForm = () => {
@@ -144,7 +203,7 @@ export default function MembersPage() {
                                         </span>
                                         <div className="flex gap-1.5 flex-shrink-0">
                                             <button className={btnOutline} onClick={() => handleEdit(member)}>Edit</button>
-                                            <button className={btnDanger} onClick={() => handleDelete(member.id)}>Del</button>
+                                            <button className={btnDanger} onClick={() => handleDeleteClick(member.id, member.name)}>Del</button>
                                         </div>
                                     </div>
                                 ))}
@@ -155,12 +214,8 @@ export default function MembersPage() {
                 </div>
             </div>
 
-            {/* Modal Form */}
-            <Modal
-                open={showModal}
-                onClose={resetForm}
-                title={editingId ? "Edit Member" : "Add New Member"}
-            >
+            {/* Form Modal */}
+            <Modal open={showModal} onClose={resetForm} title={editingId ? "Edit Member" : "Add New Member"}>
                 <form onSubmit={handleSubmit}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                         <div>
@@ -192,6 +247,24 @@ export default function MembersPage() {
                     </div>
                 </form>
             </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                open={confirmState.open}
+                title="Delete Member"
+                message={`Are you sure you want to delete "${confirmState.name}"? You'll have 5 seconds to undo.`}
+                confirmLabel="Delete"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setConfirmState({ open: false, id: "", name: "" })}
+            />
+
+            {/* Undo Snackbar */}
+            <UndoSnackbar
+                open={!!pendingDelete}
+                message={`"${pendingDelete?.name}" will be deleted`}
+                duration={UNDO_DURATION}
+                onUndo={handleUndo}
+            />
         </>
     );
 }

@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pagination } from "@/components/dashboard/pagination";
 import { Modal } from "@/components/dashboard/modal";
+import { useToast } from "@/components/dashboard/toast";
+import { ConfirmModal } from "@/components/dashboard/confirm-modal";
+import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
 
 interface Transaction {
     id: string;
@@ -14,6 +17,7 @@ interface Transaction {
 }
 
 const PER_PAGE = 10;
+const UNDO_DURATION = 5000;
 
 const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all";
 const labelCls = "block text-xs font-semibold text-gray-600 dark:text-white/50 uppercase tracking-wider mb-1.5";
@@ -31,6 +35,10 @@ export default function TreasuryPage() {
     const [submitting, setSubmitting] = useState(false);
     const [page, setPage] = useState(1);
     const [filter, setFilter] = useState<"all" | "income" | "expense">("all");
+    const { success, error } = useToast();
+    const [confirmState, setConfirmState] = useState<{ open: boolean; id: string; label: string }>({ open: false, id: "", label: "" });
+    const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string; item: Transaction } | null>(null);
+    const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchTreasury = () => {
         fetch("/api/treasury")
@@ -40,6 +48,7 @@ export default function TreasuryPage() {
     };
 
     useEffect(() => { fetchTreasury(); }, []);
+    useEffect(() => () => { if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current); }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -51,8 +60,14 @@ export default function TreasuryPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ amount, description: formData.description }),
             });
-            if (res.ok) { fetchTreasury(); resetForm(); }
-        } catch (e) { console.error(e); }
+            if (res.ok) {
+                fetchTreasury();
+                resetForm();
+                success(editingId ? "Transaction updated." : "Transaction added successfully.");
+            } else {
+                error("Failed to save transaction.");
+            }
+        } catch { error("Network error. Please try again."); }
         finally { setSubmitting(false); }
     };
 
@@ -62,10 +77,50 @@ export default function TreasuryPage() {
         setShowModal(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Delete this transaction?")) return;
-        await fetch(`/api/treasury/${id}`, { method: "DELETE" });
-        fetchTreasury();
+    const handleDeleteClick = (id: string, label: string) => {
+        if (pendingDelete && deleteTimerRef.current) {
+            clearTimeout(deleteTimerRef.current);
+            executePermanentDelete(pendingDelete.id);
+        }
+        setConfirmState({ open: true, id, label });
+    };
+
+    const executePermanentDelete = async (id: string) => {
+        setPendingDelete(null);
+        try {
+            const res = await fetch(`/api/treasury/${id}`, { method: "DELETE" });
+            if (res.ok) {
+                // Recalculate balance locally without refetch
+                fetchTreasury();
+            } else { fetchTreasury(); error("Failed to delete transaction."); }
+        } catch { fetchTreasury(); error("Network error. Transaction restored."); }
+    };
+
+    const handleConfirmDelete = () => {
+        const { id, label } = confirmState;
+        const item = transactions.find((t) => t.id === id);
+        if (!item) return;
+        setConfirmState({ open: false, id: "", label: "" });
+
+        // Optimistic: remove + recalculate balance
+        setTransactions((prev) => prev.filter((t) => t.id !== id));
+        setBalance((prev) => prev - item.amount);
+        setPendingDelete({ id, label, item });
+
+        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+        deleteTimerRef.current = setTimeout(() => executePermanentDelete(id), UNDO_DURATION);
+    };
+
+    const handleUndo = () => {
+        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+        if (pendingDelete) {
+            setTransactions((prev) => [pendingDelete.item, ...prev].sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            ));
+            setBalance((prev) => prev + pendingDelete.item.amount);
+            success(`"${pendingDelete.label}" restored.`);
+        }
+        setPendingDelete(null);
     };
 
     const resetForm = () => {
@@ -170,7 +225,7 @@ export default function TreasuryPage() {
                                         </div>
                                         <div className="flex gap-1.5 flex-shrink-0">
                                             <button className={btnOutline} onClick={() => handleEdit(tx)}>Edit</button>
-                                            <button className={btnDanger} onClick={() => handleDelete(tx.id)}>Del</button>
+                                            <button className={btnDanger} onClick={() => handleDeleteClick(tx.id, tx.description)}>Del</button>
                                         </div>
                                     </div>
                                 ))}
@@ -181,12 +236,8 @@ export default function TreasuryPage() {
                 </div>
             </div>
 
-            {/* Modal Form */}
-            <Modal
-                open={showModal}
-                onClose={resetForm}
-                title={editingId ? "Edit Transaction" : "Add New Transaction"}
-            >
+            {/* Form Modal */}
+            <Modal open={showModal} onClose={resetForm} title={editingId ? "Edit Transaction" : "Add New Transaction"}>
                 <form onSubmit={handleSubmit}>
                     <div className="grid grid-cols-1 gap-4 mb-5">
                         <div>
@@ -213,6 +264,24 @@ export default function TreasuryPage() {
                     </div>
                 </form>
             </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                open={confirmState.open}
+                title="Delete Transaction"
+                message={`Delete "${confirmState.label}"? You'll have 5 seconds to undo.`}
+                confirmLabel="Delete"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setConfirmState({ open: false, id: "", label: "" })}
+            />
+
+            {/* Undo Snackbar */}
+            <UndoSnackbar
+                open={!!pendingDelete}
+                message={`"${pendingDelete?.label}" will be deleted`}
+                duration={UNDO_DURATION}
+                onUndo={handleUndo}
+            />
         </>
     );
 }

@@ -2,6 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Pagination } from "@/components/dashboard/pagination";
+import { Modal } from "@/components/dashboard/modal";
+import { useToast } from "@/components/dashboard/toast";
+import { ConfirmModal } from "@/components/dashboard/confirm-modal";
+import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
+
+const UNDO_DURATION = 5000;
 
 const PER_PAGE = 10;
 
@@ -33,7 +39,7 @@ const getStatusBadge = (status: string) => {
 export default function TournamentsPage() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showForm, setShowForm] = useState(false);
+    const [showModal, setShowModal] = useState(false);
     const [page, setPage] = useState(1);
     const [statusFilter, setStatusFilter] = useState<"ALL" | "UPCOMING" | "ONGOING" | "COMPLETED">("ALL");
     const [formData, setFormData] = useState({ title: "", gameType: "Duel Links", startDate: "", prizePool: 0, description: "", status: "UPCOMING", image: "" });
@@ -43,6 +49,10 @@ export default function TournamentsPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { success, error } = useToast();
+    const [confirmState, setConfirmState] = useState<{ open: boolean; id: string; title: string }>({ open: false, id: "", title: "" });
+    const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string; item: Tournament } | null>(null);
+    const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchTournaments = () => {
         fetch("/api/tournaments")
@@ -52,6 +62,7 @@ export default function TournamentsPage() {
     };
 
     useEffect(() => { fetchTournaments(); }, []);
+    useEffect(() => () => { if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current); }, []);
 
     const handleImageUpload = async (file: File) => {
         if (!file) return;
@@ -64,13 +75,12 @@ export default function TournamentsPage() {
             if (data.url) {
                 setFormData((prev) => ({ ...prev, image: data.url }));
                 setImagePreview(data.url);
+                success("Image uploaded successfully.");
             } else {
-                // Show error to user
-                alert(data.error || "Upload failed. Please try again.");
+                error(data.error || "Upload failed. Please try again.");
             }
-        } catch (e) {
-            console.error(e);
-            alert("Upload failed. Check your network connection.");
+        } catch {
+            error("Upload failed. Check your network connection.");
         } finally {
             setUploading(false);
         }
@@ -95,8 +105,14 @@ export default function TournamentsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ...formData, prizePool: Number(formData.prizePool) }),
             });
-            if (res.ok) { fetchTournaments(); resetForm(); }
-        } catch (e) { console.error(e); }
+            if (res.ok) {
+                fetchTournaments();
+                resetForm();
+                success(editingId ? "Tournament updated successfully." : "Tournament created!");
+            } else {
+                error("Failed to save tournament. Please try again.");
+            }
+        } catch { error("Network error. Please try again."); }
         finally { setSubmitting(false); }
     };
 
@@ -104,16 +120,51 @@ export default function TournamentsPage() {
         setFormData({ title: t.title, gameType: t.gameType, startDate: t.startDate.split("T")[0], prizePool: t.prizePool, description: t.description || "", status: t.status, image: t.image || "" });
         setImagePreview(t.image || null);
         setEditingId(t.id);
-        setShowForm(true);
+        setShowModal(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Delete this tournament?")) return;
-        await fetch(`/api/tournaments/${id}`, { method: "DELETE" });
-        fetchTournaments();
+    const handleDeleteClick = (id: string, title: string) => {
+        if (pendingDelete && deleteTimerRef.current) {
+            clearTimeout(deleteTimerRef.current);
+            executePermanentDelete(pendingDelete.id);
+        }
+        setConfirmState({ open: true, id, title });
     };
 
-    const resetForm = () => { setFormData({ title: "", gameType: "Duel Links", startDate: "", prizePool: 0, description: "", status: "UPCOMING", image: "" }); setImagePreview(null); setEditingId(null); setShowForm(false); if (fileInputRef.current) fileInputRef.current.value = ""; };
+    const executePermanentDelete = async (id: string) => {
+        setPendingDelete(null);
+        try {
+            const res = await fetch(`/api/tournaments/${id}`, { method: "DELETE" });
+            if (!res.ok) { fetchTournaments(); error("Failed to delete tournament."); }
+        } catch { fetchTournaments(); error("Network error. Tournament restored."); }
+    };
+
+    const handleConfirmDelete = () => {
+        const { id, title } = confirmState;
+        const item = tournaments.find((t) => t.id === id);
+        if (!item) return;
+        setConfirmState({ open: false, id: "", title: "" });
+
+        // Optimistic remove
+        setTournaments((prev) => prev.filter((t) => t.id !== id));
+        setPendingDelete({ id, title, item });
+
+        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+        deleteTimerRef.current = setTimeout(() => executePermanentDelete(id), UNDO_DURATION);
+    };
+
+    const handleUndo = () => {
+        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+        if (pendingDelete) {
+            setTournaments((prev) => [pendingDelete.item, ...prev].sort(
+                (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+            ));
+            success(`"${pendingDelete.title}" restored.`);
+        }
+        setPendingDelete(null);
+    };
+
+    const resetForm = () => { setFormData({ title: "", gameType: "Duel Links", startDate: "", prizePool: 0, description: "", status: "UPCOMING", image: "" }); setImagePreview(null); setEditingId(null); setShowModal(false); if (fileInputRef.current) fileInputRef.current.value = ""; };
 
     const formatDate = (d: string) => new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
     const formatCurrency = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
@@ -126,94 +177,89 @@ export default function TournamentsPage() {
                     <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Tournaments</h1>
                     <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Manage guild tournaments</p>
                 </div>
-                <button className={btnPrimary} onClick={() => setShowForm(true)}>+ New Tournament</button>
+                <button className={btnPrimary} onClick={() => setShowModal(true)}>+ New Tournament</button>
             </div>
 
-            {/* Form */}
-            {showForm && (
-                <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 mb-5">
-                    <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5">
-                        <span className="text-base font-semibold text-gray-900 dark:text-white">
-                            {editingId ? "Edit Tournament" : "Create New Tournament"}
-                        </span>
-                        <button className={btnOutline} onClick={resetForm}>Cancel</button>
-                    </div>
-                    <div className="p-4 md:p-5">
-                        <form onSubmit={handleSubmit}>
-                            {/* Image Upload */}
-                            <div className="mb-5">
-                                <label className={labelCls}>Tournament Banner / Poster</label>
-                                {imagePreview ? (
-                                    <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-black">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
-                                        <button type="button" onClick={removeImage} className="absolute top-2.5 right-2.5 px-3 py-1 rounded-lg bg-black/70 text-white text-xs hover:bg-red-600/80 transition-colors">
-                                            ✕ Remove
-                                        </button>
-                                    </div>
-                                ) : (
-                                    /* Use <label> with htmlFor to open file picker on ALL devices (mobile + desktop)
-                                       programmatic .click() on file inputs is blocked by some mobile browsers */
-                                    <label
-                                        htmlFor="tournament-image-input"
-                                        className={`block border-2 border-dashed rounded-xl p-6 md:p-10 text-center cursor-pointer transition-all ${dragging ? "border-ds-amber bg-ds-amber/5" : "border-gray-200 dark:border-white/10 hover:border-ds-amber hover:bg-ds-amber/5 dark:hover:border-ds-amber/50"} ${uploading ? "opacity-60 pointer-events-none" : ""}`}
-                                        onDrop={handleDrop}
-                                        onDragOver={handleDragOver}
-                                        onDragLeave={() => setDragging(false)}
-                                    >
-                                        <div className="text-3xl mb-2">{uploading ? "⏳" : "🖼️"}</div>
-                                        <div className="text-sm font-medium text-gray-600 dark:text-white/50 mb-1">
-                                            {uploading ? "Uploading..." : "Tap to select image or drag & drop"}
-                                        </div>
-                                        <div className="text-xs text-gray-400 dark:text-white/30">JPEG, PNG, WEBP, HEIC — max 10MB</div>
-                                    </label>
-                                )}
-                                {/* id must match label htmlFor above */}
-                                <input id="tournament-image-input" ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+            {/* Modal Form */}
+            <Modal
+                open={showModal}
+                onClose={resetForm}
+                title={editingId ? "Edit Tournament" : "Create New Tournament"}
+                size="xl"
+            >
+                <form onSubmit={handleSubmit}>
+                    {/* Image Upload */}
+                    <div className="mb-5">
+                        <label className={labelCls}>Tournament Banner / Poster</label>
+                        {imagePreview ? (
+                            <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-black">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover" />
+                                <button type="button" onClick={removeImage} className="absolute top-2.5 right-2.5 px-3 py-1 rounded-lg bg-black/70 text-white text-xs hover:bg-red-600/80 transition-colors">
+                                    ✕ Remove
+                                </button>
                             </div>
-
-                            {/* Fields */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label className={labelCls}>Title *</label>
-                                    <input type="text" className={inputCls} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required placeholder="Tournament title" />
+                        ) : (
+                            <label
+                                htmlFor="tournament-image-input"
+                                className={`block border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${dragging ? "border-ds-amber bg-ds-amber/5" : "border-gray-200 dark:border-white/10 hover:border-ds-amber hover:bg-ds-amber/5 dark:hover:border-ds-amber/50"} ${uploading ? "opacity-60 pointer-events-none" : ""}`}
+                                onDrop={handleDrop}
+                                onDragOver={handleDragOver}
+                                onDragLeave={() => setDragging(false)}
+                            >
+                                <div className="text-2xl mb-2">{uploading ? "⏳" : "🖼️"}</div>
+                                <div className="text-sm font-medium text-gray-600 dark:text-white/50 mb-1">
+                                    {uploading ? "Uploading..." : "Tap to select image or drag & drop"}
                                 </div>
-                                <div>
-                                    <label className={labelCls}>Game Type *</label>
-                                    <select className={inputCls} value={formData.gameType} onChange={(e) => setFormData({ ...formData, gameType: e.target.value })}>
-                                        <option value="Duel Links">Duel Links</option>
-                                        <option value="Master Duel">Master Duel</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Start Date *</label>
-                                    <input type="date" className={inputCls} value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} required />
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Prize Pool (IDR)</label>
-                                    <input type="number" className={inputCls} value={formData.prizePool} onChange={(e) => setFormData({ ...formData, prizePool: Number(e.target.value) })} placeholder="0" />
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Status</label>
-                                    <select className={inputCls} value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-                                        <option value="UPCOMING">Upcoming</option>
-                                        <option value="ONGOING">Ongoing</option>
-                                        <option value="COMPLETED">Completed</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Description</label>
-                                    <textarea className={inputCls} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={1} placeholder="Tournament description, rules, prizes..." />
-                                </div>
-                            </div>
-
-                            <button type="submit" className={btnPrimary} disabled={submitting || uploading}>
-                                {submitting ? "Saving..." : editingId ? "Update Tournament" : "Create Tournament"}
-                            </button>
-                        </form>
+                                <div className="text-xs text-gray-400 dark:text-white/30">JPEG, PNG, WEBP, HEIC — max 10MB</div>
+                            </label>
+                        )}
+                        <input id="tournament-image-input" ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                     </div>
-                </div>
-            )}
+
+                    {/* Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                        <div>
+                            <label className={labelCls}>Title *</label>
+                            <input type="text" className={inputCls} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required placeholder="Tournament title" />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Game Type *</label>
+                            <select className={inputCls} value={formData.gameType} onChange={(e) => setFormData({ ...formData, gameType: e.target.value })}>
+                                <option value="Duel Links">Duel Links</option>
+                                <option value="Master Duel">Master Duel</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelCls}>Start Date *</label>
+                            <input type="date" className={inputCls} value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} required />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Prize Pool (IDR)</label>
+                            <input type="number" className={inputCls} value={formData.prizePool || ""} onChange={(e) => setFormData({ ...formData, prizePool: Number(e.target.value) })} placeholder="0" />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Status</label>
+                            <select className={inputCls} value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                                <option value="UPCOMING">Upcoming</option>
+                                <option value="ONGOING">Ongoing</option>
+                                <option value="COMPLETED">Completed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelCls}>Description</label>
+                            <textarea className={inputCls} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={1} placeholder="Tournament description, rules, prizes..." />
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 justify-end">
+                        <button type="button" className={btnOutline} onClick={resetForm}>Cancel</button>
+                        <button type="submit" className={btnPrimary} disabled={submitting || uploading}>
+                            {submitting ? "Saving..." : editingId ? "Update Tournament" : "Create Tournament"}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
 
             {/* List */}
             <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
@@ -284,7 +330,7 @@ export default function TournamentsPage() {
                                             {/* Actions */}
                                             <div className="flex gap-2 flex-shrink-0">
                                                 <button className={btnOutline} onClick={() => handleEdit(t)}>Edit</button>
-                                                <button className={btnDanger} onClick={() => handleDelete(t.id)}>Delete</button>
+                                                <button className={btnDanger} onClick={() => handleDeleteClick(t.id, t.title)}>Delete</button>
                                             </div>
                                         </div>
                                     ))}
@@ -301,6 +347,23 @@ export default function TournamentsPage() {
                     })()}
                 </div>
             </div>
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                open={confirmState.open}
+                title="Delete Tournament"
+                message={`Delete "${confirmState.title}"? You'll have 5 seconds to undo.`}
+                confirmLabel="Delete"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setConfirmState({ open: false, id: "", title: "" })}
+            />
+
+            {/* Undo Snackbar */}
+            <UndoSnackbar
+                open={!!pendingDelete}
+                message={`"${pendingDelete?.title}" will be deleted`}
+                duration={UNDO_DURATION}
+                onUndo={handleUndo}
+            />
         </>
     );
 }
