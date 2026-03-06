@@ -51,6 +51,13 @@ enum TournamentStatus {
   CANCELLED
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
 // ─── Existing Models (unchanged) ─────────────────────────────────────────────
 
 model Member {
@@ -108,6 +115,20 @@ model User {
   fullName      String
   email         String     @unique @db.VarChar(191)
   password      String
+  emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret String?
+  lastActiveAt  DateTime   @default(now()) @updatedAt
+  privacySettings Json?
+  bio           String?    @db.VarChar(500)
+  timezone      String?    @default("Asia/Jakarta") @db.VarChar(50)
+  language      String?    @default("id") @db.VarChar(10)
+  discordId     String?    @unique @db.VarChar(191)
+  instagramHandle String?  @db.VarChar(191)
+  twitterHandle String?    @db.VarChar(191)
+  dateOfBirth   DateTime?
+  gender        Gender?
   phoneWhatsapp String?    @unique @db.VarChar(191)
   city          String?
   avatarUrl     String?
@@ -122,6 +143,81 @@ model User {
   registrationLog RegistrationLog?
   auditLogs       AuditLog[]
   tournaments     TournamentParticipant[]
+  emailVerificationToken EmailVerificationToken?
+  passwordResetToken PasswordResetToken?
+  sessions        Session[]
+  badges          UserBadge[]
+  reputationLogs  ReputationLog[]
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  iconUrl     String?
+  criteria    Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  earnedAt  DateTime @default(now())
+  context   String?
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model ReputationLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  points      Int
+  reason      String
+  sourceType  String?
+  sourceId    String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique @db.VarChar(191)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique @db.VarChar(191)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String   @unique @db.VarChar(191)
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
 }
 
 model GameProfile {

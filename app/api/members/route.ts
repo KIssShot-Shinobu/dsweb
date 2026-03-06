@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { logAudit } from "@/lib/audit-logger";
+import { getTokenFromCookie, hasRole, ROLES, verifyToken } from "@/lib/auth";
 
 // GET /api/members - Get all members
 export async function GET() {
@@ -25,6 +27,11 @@ export async function GET() {
 // POST /api/members - Create a new member
 export async function POST(request: NextRequest) {
     try {
+        const token = await getTokenFromCookie();
+        const decoded = token ? await verifyToken(token) : null;
+        if (!decoded || !hasRole(decoded.role, ROLES.OFFICER)) {
+            return NextResponse.json({ error: "Akses Ditolak" }, { status: 403 });
+        }
         const body = await request.json();
         const { name, gameId, rank, role } = body;
 
@@ -42,6 +49,14 @@ export async function POST(request: NextRequest) {
                 rank,
                 role: role || "MEMBER",
             },
+        });
+
+        await logAudit({
+            userId: decoded?.userId || "0",
+            action: "MEMBER_CREATED",
+            targetId: member.id,
+            targetType: "Member",
+            details: { name: member.name, gameId: member.gameId, role: member.role }
         });
 
         return NextResponse.json(member, { status: 201 });

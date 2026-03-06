@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
+import { FormSelect } from "@/components/dashboard/form-select";
+import { ConfirmModal } from "@/components/dashboard/confirm-modal";
+import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
+import { btnDanger, btnOutline, btnPrimary, inputCls } from "@/components/dashboard/form-styles";
+import { RowActions } from "@/components/dashboard/row-actions";
 
 interface Tournament {
     id: string;
@@ -18,7 +23,24 @@ interface Tournament {
     _count?: { participants: number };
 }
 
-const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all text-gray-900 dark:text-white";
+const UNDO_DURATION = 5000;
+const selectOptions = {
+    gameType: [
+        { value: "DUEL_LINKS", label: "Duel Links" },
+        { value: "MASTER_DUEL", label: "Master Duel" },
+    ],
+    format: [
+        { value: "BO1", label: "Best of 1" },
+        { value: "BO3", label: "Best of 3" },
+        { value: "BO5", label: "Best of 5" },
+    ],
+    status: [
+        { value: "OPEN", label: "OPEN" },
+        { value: "ONGOING", label: "ONGOING" },
+        { value: "COMPLETED", label: "COMPLETED" },
+        { value: "CANCELLED", label: "CANCELLED" },
+    ],
+};
 
 export default function AdminTournamentsPage() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -26,10 +48,12 @@ export default function AdminTournamentsPage() {
     const [showModal, setShowModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingTournamentId, setEditingTournamentId] = useState<string | null>(null);
-    const [deletingTournamentId, setDeletingTournamentId] = useState<string | null>(null);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const { success, error } = useToast();
+    const [confirmState, setConfirmState] = useState<{ open: boolean; id: string; title: string }>({ open: false, id: "", title: "" });
+    const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string; item: Tournament } | null>(null);
+    const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -72,6 +96,7 @@ export default function AdminTournamentsPage() {
     };
 
     useEffect(() => { fetchTournaments(); }, []);
+    useEffect(() => () => { if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current); }, []);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -168,11 +193,8 @@ export default function AdminTournamentsPage() {
         }
     };
 
-    const handleDelete = async (id: string, title: string) => {
-        const confirmed = window.confirm(`Hapus turnamen "${title}"?`);
-        if (!confirmed) return;
-
-        setDeletingTournamentId(id);
+    const executePermanentDelete = async (id: string) => {
+        setPendingDelete(null);
         try {
             const res = await fetch(`/api/tournaments/${id}`, {
                 method: "DELETE"
@@ -180,16 +202,50 @@ export default function AdminTournamentsPage() {
             const data = await res.json();
 
             if (res.ok) {
-                success("Turnamen berhasil dihapus");
-                fetchTournaments();
+                fetchTournaments(); // sync with server
             } else {
                 error(data.message || "Gagal menghapus turnamen");
+                fetchTournaments();
             }
         } catch {
             error("Kesalahan jaringan");
-        } finally {
-            setDeletingTournamentId(null);
+            fetchTournaments();
         }
+    };
+
+    const handleDeleteClick = (id: string, title: string) => {
+        if (pendingDelete && deleteTimerRef.current) {
+            clearTimeout(deleteTimerRef.current);
+            executePermanentDelete(pendingDelete.id);
+        }
+        setConfirmState({ open: true, id, title });
+    };
+
+    const handleConfirmDelete = () => {
+        const { id, title } = confirmState;
+        const item = tournaments.find((t) => t.id === id);
+        if (!item) return;
+
+        setConfirmState({ open: false, id: "", title: "" });
+        setTournaments((prev) => prev.filter((t) => t.id !== id));
+        setPendingDelete({ id, title, item });
+
+        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+        deleteTimerRef.current = setTimeout(() => executePermanentDelete(id), UNDO_DURATION);
+    };
+
+    const handleUndo = () => {
+        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+        if (pendingDelete) {
+            setTournaments((prev) => {
+                const restored = [pendingDelete.item, ...prev];
+                return restored.sort(
+                    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+                );
+            });
+            success(`"${pendingDelete.title}" dipulihkan.`);
+        }
+        setPendingDelete(null);
     };
 
     const handleUploadImage = async (file: File) => {
@@ -224,7 +280,7 @@ export default function AdminTournamentsPage() {
                     <h1 className="text-2xl font-bold dark:text-white">Admin Tournaments</h1>
                     <p className="text-sm text-gray-400">Atur turnamen, peserta dan hadiah guild</p>
                 </div>
-                <button onClick={() => setShowModal(true)} className="px-4 py-2 bg-ds-amber text-black font-bold text-sm rounded-xl hover:bg-ds-gold transition">
+                <button onClick={() => setShowModal(true)} className={btnPrimary}>
                     + Buat Turnamen
                 </button>
             </div>
@@ -243,8 +299,20 @@ export default function AdminTournamentsPage() {
                         {tournaments.map(t => (
                             <tr key={t.id} className="border-b last:border-0 border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02]">
                                 <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
-                                    {t.title}
-                                    <div className="text-xs font-normal text-gray-400">Peserta: {t._count?.participants || 0}</div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-white/5 flex-shrink-0">
+                                            {t.image ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img src={t.image} alt={t.title} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No Img</div>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="truncate">{t.title}</div>
+                                            <div className="text-xs font-normal text-gray-400">Peserta: {t._count?.participants || 0}</div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className="font-medium text-gray-700 dark:text-white/80">{t.gameType}</span>
@@ -259,28 +327,19 @@ export default function AdminTournamentsPage() {
                                     <div className="text-xs text-gray-400">{new Date(t.startDate).toLocaleDateString()}</div>
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    <div className="inline-flex items-center gap-2">
-                                        <button
-                                            onClick={() => openEditModal(t)}
-                                            className="text-xs font-medium px-3 py-1.5 border border-blue-300/60 text-blue-600 hover:bg-blue-50 dark:border-blue-500/30 dark:text-blue-400 dark:hover:bg-blue-500/10 rounded-lg transition"
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(t.id, t.title)}
-                                            disabled={deletingTournamentId === t.id}
-                                            className="text-xs font-medium px-3 py-1.5 border border-red-300/60 text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10 rounded-lg disabled:opacity-50 transition"
-                                        >
-                                            {deletingTournamentId === t.id ? "Deleting..." : "Delete"}
-                                        </button>
-                                        <button
-                                            onClick={() => updateStatus(t.id, t.status)}
-                                            disabled={t.status === "COMPLETED"}
-                                            className="text-xs font-medium px-3 py-1.5 border border-white/10 hover:bg-white/5 rounded-lg disabled:opacity-30 transition"
-                                        >
-                                            Update Status &#8594;
-                                        </button>
-                                    </div>
+                                    <RowActions
+                                        onEdit={() => openEditModal(t)}
+                                        onDelete={() => handleDeleteClick(t.id, t.title)}
+                                        extra={(
+                                            <button
+                                                onClick={() => updateStatus(t.id, t.status)}
+                                                disabled={t.status === "COMPLETED"}
+                                                className={`${btnOutline} disabled:opacity-30`}
+                                            >
+                                                Update Status &#8594;
+                                            </button>
+                                        )}
+                                    />
                                 </td>
                             </tr>
                         ))}
@@ -294,18 +353,19 @@ export default function AdminTournamentsPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-xs mb-1 block">Game</label>
-                            <select className={inputCls} value={formData.gameType} onChange={e => setFormData({ ...formData, gameType: e.target.value })}>
-                                <option value="DUEL_LINKS">Duel Links</option>
-                                <option value="MASTER_DUEL">Master Duel</option>
-                            </select>
+                            <FormSelect
+                                value={formData.gameType}
+                                onChange={(value) => setFormData({ ...formData, gameType: value })}
+                                options={selectOptions.gameType}
+                            />
                         </div>
                         <div>
                             <label className="text-xs mb-1 block">Format</label>
-                            <select className={inputCls} value={formData.format} onChange={e => setFormData({ ...formData, format: e.target.value })}>
-                                <option value="BO1">Best of 1</option>
-                                <option value="BO3">Best of 3</option>
-                                <option value="BO5">Best of 5</option>
-                            </select>
+                            <FormSelect
+                                value={formData.format}
+                                onChange={(value) => setFormData({ ...formData, format: value })}
+                                options={selectOptions.format}
+                            />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -319,10 +379,11 @@ export default function AdminTournamentsPage() {
                             accept="image/png,image/jpeg,image/jpg,image/webp"
                             className={`${inputCls} file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-ds-amber/20 file:text-ds-amber file:font-semibold`}
                             onChange={async (e) => {
+                                const inputEl = e.currentTarget;
                                 const file = e.target.files?.[0];
                                 if (!file) return;
                                 await handleUploadImage(file);
-                                e.currentTarget.value = "";
+                                inputEl.value = "";
                             }}
                             disabled={uploadingImage}
                         />
@@ -352,7 +413,7 @@ export default function AdminTournamentsPage() {
                         </div>
                     )}
                     <div><label className="text-xs mb-1 block">Tanggal & Waktu Mulai</label><input type="datetime-local" className={inputCls} required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} /></div>
-                    <button type="submit" disabled={submitting} className="w-full bg-ds-amber text-black font-bold py-3 text-sm rounded-xl">{submitting ? "Menyimpan..." : "Publish Turnamen"}</button>
+                    <button type="submit" disabled={submitting} className="w-full bg-ds-amber text-black font-bold py-3 text-sm rounded-xl">{submitting ? "Menyimpan..." : "Buat Turnamen"}</button>
                 </form>
             </Modal>
 
@@ -363,27 +424,27 @@ export default function AdminTournamentsPage() {
                     <div className="grid grid-cols-3 gap-4">
                         <div>
                             <label className="text-xs mb-1 block">Game</label>
-                            <select className={inputCls} value={formData.gameType} onChange={e => setFormData({ ...formData, gameType: e.target.value })}>
-                                <option value="DUEL_LINKS">Duel Links</option>
-                                <option value="MASTER_DUEL">Master Duel</option>
-                            </select>
+                            <FormSelect
+                                value={formData.gameType}
+                                onChange={(value) => setFormData({ ...formData, gameType: value })}
+                                options={selectOptions.gameType}
+                            />
                         </div>
                         <div>
                             <label className="text-xs mb-1 block">Format</label>
-                            <select className={inputCls} value={formData.format} onChange={e => setFormData({ ...formData, format: e.target.value })}>
-                                <option value="BO1">Best of 1</option>
-                                <option value="BO3">Best of 3</option>
-                                <option value="BO5">Best of 5</option>
-                            </select>
+                            <FormSelect
+                                value={formData.format}
+                                onChange={(value) => setFormData({ ...formData, format: value })}
+                                options={selectOptions.format}
+                            />
                         </div>
                         <div>
                             <label className="text-xs mb-1 block">Status</label>
-                            <select className={inputCls} value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })}>
-                                <option value="OPEN">OPEN</option>
-                                <option value="ONGOING">ONGOING</option>
-                                <option value="COMPLETED">COMPLETED</option>
-                                <option value="CANCELLED">CANCELLED</option>
-                            </select>
+                            <FormSelect
+                                value={formData.status}
+                                onChange={(value) => setFormData({ ...formData, status: value })}
+                                options={selectOptions.status}
+                            />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -397,10 +458,11 @@ export default function AdminTournamentsPage() {
                             accept="image/png,image/jpeg,image/jpg,image/webp"
                             className={`${inputCls} file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-ds-amber/20 file:text-ds-amber file:font-semibold`}
                             onChange={async (e) => {
+                                const inputEl = e.currentTarget;
                                 const file = e.target.files?.[0];
                                 if (!file) return;
                                 await handleUploadImage(file);
-                                e.currentTarget.value = "";
+                                inputEl.value = "";
                             }}
                             disabled={uploadingImage}
                         />
@@ -433,6 +495,22 @@ export default function AdminTournamentsPage() {
                     <button type="submit" disabled={submitting} className="w-full bg-ds-amber text-black font-bold py-3 text-sm rounded-xl">{submitting ? "Menyimpan..." : "Simpan Perubahan"}</button>
                 </form>
             </Modal>
+
+            <ConfirmModal
+                open={confirmState.open}
+                title="Hapus Turnamen"
+                message={`Hapus turnamen "${confirmState.title}"? Anda punya 5 detik untuk undo.`}
+                confirmLabel="Hapus"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setConfirmState({ open: false, id: "", title: "" })}
+            />
+
+            <UndoSnackbar
+                open={!!pendingDelete}
+                message={`"${pendingDelete?.title}" akan dihapus`}
+                duration={UNDO_DURATION}
+                onUndo={handleUndo}
+            />
         </>
     );
 }

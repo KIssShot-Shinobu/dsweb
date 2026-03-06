@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { GameType, GuildStatus } from "@prisma/client";
 import { registerSchema } from "@/lib/validators";
-import { hashPassword } from "@/lib/auth";
+import { generateSecureToken, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
+import { sendEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
     try {
@@ -101,10 +102,50 @@ export async function POST(req: NextRequest) {
             },
         });
 
+        const verifyToken = generateSecureToken(48);
+        const verifyExpiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24 hours
+
+        try {
+            await prisma.emailVerificationToken.upsert({
+                where: { userId: user.id },
+                update: {
+                    token: verifyToken,
+                    expiresAt: verifyExpiresAt,
+                },
+                create: {
+                    userId: user.id,
+                    token: verifyToken,
+                    expiresAt: verifyExpiresAt,
+                },
+            });
+        } catch (verifyTokenError) {
+            // Graceful fallback while DB migration is being applied.
+            console.error("[Register API][EmailVerificationToken]", verifyTokenError);
+        }
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`;
+        try {
+            await sendEmail({
+                to: user.email,
+                subject: "Verifikasi Email DuelStandby",
+                text: `Halo ${user.fullName},\n\nVerifikasi email akun Anda di link berikut:\n${verifyUrl}\n\nJika Anda tidak merasa mendaftar, abaikan email ini.`,
+                debugTag: "Auth][VerifyEmail",
+            });
+        } catch (emailError) {
+            // Do not fail registration if email transport is unavailable.
+            console.error("[Register API][Email]", emailError);
+        }
+
         await logAudit({ action: "USER_REGISTERED", userId: user.id });
 
         return NextResponse.json(
-            { success: true, message: "Registrasi berhasil! Akun Anda sudah aktif dan bisa langsung login.", userId: user.id },
+            {
+                success: true,
+                message: "Registrasi berhasil! Akun Anda sudah aktif dan bisa langsung login.",
+                userId: user.id,
+                ...(process.env.NODE_ENV !== "production" ? { debugVerifyUrl: verifyUrl } : {}),
+            },
             { status: 201 }
         );
     } catch (error) {

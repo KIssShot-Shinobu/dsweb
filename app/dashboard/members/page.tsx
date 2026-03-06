@@ -6,6 +6,9 @@ import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
 import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
+import { FormSelect } from "@/components/dashboard/form-select";
+import { btnDanger, btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import { RowActions } from "@/components/dashboard/row-actions";
 
 interface Member {
     id: string;
@@ -19,11 +22,11 @@ interface Member {
 const PER_PAGE = 10;
 const UNDO_DURATION = 5000;
 
-const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all";
-const labelCls = "block text-xs font-semibold text-gray-600 dark:text-white/50 uppercase tracking-wider mb-1.5";
-const btnPrimary = "px-4 py-2 rounded-xl bg-ds-amber hover:bg-ds-gold text-black font-semibold text-sm transition-all disabled:opacity-50";
-const btnOutline = "px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-600 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/5 transition-all";
-const btnDanger = "px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all";
+const roleOptions = [
+    { value: "MEMBER", label: "Member" },
+    { value: "OFFICER", label: "Officer" },
+    { value: "LEADER", label: "Leader" },
+];
 
 const getRoleBadge = (role: string) => {
     switch (role.toUpperCase()) {
@@ -71,12 +74,12 @@ export default function MembersPage() {
             if (res.ok) {
                 fetchMembers();
                 resetForm();
-                success(editingId ? "Member updated successfully." : "New member added.");
+                success(editingId ? "Member berhasil diperbarui." : "Member baru berhasil ditambahkan.");
             } else {
-                error("Failed to save. Please try again.");
+                error("Gagal menyimpan data member.");
             }
         } catch {
-            error("Network error. Please check your connection.");
+            error("Kesalahan jaringan. Coba lagi.");
         } finally {
             setSubmitting(false);
         }
@@ -101,8 +104,8 @@ export default function MembersPage() {
         setPendingDelete(null);
         try {
             const res = await fetch(`/api/members/${id}`, { method: "DELETE" });
-            if (!res.ok) { fetchMembers(); error("Failed to delete member."); }
-        } catch { fetchMembers(); error("Network error. Member restored."); }
+            if (!res.ok) { fetchMembers(); error("Gagal menghapus member."); }
+        } catch { fetchMembers(); error("Kesalahan jaringan. Member dipulihkan."); }
     };
 
     const handleConfirmDelete = () => {
@@ -128,7 +131,7 @@ export default function MembersPage() {
                 const restored = [pendingDelete.item, ...prev];
                 return restored.sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime());
             });
-            success(`"${pendingDelete.name}" restored.`);
+            success(`"${pendingDelete.name}" dipulihkan.`);
         }
         setPendingDelete(null);
     };
@@ -154,20 +157,20 @@ export default function MembersPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Members</h1>
-                    <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Manage guild members</p>
+                    <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Kelola member guild</p>
                 </div>
-                <button className={btnPrimary} onClick={() => setShowModal(true)}>+ Add Member</button>
+                <button className={btnPrimary} onClick={() => setShowModal(true)}>+ Tambah Member</button>
             </div>
 
             {/* List */}
             <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 border-b border-gray-100 dark:border-white/5 gap-3">
                     <span className="text-base font-semibold text-gray-900 dark:text-white">
-                        All Members ({filtered.length})
+                        Daftar Member ({filtered.length})
                     </span>
                     <input
                         type="text"
-                        placeholder="Search name or ID..."
+                        placeholder="Cari nama atau ID..."
                         value={search}
                         onChange={(e) => handleSearch(e.target.value)}
                         className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm text-gray-700 dark:text-white/70 placeholder:text-gray-400 dark:placeholder:text-white/30 outline-none focus:border-ds-amber w-full sm:w-52 transition-all"
@@ -181,8 +184,8 @@ export default function MembersPage() {
                     ) : filtered.length === 0 ? (
                         <div className="text-center py-12">
                             <div className="text-4xl mb-3">👥</div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{search ? "No results found" : "No members yet"}</div>
-                            <p className="text-xs text-gray-400">{search ? "Try a different search term" : "Add your first guild member"}</p>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{search ? "Tidak ada hasil" : "Belum ada member"}</div>
+                            <p className="text-xs text-gray-400">{search ? "Coba kata kunci lain" : "Tambahkan member pertama guild"}</p>
                         </div>
                     ) : (
                         <>
@@ -201,10 +204,11 @@ export default function MembersPage() {
                                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border hidden sm:inline-flex ${getRoleBadge(member.role)}`}>
                                             {member.role}
                                         </span>
-                                        <div className="flex gap-1.5 flex-shrink-0">
-                                            <button className={btnOutline} onClick={() => handleEdit(member)}>Edit</button>
-                                            <button className={btnDanger} onClick={() => handleDeleteClick(member.id, member.name)}>Del</button>
-                                        </div>
+                                        <RowActions
+                                            className="flex-shrink-0"
+                                            onEdit={() => handleEdit(member)}
+                                            onDelete={() => handleDeleteClick(member.id, member.name)}
+                                        />
                                     </div>
                                 ))}
                             </div>
@@ -215,12 +219,12 @@ export default function MembersPage() {
             </div>
 
             {/* Form Modal */}
-            <Modal open={showModal} onClose={resetForm} title={editingId ? "Edit Member" : "Add New Member"}>
+            <Modal open={showModal} onClose={resetForm} title={editingId ? "Edit Member" : "Tambah Member Baru"}>
                 <form onSubmit={handleSubmit}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                         <div>
-                            <label className={labelCls}>Name *</label>
-                            <input type="text" className={inputCls} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="Member name" />
+                            <label className={labelCls}>Nama *</label>
+                            <input type="text" className={inputCls} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="Nama member" />
                         </div>
                         <div>
                             <label className={labelCls}>Game ID *</label>
@@ -228,21 +232,21 @@ export default function MembersPage() {
                         </div>
                         <div>
                             <label className={labelCls}>Rank</label>
-                            <input type="text" className={inputCls} value={formData.rank} onChange={(e) => setFormData({ ...formData, rank: e.target.value })} placeholder="e.g., Legend, King of Games" />
+                            <input type="text" className={inputCls} value={formData.rank} onChange={(e) => setFormData({ ...formData, rank: e.target.value })} placeholder="Contoh: Legend, King of Games" />
                         </div>
                         <div>
                             <label className={labelCls}>Role</label>
-                            <select className={inputCls} value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
-                                <option value="MEMBER">Member</option>
-                                <option value="OFFICER">Officer</option>
-                                <option value="LEADER">Leader</option>
-                            </select>
+                            <FormSelect
+                                value={formData.role}
+                                onChange={(value) => setFormData({ ...formData, role: value })}
+                                options={roleOptions}
+                            />
                         </div>
                     </div>
                     <div className="flex gap-3 justify-end">
-                        <button type="button" className={btnOutline} onClick={resetForm}>Cancel</button>
+                        <button type="button" className={btnOutline} onClick={resetForm}>Batal</button>
                         <button type="submit" className={btnPrimary} disabled={submitting}>
-                            {submitting ? "Saving..." : editingId ? "Update Member" : "Add Member"}
+                            {submitting ? "Menyimpan..." : editingId ? "Update Member" : "Tambah Member"}
                         </button>
                     </div>
                 </form>
@@ -251,9 +255,9 @@ export default function MembersPage() {
             {/* Delete Confirmation Modal */}
             <ConfirmModal
                 open={confirmState.open}
-                title="Delete Member"
-                message={`Are you sure you want to delete "${confirmState.name}"? You'll have 5 seconds to undo.`}
-                confirmLabel="Delete"
+                title="Hapus Member"
+                message={`Hapus "${confirmState.name}"? Anda punya 5 detik untuk undo.`}
+                confirmLabel="Hapus"
                 onConfirm={handleConfirmDelete}
                 onCancel={() => setConfirmState({ open: false, id: "", name: "" })}
             />
@@ -261,7 +265,7 @@ export default function MembersPage() {
             {/* Undo Snackbar */}
             <UndoSnackbar
                 open={!!pendingDelete}
-                message={`"${pendingDelete?.name}" will be deleted`}
+                message={`"${pendingDelete?.name}" akan dihapus`}
                 duration={UNDO_DURATION}
                 onUndo={handleUndo}
             />

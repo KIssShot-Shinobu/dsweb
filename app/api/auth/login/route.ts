@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators";
-import { comparePassword, signToken, setAuthCookie } from "@/lib/auth";
+import { clearRefreshCookie, comparePassword, createSession, setAuthCookie, setRefreshCookie, signToken } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 
 export async function POST(req: NextRequest) {
@@ -71,9 +71,21 @@ export async function POST(req: NextRequest) {
             data: { lastLoginAt: new Date() },
         });
 
-        // Sign JWT + set cookie
-        const token = await signToken({ userId: user.id, email: user.email, role: user.role, status: user.status });
-        await setAuthCookie(token);
+        // Issue short-lived access token + refresh session token
+        const accessToken = await signToken({ userId: user.id, email: user.email, role: user.role, status: user.status });
+        await setAuthCookie(accessToken);
+        try {
+            const session = await createSession({
+                userId: user.id,
+                ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "127.0.0.1",
+                userAgent: req.headers.get("user-agent") || "unknown",
+            });
+            await setRefreshCookie(session.refreshToken);
+        } catch (sessionError) {
+            // Graceful fallback while DB migration is being applied.
+            console.error("[Login API][Session]", sessionError);
+            await clearRefreshCookie();
+        }
 
         await logAudit({ action: "LOGIN_SUCCESS", userId: user.id });
 

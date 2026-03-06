@@ -33,6 +33,10 @@ export default async function ProfilePage() {
 
     const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
     const formatDate = (d: Date) => new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    const emailVerificationLabel = user.emailVerified ? "Terverifikasi" : "Belum Verifikasi";
+    const emailVerificationClass = user.emailVerified
+        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+        : "bg-amber-500/10 text-amber-400 border-amber-500/20";
 
     return (
         <>
@@ -50,6 +54,9 @@ export default async function ProfilePage() {
                         </div>
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{user.fullName}</h2>
                         <p className="text-sm text-gray-400 dark:text-white/40 mb-4">{user.email}</p>
+                        <span className={`inline-flex text-[11px] font-semibold tracking-wide px-2.5 py-1 rounded-full border mb-4 ${emailVerificationClass}`}>
+                            Email: {emailVerificationLabel}
+                        </span>
                         <div className="flex flex-wrap gap-2 justify-center">
                             <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${roleColors[user.role] || roleColors.USER}`}>
                                 {user.role}
@@ -69,6 +76,7 @@ export default async function ProfilePage() {
                             {[
                                 { label: "Nama Lengkap", value: user.fullName },
                                 { label: "Email", value: user.email },
+                                { label: "Verifikasi Email", value: emailVerificationLabel },
                                 { label: "WhatsApp", value: user.phoneWhatsapp || "-" },
                                 { label: "Kota", value: user.city || "-" },
                                 { label: "Terdaftar Sejak", value: formatDate(user.createdAt) },

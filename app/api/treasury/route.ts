@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getTokenFromCookie, verifyToken } from "@/lib/auth";
 
 // GET /api/treasury - Get all transactions
 export async function GET(request: NextRequest) {
@@ -57,15 +58,15 @@ export async function GET(request: NextRequest) {
 }
 
 import { treasurySchema } from "@/lib/validators";
-import { headers } from "next/headers";
 import { logAudit } from "@/lib/audit-logger";
 
 // POST /api/treasury - Create a new transaction
 export async function POST(request: NextRequest) {
     try {
-        const headersList = await headers();
-        const userRole = headersList.get("x-user-role");
-        const userId = headersList.get("x-user-id");
+        const token = await getTokenFromCookie();
+        const decoded = token ? await verifyToken(token) : null;
+        const userRole = decoded?.role;
+        const userId = decoded?.userId;
 
         if (!userRole || !["ADMIN", "FOUNDER"].includes(userRole)) {
             return NextResponse.json({ success: false, message: "Akses Ditolak" }, { status: 403 });

@@ -6,6 +6,9 @@ import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
 import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
+import { FormSelect } from "@/components/dashboard/form-select";
+import { btnDanger, btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import { RowActions } from "@/components/dashboard/row-actions";
 
 interface Transaction {
     id: string;
@@ -19,18 +22,17 @@ interface Transaction {
 const PER_PAGE = 10;
 const UNDO_DURATION = 5000;
 
-const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all";
-const labelCls = "block text-xs font-semibold text-gray-600 dark:text-white/50 uppercase tracking-wider mb-1.5";
-const btnPrimary = "px-4 py-2 rounded-xl bg-ds-amber hover:bg-ds-gold text-black font-semibold text-sm transition-all disabled:opacity-50";
-const btnOutline = "px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-600 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/5 transition-all";
-const btnDanger = "px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all";
+const transactionTypeOptions = [
+    { value: "MASUK", label: "Pemasukan (Income)" },
+    { value: "KELUAR", label: "Pengeluaran (Expense)" },
+];
 
 export default function TreasuryPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [balance, setBalance] = useState(0);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({ amount: 0, description: "", type: "income" });
+    const [formData, setFormData] = useState({ amount: 0, description: "", type: "MASUK" });
     const [editingId, setEditingId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [page, setPage] = useState(1);
@@ -74,11 +76,11 @@ export default function TreasuryPage() {
             if (res.ok) {
                 fetchTreasury();
                 resetForm();
-                success(editingId ? "Transaction updated." : "Transaction added successfully.");
+                success(editingId ? "Transaksi berhasil diperbarui." : "Transaksi berhasil ditambahkan.");
             } else {
-                error("Failed to save transaction.");
+                error("Gagal menyimpan transaksi.");
             }
-        } catch { error("Network error. Please try again."); }
+        } catch { error("Kesalahan jaringan. Coba lagi."); }
         finally { setSubmitting(false); }
     };
 
@@ -103,8 +105,8 @@ export default function TreasuryPage() {
             if (res.ok) {
                 // Recalculate balance locally without refetch
                 fetchTreasury();
-            } else { fetchTreasury(); error("Failed to delete transaction."); }
-        } catch { fetchTreasury(); error("Network error. Transaction restored."); }
+            } else { fetchTreasury(); error("Gagal menghapus transaksi."); }
+        } catch { fetchTreasury(); error("Kesalahan jaringan. Transaksi dipulihkan."); }
     };
 
     const handleConfirmDelete = () => {
@@ -129,13 +131,13 @@ export default function TreasuryPage() {
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             ));
             setBalance((prev) => prev + pendingDelete.item.amount);
-            success(`"${pendingDelete.label}" restored.`);
+            success(`"${pendingDelete.label}" dipulihkan.`);
         }
         setPendingDelete(null);
     };
 
     const resetForm = () => {
-        setFormData({ amount: 0, description: "", type: "income" });
+        setFormData({ amount: 0, description: "", type: "MASUK" });
         setEditingId(null);
         setShowModal(false);
     };
@@ -161,6 +163,19 @@ export default function TreasuryPage() {
     const filterBtn = (f: typeof filter) =>
         `px-3 py-1 rounded-lg text-xs font-medium transition-all ${filter === f ? "bg-ds-amber text-black" : "text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/5"}`;
 
+    const monthOptions = Array.from({ length: 12 }, (_, i) => {
+        const m = i + 1;
+        return {
+            value: String(m),
+            label: new Date(2000, m - 1).toLocaleString("id-ID", { month: "short" }),
+        };
+    });
+
+    const yearOptions = [currentYear - 1, currentYear, currentYear + 1].map((y) => ({
+        value: String(y),
+        label: String(y),
+    }));
+
     return (
         <>
             {/* Page Header */}
@@ -171,26 +186,22 @@ export default function TreasuryPage() {
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="flex bg-white dark:bg-[#161616] border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden p-1">
-                        <select
-                            value={month}
-                            onChange={(e) => setMonth(Number(e.target.value))}
-                            className="bg-transparent text-sm text-gray-900 dark:text-white px-2 py-1.5 outline-none appearance-none font-medium cursor-pointer [&>option]:text-gray-900 [&>option]:bg-white dark:[&>option]:text-white dark:[&>option]:bg-[#161616]"
-                        >
-                            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                                <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('id-ID', { month: 'short' })}</option>
-                            ))}
-                        </select>
-                        <select
-                            value={year}
-                            onChange={(e) => setYear(Number(e.target.value))}
-                            className="bg-transparent text-sm text-gray-900 dark:text-white px-2 py-1.5 outline-none font-medium appearance-none border-l border-gray-200 dark:border-white/10 cursor-pointer [&>option]:text-gray-900 [&>option]:bg-white dark:[&>option]:text-white dark:[&>option]:bg-[#161616]"
-                        >
-                            {[currentYear - 1, currentYear, currentYear + 1].map(y => (
-                                <option key={y} value={y}>{y}</option>
-                            ))}
-                        </select>
+                        <div className="w-24">
+                            <FormSelect
+                                value={String(month)}
+                                onChange={(value) => setMonth(Number(value))}
+                                options={monthOptions}
+                            />
+                        </div>
+                        <div className="w-24 border-l border-gray-200 dark:border-white/10 pl-1 ml-1">
+                            <FormSelect
+                                value={String(year)}
+                                onChange={(value) => setYear(Number(value))}
+                                options={yearOptions}
+                            />
+                        </div>
                     </div>
-                    <button className={btnPrimary} onClick={() => setShowModal(true)}>+ Add Transaction</button>
+                    <button className={btnPrimary} onClick={() => setShowModal(true)}>+ Tambah Transaksi</button>
                 </div>
             </div>
 
@@ -220,12 +231,12 @@ export default function TreasuryPage() {
             <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 border-b border-gray-100 dark:border-white/5 gap-3">
                     <span className="text-base font-semibold text-gray-900 dark:text-white">
-                        All Transactions ({filtered.length})
+                        Daftar Transaksi ({filtered.length})
                     </span>
                     <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 rounded-xl p-1 overflow-x-auto">
-                        <button className={filterBtn("all")} onClick={() => handleFilter("all")}>All</button>
-                        <button className={filterBtn("income")} onClick={() => handleFilter("income")}>↑ Income</button>
-                        <button className={filterBtn("expense")} onClick={() => handleFilter("expense")}>↓ Expense</button>
+                        <button className={filterBtn("all")} onClick={() => handleFilter("all")}>Semua</button>
+                        <button className={filterBtn("income")} onClick={() => handleFilter("income")}>↑ Pemasukan</button>
+                        <button className={filterBtn("expense")} onClick={() => handleFilter("expense")}>↓ Pengeluaran</button>
                     </div>
                 </div>
                 <div className="p-4 md:p-5">
@@ -236,8 +247,8 @@ export default function TreasuryPage() {
                     ) : filtered.length === 0 ? (
                         <div className="text-center py-12">
                             <div className="text-4xl mb-3">💰</div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">No transactions</div>
-                            <p className="text-xs text-gray-400">No {filter !== "all" ? filter : ""} transactions found</p>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Belum ada transaksi</div>
+                            <p className="text-xs text-gray-400">Tidak ada data transaksi {filter !== "all" ? filter : ""}</p>
                         </div>
                     ) : (
                         <>
@@ -256,10 +267,11 @@ export default function TreasuryPage() {
                                         <div className={`text-sm font-bold flex-shrink-0 ${tx.amount >= 0 ? "text-emerald-500" : "text-red-500"}`}>
                                             {tx.amount >= 0 ? "+" : ""}{formatCurrency(tx.amount)}
                                         </div>
-                                        <div className="flex gap-1.5 flex-shrink-0">
-                                            <button className={btnOutline} onClick={() => handleEdit(tx)}>Edit</button>
-                                            <button className={btnDanger} onClick={() => handleDeleteClick(tx.id, tx.description)}>Del</button>
-                                        </div>
+                                        <RowActions
+                                            className="flex-shrink-0"
+                                            onEdit={() => handleEdit(tx)}
+                                            onDelete={() => handleDeleteClick(tx.id, tx.description)}
+                                        />
                                     </div>
                                 ))}
                             </div>
@@ -270,29 +282,30 @@ export default function TreasuryPage() {
             </div>
 
             {/* Form Modal */}
-            <Modal open={showModal} onClose={resetForm} title={editingId ? "Edit Transaction" : "Add New Transaction"}>
+            <Modal open={showModal} onClose={resetForm} title={editingId ? "Edit Transaksi" : "Tambah Transaksi Baru"}>
                 <form onSubmit={handleSubmit}>
                     <div className="grid grid-cols-1 gap-4 mb-5">
                         <div>
                             <label className={labelCls}>Type</label>
-                            <select className={inputCls} value={formData.type.toUpperCase()} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
-                                <option value="MASUK">Pemasukan (Income)</option>
-                                <option value="KELUAR">Pengeluaran (Expense)</option>
-                            </select>
+                            <FormSelect
+                                value={formData.type}
+                                onChange={(value) => setFormData({ ...formData, type: value })}
+                                options={transactionTypeOptions}
+                            />
                         </div>
                         <div>
-                            <label className={labelCls}>Amount (IDR) *</label>
+                            <label className={labelCls}>Nominal (IDR) *</label>
                             <input type="number" className={inputCls} value={formData.amount || ""} onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })} required min="1" placeholder="10000" />
                         </div>
                         <div>
-                            <label className={labelCls}>Description *</label>
+                            <label className={labelCls}>Deskripsi *</label>
                             <input type="text" className={inputCls} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required placeholder="e.g., Iuran bulanan" />
                         </div>
                     </div>
                     <div className="flex gap-3 justify-end">
-                        <button type="button" className={btnOutline} onClick={resetForm}>Cancel</button>
+                        <button type="button" className={btnOutline} onClick={resetForm}>Batal</button>
                         <button type="submit" className={btnPrimary} disabled={submitting}>
-                            {submitting ? "Saving..." : editingId ? "Update" : "Add Transaction"}
+                            {submitting ? "Menyimpan..." : editingId ? "Update" : "Tambah Transaksi"}
                         </button>
                     </div>
                 </form>
@@ -301,9 +314,9 @@ export default function TreasuryPage() {
             {/* Delete Confirmation Modal */}
             <ConfirmModal
                 open={confirmState.open}
-                title="Delete Transaction"
-                message={`Delete "${confirmState.label}"? You'll have 5 seconds to undo.`}
-                confirmLabel="Delete"
+                title="Hapus Transaksi"
+                message={`Hapus "${confirmState.label}"? Anda punya 5 detik untuk undo.`}
+                confirmLabel="Hapus"
                 onConfirm={handleConfirmDelete}
                 onCancel={() => setConfirmState({ open: false, id: "", label: "" })}
             />
@@ -311,7 +324,7 @@ export default function TreasuryPage() {
             {/* Undo Snackbar */}
             <UndoSnackbar
                 open={!!pendingDelete}
-                message={`"${pendingDelete?.label}" will be deleted`}
+                message={`"${pendingDelete?.label}" akan dihapus`}
                 duration={UNDO_DURATION}
                 onUndo={handleUndo}
             />

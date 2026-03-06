@@ -143,7 +143,7 @@ export default function RegisterPage() {
         try {
             const fd = new FormData();
             fd.append("file", file);
-            const res = await fetch("/api/upload", { method: "POST", body: fd });
+            const res = await fetch("/api/upload/public", { method: "POST", body: fd });
             const data = await res.json();
             if (data.url) set(field, data.url);
         } catch { /* continue */ } finally { setUploading(false); }
