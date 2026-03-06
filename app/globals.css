@@ -27,6 +27,11 @@
 }
 
 :root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+html.dark {
   --background: #0a0a0a;
   --foreground: #ededed;
 }

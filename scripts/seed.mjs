@@ -1,8 +1,16 @@
 // Seed script: 50 members, 50 tournaments, 50 treasury transactions
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
-const prisma = new PrismaClient();
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+    throw new Error("DATABASE_URL is not set in .env");
+}
+
+const prisma = new PrismaClient({
+    adapter: new PrismaMariaDb(databaseUrl),
+});
 
 function randomFromArray(arr) {
     return arr[Math.floor(Math.random() * arr.length)];

@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, hasRole, ROLES } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
+import { z } from "zod";
+
+const tournamentUpdateSchema = z.object({
+    title: z.string().min(3, "Judul turnamen minimal 3 karakter").optional(),
+    description: z.string().optional().nullable(),
+    format: z.enum(["BO1", "BO3", "BO5"]).optional(),
+    gameType: z.enum(["DUEL_LINKS", "MASTER_DUEL"]).optional(),
+    status: z.enum(["OPEN", "ONGOING", "COMPLETED", "CANCELLED"]).optional(),
+    entryFee: z.coerce.number().min(0, "Biaya masuk tidak boleh negatif").optional(),
+    prizePool: z.coerce.number().min(0, "Prize pool tidak boleh negatif").optional(),
+    startDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+        message: "Tanggal tidak valid",
+    }).optional(),
+    image: z.string().optional().nullable(),
+});
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -40,15 +55,29 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         const { id } = await params;
         const body = await request.json();
-        const { status } = body;
+        const parsed = tournamentUpdateSchema.safeParse(body);
 
-        if (!status || !["OPEN", "ONGOING", "COMPLETED", "CANCELLED"].includes(status)) {
-            return NextResponse.json({ success: false, message: "Status tidak valid" }, { status: 400 });
+        if (!parsed.success) {
+            return NextResponse.json({ success: false, message: parsed.error.issues[0].message }, { status: 400 });
+        }
+
+        const updateData: Record<string, unknown> = { ...parsed.data };
+
+        if (Object.keys(updateData).length === 0) {
+            return NextResponse.json({ success: false, message: "Tidak ada data untuk diupdate" }, { status: 400 });
+        }
+
+        if (typeof updateData.startDate === "string") {
+            updateData.startDate = new Date(updateData.startDate);
+        }
+
+        if (updateData.description === "") {
+            updateData.description = null;
         }
 
         const tournament = await prisma.tournament.update({
             where: { id },
-            data: { status }
+            data: updateData
         });
 
         await logAudit({
@@ -56,7 +85,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             action: "TOURNAMENT_UPDATED",
             targetId: tournament.id,
             targetType: "Tournament",
-            details: { newStatus: status }
+            details: { updatedFields: Object.keys(updateData) }
         });
 
         return NextResponse.json({ success: true, tournament }, { status: 200 });

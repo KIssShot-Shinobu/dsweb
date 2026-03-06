@@ -23,13 +23,42 @@ export default function AdminTournamentsPage() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingTournamentId, setEditingTournamentId] = useState<string | null>(null);
+    const [deletingTournamentId, setDeletingTournamentId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const { success, error } = useToast();
 
     // Form state
     const [formData, setFormData] = useState({
-        title: "", description: "", gameType: "DUEL_LINKS", format: "BO3", entryFee: 0, prizePool: 0, startDate: ""
+        title: "",
+        description: "",
+        gameType: "DUEL_LINKS",
+        format: "BO3",
+        status: "OPEN",
+        entryFee: 0,
+        prizePool: 0,
+        startDate: ""
     });
+
+    const resetForm = () => {
+        setFormData({
+            title: "",
+            description: "",
+            gameType: "DUEL_LINKS",
+            format: "BO3",
+            status: "OPEN",
+            entryFee: 0,
+            prizePool: 0,
+            startDate: ""
+        });
+    };
+
+    const toDateTimeLocal = (dateString: string) => {
+        const date = new Date(dateString);
+        const pad = (num: number) => String(num).padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    };
 
     const fetchTournaments = () => {
         fetch("/api/tournaments")
@@ -53,6 +82,7 @@ export default function AdminTournamentsPage() {
             if (res.ok) {
                 success("Turnamen berhasil dibuat!");
                 setShowModal(false);
+                resetForm();
                 fetchTournaments();
             } else {
                 error(data.message || "Gagal membuat turnamen");
@@ -86,6 +116,74 @@ export default function AdminTournamentsPage() {
             }
         } catch {
             error("Network error");
+        }
+    };
+
+    const openEditModal = (tournament: Tournament) => {
+        setEditingTournamentId(tournament.id);
+        setFormData({
+            title: tournament.title,
+            description: tournament.description || "",
+            gameType: tournament.gameType,
+            format: tournament.format,
+            status: tournament.status,
+            entryFee: tournament.entryFee,
+            prizePool: tournament.prizePool,
+            startDate: toDateTimeLocal(tournament.startDate)
+        });
+        setShowEditModal(true);
+    };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingTournamentId) return;
+
+        setSubmitting(true);
+        try {
+            const res = await fetch(`/api/tournaments/${editingTournamentId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                success("Turnamen berhasil diupdate!");
+                setShowEditModal(false);
+                setEditingTournamentId(null);
+                resetForm();
+                fetchTournaments();
+            } else {
+                error(data.message || "Gagal update turnamen");
+            }
+        } catch {
+            error("Kesalahan jaringan");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDelete = async (id: string, title: string) => {
+        const confirmed = window.confirm(`Hapus turnamen "${title}"?`);
+        if (!confirmed) return;
+
+        setDeletingTournamentId(id);
+        try {
+            const res = await fetch(`/api/tournaments/${id}`, {
+                method: "DELETE"
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                success("Turnamen berhasil dihapus");
+                fetchTournaments();
+            } else {
+                error(data.message || "Gagal menghapus turnamen");
+            }
+        } catch {
+            error("Kesalahan jaringan");
+        } finally {
+            setDeletingTournamentId(null);
         }
     };
 
@@ -131,13 +229,28 @@ export default function AdminTournamentsPage() {
                                     <div className="text-xs text-gray-400">{new Date(t.startDate).toLocaleDateString()}</div>
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    <button
-                                        onClick={() => updateStatus(t.id, t.status)}
-                                        disabled={t.status === "COMPLETED"}
-                                        className="text-xs font-medium px-3 py-1.5 border border-white/10 hover:bg-white/5 rounded-lg disabled:opacity-30 transition"
-                                    >
-                                        Update Status &#8594;
-                                    </button>
+                                    <div className="inline-flex items-center gap-2">
+                                        <button
+                                            onClick={() => openEditModal(t)}
+                                            className="text-xs font-medium px-3 py-1.5 border border-blue-300/60 text-blue-600 hover:bg-blue-50 dark:border-blue-500/30 dark:text-blue-400 dark:hover:bg-blue-500/10 rounded-lg transition"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(t.id, t.title)}
+                                            disabled={deletingTournamentId === t.id}
+                                            className="text-xs font-medium px-3 py-1.5 border border-red-300/60 text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10 rounded-lg disabled:opacity-50 transition"
+                                        >
+                                            {deletingTournamentId === t.id ? "Deleting..." : "Delete"}
+                                        </button>
+                                        <button
+                                            onClick={() => updateStatus(t.id, t.status)}
+                                            disabled={t.status === "COMPLETED"}
+                                            className="text-xs font-medium px-3 py-1.5 border border-white/10 hover:bg-white/5 rounded-lg disabled:opacity-30 transition"
+                                        >
+                                            Update Status &#8594;
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -171,6 +284,45 @@ export default function AdminTournamentsPage() {
                     </div>
                     <div><label className="text-xs mb-1 block">Tanggal & Waktu Mulai</label><input type="datetime-local" className={inputCls} required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} /></div>
                     <button type="submit" disabled={submitting} className="w-full bg-ds-amber text-black font-bold py-3 text-sm rounded-xl">{submitting ? "Menyimpan..." : "Publish Turnamen"}</button>
+                </form>
+            </Modal>
+
+            <Modal open={showEditModal} onClose={() => { setShowEditModal(false); setEditingTournamentId(null); resetForm(); }} title="Edit Turnamen">
+                <form onSubmit={handleUpdate} className="space-y-4">
+                    <div><label className="text-xs mb-1 block">Judul Turnamen</label><input type="text" className={inputCls} required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} /></div>
+                    <div><label className="text-xs mb-1 block">Deskripsi</label><textarea className={inputCls} rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="text-xs mb-1 block">Game</label>
+                            <select className={inputCls} value={formData.gameType} onChange={e => setFormData({ ...formData, gameType: e.target.value })}>
+                                <option value="DUEL_LINKS">Duel Links</option>
+                                <option value="MASTER_DUEL">Master Duel</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs mb-1 block">Format</label>
+                            <select className={inputCls} value={formData.format} onChange={e => setFormData({ ...formData, format: e.target.value })}>
+                                <option value="BO1">Best of 1</option>
+                                <option value="BO3">Best of 3</option>
+                                <option value="BO5">Best of 5</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs mb-1 block">Status</label>
+                            <select className={inputCls} value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })}>
+                                <option value="OPEN">OPEN</option>
+                                <option value="ONGOING">ONGOING</option>
+                                <option value="COMPLETED">COMPLETED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="text-xs mb-1 block">Entry Fee (Rp)</label><input type="number" className={inputCls} value={formData.entryFee} onChange={e => setFormData({ ...formData, entryFee: Number(e.target.value) })} min="0" /></div>
+                        <div><label className="text-xs mb-1 block">Prize Pool (Rp)</label><input type="number" className={inputCls} value={formData.prizePool} onChange={e => setFormData({ ...formData, prizePool: Number(e.target.value) })} min="0" /></div>
+                    </div>
+                    <div><label className="text-xs mb-1 block">Tanggal & Waktu Mulai</label><input type="datetime-local" className={inputCls} required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} /></div>
+                    <button type="submit" disabled={submitting} className="w-full bg-ds-amber text-black font-bold py-3 text-sm rounded-xl">{submitting ? "Menyimpan..." : "Simpan Perubahan"}</button>
                 </form>
             </Modal>
         </>
