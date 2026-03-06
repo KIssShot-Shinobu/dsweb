@@ -75,3 +75,38 @@ export const approveSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ApproveInput = z.infer<typeof approveSchema>;
+
+// ─── Treasury Schema ──────────────────────────────────────────────────────────
+export const treasurySchema = z.object({
+    type: z.enum(["MASUK", "KELUAR"], { message: "Tipe transaksi wajib diisi" }),
+    amount: z.coerce.number().min(1, "Nominal tidak boleh 0"),
+    description: z.string().min(3, "Keterangan minimal 3 karakter"),
+});
+
+export type TreasuryInput = z.infer<typeof treasurySchema>;
+
+// ─── Game Profile Update Schema ───────────────────────────────────────────────
+export const updateGameProfileSchema = z.object({
+    gameType: z.enum(["DUEL_LINKS", "MASTER_DUEL"]),
+    ign: z.string().min(1, "IGN tidak boleh kosong"),
+    gameId: z.string().min(1, "Game ID / Friend ID tidak boleh kosong"),
+});
+
+export type UpdateGameProfileInput = z.infer<typeof updateGameProfileSchema>;
+
+// ─── Tournament Schema ────────────────────────────────────────────────────────
+export const tournamentSchema = z.object({
+    title: z.string().min(3, "Judul turnamen minimal 3 karakter"),
+    description: z.string().optional(),
+    format: z.enum(["BO1", "BO3", "BO5"], { message: "Format tidak valid" }),
+    gameType: z.enum(["DUEL_LINKS", "MASTER_DUEL"], { message: "Pilih game" }),
+    status: z.enum(["OPEN", "ONGOING", "COMPLETED", "CANCELLED"]).optional(),
+    entryFee: z.coerce.number().min(0, "Biaya masuk tidak boleh negatif"),
+    prizePool: z.coerce.number().min(0, "Prize pool tidak boleh negatif"),
+    startDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+        message: "Tanggal tidak valid",
+    }),
+    image: z.string().optional(),
+});
+
+export type TournamentInput = z.infer<typeof tournamentSchema>;

@@ -7,23 +7,44 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const memberId = searchParams.get("memberId");
 
-        const transactions = await prisma.treasury.findMany({
-            where: {
-                ...(memberId && { memberId }),
-            },
-            include: {
-                member: true,
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = parseInt(searchParams.get("limit") || "10", 10);
+        const month = searchParams.get("month");
+        const year = searchParams.get("year");
+
+        const where: any = {};
+        if (memberId) where.memberId = memberId;
+
+        // Validasi dan set filter bulan/tahun jika ada
+        if (month && year) {
+            const m = parseInt(month, 10);
+            const y = parseInt(year, 10);
+            if (!isNaN(m) && !isNaN(y)) {
+                where.createdAt = {
+                    gte: new Date(y, m - 1, 1),
+                    lt: new Date(y, m, 1),
+                };
+            }
+        }
+
+        const [transactions, total] = await Promise.all([
+            prisma.treasury.findMany({
+                where,
+                include: { member: true },
+                orderBy: { createdAt: "desc" },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.treasury.count({ where }),
+        ]);
 
         // Calculate total balance
-        const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
+        const balance = transactions.reduce((sum: number, t: any) => sum + t.amount, 0);
 
         return NextResponse.json({
+            success: true,
             transactions,
+            total,
             balance,
         });
     } catch (error) {
@@ -35,28 +56,51 @@ export async function GET(request: NextRequest) {
     }
 }
 
+import { treasurySchema } from "@/lib/validators";
+import { headers } from "next/headers";
+import { logAudit } from "@/lib/audit-logger";
+
 // POST /api/treasury - Create a new transaction
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
-        const { amount, description, memberId } = body;
+        const headersList = await headers();
+        const userRole = headersList.get("x-user-role");
+        const userId = headersList.get("x-user-id");
 
-        if (amount === undefined || !description) {
-            return NextResponse.json(
-                { error: "Amount and description are required" },
-                { status: 400 }
-            );
+        if (!userRole || !["ADMIN", "FOUNDER"].includes(userRole)) {
+            return NextResponse.json({ success: false, message: "Akses Ditolak" }, { status: 403 });
         }
+
+        const body = await request.json();
+        const validBody = treasurySchema.safeParse(body);
+
+        if (!validBody.success) {
+            return NextResponse.json({ success: false, message: validBody.error.issues[0].message }, { status: 400 });
+        }
+
+        const { type, amount, description } = validBody.data;
+
+        // Jika type KELUAR, masukkan amount sebagai minus (-)
+        const finalAmount = type === "MASUK" ? Math.abs(amount) : -Math.abs(amount);
 
         const transaction = await prisma.treasury.create({
             data: {
-                amount,
+                amount: finalAmount,
                 description,
-                memberId: memberId || null,
+                memberId: body.memberId || null,
             },
             include: {
                 member: true,
             },
+        });
+
+        // Audit Logging
+        await logAudit({
+            userId: userId || "0",
+            action: "TREASURY_ADDED",
+            targetId: transaction.id,
+            targetType: "Treasury",
+            details: { type, amount: finalAmount, description }
         });
 
         return NextResponse.json(transaction, { status: 201 });

@@ -1,369 +1,438 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Pagination } from "@/components/dashboard/pagination";
+import { useEffect, useState } from "react";
 import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
-import { ConfirmModal } from "@/components/dashboard/confirm-modal";
-import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
-
-const UNDO_DURATION = 5000;
-
-const PER_PAGE = 10;
 
 interface Tournament {
     id: string;
     title: string;
-    gameType: string;
-    status: string;
-    startDate: string;
-    prizePool: number;
     description: string | null;
-    image: string | null;
+    gameType: "DUEL_LINKS" | "MASTER_DUEL";
+    format: "BO1" | "BO3" | "BO5";
+    status: "OPEN" | "ONGOING" | "COMPLETED" | "CANCELLED";
+    entryFee: number;
+    prizePool: number;
+    startDate: string;
+    image?: string | null;
+    _count?: { participants: number };
 }
 
-const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all";
-const labelCls = "block text-xs font-semibold text-gray-600 dark:text-white/50 uppercase tracking-wider mb-1.5";
-const btnPrimary = "px-4 py-2 rounded-xl bg-ds-amber hover:bg-ds-gold text-black font-semibold text-sm transition-all disabled:opacity-50";
-const btnOutline = "px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-600 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/5 transition-all";
-const btnDanger = "px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all";
+const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all text-gray-900 dark:text-white";
 
-const getStatusBadge = (status: string) => {
-    switch (status.toUpperCase()) {
-        case "ONGOING": return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-        case "COMPLETED": return "bg-gray-400/10 text-gray-400 border-gray-400/20";
-        default: return "bg-blue-500/10 text-blue-400 border-blue-400/20";
-    }
-};
-
-export default function TournamentsPage() {
+export default function AdminTournamentsPage() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [page, setPage] = useState(1);
-    const [statusFilter, setStatusFilter] = useState<"ALL" | "UPCOMING" | "ONGOING" | "COMPLETED">("ALL");
-    const [formData, setFormData] = useState({ title: "", gameType: "Duel Links", startDate: "", prizePool: 0, description: "", status: "UPCOMING", image: "" });
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
-    const [uploading, setUploading] = useState(false);
-    const [dragging, setDragging] = useState(false);
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingTournamentId, setEditingTournamentId] = useState<string | null>(null);
+    const [deletingTournamentId, setDeletingTournamentId] = useState<string | null>(null);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const { success, error } = useToast();
-    const [confirmState, setConfirmState] = useState<{ open: boolean; id: string; title: string }>({ open: false, id: "", title: "" });
-    const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string; item: Tournament } | null>(null);
-    const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Form state
+    const [formData, setFormData] = useState({
+        title: "",
+        description: "",
+        gameType: "DUEL_LINKS",
+        format: "BO3",
+        status: "OPEN",
+        entryFee: 0,
+        prizePool: 0,
+        startDate: "",
+        image: ""
+    });
+
+    const resetForm = () => {
+        setFormData({
+            title: "",
+            description: "",
+            gameType: "DUEL_LINKS",
+            format: "BO3",
+            status: "OPEN",
+            entryFee: 0,
+            prizePool: 0,
+            startDate: "",
+            image: ""
+        });
+    };
+
+    const toDateTimeLocal = (dateString: string) => {
+        const date = new Date(dateString);
+        const pad = (num: number) => String(num).padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    };
 
     const fetchTournaments = () => {
         fetch("/api/tournaments")
-            .then((res) => res.json())
-            .then((data) => { setTournaments(Array.isArray(data) ? data : []); setLoading(false); })
+            .then(res => res.json())
+            .then(data => { setTournaments(data.tournaments || []); setLoading(false); })
             .catch(() => setLoading(false));
     };
 
     useEffect(() => { fetchTournaments(); }, []);
-    useEffect(() => () => { if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current); }, []);
 
-    const handleImageUpload = async (file: File) => {
-        if (!file) return;
-        setUploading(true);
-        try {
-            const fd = new FormData();
-            fd.append("file", file);
-            const res = await fetch("/api/upload", { method: "POST", body: fd });
-            const data = await res.json();
-            if (data.url) {
-                setFormData((prev) => ({ ...prev, image: data.url }));
-                setImagePreview(data.url);
-                success("Image uploaded successfully.");
-            } else {
-                error(data.error || "Upload failed. Please try again.");
-            }
-        } catch {
-            error("Upload failed. Check your network connection.");
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) handleImageUpload(file);
-    };
-
-    const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setDragging(false); const file = e.dataTransfer.files?.[0]; if (file) handleImageUpload(file); };
-    const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragging(true); };
-
-    const removeImage = () => { setFormData((prev) => ({ ...prev, image: "" })); setImagePreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; };
-
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            const res = await fetch(editingId ? `/api/tournaments/${editingId}` : "/api/tournaments", {
-                method: editingId ? "PUT" : "POST",
+            const res = await fetch("/api/tournaments", {
+                method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...formData, prizePool: Number(formData.prizePool) }),
+                body: JSON.stringify(formData)
             });
+            const data = await res.json();
             if (res.ok) {
-                fetchTournaments();
+                success("Turnamen berhasil dibuat!");
+                setShowModal(false);
                 resetForm();
-                success(editingId ? "Tournament updated successfully." : "Tournament created!");
+                fetchTournaments();
             } else {
-                error("Failed to save tournament. Please try again.");
+                error(data.message || "Gagal membuat turnamen");
             }
-        } catch { error("Network error. Please try again."); }
-        finally { setSubmitting(false); }
-    };
-
-    const handleEdit = (t: Tournament) => {
-        setFormData({ title: t.title, gameType: t.gameType, startDate: t.startDate.split("T")[0], prizePool: t.prizePool, description: t.description || "", status: t.status, image: t.image || "" });
-        setImagePreview(t.image || null);
-        setEditingId(t.id);
-        setShowModal(true);
-    };
-
-    const handleDeleteClick = (id: string, title: string) => {
-        if (pendingDelete && deleteTimerRef.current) {
-            clearTimeout(deleteTimerRef.current);
-            executePermanentDelete(pendingDelete.id);
+        } catch {
+            error("Kesalahan jaringan");
+        } finally {
+            setSubmitting(false);
         }
-        setConfirmState({ open: true, id, title });
     };
 
-    const executePermanentDelete = async (id: string) => {
-        setPendingDelete(null);
+    const updateStatus = async (id: string, currentStatus: string) => {
+        const statuses = ["OPEN", "ONGOING", "COMPLETED"];
+        const currentIndex = statuses.indexOf(currentStatus);
+        const nextStatus = statuses[currentIndex + 1] || "COMPLETED";
+
+        if (currentStatus === "COMPLETED") return;
+
         try {
-            const res = await fetch(`/api/tournaments/${id}`, { method: "DELETE" });
-            if (!res.ok) { fetchTournaments(); error("Failed to delete tournament."); }
-        } catch { fetchTournaments(); error("Network error. Tournament restored."); }
-    };
+            const res = await fetch(`/api/tournaments/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: nextStatus })
+            });
 
-    const handleConfirmDelete = () => {
-        const { id, title } = confirmState;
-        const item = tournaments.find((t) => t.id === id);
-        if (!item) return;
-        setConfirmState({ open: false, id: "", title: "" });
-
-        // Optimistic remove
-        setTournaments((prev) => prev.filter((t) => t.id !== id));
-        setPendingDelete({ id, title, item });
-
-        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
-        deleteTimerRef.current = setTimeout(() => executePermanentDelete(id), UNDO_DURATION);
-    };
-
-    const handleUndo = () => {
-        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
-        if (pendingDelete) {
-            setTournaments((prev) => [pendingDelete.item, ...prev].sort(
-                (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-            ));
-            success(`"${pendingDelete.title}" restored.`);
+            if (res.ok) {
+                success(`Status dirubah ke ${nextStatus}`);
+                fetchTournaments();
+            } else {
+                error("Gagal merubah status");
+            }
+        } catch {
+            error("Network error");
         }
-        setPendingDelete(null);
     };
 
-    const resetForm = () => { setFormData({ title: "", gameType: "Duel Links", startDate: "", prizePool: 0, description: "", status: "UPCOMING", image: "" }); setImagePreview(null); setEditingId(null); setShowModal(false); if (fileInputRef.current) fileInputRef.current.value = ""; };
+    const openEditModal = (tournament: Tournament) => {
+        setEditingTournamentId(tournament.id);
+        setFormData({
+            title: tournament.title,
+            description: tournament.description || "",
+            gameType: tournament.gameType,
+            format: tournament.format,
+            status: tournament.status,
+            entryFee: tournament.entryFee,
+            prizePool: tournament.prizePool,
+            startDate: toDateTimeLocal(tournament.startDate),
+            image: tournament.image || ""
+        });
+        setShowEditModal(true);
+    };
 
-    const formatDate = (d: string) => new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-    const formatCurrency = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingTournamentId) return;
+
+        setSubmitting(true);
+        try {
+            const res = await fetch(`/api/tournaments/${editingTournamentId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                success("Turnamen berhasil diupdate!");
+                setShowEditModal(false);
+                setEditingTournamentId(null);
+                resetForm();
+                fetchTournaments();
+            } else {
+                error(data.message || "Gagal update turnamen");
+            }
+        } catch {
+            error("Kesalahan jaringan");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDelete = async (id: string, title: string) => {
+        const confirmed = window.confirm(`Hapus turnamen "${title}"?`);
+        if (!confirmed) return;
+
+        setDeletingTournamentId(id);
+        try {
+            const res = await fetch(`/api/tournaments/${id}`, {
+                method: "DELETE"
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                success("Turnamen berhasil dihapus");
+                fetchTournaments();
+            } else {
+                error(data.message || "Gagal menghapus turnamen");
+            }
+        } catch {
+            error("Kesalahan jaringan");
+        } finally {
+            setDeletingTournamentId(null);
+        }
+    };
+
+    const handleUploadImage = async (file: File) => {
+        setUploadingImage(true);
+        try {
+            const body = new FormData();
+            body.append("file", file);
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body
+            });
+            const data = await res.json();
+
+            if (res.ok && data?.url) {
+                setFormData((prev) => ({ ...prev, image: data.url }));
+                success("Gambar berhasil diupload");
+            } else {
+                error(data?.message || "Gagal upload gambar");
+            }
+        } catch {
+            error("Kesalahan jaringan saat upload");
+        } finally {
+            setUploadingImage(false);
+        }
+    };
 
     return (
         <>
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+            <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Tournaments</h1>
-                    <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Manage guild tournaments</p>
+                    <h1 className="text-2xl font-bold dark:text-white">Admin Tournaments</h1>
+                    <p className="text-sm text-gray-400">Atur turnamen, peserta dan hadiah guild</p>
                 </div>
-                <button className={btnPrimary} onClick={() => setShowModal(true)}>+ New Tournament</button>
+                <button onClick={() => setShowModal(true)} className="px-4 py-2 bg-ds-amber text-black font-bold text-sm rounded-xl hover:bg-ds-gold transition">
+                    + Buat Turnamen
+                </button>
             </div>
 
-            {/* Modal Form */}
-            <Modal
-                open={showModal}
-                onClose={resetForm}
-                title={editingId ? "Edit Tournament" : "Create New Tournament"}
-                size="xl"
-            >
-                <form onSubmit={handleSubmit}>
-                    {/* Image Upload */}
-                    <div className="mb-5">
-                        <label className={labelCls}>Tournament Banner / Poster</label>
-                        {imagePreview ? (
-                            <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-black">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover" />
-                                <button type="button" onClick={removeImage} className="absolute top-2.5 right-2.5 px-3 py-1 rounded-lg bg-black/70 text-white text-xs hover:bg-red-600/80 transition-colors">
-                                    ✕ Remove
-                                </button>
-                            </div>
-                        ) : (
-                            <label
-                                htmlFor="tournament-image-input"
-                                className={`block border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${dragging ? "border-ds-amber bg-ds-amber/5" : "border-gray-200 dark:border-white/10 hover:border-ds-amber hover:bg-ds-amber/5 dark:hover:border-ds-amber/50"} ${uploading ? "opacity-60 pointer-events-none" : ""}`}
-                                onDrop={handleDrop}
-                                onDragOver={handleDragOver}
-                                onDragLeave={() => setDragging(false)}
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden">
+                <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
+                    <thead className="text-xs uppercase bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-white/60">
+                        <tr>
+                            <th className="px-6 py-4">Turnamen</th>
+                            <th className="px-6 py-4">Game & Format</th>
+                            <th className="px-6 py-4">Status & Waktu</th>
+                            <th className="px-6 py-4 text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {tournaments.map(t => (
+                            <tr key={t.id} className="border-b last:border-0 border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+                                <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
+                                    {t.title}
+                                    <div className="text-xs font-normal text-gray-400">Peserta: {t._count?.participants || 0}</div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <span className="font-medium text-gray-700 dark:text-white/80">{t.gameType}</span>
+                                    <span className="ml-2 text-xs bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-gray-500 dark:text-white/50">{t.format}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className={`text-xs font-bold ${t.status === 'OPEN' ? 'text-emerald-500' :
+                                            t.status === 'ONGOING' ? 'text-amber-500' : 'text-gray-500'
+                                        }`}>
+                                        {t.status}
+                                    </div>
+                                    <div className="text-xs text-gray-400">{new Date(t.startDate).toLocaleDateString()}</div>
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                    <div className="inline-flex items-center gap-2">
+                                        <button
+                                            onClick={() => openEditModal(t)}
+                                            className="text-xs font-medium px-3 py-1.5 border border-blue-300/60 text-blue-600 hover:bg-blue-50 dark:border-blue-500/30 dark:text-blue-400 dark:hover:bg-blue-500/10 rounded-lg transition"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(t.id, t.title)}
+                                            disabled={deletingTournamentId === t.id}
+                                            className="text-xs font-medium px-3 py-1.5 border border-red-300/60 text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10 rounded-lg disabled:opacity-50 transition"
+                                        >
+                                            {deletingTournamentId === t.id ? "Deleting..." : "Delete"}
+                                        </button>
+                                        <button
+                                            onClick={() => updateStatus(t.id, t.status)}
+                                            disabled={t.status === "COMPLETED"}
+                                            className="text-xs font-medium px-3 py-1.5 border border-white/10 hover:bg-white/5 rounded-lg disabled:opacity-30 transition"
+                                        >
+                                            Update Status &#8594;
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <Modal open={showModal} onClose={() => setShowModal(false)} title="Buat Turnamen Baru">
+                <form onSubmit={handleCreate} className="space-y-4">
+                    <div><label className="text-xs mb-1 block">Judul Turnamen</label><input type="text" className={inputCls} required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs mb-1 block">Game</label>
+                            <select className={inputCls} value={formData.gameType} onChange={e => setFormData({ ...formData, gameType: e.target.value })}>
+                                <option value="DUEL_LINKS">Duel Links</option>
+                                <option value="MASTER_DUEL">Master Duel</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs mb-1 block">Format</label>
+                            <select className={inputCls} value={formData.format} onChange={e => setFormData({ ...formData, format: e.target.value })}>
+                                <option value="BO1">Best of 1</option>
+                                <option value="BO3">Best of 3</option>
+                                <option value="BO5">Best of 5</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="text-xs mb-1 block">Entry Fee (Rp)</label><input type="number" className={inputCls} value={formData.entryFee} onChange={e => setFormData({ ...formData, entryFee: Number(e.target.value) })} min="0" /></div>
+                        <div><label className="text-xs mb-1 block">Prize Pool (Rp)</label><input type="number" className={inputCls} value={formData.prizePool} onChange={e => setFormData({ ...formData, prizePool: Number(e.target.value) })} min="0" /></div>
+                    </div>
+                    <div>
+                        <label className="text-xs mb-1 block">Upload Image</label>
+                        <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                            className={`${inputCls} file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-ds-amber/20 file:text-ds-amber file:font-semibold`}
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                await handleUploadImage(file);
+                                e.currentTarget.value = "";
+                            }}
+                            disabled={uploadingImage}
+                        />
+                        {uploadingImage && <p className="text-xs mt-1 text-gray-400">Mengupload gambar...</p>}
+                    </div>
+                    <div>
+                        <label className="text-xs mb-1 block">Image URL</label>
+                        <input
+                            type="url"
+                            className={inputCls}
+                            placeholder="https://example.com/tournament.jpg"
+                            value={formData.image}
+                            onChange={e => setFormData({ ...formData, image: e.target.value })}
+                        />
+                    </div>
+                    {formData.image && (
+                        <div className="rounded-xl border border-gray-200 dark:border-white/10 p-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={formData.image} alt="Preview tournament" className="w-full h-40 object-cover rounded-lg" />
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, image: "" })}
+                                className="mt-2 text-xs text-red-500 hover:text-red-600"
                             >
-                                <div className="text-2xl mb-2">{uploading ? "⏳" : "🖼️"}</div>
-                                <div className="text-sm font-medium text-gray-600 dark:text-white/50 mb-1">
-                                    {uploading ? "Uploading..." : "Tap to select image or drag & drop"}
-                                </div>
-                                <div className="text-xs text-gray-400 dark:text-white/30">JPEG, PNG, WEBP, HEIC — max 10MB</div>
-                            </label>
-                        )}
-                        <input id="tournament-image-input" ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                    </div>
-
-                    {/* Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                        <div>
-                            <label className={labelCls}>Title *</label>
-                            <input type="text" className={inputCls} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required placeholder="Tournament title" />
+                                Hapus gambar
+                            </button>
                         </div>
-                        <div>
-                            <label className={labelCls}>Game Type *</label>
-                            <select className={inputCls} value={formData.gameType} onChange={(e) => setFormData({ ...formData, gameType: e.target.value })}>
-                                <option value="Duel Links">Duel Links</option>
-                                <option value="Master Duel">Master Duel</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className={labelCls}>Start Date *</label>
-                            <input type="date" className={inputCls} value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} required />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Prize Pool (IDR)</label>
-                            <input type="number" className={inputCls} value={formData.prizePool || ""} onChange={(e) => setFormData({ ...formData, prizePool: Number(e.target.value) })} placeholder="0" />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Status</label>
-                            <select className={inputCls} value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-                                <option value="UPCOMING">Upcoming</option>
-                                <option value="ONGOING">Ongoing</option>
-                                <option value="COMPLETED">Completed</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className={labelCls}>Description</label>
-                            <textarea className={inputCls} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={1} placeholder="Tournament description, rules, prizes..." />
-                        </div>
-                    </div>
-
-                    <div className="flex gap-3 justify-end">
-                        <button type="button" className={btnOutline} onClick={resetForm}>Cancel</button>
-                        <button type="submit" className={btnPrimary} disabled={submitting || uploading}>
-                            {submitting ? "Saving..." : editingId ? "Update Tournament" : "Create Tournament"}
-                        </button>
-                    </div>
+                    )}
+                    <div><label className="text-xs mb-1 block">Tanggal & Waktu Mulai</label><input type="datetime-local" className={inputCls} required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} /></div>
+                    <button type="submit" disabled={submitting} className="w-full bg-ds-amber text-black font-bold py-3 text-sm rounded-xl">{submitting ? "Menyimpan..." : "Publish Turnamen"}</button>
                 </form>
             </Modal>
 
-            {/* List */}
-            <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
-                <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/5 gap-3 flex-wrap">
-                    <span className="text-base font-semibold text-gray-900 dark:text-white">
-                        All Tournaments ({statusFilter === "ALL" ? tournaments.length : tournaments.filter(t => t.status === statusFilter).length})
-                    </span>
-                    {/* Status filter */}
-                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 rounded-xl p-1">
-                        {(["ALL", "UPCOMING", "ONGOING", "COMPLETED"] as const).map((s) => (
-                            <button
-                                key={s}
-                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${statusFilter === s
-                                    ? "bg-ds-amber text-black"
-                                    : "text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/5"
-                                    }`}
-                                onClick={() => { setStatusFilter(s); setPage(1); }}
-                            >
-                                {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
-                            </button>
-                        ))}
+            <Modal open={showEditModal} onClose={() => { setShowEditModal(false); setEditingTournamentId(null); resetForm(); }} title="Edit Turnamen">
+                <form onSubmit={handleUpdate} className="space-y-4">
+                    <div><label className="text-xs mb-1 block">Judul Turnamen</label><input type="text" className={inputCls} required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} /></div>
+                    <div><label className="text-xs mb-1 block">Deskripsi</label><textarea className={inputCls} rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="text-xs mb-1 block">Game</label>
+                            <select className={inputCls} value={formData.gameType} onChange={e => setFormData({ ...formData, gameType: e.target.value })}>
+                                <option value="DUEL_LINKS">Duel Links</option>
+                                <option value="MASTER_DUEL">Master Duel</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs mb-1 block">Format</label>
+                            <select className={inputCls} value={formData.format} onChange={e => setFormData({ ...formData, format: e.target.value })}>
+                                <option value="BO1">Best of 1</option>
+                                <option value="BO3">Best of 3</option>
+                                <option value="BO5">Best of 5</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs mb-1 block">Status</label>
+                            <select className={inputCls} value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })}>
+                                <option value="OPEN">OPEN</option>
+                                <option value="ONGOING">ONGOING</option>
+                                <option value="COMPLETED">COMPLETED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div className="p-5">
-                    {(() => {
-                        const filtered = statusFilter === "ALL" ? tournaments : tournaments.filter(t => t.status === statusFilter);
-                        const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-                        const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-                        if (loading) return (
-                            <div className="space-y-2">
-                                {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-14 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />)}
-                            </div>
-                        );
-                        if (filtered.length === 0) return (
-                            <div className="text-center py-12">
-                                <div className="text-4xl mb-3">🏆</div>
-                                <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">No tournaments</div>
-                                <p className="text-xs text-gray-400">
-                                    {statusFilter !== "ALL" ? `No ${statusFilter.toLowerCase()} tournaments` : "Create your first tournament"}
-                                </p>
-                            </div>
-                        );
-                        return (
-                            <>
-                                <div className="space-y-2">
-                                    {paginated.map((t) => (
-                                        <div key={t.id} className="flex items-center gap-4 p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
-                                            {/* Thumbnail */}
-                                            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-[#1a1a2e] flex items-center justify-center">
-                                                {t.image ? (
-                                                    // eslint-disable-next-line @next/next/no-img-element
-                                                    <img src={t.image} alt={t.title} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <span className="text-lg">{t.gameType.includes("Master") ? "🎴" : "📱"}</span>
-                                                )}
-                                            </div>
-                                            {/* Info */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{t.title}</div>
-                                                <div className="text-xs text-gray-400 dark:text-white/40">
-                                                    {t.gameType} · {formatDate(t.startDate)} · {formatCurrency(t.prizePool)}
-                                                </div>
-                                            </div>
-                                            {/* Status */}
-                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex-shrink-0 ${getStatusBadge(t.status)}`}>
-                                                {t.status}
-                                            </span>
-                                            {/* Actions */}
-                                            <div className="flex gap-2 flex-shrink-0">
-                                                <button className={btnOutline} onClick={() => handleEdit(t)}>Edit</button>
-                                                <button className={btnDanger} onClick={() => handleDeleteClick(t.id, t.title)}>Delete</button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <Pagination
-                                    page={page}
-                                    totalPages={totalPages}
-                                    total={filtered.length}
-                                    perPage={PER_PAGE}
-                                    onPage={setPage}
-                                />
-                            </>
-                        );
-                    })()}
-                </div>
-            </div>
-            {/* Delete Confirmation Modal */}
-            <ConfirmModal
-                open={confirmState.open}
-                title="Delete Tournament"
-                message={`Delete "${confirmState.title}"? You'll have 5 seconds to undo.`}
-                confirmLabel="Delete"
-                onConfirm={handleConfirmDelete}
-                onCancel={() => setConfirmState({ open: false, id: "", title: "" })}
-            />
-
-            {/* Undo Snackbar */}
-            <UndoSnackbar
-                open={!!pendingDelete}
-                message={`"${pendingDelete?.title}" will be deleted`}
-                duration={UNDO_DURATION}
-                onUndo={handleUndo}
-            />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="text-xs mb-1 block">Entry Fee (Rp)</label><input type="number" className={inputCls} value={formData.entryFee} onChange={e => setFormData({ ...formData, entryFee: Number(e.target.value) })} min="0" /></div>
+                        <div><label className="text-xs mb-1 block">Prize Pool (Rp)</label><input type="number" className={inputCls} value={formData.prizePool} onChange={e => setFormData({ ...formData, prizePool: Number(e.target.value) })} min="0" /></div>
+                    </div>
+                    <div>
+                        <label className="text-xs mb-1 block">Upload Image</label>
+                        <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                            className={`${inputCls} file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-ds-amber/20 file:text-ds-amber file:font-semibold`}
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                await handleUploadImage(file);
+                                e.currentTarget.value = "";
+                            }}
+                            disabled={uploadingImage}
+                        />
+                        {uploadingImage && <p className="text-xs mt-1 text-gray-400">Mengupload gambar...</p>}
+                    </div>
+                    <div>
+                        <label className="text-xs mb-1 block">Image URL</label>
+                        <input
+                            type="url"
+                            className={inputCls}
+                            placeholder="https://example.com/tournament.jpg"
+                            value={formData.image}
+                            onChange={e => setFormData({ ...formData, image: e.target.value })}
+                        />
+                    </div>
+                    {formData.image && (
+                        <div className="rounded-xl border border-gray-200 dark:border-white/10 p-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={formData.image} alt="Preview tournament" className="w-full h-40 object-cover rounded-lg" />
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, image: "" })}
+                                className="mt-2 text-xs text-red-500 hover:text-red-600"
+                            >
+                                Hapus gambar
+                            </button>
+                        </div>
+                    )}
+                    <div><label className="text-xs mb-1 block">Tanggal & Waktu Mulai</label><input type="datetime-local" className={inputCls} required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} /></div>
+                    <button type="submit" disabled={submitting} className="w-full bg-ds-amber text-black font-bold py-3 text-sm rounded-xl">{submitting ? "Menyimpan..." : "Simpan Perubahan"}</button>
+                </form>
+            </Modal>
         </>
     );
 }

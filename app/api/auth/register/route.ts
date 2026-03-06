@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { GameType, GuildStatus } from "@prisma/client";
 import { registerSchema } from "@/lib/validators";
 import { hashPassword } from "@/lib/auth";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function POST(req: NextRequest) {
     try {
@@ -71,7 +73,7 @@ export async function POST(req: NextRequest) {
                     create: [
                         ...(data.duelLinksGameId && data.duelLinksIgn
                             ? [{
-                                gameType: "DUEL_LINKS",
+                                gameType: GameType.DUEL_LINKS,
                                 gameId: data.duelLinksGameId,
                                 ign: data.duelLinksIgn,
                                 screenshotUrl: data.duelLinksScreenshot || null,
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
                             : []),
                         ...(data.masterDuelGameId && data.masterDuelIgn
                             ? [{
-                                gameType: "MASTER_DUEL",
+                                gameType: GameType.MASTER_DUEL,
                                 gameId: data.masterDuelGameId,
                                 ign: data.masterDuelIgn,
                                 screenshotUrl: data.masterDuelScreenshot || null,
@@ -91,13 +93,15 @@ export async function POST(req: NextRequest) {
                     create: {
                         sourceInfo: data.sourceInfo,
                         prevGuild: data.prevGuild || null,
-                        guildStatus: data.guildStatus,
+                        guildStatus: data.guildStatus as GuildStatus,
                         socialMedia: JSON.stringify(data.socialMedia),
                         agreement: data.agreement,
                     },
                 },
             },
         });
+
+        await logAudit({ action: "USER_REGISTERED", userId: user.id });
 
         return NextResponse.json(
             { success: true, message: "Registrasi berhasil! Akun Anda sudah aktif dan bisa langsung login.", userId: user.id },
@@ -108,3 +112,4 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
     }
 }
+

@@ -39,7 +39,7 @@ const footerLinks = {
 
 export function Footer() {
     return (
-        <footer className="bg-[#1A1A1A] border-t border-[#3A3A3A]">
+        <footer className="bg-white dark:bg-[#1A1A1A] border-t border-gray-200 dark:border-[#3A3A3A]">
             {/* Main Footer Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
@@ -47,9 +47,9 @@ export function Footer() {
                     <div className="lg:col-span-2">
                         <div className="flex items-center gap-2 mb-4">
                             <Swords className="w-8 h-8 text-[#FFC916]" />
-                            <span className="text-2xl font-bold text-white">DuelStandby</span>
+                            <span className="text-2xl font-bold text-gray-900 dark:text-white">DuelStandby</span>
                         </div>
-                        <p className="text-[#E6E6E6]/50 mb-6 max-w-sm leading-relaxed">
+                        <p className="text-gray-600 dark:text-[#E6E6E6]/50 mb-6 max-w-sm leading-relaxed">
                             The ultimate online community for Yu-Gi-Oh! Duel Links and Master Duel players. Join us for tournaments, strategy discussions, and more.
                         </p>
                         {/* Social Icons */}
@@ -58,42 +58,42 @@ export function Footer() {
                                 href="https://discord.gg/duelstandby"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 bg-[#3A3A3A] hover:bg-[#5865F2] rounded-lg transition-colors group"
+                                className="p-2 bg-gray-100 dark:bg-[#3A3A3A] hover:bg-[#5865F2] rounded-lg transition-colors group"
                             >
-                                <DiscordIcon className="w-5 h-5 text-[#E6E6E6]/50 group-hover:text-white transition-colors" />
+                                <DiscordIcon className="w-5 h-5 text-gray-500 dark:text-[#E6E6E6]/50 group-hover:text-white transition-colors" />
                             </a>
                             <a
                                 href="https://youtube.com/@duelstandby"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 bg-[#3A3A3A] hover:bg-[#FF0000] rounded-lg transition-colors group"
+                                className="p-2 bg-gray-100 dark:bg-[#3A3A3A] hover:bg-[#FF0000] rounded-lg transition-colors group"
                             >
-                                <Youtube className="w-5 h-5 text-[#E6E6E6]/50 group-hover:text-white transition-colors" />
+                                <Youtube className="w-5 h-5 text-gray-500 dark:text-[#E6E6E6]/50 group-hover:text-white transition-colors" />
                             </a>
                             <a
                                 href="https://twitter.com/duelstandby"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 bg-[#3A3A3A] hover:bg-[#1DA1F2] rounded-lg transition-colors group"
+                                className="p-2 bg-gray-100 dark:bg-[#3A3A3A] hover:bg-[#1DA1F2] rounded-lg transition-colors group"
                             >
-                                <Twitter className="w-5 h-5 text-[#E6E6E6]/50 group-hover:text-white transition-colors" />
+                                <Twitter className="w-5 h-5 text-gray-500 dark:text-[#E6E6E6]/50 group-hover:text-white transition-colors" />
                             </a>
                             <a
                                 href="mailto:contact@duelstandby.com"
-                                className="p-2 bg-[#3A3A3A] hover:bg-[#545454] rounded-lg transition-colors group"
+                                className="p-2 bg-gray-100 dark:bg-[#3A3A3A] hover:bg-[#545454] rounded-lg transition-colors group"
                             >
-                                <Mail className="w-5 h-5 text-[#E6E6E6]/50 group-hover:text-white transition-colors" />
+                                <Mail className="w-5 h-5 text-gray-500 dark:text-[#E6E6E6]/50 group-hover:text-white transition-colors" />
                             </a>
                         </div>
                     </div>
 
                     {/* Links Columns */}
                     <div>
-                        <h4 className="text-white font-semibold mb-4 uppercase text-sm tracking-wider">Community</h4>
+                        <h4 className="text-gray-900 dark:text-white font-semibold mb-4 uppercase text-sm tracking-wider">Community</h4>
                         <ul className="space-y-3">
                             {footerLinks.community.map((link) => (
                                 <li key={link.name}>
-                                    <Link href={link.href} className="text-[#E6E6E6]/50 hover:text-[#FFC916] transition-colors text-sm">
+                                    <Link href={link.href} className="text-gray-600 dark:text-[#E6E6E6]/50 hover:text-[#FFC916] transition-colors text-sm">
                                         {link.name}
                                     </Link>
                                 </li>
@@ -102,11 +102,11 @@ export function Footer() {
                     </div>
 
                     <div>
-                        <h4 className="text-white font-semibold mb-4 uppercase text-sm tracking-wider">Tournaments</h4>
+                        <h4 className="text-gray-900 dark:text-white font-semibold mb-4 uppercase text-sm tracking-wider">Tournaments</h4>
                         <ul className="space-y-3">
                             {footerLinks.tournaments.map((link) => (
                                 <li key={link.name}>
-                                    <Link href={link.href} className="text-[#E6E6E6]/50 hover:text-[#FFC916] transition-colors text-sm">
+                                    <Link href={link.href} className="text-gray-600 dark:text-[#E6E6E6]/50 hover:text-[#FFC916] transition-colors text-sm">
                                         {link.name}
                                     </Link>
                                 </li>
@@ -115,11 +115,11 @@ export function Footer() {
                     </div>
 
                     <div>
-                        <h4 className="text-white font-semibold mb-4 uppercase text-sm tracking-wider">Resources</h4>
+                        <h4 className="text-gray-900 dark:text-white font-semibold mb-4 uppercase text-sm tracking-wider">Resources</h4>
                         <ul className="space-y-3">
                             {footerLinks.resources.map((link) => (
                                 <li key={link.name}>
-                                    <Link href={link.href} className="text-[#E6E6E6]/50 hover:text-[#FFC916] transition-colors text-sm">
+                                    <Link href={link.href} className="text-gray-600 dark:text-[#E6E6E6]/50 hover:text-[#FFC916] transition-colors text-sm">
                                         {link.name}
                                     </Link>
                                 </li>
@@ -130,9 +130,9 @@ export function Footer() {
             </div>
 
             {/* Bottom Bar */}
-            <div className="border-t border-[#3A3A3A]">
+            <div className="border-t border-gray-200 dark:border-[#3A3A3A]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-[#545454] text-sm">
+                    <p className="text-gray-500 dark:text-[#545454] text-sm">
                         &copy; {new Date().getFullYear()} DuelStandby. All rights reserved.
                     </p>
                     <div className="flex gap-6">
@@ -140,7 +140,7 @@ export function Footer() {
                             <Link
                                 key={link.name}
                                 href={link.href}
-                                className="text-[#545454] hover:text-[#FFC916] transition-colors text-sm"
+                                className="text-gray-500 dark:text-[#545454] hover:text-[#FFC916] transition-colors text-sm"
                             >
                                 {link.name}
                             </Link>

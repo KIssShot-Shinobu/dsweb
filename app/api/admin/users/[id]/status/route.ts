@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
 import { approveSchema } from "@/lib/validators";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -39,16 +40,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         select: { id: true, fullName: true, status: true, role: true },
     });
 
-    // Log admin action
-    await prisma.adminLog.create({
-        data: {
-            adminId: currentUser.id,
+    let auditAction: any = null;
+    if (status === "ACTIVE") auditAction = "MEMBER_APPROVED";
+    else if (status === "REJECTED") auditAction = "MEMBER_REJECTED";
+    else if (status === "BANNED") auditAction = "MEMBER_BANNED";
+
+    if (auditAction) {
+        await logAudit({
+            userId: currentUser.id,
+            action: auditAction,
             targetId: id,
-            action: status === "ACTIVE" ? "APPROVE" : status === "REJECTED" ? "REJECT" : "BAN",
-            reason: reason || null,
-            details: JSON.stringify({ newStatus: status, newRole: role }),
-        },
-    });
+            targetType: "USER",
+            reason: reason || undefined,
+            details: { newStatus: status, newRole: role },
+        });
+    }
+
+    if (role && target.role !== role) {
+        await logAudit({
+            userId: currentUser.id,
+            action: "ROLE_CHANGED",
+            targetId: id,
+            targetType: "USER",
+            reason: reason || undefined,
+            details: { oldRole: target.role, newRole: role },
+        });
+    }
 
     const messages: Record<string, string> = {
         ACTIVE: `${target.fullName} telah disetujui sebagai member.`,

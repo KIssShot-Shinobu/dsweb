@@ -26,7 +26,7 @@ const PROTECTED_ROUTES: { pattern: RegExp; minRole: string }[] = [
     { pattern: /^\/dashboard(\/|$)/, minRole: "USER" },
 ];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
     // Find matching protected route

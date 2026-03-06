@@ -1,12 +1,16 @@
 // Seed script: 50 members, 50 tournaments, 50 treasury transactions
 import "dotenv/config";
-import { PrismaClient } from "../app/generated/prisma/index.js";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaClient } from "@prisma/client";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
-const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+    throw new Error("DATABASE_URL is not set in .env");
+}
+
+const prisma = new PrismaClient({
+    adapter: new PrismaMariaDb(databaseUrl),
 });
-const prisma = new PrismaClient({ adapter });
 
 function randomFromArray(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -16,16 +20,10 @@ function randomDate(start, end) {
     return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 }
 
-function cuid() {
-    const ts = Date.now().toString(36);
-    const rand = Math.random().toString(36).slice(2, 9);
-    return `c${ts}${rand}`;
-}
-
 const ranks = ["Legend", "King of Games", "Platinum", "Gold", "Silver", "Bronze", "Rookie"];
 const roles = ["MEMBER", "MEMBER", "MEMBER", "OFFICER", "LEADER"];
-const gameTypes = ["Duel Links", "Master Duel"];
-const statuses = ["UPCOMING", "ONGOING", "COMPLETED"];
+const gameTypes = ["DUEL_LINKS", "MASTER_DUEL"];
+const statuses = ["OPEN", "ONGOING", "COMPLETED"];
 
 const memberNames = [
     "Yami Yugi", "Seto Kaiba", "Joey Wheeler", "Tea Gardner", "Tristan Taylor",
@@ -67,66 +65,63 @@ const txDescriptions = [
 ];
 
 async function main() {
-    // ── Members ──────────────────────────────────────────────────────────────
-    console.log("🌱 Seeding 50 members...");
+    console.log("Seeding 50 members...");
     const createdMembers = [];
     for (let i = 0; i < 50; i++) {
-        const name = memberNames[i];
-        const joinedAt = randomDate(new Date("2024-01-01"), new Date());
         const member = await prisma.member.create({
             data: {
-                name,
+                name: memberNames[i],
                 gameId: `DS${String(1000 + i).padStart(6, "0")}`,
                 rank: randomFromArray(ranks),
                 role: randomFromArray(roles),
-                joinedAt,
+                joinedAt: randomDate(new Date("2024-01-01"), new Date()),
             },
         });
         createdMembers.push(member);
-        process.stdout.write(`\r  → ${i + 1}/50`);
+        process.stdout.write(`\r  -> ${i + 1}/50`);
     }
-    console.log("\n✅ Members done.");
+    console.log("\nMembers done.");
 
-    // ── Tournaments ───────────────────────────────────────────────────────────
-    console.log("🌱 Seeding 50 tournaments...");
+    console.log("Seeding 50 tournaments...");
     for (let i = 0; i < 50; i++) {
-        const gameType = randomFromArray(gameTypes);
         await prisma.tournament.create({
             data: {
                 title: tournamentNames[i],
-                gameType,
+                gameType: randomFromArray(gameTypes),
                 startDate: randomDate(new Date("2025-01-01"), new Date("2026-12-31")),
                 prizePool: Math.floor(Math.random() * 50) * 10000,
                 status: randomFromArray(statuses),
                 description: "Open to all members. Prizes for top 3 finishers.",
             },
         });
-        process.stdout.write(`\r  → ${i + 1}/50`);
+        process.stdout.write(`\r  -> ${i + 1}/50`);
     }
-    console.log("\n✅ Tournaments done.");
+    console.log("\nTournaments done.");
 
-    // ── Treasury (raw SQL to allow custom createdAt) ──────────────────────────
-    console.log("🌱 Seeding 50 treasury transactions...");
+    console.log("Seeding 50 treasury transactions...");
     for (let i = 0; i < 50; i++) {
         const isIncome = Math.random() > 0.35;
         const amount = Math.floor((Math.random() * 39 + 1)) * 5000;
-        const finalAmount = isIncome ? amount : -amount;
         const member = Math.random() > 0.4 ? randomFromArray(createdMembers) : null;
-        // Spread over last 30 days so chart shows real weekly variation
-        const createdAt = randomDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), new Date());
-        const id = cuid();
-        const desc = randomFromArray(txDescriptions);
-        await prisma.$executeRaw`
-            INSERT INTO "Treasury" (id, amount, description, "createdAt", "memberId")
-            VALUES (${id}, ${finalAmount}, ${desc}, ${createdAt.toISOString()}, ${member?.id ?? null})
-        `;
-        process.stdout.write(`\r  → ${i + 1}/50`);
-    }
-    console.log("\n✅ Treasury done.");
 
-    console.log("\n🎉 Seeding complete! 50 records per table added.");
+        await prisma.treasury.create({
+            data: {
+                amount: isIncome ? amount : -amount,
+                description: randomFromArray(txDescriptions),
+                createdAt: randomDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), new Date()),
+                memberId: member?.id ?? null,
+            },
+        });
+        process.stdout.write(`\r  -> ${i + 1}/50`);
+    }
+    console.log("\nTreasury done.");
+
+    console.log("Seed complete. 50 records per table added.");
 }
 
 main()
-    .catch((e) => { console.error(e); process.exit(1); })
+    .catch((e) => {
+        console.error(e);
+        process.exit(1);
+    })
     .finally(() => prisma.$disconnect());

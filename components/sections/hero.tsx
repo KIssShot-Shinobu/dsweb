@@ -8,9 +8,9 @@ export function Hero() {
     return (
         <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
             {/* Background Elements */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A1A] via-[#2E2E2E] to-[#1A1A1A] z-0" />
-            <div className="absolute top-1/4 -left-20 w-96 h-96 bg-[#FFC916]/20 rounded-full blur-3xl opacity-50 animate-pulse" />
-            <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-[#FFC000]/20 rounded-full blur-3xl opacity-50 animate-pulse delay-1000" />
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-white to-yellow-50 dark:from-[#1A1A1A] dark:via-[#2E2E2E] dark:to-[#1A1A1A] z-0" />
+            <div className="absolute top-1/4 -left-20 w-96 h-96 bg-[#FFC916]/20 rounded-full blur-3xl opacity-40 dark:opacity-50 animate-pulse" />
+            <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-[#FFC000]/20 rounded-full blur-3xl opacity-40 dark:opacity-50 animate-pulse delay-1000" />
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <motion.div
@@ -22,13 +22,13 @@ export function Hero() {
                     <Swords className="w-16 h-16 text-[#FFC916] mb-6 drop-shadow-[0_0_15px_rgba(255,201,22,0.5)]" />
 
                     <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
-                        <span className="text-white">Duel</span>
+                        <span className="text-gray-900 dark:text-white">Duel</span>
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFC916] to-[#FFC000]">
                             Standby
                         </span>
                     </h1>
 
-                    <p className="max-w-2xl text-lg md:text-xl text-[#E6E6E6]/70 mb-10 leading-relaxed">
+                    <p className="max-w-2xl text-lg md:text-xl text-gray-600 dark:text-[#E6E6E6]/70 mb-10 leading-relaxed">
                         The ultimate online community for Yu-Gi-Oh! Duel Links and Master Duel players.
                         Join tournaments, discuss meta strategies, and rise through the ranks.
                     </p>
@@ -45,7 +45,7 @@ export function Hero() {
 
                         <Link
                             href="#tournaments"
-                            className="px-8 py-4 bg-[#3A3A3A] hover:bg-[#545454] text-white rounded-full font-semibold border border-[#545454] transition-all"
+                            className="px-8 py-4 bg-white dark:bg-[#3A3A3A] hover:bg-gray-100 dark:hover:bg-[#545454] text-gray-900 dark:text-white rounded-full font-semibold border border-gray-200 dark:border-[#545454] transition-all"
                         >
                             View Tournaments
                         </Link>

@@ -23,8 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             lastLoginAt: true,
             gameProfiles: true,
             registrationLog: true,
-            adminLogsTarget: {
-                select: { action: true, reason: true, createdAt: true, admin: { select: { fullName: true, email: true } } },
+            auditLogs: {
+                select: { action: true, reason: true, createdAt: true, user: { select: { fullName: true, email: true } } },
                 orderBy: { createdAt: "desc" },
                 take: 10,
             },
