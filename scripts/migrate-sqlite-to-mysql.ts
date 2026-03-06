@@ -3,7 +3,7 @@ import Database from 'better-sqlite3';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 
-const sqliteDbPath = path.resolve(process.cwd(), 'prisma/dev.db');
+const sqliteDbPath = process.env.SQLITE_SOURCE_DB_PATH ? path.resolve(process.cwd(), process.env.SQLITE_SOURCE_DB_PATH) : path.resolve(process.cwd(), 'prisma/dev.db');
 // Instantiate Prisma (yang saat ini sudah di-switch ke MySQL)
 const prismaMySQL = new PrismaClient();
 
@@ -115,3 +115,4 @@ async function migrate() {
 }
 
 migrate();
+

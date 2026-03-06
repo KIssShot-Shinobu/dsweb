@@ -1,10 +1,7 @@
-import { PrismaClient } from "../app/generated/prisma/client.js";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
-const prisma = new PrismaClient({ adapter });
-
+const prisma = new PrismaClient();
 const hash = await bcrypt.hash("Admin123!", 12);
 
 try {
@@ -21,10 +18,10 @@ try {
             role: "ADMIN",
         },
     });
-    console.log("✅ Admin seeded:", user.email);
-    console.log("   Password: Admin123!");
+    console.log("Admin seeded:", user.email);
+    console.log("Password: Admin123!");
 } catch (e) {
-    console.error("❌ Seed failed:", e.message);
+    console.error("Seed failed:", e.message);
 } finally {
     await prisma.$disconnect();
 }

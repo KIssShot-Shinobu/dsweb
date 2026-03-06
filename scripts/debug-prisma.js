@@ -1,10 +1,18 @@
-const { PrismaClient } = require("../app/generated/prisma/client.js");
-const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
+const { PrismaClient } = require("@prisma/client");
 
-const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
-const p = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
-console.log("PrismaClient type:", typeof p);
-console.log("user type:", typeof p.user);
-console.log("Keys:", Object.keys(Object.getPrototypeOf(p)));
-p.$disconnect();
+async function main() {
+    console.log("PrismaClient type:", typeof prisma);
+    console.log("user type:", typeof prisma.user);
+    console.log("Keys:", Object.keys(Object.getPrototypeOf(prisma)));
+}
+
+main()
+    .catch((e) => {
+        console.error("Debug failed:", e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

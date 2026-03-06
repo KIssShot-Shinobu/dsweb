@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { GameType, GuildStatus, UserStatus, UserRole } from "@/app/generated/prisma/enums";
+import { GameType, GuildStatus } from "@prisma/client";
 import { registerSchema } from "@/lib/validators";
 import { hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
@@ -112,3 +112,4 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
     }
 }
+

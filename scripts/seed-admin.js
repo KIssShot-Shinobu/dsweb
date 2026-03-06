@@ -1,9 +1,16 @@
-const { PrismaClient } = require("../app/generated/prisma/client.js");
-const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
+require("dotenv").config();
+const { PrismaClient } = require("@prisma/client");
+const { PrismaMariaDb } = require("@prisma/adapter-mariadb");
 const bcrypt = require("bcryptjs");
 
-const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
-const prisma = new PrismaClient({ adapter });
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+    throw new Error("DATABASE_URL is not set in .env");
+}
+
+const prisma = new PrismaClient({
+    adapter: new PrismaMariaDb(databaseUrl),
+});
 
 async function main() {
     const hash = await bcrypt.hash("Admin123!", 12);
@@ -20,9 +27,15 @@ async function main() {
             role: "ADMIN",
         },
     });
-    console.log("✅ Admin seeded:", user.email);
-    console.log("   Password: Admin123!");
-    await prisma.$disconnect();
+    console.log("Admin seeded:", user.email);
+    console.log("Password: Admin123!");
 }
 
-main().catch((e) => { console.error("❌ Seed failed:", e.message); process.exit(1); });
+main()
+    .catch((e) => {
+        console.error("Seed failed:", e.message);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });
