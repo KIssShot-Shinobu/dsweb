@@ -17,6 +17,7 @@ type MeUser = {
     fullName: string;
     avatarUrl: string | null;
     role: string;
+    emailVerified: boolean;
 };
 
 export function Navbar() {
@@ -35,6 +36,7 @@ export function Navbar() {
                         fullName: data.user.fullName,
                         avatarUrl: data.user.avatarUrl ?? null,
                         role: data.user.role ?? "USER",
+                        emailVerified: Boolean(data.user.emailVerified),
                     });
                 }
             })
@@ -118,7 +120,7 @@ export function Navbar() {
                                 <div className="relative" ref={menuRef}>
                                     <button
                                         onClick={() => setMenuOpen((v) => !v)}
-                                        className="w-10 h-10 rounded-full overflow-hidden border border-white/20 hover:border-[#FFC916]/50 transition-colors"
+                                        className="relative w-10 h-10 rounded-full overflow-hidden border border-white/20 hover:border-[#FFC916]/50 transition-colors"
                                         aria-label="Open profile menu"
                                     >
                                         {me.avatarUrl ? (
@@ -128,6 +130,9 @@ export function Navbar() {
                                             <div className="w-full h-full bg-[#FFC916] text-[#2E2E2E] font-bold text-xs flex items-center justify-center">
                                                 {initials(me.fullName)}
                                             </div>
+                                        )}
+                                        {!me.emailVerified && (
+                                            <span className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-[#2E2E2E]" />
                                         )}
                                     </button>
 
@@ -146,6 +151,15 @@ export function Navbar() {
                                                 >
                                                     {isAdmin ? "Dashboard" : "Profile"}
                                                 </Link>
+                                                {!me.emailVerified && (
+                                                    <Link
+                                                        href="/dashboard/settings"
+                                                        onClick={() => setMenuOpen(false)}
+                                                        className="block px-3 py-2 rounded-lg text-sm text-amber-300 hover:bg-amber-500/10"
+                                                    >
+                                                        Verifikasi Email
+                                                    </Link>
+                                                )}
                                                 <button
                                                     onClick={handleLogout}
                                                     className="w-full text-left px-3 py-2 rounded-lg text-sm text-red-300 hover:bg-red-500/10"
@@ -223,6 +237,15 @@ export function Navbar() {
                                     >
                                         {isAdmin ? "Dashboard" : "Profile"}
                                     </Link>
+                                    {!me.emailVerified && (
+                                        <Link
+                                            href="/dashboard/settings"
+                                            onClick={() => setIsOpen(false)}
+                                            className="text-amber-300 hover:text-amber-200 block px-3 py-2 rounded-md text-base font-medium"
+                                        >
+                                            Verifikasi Email
+                                        </Link>
+                                    )}
                                     <button
                                         onClick={handleLogout}
                                         className="w-full text-left text-red-300 hover:text-red-200 block px-3 py-2 rounded-md text-base font-medium"

@@ -19,14 +19,26 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - Manajemen user approval/admin tools.
 - CRUD tournament + register participant tournament.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
+- Hapus tournament di dashboard memakai confirm modal + undo 5 detik (konsisten dengan members/treasury).
 - Form tournament mendukung field `Image URL` + preview gambar pada create/edit.
 - Form tournament juga mendukung upload file gambar langsung ke `/api/upload` (URL akan terisi otomatis).
+- List tournament di dashboard menampilkan thumbnail image kecil per row.
+- Form di dashboard `tournament`, `members`, dan `treasury` menggunakan custom dropdown konsisten (tidak lagi native select browser).
+- Style form/button dashboard dipusatkan di `components/dashboard/form-styles.ts` agar konsisten lintas halaman.
+- Aksi row list (`Edit/Hapus`) dipusatkan di `components/dashboard/row-actions.tsx` agar pola tabel konsisten.
 - Manajemen members guild.
 - Treasury transaksi + analytics ringkas.
 - Upload file gambar (screenshot/profile) via API.
 - Audit log aktivitas user/admin.
 - Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
 - Native form controls (`select`, `date`, `datetime-local`) sudah di-hardening agar teks dropdown tetap terbaca di light/dark.
+- Password reset flow berbasis token dengan expiry 15 menit.
+- Refresh token rotation berbasis tabel session untuk manajemen sesi yang lebih aman.
+- Email verification status tampil di `Profile` dan `Settings`.
+- `Settings` menyediakan aksi kirim ulang link verifikasi email untuk user yang belum verifikasi.
+- Enhanced user profile fields (bio, timezone, language, discord/social handle, date of birth, gender).
+- Sistem badge dan reputasi user (`Badge`, `UserBadge`, `ReputationLog`).
+- Endpoint stats profil terhitung untuk progress user.
 - Public homepage tersinkron ke database (total member, total tournament, list tournament terbaru/aktif).
 - Navbar public:
 - Belum login: `Sign In` + `Sign Up`.
@@ -81,6 +93,9 @@ Variabel penting:
 - `NEXT_PUBLIC_APP_URL`: base URL app (dipakai URL hasil upload).
 - `UPLOAD_DIR`: lokasi simpan file upload (default `./public/uploads`).
 - `MAX_FILE_SIZE`: batas upload byte (default 5MB).
+- `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS`: kredensial SMTP provider email.
+- `EMAIL_FROM`: alamat pengirim email untuk verifikasi/reset password.
+- `RESETPASSCONSOLE` (atau `resetpassconsole`): mode pengiriman email (`true` = `console.info`, `false` = SMTP/provider email).
 
 ## Instalasi & Menjalankan Lokal
 
@@ -128,6 +143,12 @@ Auth:
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
+- `POST /api/auth/refresh`
+- `POST /api/auth/password/forgot`
+- `POST /api/auth/password/reset`
+- `POST /api/auth/verify-email`
+- `POST /api/auth/verify-email/resend`
+- `GET /api/profile/stats`
 
 Tournament:
 
@@ -143,6 +164,7 @@ Lainnya:
 - `GET/POST /api/members`, `PUT/DELETE /api/members/:id`
 - `GET/POST /api/treasury`, `PUT/DELETE /api/treasury/:id`
 - `POST /api/upload`
+- `POST /api/upload/public` (khusus upload screenshot saat registrasi sebelum login)
 - `GET /api/audit-logs`
 - `GET /api/health`
 
@@ -154,12 +176,63 @@ Lainnya:
 
 Catatan: beberapa menu mengikuti pengecekan role di frontend dan backend; backend tetap sumber kebenaran.
 
+## Standar Audit Log
+
+Untuk endpoint penting (terutama operasi write `POST/PUT/DELETE`), audit log wajib ditulis.
+
+- Member: create/update/delete sudah tercatat (`MEMBER_CREATED`, `MEMBER_UPDATED`, `MEMBER_DELETED`).
+- Treasury: add/update/delete sudah tercatat (`TREASURY_ADDED`, `TREASURY_UPDATED`, `TREASURY_DELETED`).
+- Tournament: create/update/delete sudah tercatat.
+- Auth/Profile/Upload: event penting sudah tercatat.
+- Session/Auth integrity: password reset request/success dan session refresh juga tercatat.
+
+Aturan ke depan:
+
+1. Setiap fitur penting baru harus menambahkan audit log.
+2. Gunakan `userId` dari token (`ds_auth`) untuk actor log, bukan header manual.
+3. Simpan `before/after` ringkas untuk operasi update jika relevan.
+4. Jangan taruh data sensitif mentah di `details` audit.
+
+## Security Notes
+
+- Access token disimpan di cookie `ds_auth` (httpOnly), umur pendek 15 menit.
+- Refresh token disimpan di cookie `ds_refresh` (httpOnly), umur 7 hari.
+- Refresh token disimpan di tabel `Session` dan selalu dirotasi saat `POST /api/auth/refresh`.
+- Saat password berhasil direset, semua session user direvoke (force logout di semua device).
+- Model `User` menyimpan field keamanan tambahan: `emailVerifiedAt`, `phoneVerifiedAt`, `twoFactorEnabled`, `twoFactorSecret`, `lastActiveAt`, dan `privacySettings`.
+- Model `User` juga menyimpan kelengkapan profil: `bio`, `timezone`, `language`, `discordId`, `instagramHandle`, `twitterHandle`, `dateOfBirth`, `gender`.
+- Opsi pengiriman email:
+- `RESETPASSCONSOLE=true`: email dicetak via `console.info` (dev/testing).
+- `RESETPASSCONSOLE=false`: email dikirim via SMTP/provider (wajib isi env SMTP).
+- Saat SMTP/provider sudah aktif, nonaktifkan mode console dengan set `RESETPASSCONSOLE=false`.
+
 ## Troubleshooting
 
 ### PrismaClientInitializationError saat `new PrismaClient()`
 
 Pastikan inisialisasi Prisma pakai adapter MariaDB (Prisma 7) dan `DATABASE_URL` valid.
 Referensi implementasi: `lib/prisma.ts`.
+
+### `api/upload` 401 saat registrasi
+
+Form registrasi sekarang memakai endpoint publik `POST /api/upload/public` untuk upload screenshot sebelum user login.
+Endpoint `POST /api/upload` tetap dipakai untuk area yang membutuhkan user terautentikasi.
+
+### `api/auth/register` 409 (Conflict)
+
+`409` berarti data bentrok (email/nomor WhatsApp/gameId sudah terdaftar).  
+Jika sebelumnya sempat muncul `500` lalu percobaan berikutnya `409`, biasanya akun sudah sempat tersimpan di percobaan awal.
+
+### Login/Register 500 setelah update fitur session/token
+
+Jika baru pull update security (Session/EmailVerificationToken/PasswordResetToken), pastikan schema DB sudah disinkronkan:
+
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+Lalu restart dev server.
 
 ### Error PowerShell `npm.ps1 cannot be loaded`
 

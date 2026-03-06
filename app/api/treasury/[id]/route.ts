@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getTokenFromCookie, verifyToken } from "@/lib/auth";
+import { logAudit } from "@/lib/audit-logger";
 
 type Params = Promise<{ id: string }>;
 
@@ -34,9 +36,17 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
 // PUT /api/treasury/[id] - Update a transaction
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
     try {
+        const token = await getTokenFromCookie();
+        const decoded = token ? await verifyToken(token) : null;
+        if (!decoded || !["ADMIN", "FOUNDER"].includes(decoded.role)) {
+            return NextResponse.json({ error: "Akses Ditolak" }, { status: 403 });
+        }
+
         const { id } = await params;
         const body = await request.json();
         const { amount, description, memberId } = body;
+
+        const previous = await prisma.treasury.findUnique({ where: { id } });
 
         const transaction = await prisma.treasury.update({
             where: { id },
@@ -48,6 +58,17 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
             include: {
                 member: true,
             },
+        });
+
+        await logAudit({
+            userId: decoded.userId,
+            action: "TREASURY_UPDATED",
+            targetId: transaction.id,
+            targetType: "Treasury",
+            details: {
+                before: previous ? { amount: previous.amount, description: previous.description, memberId: previous.memberId } : null,
+                after: { amount: transaction.amount, description: transaction.description, memberId: transaction.memberId }
+            }
         });
 
         return NextResponse.json(transaction);
@@ -69,9 +90,23 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
 // DELETE /api/treasury/[id] - Delete a transaction
 export async function DELETE(request: NextRequest, { params }: { params: Params }) {
     try {
+        const token = await getTokenFromCookie();
+        const decoded = token ? await verifyToken(token) : null;
+        if (!decoded || !["ADMIN", "FOUNDER"].includes(decoded.role)) {
+            return NextResponse.json({ error: "Akses Ditolak" }, { status: 403 });
+        }
+
         const { id } = await params;
-        await prisma.treasury.delete({
+        const deleted = await prisma.treasury.delete({
             where: { id },
+        });
+
+        await logAudit({
+            userId: decoded.userId,
+            action: "TREASURY_DELETED",
+            targetId: id,
+            targetType: "Treasury",
+            details: { amount: deleted.amount, description: deleted.description, memberId: deleted.memberId }
         });
 
         return NextResponse.json({ message: "Transaction deleted successfully" });
