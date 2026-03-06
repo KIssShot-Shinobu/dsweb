@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validators";
 import { hashPassword } from "@/lib/auth";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function POST(req: NextRequest) {
     try {
@@ -98,6 +99,8 @@ export async function POST(req: NextRequest) {
                 },
             },
         });
+
+        await logAudit({ action: "USER_REGISTERED", userId: user.id, req });
 
         return NextResponse.json(
             { success: true, message: "Registrasi berhasil! Akun Anda sudah aktif dan bisa langsung login.", userId: user.id },

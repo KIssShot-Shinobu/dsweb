@@ -40,6 +40,7 @@ const ALL_MENU: MenuSection[] = [
             { name: "Dashboard", href: "/dashboard", icon: "📊", minRole: "ADMIN" },
             { name: "Registrasi User", href: "/dashboard/admin/users", icon: "📋", minRole: "ADMIN" },
             { name: "Admin Panel", href: "/dashboard/admin", icon: "🛡️", minRole: "ADMIN" },
+            { name: "Audit Logs", href: "/dashboard/audit-logs", icon: "🧾", minRole: "ADMIN" },
         ],
     },
 ];

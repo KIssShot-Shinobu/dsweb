@@ -100,3 +100,20 @@ model AdminLog {
   details   String?  // JSON as string
   createdAt DateTime @default(now())
 }
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String   @default("0") // Mengacu pada User.id (String). Gunakan "0" untuk sistem/tamu
+  action      String   // LOGIN_SUCCESS, MEMBER_APPROVED, dll
+  targetId    String?  // ID target aksi
+  targetType  String?  // Tipe target: USER, GAME_PROFILE, dll
+  ipAddress   String
+  userAgent   String?  // Optional, sometimes user agent can be missing or very long
+  details     String?  // JSON as string
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([targetId])
+  @@index([createdAt])
+}
