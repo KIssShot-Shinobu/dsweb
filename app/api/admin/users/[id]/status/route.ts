@@ -40,17 +40,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         select: { id: true, fullName: true, status: true, role: true },
     });
 
-    // Log admin action
-    await prisma.adminLog.create({
-        data: {
-            adminId: currentUser.id,
-            targetId: id,
-            action: status === "ACTIVE" ? "APPROVE" : status === "REJECTED" ? "REJECT" : "BAN",
-            reason: reason || null,
-            details: JSON.stringify({ newStatus: status, newRole: role }),
-        },
-    });
-
     let auditAction: any = null;
     if (status === "ACTIVE") auditAction = "MEMBER_APPROVED";
     else if (status === "REJECTED") auditAction = "MEMBER_REJECTED";
@@ -62,8 +51,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             action: auditAction,
             targetId: id,
             targetType: "USER",
-            details: { newStatus: status, newRole: role, reason },
-            req,
+            reason: reason || undefined,
+            details: { newStatus: status, newRole: role },
         });
     }
 
@@ -73,8 +62,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             action: "ROLE_CHANGED",
             targetId: id,
             targetType: "USER",
-            details: { oldRole: target.role, newRole: role, reason },
-            req,
+            reason: reason || undefined,
+            details: { oldRole: target.role, newRole: role },
         });
     }
 

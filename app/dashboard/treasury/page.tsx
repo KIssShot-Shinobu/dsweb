@@ -35,30 +35,41 @@ export default function TreasuryPage() {
     const [submitting, setSubmitting] = useState(false);
     const [page, setPage] = useState(1);
     const [filter, setFilter] = useState<"all" | "income" | "expense">("all");
+
+    // Month/Year Filtering 
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+    const [month, setMonth] = useState(currentMonth);
+    const [year, setYear] = useState(currentYear);
+
     const { success, error } = useToast();
     const [confirmState, setConfirmState] = useState<{ open: boolean; id: string; label: string }>({ open: false, id: "", label: "" });
     const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string; item: Transaction } | null>(null);
     const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchTreasury = () => {
-        fetch("/api/treasury")
+        setLoading(true);
+        fetch(`/api/treasury?month=${month}&year=${year}`)
             .then((res) => res.json())
             .then((data) => { setTransactions(data.transactions || []); setBalance(data.balance || 0); setLoading(false); })
             .catch(() => setLoading(false));
     };
 
-    useEffect(() => { fetchTreasury(); }, []);
+    useEffect(() => { fetchTreasury(); }, [month, year]);
     useEffect(() => () => { if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current); }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
-        const amount = formData.type === "expense" ? -Math.abs(Number(formData.amount)) : Math.abs(Number(formData.amount));
         try {
             const res = await fetch(editingId ? `/api/treasury/${editingId}` : "/api/treasury", {
                 method: editingId ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amount, description: formData.description }),
+                body: JSON.stringify({
+                    type: formData.type.toUpperCase(),
+                    amount: Math.abs(Number(formData.amount)),
+                    description: formData.description
+                }),
             });
             if (res.ok) {
                 fetchTreasury();
@@ -72,7 +83,7 @@ export default function TreasuryPage() {
     };
 
     const handleEdit = (tx: Transaction) => {
-        setFormData({ amount: Math.abs(tx.amount), description: tx.description, type: tx.amount >= 0 ? "income" : "expense" });
+        setFormData({ amount: Math.abs(tx.amount), description: tx.description, type: tx.amount >= 0 ? "MASUK" : "KELUAR" });
         setEditingId(tx.id);
         setShowModal(true);
     };
@@ -139,7 +150,7 @@ export default function TreasuryPage() {
     const expense = Math.abs(transactions.filter((t) => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
 
     const filtered = transactions.filter((t) => {
-        if (filter === "income") return t.amount > 0;
+        if (filter === "income") return t.amount >= 0;
         if (filter === "expense") return t.amount < 0;
         return true;
     });
@@ -156,9 +167,31 @@ export default function TreasuryPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Treasury</h1>
-                    <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Manage guild finances</p>
+                    <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Kelola Kas Guild & Riwayat Transaksi</p>
                 </div>
-                <button className={btnPrimary} onClick={() => setShowModal(true)}>+ Add Transaction</button>
+                <div className="flex items-center gap-3">
+                    <div className="flex bg-[#161616] border border-white/10 rounded-xl overflow-hidden p-1">
+                        <select
+                            value={month}
+                            onChange={(e) => setMonth(Number(e.target.value))}
+                            className="bg-transparent text-sm text-white px-2 py-1.5 outline-none appearance-none font-medium cursor-pointer"
+                        >
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                                <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('id-ID', { month: 'short' })}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={year}
+                            onChange={(e) => setYear(Number(e.target.value))}
+                            className="bg-transparent text-sm text-white px-2 py-1.5 outline-none font-medium appearance-none border-l border-white/10 cursor-pointer"
+                        >
+                            {[currentYear - 1, currentYear, currentYear + 1].map(y => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <button className={btnPrimary} onClick={() => setShowModal(true)}>+ Add Transaction</button>
+                </div>
             </div>
 
             {/* Stats Row */}
@@ -242,9 +275,9 @@ export default function TreasuryPage() {
                     <div className="grid grid-cols-1 gap-4 mb-5">
                         <div>
                             <label className={labelCls}>Type</label>
-                            <select className={inputCls} value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
-                                <option value="income">Income (Pemasukan)</option>
-                                <option value="expense">Expense (Pengeluaran)</option>
+                            <select className={inputCls} value={formData.type.toUpperCase()} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
+                                <option value="MASUK">Pemasukan (Income)</option>
+                                <option value="KELUAR">Pengeluaran (Expense)</option>
                             </select>
                         </div>
                         <div>

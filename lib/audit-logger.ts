@@ -1,79 +1,89 @@
-import prisma from "./prisma";
-import { headers } from "next/headers";
+import { prisma } from './prisma';
+import { headers } from 'next/headers';
+import { stringifyDetails, validateSafeForLog } from './audit-utils';
+import { AuditActionType } from './audit-actions';
 
-type AuditAction =
-    | "LOGIN_SUCCESS"
-    | "LOGIN_FAILED"
-    | "LOGOUT"
-    | "USER_REGISTERED"
-    | "PASSWORD_RESET_REQUEST"
-    | "PASSWORD_RESET_SUCCESS"
-    | "MEMBER_APPROVED"
-    | "MEMBER_REJECTED"
-    | "MEMBER_BANNED"
-    | "MEMBER_UNBANNED"
-    | "MEMBER_DELETED"
-    | "ROLE_CHANGED"
-    | "PROFILE_UPDATED"
-    | "GAME_PROFILE_UPDATED"
-    | "FILE_UPLOADED"
-    | "RATE_LIMIT_HIT"
-    | "SUSPICIOUS_ACTIVITY";
-
-interface LogAuditParams {
+export interface AuditLogData {
     userId?: string;
-    action: AuditAction;
+    action: AuditActionType;
     targetId?: string;
     targetType?: string;
+    reason?: string;
     details?: Record<string, any>;
+    requestPath?: string;
+    requestMethod?: string;
+    responseStatus?: number;
 }
 
-export async function logAudit({
-    userId = "0",
-    action,
-    targetId,
-    targetType,
-    details,
-}: LogAuditParams) {
-    try {
-        let ipAddress = "127.0.0.1";
-        let userAgent = "Unknown";
+export function extractIP(headers: Headers): string {
+    const cfIP = headers.get('cf-connecting-ip');
+    if (cfIP) return cfIP;
 
-        // Use next/headers if possible
+    const forwarded = headers.get('x-forwarded-for');
+    if (forwarded) {
+        return forwarded.split(',')[0].trim();
+    }
+
+    const realIP = headers.get('x-real-ip');
+    if (realIP) return realIP;
+
+    return '127.0.0.1';
+}
+
+export async function logAudit(data: AuditLogData): Promise<void> {
+    try {
+        let headersList: Headers;
+        let ip = '127.0.0.1';
+        let userAgent = 'unknown';
+
         try {
-            const headersList = await headers();
-            ipAddress = headersList.get("x-forwarded-for")?.split(',')[0] || headersList.get("x-real-ip") || "127.0.0.1";
-            userAgent = headersList.get("user-agent") || "Unknown";
-        } catch (e) {
-            // Ignored if headers() is not available in the current context
+            headersList = await headers();
+            ip = extractIP(headersList);
+            userAgent = headersList.get('user-agent') || 'unknown';
+        } catch {
+            // Ignored
         }
 
-        // Sanitize details to not include passwords or sensitive tokens just in case
-        const sanitizedDetails = { ...details };
-        if (sanitizedDetails.password) delete sanitizedDetails.password;
-        if (sanitizedDetails.token) delete sanitizedDetails.token;
+        if (data.details && !validateSafeForLog(data.details)) {
+            console.warn('[AuditLogger] Sensitive data filtered from log');
+        }
 
-        // Run this asynchronously without waiting to block the main thread unnecessarily
-        // However, Prisma client needs to stay alive, so we just run the promise
         prisma.auditLog.create({
             data: {
-                userId,
-                action,
-                targetId,
-                targetType,
-                ipAddress,
-                userAgent,
-                details: sanitizedDetails && Object.keys(sanitizedDetails).length > 0
-                    ? JSON.stringify(sanitizedDetails)
-                    : null,
+                userId: data.userId || "0",
+                action: data.action,
+                targetId: data.targetId,
+                targetType: data.targetType,
+                ipAddress: ip,
+                userAgent: userAgent,
+                requestPath: data.requestPath,
+                requestMethod: data.requestMethod,
+                responseStatus: data.responseStatus,
+                reason: data.reason,
+                details: data.details ? stringifyDetails(data.details) : null,
             },
         }).catch((e: any) => {
-            console.error("[Audit Logger Error] Failed to write log to DB:", e);
+            console.error("[Audit Logger Error] Failed to write log:", e);
         });
-
     } catch (error) {
-        if (process.env.NODE_ENV !== "production") {
-            console.error("[Audit Logger Error] Unexpected error:", error);
-        }
+        console.error('[AuditLogger] Failed to log activity:', error);
     }
+}
+
+export async function getUserAuditLogs(userId: string, limit: number = 50) {
+    return await prisma.auditLog.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    role: true,
+                },
+            },
+        },
+    });
 }

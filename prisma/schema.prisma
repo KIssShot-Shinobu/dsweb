@@ -10,27 +10,86 @@ datasource db {
   provider = "sqlite"
 }
 
+// ─── ENUMS FOR TYPE SAFETY ───────────────────────────────────────────────────
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  BANNED
+}
+
+enum UserRole {
+  USER
+  MEMBER
+  OFFICER
+  ADMIN
+  FOUNDER
+}
+
+enum GuildStatus {
+  SOLO_PLAYER
+  LEFT_GUILD
+  NEW_PLAYER
+}
+
+enum GameType {
+  DUEL_LINKS
+  MASTER_DUEL
+}
+
+enum TournamentFormat {
+  BO1
+  BO3
+  BO5
+}
+
+enum TournamentStatus {
+  OPEN
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
 // ─── Existing Models (unchanged) ─────────────────────────────────────────────
 
 model Member {
-  id        String   @id @default(cuid())
-  name      String
-  gameId    String   @unique
-  rank      String?
-  role      String   @default("MEMBER")
-  joinedAt  DateTime @default(now())
+  id           String     @id @default(cuid())
+  name         String
+  gameId       String     @unique
+  rank         String?
+  role         String     @default("MEMBER")
+  joinedAt     DateTime   @default(now())
   transactions Treasury[]
 }
 
 model Tournament {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
-  gameType    String
-  status      String   @default("UPCOMING")
-  startDate   DateTime
-  prizePool   Int      @default(0)
   description String?
+  format      TournamentFormat @default(BO3)
+  gameType    GameType         @default(DUEL_LINKS)
+  status      TournamentStatus @default(OPEN)
+  entryFee    Int              @default(0)
+  prizePool   Int              @default(0)
+  startDate   DateTime
   image       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  participants TournamentParticipant[]
+}
+
+model TournamentParticipant {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId       String     // Snapshot of IGN or Game ID used at registration
+  joinedAt     DateTime   @default(now())
+
+  @@unique([tournamentId, userId])
 }
 
 model Treasury {
@@ -45,75 +104,71 @@ model Treasury {
 // ─── New: Auth / Registration System ─────────────────────────────────────────
 
 model User {
-  id              String    @id @default(cuid())
-  fullName        String
-  email           String    @unique
-  password        String
-  phoneWhatsapp   String?   @unique
-  city            String?
-  avatarUrl       String?
-  status          String    @default("PENDING")  // PENDING, ACTIVE, REJECTED, BANNED
-  role            String    @default("USER")      // USER, MEMBER, OFFICER, ADMIN, FOUNDER
-  lastLoginAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  id            String     @id @default(cuid())
+  fullName      String
+  email         String     @unique
+  password      String
+  phoneWhatsapp String?    @unique
+  city          String?
+  avatarUrl     String?
+  status        UserStatus @default(PENDING)
+  role          UserRole   @default(USER)
+  lastLoginAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  deletedAt     DateTime?
 
   gameProfiles    GameProfile[]
   registrationLog RegistrationLog?
-  adminLogsGiven  AdminLog[]       @relation("AdminLogs")
-  adminLogsTarget AdminLog[]       @relation("TargetLogs")
+  auditLogs       AuditLog[]
+  tournaments     TournamentParticipant[]
 }
 
 model GameProfile {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameType      String    // DUEL_LINKS, MASTER_DUEL
-  gameId        String    @unique
-  ign           String    // Must start with [DS]
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameType      GameType
+  gameId        String   @unique
+  ign           String
   screenshotUrl String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model RegistrationLog {
-  id           String    @id @default(cuid())
-  userId       String    @unique
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sourceInfo   String?   // How they found the guild
-  prevGuild    String?   // Previous guild name
-  guildStatus  String    // SOLO_PLAYER, LEFT_GUILD, NEW_PLAYER
-  socialMedia  String?   // JSON array stored as string
-  agreement    Boolean   @default(true)
-  createdAt    DateTime  @default(now())
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceInfo  String?
+  prevGuild   String?
+  guildStatus GuildStatus
+  socialMedia String?
+  agreement   Boolean     @default(true)
+  createdAt   DateTime    @default(now())
 }
 
-model AdminLog {
-  id        String   @id @default(cuid())
-  adminId   String
-  admin     User     @relation("AdminLogs", fields: [adminId], references: [id])
-  targetId  String?
-  target    User?    @relation("TargetLogs", fields: [targetId], references: [id])
-  action    String   // APPROVE, REJECT, BAN, UNBAN, ROLE_CHANGE, etc.
-  reason    String?
-  details   String?  // JSON as string
-  createdAt DateTime @default(now())
-}
+// ─── AUDIT LOG SYSTEM (MERGED AdminLog + AuditLog) ───────────────────────────
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String   @default("0") // Mengacu pada User.id (String). Gunakan "0" untuk sistem/tamu
-  action      String   // LOGIN_SUCCESS, MEMBER_APPROVED, dll
-  targetId    String?  // ID target aksi
-  targetType  String?  // Tipe target: USER, GAME_PROFILE, dll
-  ipAddress   String
-  userAgent   String?  // Optional, sometimes user agent can be missing or very long
-  details     String?  // JSON as string
-  createdAt   DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String   @default("0")
+  user           User?    @relation(fields: [userId], references: [id])
+  action         String
+  targetId       String?
+  targetType     String?
+  ipAddress      String
+  userAgent      String?
+  requestPath    String?
+  requestMethod  String?
+  responseStatus Int?
+  reason         String?
+  details        String?
+  createdAt      DateTime @default(now())
 
   @@index([userId])
   @@index([action])
   @@index([targetId])
   @@index([createdAt])
+  @@index([responseStatus])
 }

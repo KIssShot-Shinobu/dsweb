@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
             async start(controller) {
                 try {
                     // Tulis Header CSV
-                    const header = "ID,Waktu,User ID,Aksi,Target ID,Tipe Target,IP Address,Details\n";
+                    const header = "ID,Waktu,User ID,Email,Aksi,Target ID,Tipe Target,IP Address,Method,Path,Status,Reason,Details\n";
                     controller.enqueue(encoder.encode(header));
 
                     const batchSize = 1000;
@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
                             take: batchSize,
                             ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
                             orderBy: { id: "asc" },
+                            include: { user: { select: { email: true } } },
                         });
 
                         if (dbLogs.length === 0) {
@@ -42,14 +43,21 @@ export async function GET(req: NextRequest) {
                                 ? `"${log.details.replace(/"/g, '""')}"`
                                 : "";
 
+                            const safeReason = log.reason ? `"${log.reason.replace(/"/g, '""')}"` : "";
+
                             const row = [
                                 log.id,
                                 log.createdAt.toISOString(),
                                 log.userId,
+                                log.user?.email || "",
                                 log.action,
                                 log.targetId || "",
                                 log.targetType || "",
                                 log.ipAddress,
+                                log.requestMethod || "",
+                                log.requestPath || "",
+                                log.responseStatus || "",
+                                safeReason,
                                 safeDetails
                             ].join(",");
 

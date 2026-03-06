@@ -11,7 +11,15 @@ type AuditLog = {
     ipAddress: string;
     userAgent: string | null;
     details: string | null;
+    reason: string | null;
+    requestPath: string | null;
+    requestMethod: string | null;
+    responseStatus: number | null;
     createdAt: string;
+    user?: {
+        fullName: string;
+        email: string;
+    };
 };
 
 // Reusable hook for fetching data
@@ -268,10 +276,15 @@ export default function AuditLogsPage() {
                                                 {formatDate(log.createdAt)}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-mono text-xs px-2 py-1 bg-white/5 rounded-md text-neutral-400 truncate max-w-[100px]" title={log.userId}>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="font-mono text-xs px-2 py-0.5 bg-white/5 rounded-md text-neutral-400 w-fit" title={log.userId}>
                                                         {log.userId === "0" ? "SYSTEM" : log.userId.slice(-6)}
                                                     </span>
+                                                    {log.user && (
+                                                        <span className="text-xs text-neutral-500 truncate max-w-[150px]" title={log.user.email}>
+                                                            {log.user.fullName}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
@@ -284,9 +297,16 @@ export default function AuditLogsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-neutral-300 truncate max-w-[250px] md:max-w-md lg:max-w-lg" title={formatDetails(log.details)}>
-                                                    <span className="opacity-50 font-mono text-[10px] bg-black/30 px-1 py-0.5 rounded mr-2 uppercase tracking-wide">
-                                                        {log.targetType || "NONE"}
-                                                    </span>
+                                                    <div className="mb-1 flex gap-2">
+                                                        <span className="opacity-50 font-mono text-[10px] bg-black/30 px-1 py-0.5 rounded uppercase tracking-wide">
+                                                            {log.targetType || "NONE"}
+                                                        </span>
+                                                        {log.reason && (
+                                                            <span className="opacity-50 font-mono text-[10px] bg-red-500/10 text-red-400 px-1 py-0.5 rounded uppercase tracking-wide" title={log.reason}>
+                                                                REASON: {log.reason}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     {formatDetails(log.details)}
                                                 </div>
                                             </td>

@@ -1,89 +1,95 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyToken, hasRole, ROLES } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { logAudit } from "@/lib/audit-logger";
 
-type Params = Promise<{ id: string }>;
-
-// GET /api/tournaments/[id] - Get a single tournament
-export async function GET(request: NextRequest, { params }: { params: Params }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
         const tournament = await prisma.tournament.findUnique({
             where: { id },
+            include: {
+                participants: {
+                    include: {
+                        user: {
+                            select: { id: true, fullName: true, avatarUrl: true, role: true }
+                        }
+                    },
+                    orderBy: { joinedAt: "asc" }
+                }
+            }
         });
 
         if (!tournament) {
-            return NextResponse.json(
-                { error: "Tournament not found" },
-                { status: 404 }
-            );
+            return NextResponse.json({ success: false, message: "Turnamen tidak ditemukan" }, { status: 404 });
         }
 
-        return NextResponse.json(tournament);
+        return NextResponse.json({ success: true, tournament }, { status: 200 });
     } catch (error) {
         console.error("Error fetching tournament:", error);
-        return NextResponse.json(
-            { error: "Failed to fetch tournament" },
-            { status: 500 }
-        );
+        return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });
     }
 }
 
-// PUT /api/tournaments/[id] - Update a tournament
-export async function PUT(request: NextRequest, { params }: { params: Params }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const decoded = await verifyToken(request.cookies.get("ds_auth")?.value || "");
+        if (!decoded || !hasRole(decoded.role, ROLES.OFFICER)) {
+            return NextResponse.json({ success: false, message: "Akses Ditolak" }, { status: 403 });
+        }
+
         const { id } = await params;
         const body = await request.json();
-        const { title, gameType, startDate, prizePool, description, status, image } = body;
+        const { status } = body;
+
+        if (!status || !["OPEN", "ONGOING", "COMPLETED", "CANCELLED"].includes(status)) {
+            return NextResponse.json({ success: false, message: "Status tidak valid" }, { status: 400 });
+        }
 
         const tournament = await prisma.tournament.update({
             where: { id },
-            data: {
-                ...(title && { title }),
-                ...(gameType && { gameType }),
-                ...(startDate && { startDate: new Date(startDate) }),
-                ...(prizePool !== undefined && { prizePool }),
-                ...(description !== undefined && { description }),
-                ...(status && { status }),
-                ...(image !== undefined && { image }),
-            },
+            data: { status }
         });
 
-        return NextResponse.json(tournament);
-    } catch (error: unknown) {
+        await logAudit({
+            userId: decoded.userId,
+            action: "TOURNAMENT_UPDATED",
+            targetId: tournament.id,
+            targetType: "Tournament",
+            details: { newStatus: status }
+        });
+
+        return NextResponse.json({ success: true, tournament }, { status: 200 });
+    } catch (error) {
         console.error("Error updating tournament:", error);
-        if (error instanceof Error && error.message.includes("Record to update not found")) {
-            return NextResponse.json(
-                { error: "Tournament not found" },
-                { status: 404 }
-            );
-        }
-        return NextResponse.json(
-            { error: "Failed to update tournament" },
-            { status: 500 }
-        );
+        return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });
     }
 }
 
-// DELETE /api/tournaments/[id] - Delete a tournament
-export async function DELETE(request: NextRequest, { params }: { params: Params }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const decoded = await verifyToken(request.cookies.get("ds_auth")?.value || "");
+        if (!decoded || !hasRole(decoded.role, ROLES.OFFICER)) {
+            return NextResponse.json({ success: false, message: "Akses Ditolak" }, { status: 403 });
+        }
+
         const { id } = await params;
-        await prisma.tournament.delete({
-            where: { id },
+
+        const tournament = await prisma.tournament.delete({
+            where: { id }
         });
 
-        return NextResponse.json({ message: "Tournament deleted successfully" });
-    } catch (error: unknown) {
+        await logAudit({
+            userId: decoded.userId,
+            action: "TOURNAMENT_DELETED",
+            targetId: id,
+            targetType: "Tournament",
+            details: { title: tournament.title }
+        });
+
+        return NextResponse.json({ success: true, message: "Turnamen dihapus" }, { status: 200 });
+    } catch (error) {
         console.error("Error deleting tournament:", error);
-        if (error instanceof Error && error.message.includes("Record to delete does not exist")) {
-            return NextResponse.json(
-                { error: "Tournament not found" },
-                { status: 404 }
-            );
-        }
-        return NextResponse.json(
-            { error: "Failed to delete tournament" },
-            { status: 500 }
-        );
+        return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });
     }
 }

@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const perPage = parseInt(searchParams.get("perPage") || "20");
 
-    const where = {
+    const where: any = {
         ...(status && status !== "ALL" ? { status } : {}),
         ...(search ? {
             OR: [

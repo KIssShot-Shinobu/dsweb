@@ -115,11 +115,15 @@ export function Sidebar() {
                         const visibleItems = section.items.filter((item) => canAccess(item.minRole));
                         if (visibleItems.length === 0) return null;
 
+                        const bestMatch = ALL_MENU.flatMap(s => s.items)
+                            .filter(i => pathname === i.href || pathname.startsWith(i.href + "/"))
+                            .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
                         return (
                             <div key={section.section} className="mb-4">
                                 <div className="px-3 mb-1.5 text-[10px] font-semibold tracking-widest text-white/30 uppercase">{section.section}</div>
                                 {visibleItems.map((item) => {
-                                    const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                                    const isActive = item.href === bestMatch || (item.href === "/dashboard" && pathname === "/dashboard");
                                     return (
                                         <Link
                                             key={item.href}
