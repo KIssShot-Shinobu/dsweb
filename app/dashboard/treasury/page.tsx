@@ -170,11 +170,11 @@ export default function TreasuryPage() {
                     <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Kelola Kas Guild & Riwayat Transaksi</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex bg-[#161616] border border-white/10 rounded-xl overflow-hidden p-1">
+                    <div className="flex bg-white dark:bg-[#161616] border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden p-1">
                         <select
                             value={month}
                             onChange={(e) => setMonth(Number(e.target.value))}
-                            className="bg-transparent text-sm text-white px-2 py-1.5 outline-none appearance-none font-medium cursor-pointer"
+                            className="bg-transparent text-sm text-gray-900 dark:text-white px-2 py-1.5 outline-none appearance-none font-medium cursor-pointer [&>option]:text-gray-900 [&>option]:bg-white dark:[&>option]:text-white dark:[&>option]:bg-[#161616]"
                         >
                             {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                                 <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('id-ID', { month: 'short' })}</option>
@@ -183,7 +183,7 @@ export default function TreasuryPage() {
                         <select
                             value={year}
                             onChange={(e) => setYear(Number(e.target.value))}
-                            className="bg-transparent text-sm text-white px-2 py-1.5 outline-none font-medium appearance-none border-l border-white/10 cursor-pointer"
+                            className="bg-transparent text-sm text-gray-900 dark:text-white px-2 py-1.5 outline-none font-medium appearance-none border-l border-gray-200 dark:border-white/10 cursor-pointer [&>option]:text-gray-900 [&>option]:bg-white dark:[&>option]:text-white dark:[&>option]:bg-[#161616]"
                         >
                             {[currentYear - 1, currentYear, currentYear + 1].map(y => (
                                 <option key={y} value={y}>{y}</option>

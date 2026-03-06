@@ -58,3 +58,26 @@ body {
 .glow-gold {
   box-shadow: 0 0 30px rgba(255, 201, 22, 0.3);
 }
+
+/* Keep native form popups readable in both themes (select/date/datetime). */
+select,
+select option {
+  color: #111827;
+  background-color: #ffffff;
+}
+
+html.dark select,
+html.dark select option {
+  color: #e5e7eb;
+  background-color: #161616;
+}
+
+input[type="date"],
+input[type="datetime-local"] {
+  color-scheme: light;
+}
+
+html.dark input[type="date"],
+html.dark input[type="datetime-local"] {
+  color-scheme: dark;
+}

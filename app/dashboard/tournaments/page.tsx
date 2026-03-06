@@ -14,6 +14,7 @@ interface Tournament {
     entryFee: number;
     prizePool: number;
     startDate: string;
+    image?: string | null;
     _count?: { participants: number };
 }
 
@@ -26,6 +27,7 @@ export default function AdminTournamentsPage() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingTournamentId, setEditingTournamentId] = useState<string | null>(null);
     const [deletingTournamentId, setDeletingTournamentId] = useState<string | null>(null);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const { success, error } = useToast();
 
@@ -38,7 +40,8 @@ export default function AdminTournamentsPage() {
         status: "OPEN",
         entryFee: 0,
         prizePool: 0,
-        startDate: ""
+        startDate: "",
+        image: ""
     });
 
     const resetForm = () => {
@@ -50,7 +53,8 @@ export default function AdminTournamentsPage() {
             status: "OPEN",
             entryFee: 0,
             prizePool: 0,
-            startDate: ""
+            startDate: "",
+            image: ""
         });
     };
 
@@ -129,7 +133,8 @@ export default function AdminTournamentsPage() {
             status: tournament.status,
             entryFee: tournament.entryFee,
             prizePool: tournament.prizePool,
-            startDate: toDateTimeLocal(tournament.startDate)
+            startDate: toDateTimeLocal(tournament.startDate),
+            image: tournament.image || ""
         });
         setShowEditModal(true);
     };
@@ -184,6 +189,31 @@ export default function AdminTournamentsPage() {
             error("Kesalahan jaringan");
         } finally {
             setDeletingTournamentId(null);
+        }
+    };
+
+    const handleUploadImage = async (file: File) => {
+        setUploadingImage(true);
+        try {
+            const body = new FormData();
+            body.append("file", file);
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body
+            });
+            const data = await res.json();
+
+            if (res.ok && data?.url) {
+                setFormData((prev) => ({ ...prev, image: data.url }));
+                success("Gambar berhasil diupload");
+            } else {
+                error(data?.message || "Gagal upload gambar");
+            }
+        } catch {
+            error("Kesalahan jaringan saat upload");
+        } finally {
+            setUploadingImage(false);
         }
     };
 
@@ -282,6 +312,45 @@ export default function AdminTournamentsPage() {
                         <div><label className="text-xs mb-1 block">Entry Fee (Rp)</label><input type="number" className={inputCls} value={formData.entryFee} onChange={e => setFormData({ ...formData, entryFee: Number(e.target.value) })} min="0" /></div>
                         <div><label className="text-xs mb-1 block">Prize Pool (Rp)</label><input type="number" className={inputCls} value={formData.prizePool} onChange={e => setFormData({ ...formData, prizePool: Number(e.target.value) })} min="0" /></div>
                     </div>
+                    <div>
+                        <label className="text-xs mb-1 block">Upload Image</label>
+                        <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                            className={`${inputCls} file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-ds-amber/20 file:text-ds-amber file:font-semibold`}
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                await handleUploadImage(file);
+                                e.currentTarget.value = "";
+                            }}
+                            disabled={uploadingImage}
+                        />
+                        {uploadingImage && <p className="text-xs mt-1 text-gray-400">Mengupload gambar...</p>}
+                    </div>
+                    <div>
+                        <label className="text-xs mb-1 block">Image URL</label>
+                        <input
+                            type="url"
+                            className={inputCls}
+                            placeholder="https://example.com/tournament.jpg"
+                            value={formData.image}
+                            onChange={e => setFormData({ ...formData, image: e.target.value })}
+                        />
+                    </div>
+                    {formData.image && (
+                        <div className="rounded-xl border border-gray-200 dark:border-white/10 p-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={formData.image} alt="Preview tournament" className="w-full h-40 object-cover rounded-lg" />
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, image: "" })}
+                                className="mt-2 text-xs text-red-500 hover:text-red-600"
+                            >
+                                Hapus gambar
+                            </button>
+                        </div>
+                    )}
                     <div><label className="text-xs mb-1 block">Tanggal & Waktu Mulai</label><input type="datetime-local" className={inputCls} required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} /></div>
                     <button type="submit" disabled={submitting} className="w-full bg-ds-amber text-black font-bold py-3 text-sm rounded-xl">{submitting ? "Menyimpan..." : "Publish Turnamen"}</button>
                 </form>
@@ -321,6 +390,45 @@ export default function AdminTournamentsPage() {
                         <div><label className="text-xs mb-1 block">Entry Fee (Rp)</label><input type="number" className={inputCls} value={formData.entryFee} onChange={e => setFormData({ ...formData, entryFee: Number(e.target.value) })} min="0" /></div>
                         <div><label className="text-xs mb-1 block">Prize Pool (Rp)</label><input type="number" className={inputCls} value={formData.prizePool} onChange={e => setFormData({ ...formData, prizePool: Number(e.target.value) })} min="0" /></div>
                     </div>
+                    <div>
+                        <label className="text-xs mb-1 block">Upload Image</label>
+                        <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                            className={`${inputCls} file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-ds-amber/20 file:text-ds-amber file:font-semibold`}
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                await handleUploadImage(file);
+                                e.currentTarget.value = "";
+                            }}
+                            disabled={uploadingImage}
+                        />
+                        {uploadingImage && <p className="text-xs mt-1 text-gray-400">Mengupload gambar...</p>}
+                    </div>
+                    <div>
+                        <label className="text-xs mb-1 block">Image URL</label>
+                        <input
+                            type="url"
+                            className={inputCls}
+                            placeholder="https://example.com/tournament.jpg"
+                            value={formData.image}
+                            onChange={e => setFormData({ ...formData, image: e.target.value })}
+                        />
+                    </div>
+                    {formData.image && (
+                        <div className="rounded-xl border border-gray-200 dark:border-white/10 p-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={formData.image} alt="Preview tournament" className="w-full h-40 object-cover rounded-lg" />
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, image: "" })}
+                                className="mt-2 text-xs text-red-500 hover:text-red-600"
+                            >
+                                Hapus gambar
+                            </button>
+                        </div>
+                    )}
                     <div><label className="text-xs mb-1 block">Tanggal & Waktu Mulai</label><input type="datetime-local" className={inputCls} required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} /></div>
                     <button type="submit" disabled={submitting} className="w-full bg-ds-amber text-black font-bold py-3 text-sm rounded-xl">{submitting ? "Menyimpan..." : "Simpan Perubahan"}</button>
                 </form>

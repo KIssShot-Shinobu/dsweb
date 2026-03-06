@@ -19,10 +19,14 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - Manajemen user approval/admin tools.
 - CRUD tournament + register participant tournament.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
+- Form tournament mendukung field `Image URL` + preview gambar pada create/edit.
+- Form tournament juga mendukung upload file gambar langsung ke `/api/upload` (URL akan terisi otomatis).
 - Manajemen members guild.
 - Treasury transaksi + analytics ringkas.
 - Upload file gambar (screenshot/profile) via API.
 - Audit log aktivitas user/admin.
+- Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
+- Native form controls (`select`, `date`, `datetime-local`) sudah di-hardening agar teks dropdown tetap terbaca di light/dark.
 - Public homepage tersinkron ke database (total member, total tournament, list tournament terbaru/aktif).
 - Navbar public:
 - Belum login: `Sign In` + `Sign Up`.
@@ -49,6 +53,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - `lib/prisma.ts`: inisialisasi Prisma client + adapter MariaDB
 - `lib/auth.ts`: JWT, cookie auth, role guard helper
 - `lib/validators.ts`: schema validasi (register/login/tournament/dll)
+- `context/ThemeContext.tsx`: state tema global + sinkronisasi `localStorage` (`ds-theme`)
 - `prisma/schema.prisma`: skema database
 - `scripts/seed-admin.js`: seed admin utama
 - `scripts/seed.mjs`: seed 50 member, 50 tournament, 50 treasury
