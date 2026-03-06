@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         ]);
 
         // Calculate total balance
-        const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
+        const balance = transactions.reduce((sum: number, t: any) => sum + t.amount, 0);
 
         return NextResponse.json({
             success: true,

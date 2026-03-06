@@ -13,8 +13,8 @@ export default async function ProfilePage() {
         include: { gameProfiles: true }
     });
 
-    const dlProfile = userWithProfiles?.gameProfiles.find(p => p.gameType === "DUEL_LINKS");
-    const mdProfile = userWithProfiles?.gameProfiles.find(p => p.gameType === "MASTER_DUEL");
+    const dlProfile = userWithProfiles?.gameProfiles.find((p: any) => p.gameType === "DUEL_LINKS");
+    const mdProfile = userWithProfiles?.gameProfiles.find((p: any) => p.gameType === "MASTER_DUEL");
 
     const roleColors: Record<string, string> = {
         USER: "bg-gray-500/10 text-gray-400 border-gray-400/20",

@@ -1,87 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { existsSync } from "fs";
+import { verifyToken } from "@/lib/auth";
+import { logAudit } from "@/lib/audit-logger";
+import { promises as fs } from "fs";
 import path from "path";
+import crypto from "crypto";
 
-// Increase body size limit for file uploads (Next.js App Router)
-export const maxDuration = 30;
+const UPLOAD_DIR = process.env.UPLOAD_DIR || "./public/uploads";
+const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || "5242880", 10); // Default 5MB
+const ALLOWED_EXTENSIONS = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
 export async function POST(request: NextRequest) {
     try {
-        let formData: FormData;
-        try {
-            formData = await request.formData();
-        } catch {
-            return NextResponse.json(
-                { error: "Could not parse form data. Make sure the request is multipart/form-data." },
-                { status: 400 }
-            );
+        // Auth via JWT
+        const decoded = await verifyToken(request.cookies.get("ds_auth")?.value || "");
+        if (!decoded || !decoded.userId) {
+            return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
         }
 
+        const formData = await request.formData();
         const file = formData.get("file") as File | null;
-
-        if (!file || file.size === 0) {
-            return NextResponse.json(
-                { error: "No file provided or file is empty." },
-                { status: 400 }
-            );
+        if (!file) {
+            return NextResponse.json({ success: false, message: "File required" }, { status: 400 });
         }
 
-        // Accept all image types (mobile + desktop)
-        if (!file.type.startsWith("image/")) {
-            return NextResponse.json(
-                { error: `File type "${file.type || "unknown"}" is not allowed. Please upload an image.` },
-                { status: 400 }
-            );
+        if (file.size > MAX_FILE_SIZE) {
+            return NextResponse.json({ success: false, message: "File melebihi maksimal ukuran (5MB)" }, { status: 400 });
         }
 
-        // Validate file size (max 10MB — allowing larger phone photos)
-        if (file.size > 10 * 1024 * 1024) {
-            return NextResponse.json(
-                { error: `File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum 10MB.` },
-                { status: 400 }
-            );
+        if (!ALLOWED_EXTENSIONS.includes(file.type)) {
+            return NextResponse.json({ success: false, message: "Format tidak didukung. Harap gunakan PNG, JPG, atau WEBP" }, { status: 400 });
         }
 
-        // Use __dirname-based path which is stable in all Next.js modes
-        // process.cwd() = project root in dev, .next/standalone in production
-        const projectRoot = process.env.NEXT_PUBLIC_PROJECT_ROOT || process.cwd();
-        const uploadDir = path.join(projectRoot, "public", "uploads", "tournaments");
+        const fileExt = file.name.split('.').pop();
+        const uuid = crypto.randomUUID();
+        const uniqueFilename = `${Date.now()}-${uuid}.${fileExt}`;
+        const uploadPath = path.resolve(UPLOAD_DIR);
 
-        console.log("[upload] cwd:", process.cwd());
-        console.log("[upload] uploadDir:", uploadDir);
-        console.log("[upload] file:", file.name, file.type, file.size, "bytes");
+        // Pastikan Root Directory tersedia
+        await fs.mkdir(uploadPath, { recursive: true });
 
-        if (!existsSync(uploadDir)) {
-            await mkdir(uploadDir, { recursive: true });
-            console.log("[upload] created directory:", uploadDir);
-        }
+        // Tulis Buffer ke file FS lokal
+        const buffer = Buffer.from(await file.arrayBuffer());
+        await fs.writeFile(path.join(uploadPath, uniqueFilename), buffer);
 
-        // Derive file extension
-        const mimeToExt: Record<string, string> = {
-            "image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png",
-            "image/webp": "webp", "image/gif": "gif", "image/heic": "heic",
-            "image/heif": "heif", "image/avif": "avif", "image/bmp": "bmp",
-        };
-        const extFromName = file.name.includes(".") ? file.name.split(".").pop()?.toLowerCase() : undefined;
-        const ext = (extFromName && extFromName.length <= 5) ? extFromName : (mimeToExt[file.type] || "jpg");
-        const filename = `tournament-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
-        const filepath = path.join(uploadDir, filename);
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const publicUrl = `${appUrl}/uploads/${uniqueFilename}`;
 
-        // Write file
-        const bytes = await file.arrayBuffer();
-        await writeFile(filepath, Buffer.from(bytes));
-        console.log("[upload] saved to:", filepath);
+        // Audit Logging Action
+        await logAudit({
+            userId: decoded.userId,
+            action: "FILE_UPLOADED",
+            targetType: "File",
+            details: { size: file.size, type: file.type, url: publicUrl }
+        });
 
-        const url = `/uploads/tournaments/${filename}`;
-        return NextResponse.json({ url, filename, size: file.size }, { status: 201 });
+        return NextResponse.json({ success: true, url: publicUrl }, { status: 200 });
 
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error("[upload] Error:", message);
-        return NextResponse.json(
-            { error: `Upload failed: ${message}` },
-            { status: 500 }
-        );
+    } catch (error) {
+        console.error("Upload error:", error);
+        return NextResponse.json({ success: false, message: "Internal Server Error" }, { status: 500 });
     }
 }

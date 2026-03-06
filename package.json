@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "node .next/standalone/server.js",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:local": "tsx scripts/migrate-sqlite-to-mysql.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.4.2",
