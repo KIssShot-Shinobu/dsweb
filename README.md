@@ -71,7 +71,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - `context/ThemeContext.tsx`: state tema global + sinkronisasi `localStorage` (`ds-theme`)
 - `prisma/schema.prisma`: skema database
 - `scripts/seed-admin.js`: seed admin utama
-- `scripts/seed.mjs`: seed 50 user, 50 tournament, 50 treasury
+- `scripts/seed.mjs`: reset dataset dev lalu seed 20 users, 20 tournaments, 20 treasury
 
 ## Prasyarat
 
@@ -127,7 +127,7 @@ node scripts/seed-admin.js
 Variabel `ADMIN_SEED_EMAIL` dan `ADMIN_SEED_PASSWORD` wajib diisi sebelum menjalankan script.
 Field tambahan opsional: `ADMIN_SEED_NAME`, `ADMIN_SEED_PHONE`, `ADMIN_SEED_CITY`.
 
-### 2) Seed data demo (50 records)
+### 2) Seed data dev (reset + 20 records per area)
 
 ```bash
 node scripts/seed.mjs

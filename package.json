@@ -10,7 +10,9 @@
     "migrate:local": "tsx scripts/migrate-sqlite-to-mysql.ts",
     "test": "node --import tsx --test tests/**/*.test.ts",
     "test:unit": "node --import tsx --test tests/unit/**/*.test.ts",
-    "test:integration": "node --import tsx --test tests/integration/**/*.test.ts"
+    "test:integration": "node --import tsx --test tests/integration/**/*.test.ts",
+    "seed:admin": "node scripts/seed-admin.js",
+    "seed:dev": "node scripts/seed.mjs"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.4.2",
