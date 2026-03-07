@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Swords } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
+import { normalizeAssetUrl } from "@/lib/asset-url";
 
 const navLinks = [
     { name: "Home", href: "/" },
@@ -71,6 +72,7 @@ export function Navbar() {
     };
 
     const isAdmin = me ? ["ADMIN", "FOUNDER"].includes(me.role) : false;
+    const avatarUrl = normalizeAssetUrl(me?.avatarUrl);
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-[#2E2E2E]/90 backdrop-blur-md border-b border-gray-200 dark:border-white/10">
@@ -123,9 +125,9 @@ export function Navbar() {
                                         className="relative w-10 h-10 rounded-full overflow-hidden border border-white/20 hover:border-[#FFC916]/50 transition-colors"
                                         aria-label="Open profile menu"
                                     >
-                                        {me.avatarUrl ? (
+                                        {avatarUrl ? (
                                             // eslint-disable-next-line @next/next/no-img-element
-                                            <img src={me.avatarUrl} alt={me.fullName} className="w-full h-full object-cover" />
+                                            <img src={avatarUrl} alt={me.fullName} className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full bg-[#FFC916] text-[#2E2E2E] font-bold text-xs flex items-center justify-center">
                                                 {initials(me.fullName)}

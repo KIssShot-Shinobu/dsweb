@@ -9,6 +9,7 @@ import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
 import { Pagination } from "@/components/dashboard/pagination";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { RowActions } from "@/components/dashboard/row-actions";
+import { normalizeAssetUrl } from "@/lib/asset-url";
 
 interface Tournament {
     id: string;
@@ -422,7 +423,7 @@ export default function AdminTournamentsPage() {
                                         <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 text-xs text-gray-400 dark:bg-white/5">
                                             {tournament.image ? (
                                                 // eslint-disable-next-line @next/next/no-img-element
-                                                <img src={tournament.image} alt={tournament.title} className="h-full w-full object-cover" />
+                                                <img src={normalizeAssetUrl(tournament.image) || ""} alt={tournament.title} className="h-full w-full object-cover" />
                                             ) : (
                                                 tournament.gameType === "MASTER_DUEL" ? "MD" : "DL"
                                             )}
@@ -615,13 +616,20 @@ function TournamentForm({
                 {uploadingImage && <p className="mt-1 text-xs text-gray-400">Mengupload gambar...</p>}
             </div>
             <div>
-                <label className={labelCls}>Image URL</label>
-                <input type="url" className={inputCls} placeholder="https://example.com/tournament.jpg" value={formData.image} onChange={(e) => setFormData((prev) => ({ ...prev, image: e.target.value }))} />
+                <label className={labelCls}>Path Gambar Lokal</label>
+                <input
+                    type="text"
+                    className={inputCls}
+                    placeholder="/uploads/namafile.jpg"
+                    value={formData.image}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, image: e.target.value }))}
+                />
+                <p className="mt-1 text-xs text-gray-400">Gunakan upload internal. URL eksternal tidak didukung lagi.</p>
             </div>
             {formData.image && (
                 <div className="rounded-xl border border-gray-200 p-2 dark:border-white/10">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={formData.image} alt="Preview tournament" className="h-40 w-full rounded-lg object-cover" />
+                    <img src={normalizeAssetUrl(formData.image) || ""} alt="Preview tournament" className="h-40 w-full rounded-lg object-cover" />
                     <button type="button" onClick={() => setFormData((prev) => ({ ...prev, image: "" }))} className="mt-2 text-xs text-red-500 hover:text-red-600">
                         Hapus gambar
                     </button>

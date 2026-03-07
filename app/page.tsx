@@ -6,6 +6,7 @@ import { Tournaments } from "@/components/sections/tournaments";
 import { Footer } from "@/components/ui/footer";
 import { prisma } from "@/lib/prisma";
 import type { PublicTournamentCardData } from "@/components/public/tournament-card";
+import { resolveTournamentImage } from "@/lib/tournament-image";
 
 export default async function Home() {
   let activeUserCount = 0;
@@ -46,14 +47,14 @@ export default async function Home() {
     };
 
     tournaments = dbTournaments
-      .map((t) => ({
+        .map((t) => ({
         id: t.id,
         title: t.title,
         gameType: t.gameType,
         startDate: t.startDate.toISOString(),
         prizePool: t.prizePool,
         status: t.status,
-        image: t.image,
+        image: resolveTournamentImage(t.image),
         description: t.description,
         participantCount: t._count.participants,
       }))

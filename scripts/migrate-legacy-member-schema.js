@@ -16,7 +16,44 @@ function parseDatabaseUrl() {
         user: decodeURIComponent(parsed.username),
         password: decodeURIComponent(parsed.password),
         database: parsed.pathname.replace(/^\//, ""),
+        connectTimeout: 15000,
+        socketTimeout: 15000,
     };
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableConnectionError(error) {
+    return [
+        "ER_CONNECTION_TIMEOUT",
+        "ECONNREFUSED",
+        "ETIMEDOUT",
+        "EHOSTUNREACH",
+        "ENETUNREACH",
+    ].includes(error?.code);
+}
+
+async function createConnectionWithRetry(maxAttempts = 3) {
+    const connectionConfig = parseDatabaseUrl();
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+            return await mariadb.createConnection(connectionConfig);
+        } catch (error) {
+            if (!isRetryableConnectionError(error) || attempt === maxAttempts) {
+                throw error;
+            }
+
+            console.warn(
+                `Legacy member schema migration could not reach the database (attempt ${attempt}/${maxAttempts}). Retrying...`
+            );
+            await sleep(2000);
+        }
+    }
+
+    throw new Error("Unable to establish a database connection for legacy member schema migration.");
 }
 
 async function columnExists(connection, tableName, columnName) {
@@ -80,7 +117,7 @@ async function indexExists(connection, tableName, indexName) {
 }
 
 async function migrateLegacyMemberSchema() {
-    const connection = await mariadb.createConnection(parseDatabaseUrl());
+    const connection = await createConnectionWithRetry();
 
     try {
         const hasMemberTable = await tableExists(connection, "Member");

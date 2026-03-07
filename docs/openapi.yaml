@@ -444,6 +444,7 @@ paths:
                 image:
                   type: string
                   nullable: true
+                  description: Local upload path only, for example /uploads/example.jpg
       responses:
         "201":
           description: Tournament created

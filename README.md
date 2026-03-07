@@ -21,8 +21,8 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
 - Panel operasional disatukan ke halaman `/dashboard`, termasuk summary users, tournament, treasury, dan quick action approval.
 - Hapus tournament di dashboard memakai confirm modal + undo 5 detik.
-- Form tournament mendukung field `Image URL` + preview gambar pada create/edit.
-- Form tournament juga mendukung upload file gambar langsung ke `/api/upload` (URL akan terisi otomatis).
+- Form tournament hanya menerima gambar lokal hasil upload internal (`/uploads/...`) dan preview gambar pada create/edit.
+- Form tournament mendukung upload file gambar langsung ke `/api/upload` (path lokal akan terisi otomatis).
 - List tournament di dashboard menampilkan thumbnail image kecil per row.
 - Form di dashboard `tournament`, `users`, dan `treasury` menggunakan custom dropdown konsisten (tidak lagi native select browser).
 - Style form/button dashboard dipusatkan di `components/dashboard/form-styles.ts` agar konsisten lintas halaman.

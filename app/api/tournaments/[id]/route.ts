@@ -3,6 +3,7 @@ import { verifyToken, hasRole, ROLES } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { tournamentUpdateSchema } from "@/lib/validators";
+import { resolveTournamentImage } from "@/lib/tournament-image";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -25,7 +26,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ success: false, message: "Turnamen tidak ditemukan" }, { status: 404 });
         }
 
-        return NextResponse.json({ success: true, tournament }, { status: 200 });
+        return NextResponse.json({
+            success: true,
+            tournament: {
+                ...tournament,
+                image: resolveTournamentImage(tournament.image),
+            },
+        }, { status: 200 });
     } catch (error) {
         console.error("Error fetching tournament:", error);
         return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });

@@ -3,6 +3,7 @@ import { verifyToken, hasRole, ROLES } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { tournamentSchema } from "@/lib/validators";
+import { resolveTournamentImage } from "@/lib/tournament-image";
 
 function buildTournamentWhere(searchParams: URLSearchParams) {
     const status = searchParams.get("status");
@@ -56,9 +57,14 @@ export async function GET(request: NextRequest) {
             prisma.tournament.count({ where: { ...where, status: "CANCELLED" } }),
         ]);
 
+        const sanitizedTournaments = tournaments.map((tournament) => ({
+            ...tournament,
+            image: resolveTournamentImage(tournament.image),
+        }));
+
         return NextResponse.json({
             success: true,
-            tournaments,
+            tournaments: sanitizedTournaments,
             total,
             page,
             limit: limit || null,

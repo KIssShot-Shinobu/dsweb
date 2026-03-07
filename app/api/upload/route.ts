@@ -4,7 +4,7 @@ import { logAudit } from "@/lib/audit-logger";
 import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
-import { getAppUrl, getMaxFileSize, getUploadDir } from "@/lib/runtime-config";
+import { getMaxFileSize, getUploadDir } from "@/lib/runtime-config";
 
 const UPLOAD_DIR = getUploadDir();
 const MAX_FILE_SIZE = getMaxFileSize();
@@ -44,18 +44,17 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer());
         await fs.writeFile(path.join(uploadPath, uniqueFilename), buffer);
 
-        const appUrl = getAppUrl();
-        const publicUrl = `${appUrl}/uploads/${uniqueFilename}`;
+        const publicPath = `/uploads/${uniqueFilename}`;
 
         // Audit Logging Action
         await logAudit({
             userId: decoded.userId,
             action: "FILE_UPLOADED",
             targetType: "File",
-            details: { size: file.size, type: file.type, url: publicUrl }
+            details: { size: file.size, type: file.type, url: publicPath }
         });
 
-        return NextResponse.json({ success: true, url: publicUrl }, { status: 200 });
+        return NextResponse.json({ success: true, url: publicPath }, { status: 200 });
 
     } catch (error) {
         console.error("Upload error:", error);

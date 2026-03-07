@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Navbar } from "@/components/ui/navbar";
 import { Footer } from "@/components/ui/footer";
 import { TournamentRegisterButton } from "@/components/public/tournament-register-button";
+import { resolveTournamentImage } from "@/lib/tournament-image";
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("id-ID", {
@@ -52,6 +53,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     });
 
     if (!tournament) notFound();
+    const imageUrl = resolveTournamentImage(tournament.image);
 
     return (
         <main className="min-h-screen bg-[#0f0f0f] text-white">
@@ -64,9 +66,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                     <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
                         <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[#171717]">
                             <div className="relative min-h-[320px] border-b border-white/10 bg-gradient-to-br from-cyan-950 via-zinc-900 to-black">
-                                {tournament.image ? (
+                                {imageUrl ? (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={tournament.image} alt={tournament.title} className="absolute inset-0 h-full w-full object-cover opacity-45" />
+                                    <img src={imageUrl} alt={tournament.title} className="absolute inset-0 h-full w-full object-cover opacity-45" />
                                 ) : null}
                                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.78))]" />
                                 <div className="relative flex min-h-[320px] flex-col justify-end p-8">

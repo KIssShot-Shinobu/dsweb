@@ -4,6 +4,7 @@ import { z } from "zod";
 const IGN_REGEX = /^\[DS\].+/;
 const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
 const SAFE_TEXT_REGEX = /^[\p{L}\p{N}\s'.,()\-_/]+$/u;
+const LOCAL_UPLOAD_PATH_REGEX = /^\/uploads\/[A-Za-z0-9._/-]+$/;
 
 // ─── Register Schema ──────────────────────────────────────────────────────────
 export const registerSchema = z.object({
@@ -140,7 +141,11 @@ export const tournamentSchema = z.object({
     startDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
         message: "Tanggal tidak valid",
     }),
-    image: z.string().url("Image URL tidak valid").optional().or(z.literal("")),
+    image: z
+        .string()
+        .regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload lokal")
+        .optional()
+        .or(z.literal("")),
 });
 
 export type TournamentInput = z.infer<typeof tournamentSchema>;

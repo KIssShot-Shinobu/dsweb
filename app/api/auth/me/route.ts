@@ -5,8 +5,8 @@ import { touchUserLastActiveAt } from "@/lib/prisma";
 export async function GET() {
     const user = await getCurrentUser();
     if (!user) {
-        return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+        return NextResponse.json({ success: true, authenticated: false, user: null }, { status: 200 });
     }
     await touchUserLastActiveAt(user.id);
-    return NextResponse.json({ success: true, user });
+    return NextResponse.json({ success: true, authenticated: true, user });
 }

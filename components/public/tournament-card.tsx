@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { normalizeAssetUrl } from "@/lib/asset-url";
 
 export type PublicTournamentCardData = {
     id: string;
@@ -55,13 +56,15 @@ function getGameAccent(gameType: string) {
 }
 
 export function PublicTournamentCard({ tournament, compact = false }: TournamentCardProps) {
+    const imageUrl = normalizeAssetUrl(tournament.image);
+
     return (
         <article className="group overflow-hidden rounded-[28px] border border-white/10 bg-[#141414] shadow-[0_20px_60px_rgba(0,0,0,0.25)] transition-all hover:-translate-y-1 hover:border-[#FFC916]/30">
             <div className={`relative min-h-[180px] overflow-hidden border-b border-white/10 bg-gradient-to-br ${getGameAccent(tournament.gameType)}`}>
-                {tournament.image ? (
+                {imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                        src={tournament.image}
+                        src={imageUrl}
                         alt={tournament.title}
                         className="absolute inset-0 h-full w-full object-cover opacity-45 transition-transform duration-500 group-hover:scale-105"
                     />
