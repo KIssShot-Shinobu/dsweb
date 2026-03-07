@@ -6,7 +6,7 @@ test("createTreasuryEntry stores outgoing transaction as negative amount", async
     const transaction = await createTreasuryEntry(
         {
             treasury: {
-                create: async (args: any) => args.data,
+                create: async (args: { data: { amount: number; description: string; userId: string | null } }) => args.data,
             },
         },
         {

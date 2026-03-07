@@ -8,9 +8,9 @@ import { useTheme } from "@/context/ThemeContext";
 
 const navLinks = [
     { name: "Home", href: "/" },
-    { name: "About", href: "#about" },
-    { name: "Tournaments", href: "#tournaments" },
-    { name: "Community", href: "#socials" },
+    { name: "About", href: "/#about" },
+    { name: "Tournaments", href: "/tournaments" },
+    { name: "Community", href: "/#socials" },
 ];
 
 type MeUser = {

@@ -133,6 +133,7 @@ export default function AuditLogsPage() {
     const [dateStart, setDateStart] = useState("");
     const [dateEnd, setDateEnd] = useState("");
     const [appliedDateRange, setAppliedDateRange] = useState({ start: "", end: "" });
+    const [exportMessage, setExportMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
     const { logs, total, loading } = useAuditLogs(page, limit, actionFilter, search, appliedDateRange);
     const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -150,6 +151,7 @@ export default function AuditLogsPage() {
     };
 
     const handleExportCsv = async () => {
+        setExportMessage(null);
         const params = new URLSearchParams();
         if (actionFilter !== "ALL") params.set("action", actionFilter);
         if (search.trim()) params.set("search", search.trim());
@@ -159,8 +161,11 @@ export default function AuditLogsPage() {
         try {
             const res = await fetch(`/api/audit-logs/export?${params.toString()}`);
             if (!res.ok) {
-                const json = await res.json();
-                window.alert(json.message || "Failed to export CSV");
+                const json = await res.json().catch(() => null);
+                setExportMessage({
+                    type: "error",
+                    text: json?.message || "Gagal mengekspor CSV",
+                });
                 return;
             }
 
@@ -173,8 +178,15 @@ export default function AuditLogsPage() {
             anchor.click();
             anchor.remove();
             window.URL.revokeObjectURL(url);
+            setExportMessage({
+                type: "success",
+                text: "Export CSV berhasil dibuat.",
+            });
         } catch {
-            window.alert("Terjadi kesalahan saat mengekspor data");
+            setExportMessage({
+                type: "error",
+                text: "Terjadi kesalahan saat mengekspor data.",
+            });
         }
     };
 
@@ -196,6 +208,18 @@ export default function AuditLogsPage() {
                         <span>Download</span> Export CSV
                     </button>
                 </div>
+
+                {exportMessage && (
+                    <div
+                        className={`rounded-2xl border px-4 py-3 text-sm ${
+                            exportMessage.type === "success"
+                                ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+                                : "border-red-500/20 bg-red-500/10 text-red-500"
+                        }`}
+                    >
+                        {exportMessage.text}
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                     <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-[#111]">

@@ -5,6 +5,56 @@ import { generateSecureToken, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { sendEmail } from "@/lib/email";
 import { registerUser } from "@/lib/services/auth-service";
+import { getAppUrl } from "@/lib/runtime-config";
+import { extractRequestIp } from "@/lib/request-ip";
+import { assertClaimableRegisterUploads, claimRegisterUploads } from "@/lib/upload-security";
+import type { RegisterInput } from "@/lib/validators";
+
+function buildRegisterConflictResponse(code: string) {
+    if (code === "EMAIL_EXISTS") {
+        return NextResponse.json(
+            { success: false, message: "Email sudah terdaftar", errors: { email: ["Email sudah digunakan"] } },
+            { status: 409 }
+        );
+    }
+
+    if (code === "PHONE_EXISTS") {
+        return NextResponse.json(
+            { success: false, message: "Nomor WhatsApp sudah terdaftar", errors: { phoneWhatsapp: ["Nomor sudah digunakan"] } },
+            { status: 409 }
+        );
+    }
+
+    if (code === "GAME_ID_EXISTS") {
+        return NextResponse.json(
+            { success: false, message: "ID Game sudah terdaftar", errors: { duelLinksGameId: ["ID Game sudah digunakan"] } },
+            { status: 409 }
+        );
+    }
+
+    return NextResponse.json({ success: false, message: "Registrasi gagal" }, { status: 400 });
+}
+
+function getRegisterUploadMap(data: RegisterInput) {
+    return {
+        DUEL_LINKS: data.duelLinksScreenshotUploadId || undefined,
+        MASTER_DUEL: data.masterDuelScreenshotUploadId || undefined,
+    } as const;
+}
+
+async function claimUploadsOrRollback(userId: string, ipAddress: string, data: RegisterInput) {
+    try {
+        await claimRegisterUploads({
+            prisma,
+            userId,
+            ipAddress,
+            uploads: getRegisterUploadMap(data),
+        });
+    } catch (error) {
+        await prisma.user.delete({ where: { id: userId } }).catch(() => undefined);
+        throw error;
+    }
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -18,6 +68,15 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        const ipAddress = extractRequestIp(req.headers);
+        const uploadIds = Object.values(getRegisterUploadMap(parsed.data)).filter((value): value is string => Boolean(value));
+
+        await assertClaimableRegisterUploads({
+            prisma,
+            ipAddress,
+            uploadIds,
+        });
+
         const result = await registerUser(
             {
                 prisma: prisma as any,
@@ -28,33 +87,12 @@ export async function POST(req: NextRequest) {
             parsed.data
         );
 
-        if (!result.ok) {
-            if (result.code === "EMAIL_EXISTS") {
-                return NextResponse.json(
-                    { success: false, message: "Email sudah terdaftar", errors: { email: ["Email sudah digunakan"] } },
-                    { status: 409 }
-                );
-            }
-
-            if (result.code === "PHONE_EXISTS") {
-                return NextResponse.json(
-                    { success: false, message: "Nomor WhatsApp sudah terdaftar", errors: { phoneWhatsapp: ["Nomor sudah digunakan"] } },
-                    { status: 409 }
-                );
-            }
-
-            if (result.code === "GAME_ID_EXISTS") {
-                return NextResponse.json(
-                    { success: false, message: "ID Game sudah terdaftar", errors: { duelLinksGameId: ["ID Game sudah digunakan"] } },
-                    { status: 409 }
-                );
-            }
-
-            return NextResponse.json({ success: false, message: "Registrasi gagal" }, { status: 400 });
-        }
+        if (!result.ok) return buildRegisterConflictResponse(result.code);
 
         const { user, verifyToken } = result;
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        await claimUploadsOrRollback(user.id, ipAddress, parsed.data);
+
+        const appUrl = getAppUrl();
         const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`;
 
         try {
@@ -80,6 +118,10 @@ export async function POST(req: NextRequest) {
             { status: 201 }
         );
     } catch (error) {
+        if (error instanceof Error) {
+            return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+        }
+
         console.error("[Register API]", error);
         return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
     }

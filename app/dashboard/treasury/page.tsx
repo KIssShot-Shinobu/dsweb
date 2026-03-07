@@ -111,7 +111,7 @@ export default function TreasuryPage() {
 
     const fetchUsers = () => {
         setUsersLoading(true);
-        fetch("/api/admin/users?status=ACTIVE&role=ALL&perPage=100")
+                fetch("/api/users?status=ACTIVE&role=ALL&perPage=100")
             .then((res) => res.json())
             .then((data) => {
                 setUsers(data.data || []);

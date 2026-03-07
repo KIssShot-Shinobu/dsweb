@@ -2,36 +2,60 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-// Only allowed in development!
-export async function GET() {
+function getSeedConfig() {
     if (process.env.NODE_ENV === "production") {
-        return NextResponse.json({ error: "Not allowed in production" }, { status: 403 });
+        return { error: "Not allowed in production", status: 403 as const };
+    }
+
+    if (process.env.ALLOW_DEV_SEED_ENDPOINT !== "true") {
+        return { error: "Seed endpoint is disabled", status: 403 as const };
+    }
+
+    const email = process.env.ADMIN_SEED_EMAIL;
+    const password = process.env.ADMIN_SEED_PASSWORD;
+
+    if (!email || !password) {
+        return { error: "ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD are required", status: 500 as const };
+    }
+
+    return {
+        email,
+        password,
+        fullName: process.env.ADMIN_SEED_NAME || "Admin Duel Standby",
+        phoneWhatsapp: process.env.ADMIN_SEED_PHONE || "+628000000001",
+        city: process.env.ADMIN_SEED_CITY || "Jakarta",
+    };
+}
+
+export async function GET() {
+    const seedConfig = getSeedConfig();
+    if ("error" in seedConfig) {
+        return NextResponse.json({ error: seedConfig.error }, { status: seedConfig.status });
     }
 
     try {
-        const hash = await bcrypt.hash("Admin123!", 12);
+        const hash = await bcrypt.hash(seedConfig.password, 12);
         const user = await prisma.user.upsert({
-            where: { email: "admin@duelstandby.com" },
+            where: { email: seedConfig.email },
             update: {},
             create: {
-                fullName: "Admin Duel Standby",
-                email: "admin@duelstandby.com",
+                fullName: seedConfig.fullName,
+                email: seedConfig.email,
                 password: hash,
-                phoneWhatsapp: "+628000000001",
-                city: "Jakarta",
+                phoneWhatsapp: seedConfig.phoneWhatsapp,
+                city: seedConfig.city,
                 status: "ACTIVE",
                 role: "ADMIN",
             },
         });
+
         return NextResponse.json({
             success: true,
-            message: "Admin seeded!",
+            message: "Admin seeded",
             email: user.email,
-            note: "Password: Admin123! — CHANGE AFTER FIRST LOGIN",
         });
-    } catch (e) {
-        const err = e as Error;
-        return NextResponse.json({ success: false, error: err.message, stack: err.stack?.slice(0, 500) }, { status: 500 });
+    } catch (error) {
+        console.error("[Seed API]", error);
+        return NextResponse.json({ success: false, error: "Failed to seed admin user" }, { status: 500 });
     }
 }
-

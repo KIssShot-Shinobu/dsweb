@@ -12,11 +12,11 @@ export async function GET() {
             timestamp: new Date().toISOString(),
         }, { status: 200 });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         return NextResponse.json({
             status: "error",
             database: "disconnected",
-            error: err.message || "Unknown db error",
+            error: err instanceof Error ? err.message : "Unknown db error",
             timestamp: new Date().toISOString(),
         }, { status: 503 });
     }

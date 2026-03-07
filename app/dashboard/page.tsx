@@ -7,7 +7,7 @@ import { ActiveUserList } from "@/components/dashboard/active-user-list";
 import { TournamentList } from "@/components/dashboard/tournament-list";
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { AnalyticsChart } from "@/components/dashboard/analytics-chart";
-import { AdminOverview } from "@/components/dashboard/admin-overview";
+import { OperationsOverview } from "@/components/dashboard/operations-overview";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
 const ADMIN_ROLES = ["ADMIN", "FOUNDER"];
@@ -167,7 +167,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="mb-5">
-                <AdminOverview stats={summary.userStats} loading={loading} />
+                <OperationsOverview stats={summary.userStats} loading={loading} />
             </div>
 
             <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">

@@ -77,7 +77,7 @@ function RoleDropdown({
 
         setLoading(true);
         setOpen(false);
-        await fetch(`/api/admin/users/${userId}/status`, {
+        await fetch(`/api/users/${userId}/status`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: currentStatus, role: newRole }),
@@ -161,7 +161,7 @@ function UserManagementTableInner({
 
     const fetchUsers = () => {
         setLoading(true);
-        fetch(`/api/admin/users?${paramsString}`)
+            fetch(`/api/users?${paramsString}`)
             .then((response) => response.json())
             .then((data) => {
                 setUsers(data.data || []);
@@ -185,7 +185,7 @@ function UserManagementTableInner({
 
     const handleBan = async (id: string, banReason?: string) => {
         setActionLoading(id);
-        await fetch(`/api/admin/users/${id}/status`, {
+                await fetch(`/api/users/${id}/status`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: "BANNED", reason: banReason }),
@@ -305,7 +305,7 @@ function UserManagementTableInner({
                                     <button
                                         onClick={async () => {
                                             setActionLoading(user.id);
-                                            await fetch(`/api/admin/users/${user.id}/status`, {
+                            await fetch(`/api/users/${user.id}/status`, {
                                                 method: "PUT",
                                                 headers: { "Content-Type": "application/json" },
                                                 body: JSON.stringify({ status: "ACTIVE" }),

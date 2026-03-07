@@ -69,9 +69,47 @@ paths:
                   type: string
                 city:
                   type: string
+                duelLinksScreenshotUploadId:
+                  type: string
+                masterDuelScreenshotUploadId:
+                  type: string
       responses:
         "201":
           description: Registration created
+  /api/upload/public:
+    post:
+      summary: Create temporary public upload for registration screenshot
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Temp upload created
+        "429":
+          description: Rate limit exceeded
+  /api/upload/public/{id}:
+    get:
+      summary: Preview temporary public upload for the same client IP
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Image preview
+        "404":
+          description: Upload not found or expired
   /api/auth/login:
     post:
       summary: Login and issue auth cookies
@@ -132,10 +170,10 @@ paths:
         - dsAuthCookie: []
       responses:
         "200":
-          description: Summary payload for admin dashboard
+          description: Summary payload for the unified operations dashboard
         "403":
           description: Forbidden
-  /api/admin/users:
+  /api/users:
     get:
       summary: List users for dashboard management
       security:
@@ -164,6 +202,42 @@ paths:
       responses:
         "200":
           description: Paginated user list
+  /api/users/{id}:
+    get:
+      summary: Get a single managed user detail
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User detail payload
+        "404":
+          description: Not found
+  /api/users/{id}/status:
+    put:
+      summary: Update status or role for a managed user
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User status updated
+        "400":
+          description: Validation failed
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
   /api/treasury:
     get:
       summary: Fetch treasury transactions with summary

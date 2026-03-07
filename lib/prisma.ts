@@ -12,6 +12,18 @@ const globalForPrisma = globalThis as unknown as {
     prisma: PrismaClient | undefined;
 };
 
+type QueryArgs = Record<string, unknown>;
+type QueryRunner = (args: QueryArgs) => Promise<unknown>;
+type QueryParams = { args: QueryArgs; query: QueryRunner };
+type UserSensitiveSnapshot = {
+    id: string;
+    phoneWhatsapp: string | null;
+    accountNumber: string | null;
+    twoFactorSecret: string | null;
+};
+type UserResultWithId = { id: string };
+type SessionResult = { userId: string };
+
 function createBasePrismaClient() {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
@@ -24,67 +36,67 @@ function createBasePrismaClient() {
 
 const basePrisma = globalForPrisma.prisma ?? createBasePrismaClient();
 
-const prismaExtension = Prisma.defineExtension((client: any) =>
+const prismaExtension = Prisma.defineExtension((client) =>
     client.$extends({
         query: {
             user: {
-                async findUnique({ args, query }: { args: any; query: any }) {
+                async findUnique({ args, query }: QueryParams) {
                     const result = await query({
                         ...args,
-                        where: protectUserWhereInput((args as any).where),
+                        where: protectUserWhereInput(args.where),
                     });
 
                     return unprotectUserRecord(result);
                 },
-                async findFirst({ args, query }: { args: any; query: any }) {
+                async findFirst({ args, query }: QueryParams) {
                     const result = await query({
                         ...args,
-                        where: protectUserWhereInput((args as any).where),
+                        where: protectUserWhereInput(args.where),
                     });
 
                     return unprotectUserRecord(result);
                 },
-                async findMany({ args, query }: { args: any; query: any }) {
+                async findMany({ args, query }: QueryParams) {
                     const result = await query({
                         ...args,
-                        where: protectUserWhereInput((args as any).where),
+                        where: protectUserWhereInput(args.where),
                     });
 
                     return unprotectUserRecord(result);
                 },
-                async create({ args, query }: { args: any; query: any }) {
+                async create({ args, query }: QueryParams) {
                     const result = await query({
                         ...args,
-                        data: protectUserWriteData((args as any).data),
-                    } as any);
+                        data: protectUserWriteData(args.data as Record<string, unknown>),
+                    });
 
                     return unprotectUserRecord(result);
                 },
-                async update({ args, query }: { args: any; query: any }) {
+                async update({ args, query }: QueryParams) {
                     const previous = await basePrisma.user.findUnique({
-                        where: protectUserWhereInput((args as any).where) as any,
+                        where: protectUserWhereInput(args.where) as Prisma.UserWhereUniqueInput,
                         select: {
                             id: true,
                             phoneWhatsapp: true,
                             accountNumber: true,
                             twoFactorSecret: true,
-                        } as any,
-                    });
+                        },
+                    }) as UserSensitiveSnapshot | null;
 
-                    const protectedData = protectUserWriteData((args as any).data);
+                    const protectedData = protectUserWriteData(args.data as Record<string, unknown>);
                     const result = await query({
                         ...args,
-                        where: protectUserWhereInput((args as any).where),
+                        where: protectUserWhereInput(args.where),
                         data: protectedData,
-                    } as any);
+                    });
 
                     const changedFields = getChangedSensitiveFields(previous, protectedData);
                     if (changedFields.length > 0) {
                         basePrisma.auditLog.create({
                             data: {
-                                userId: (result as any).id,
+                                userId: (result as UserResultWithId).id,
                                 action: "SENSITIVE_FIELD_CHANGED",
-                                targetId: (result as any).id,
+                                targetId: (result as UserResultWithId).id,
                                 targetType: "User",
                                 ipAddress: "127.0.0.1",
                                 userAgent: "prisma-extension",
@@ -100,35 +112,35 @@ const prismaExtension = Prisma.defineExtension((client: any) =>
 
                     return unprotectUserRecord(result);
                 },
-                async upsert({ args, query }: { args: any; query: any }) {
+                async upsert({ args, query }: QueryParams) {
                     const previous = await basePrisma.user.findUnique({
-                        where: protectUserWhereInput((args as any).where) as any,
+                        where: protectUserWhereInput(args.where) as Prisma.UserWhereUniqueInput,
                         select: {
                             id: true,
                             phoneWhatsapp: true,
                             accountNumber: true,
                             twoFactorSecret: true,
-                        } as any,
-                    });
+                        },
+                    }) as UserSensitiveSnapshot | null;
 
                     const result = await query({
                         ...args,
-                        where: protectUserWhereInput((args as any).where),
-                        create: protectUserWriteData((args as any).create),
-                        update: protectUserWriteData((args as any).update),
-                    } as any);
+                        where: protectUserWhereInput(args.where),
+                        create: protectUserWriteData(args.create as Record<string, unknown>),
+                        update: protectUserWriteData(args.update as Record<string, unknown>),
+                    });
 
                     const changedFields = getChangedSensitiveFields(
                         previous,
-                        previous ? ((args as any).update as Record<string, unknown>) : ((args as any).create as Record<string, unknown>)
+                        previous ? (args.update as Record<string, unknown>) : (args.create as Record<string, unknown>)
                     );
 
                     if (changedFields.length > 0) {
                         basePrisma.auditLog.create({
                             data: {
-                                userId: (result as any).id,
+                                userId: (result as UserResultWithId).id,
                                 action: "SENSITIVE_FIELD_CHANGED",
-                                targetId: (result as any).id,
+                                targetId: (result as UserResultWithId).id,
                                 targetType: "User",
                                 ipAddress: "127.0.0.1",
                                 userAgent: "prisma-extension",
@@ -146,11 +158,11 @@ const prismaExtension = Prisma.defineExtension((client: any) =>
                 },
             },
             session: {
-                async create({ args, query }: { args: any; query: any }) {
+                async create({ args, query }: QueryParams) {
                     const result = await query(args);
 
                     await basePrisma.user.updateMany({
-                        where: { id: (result as any).userId },
+                        where: { id: (result as SessionResult).userId },
                         data: { lastActiveAt: new Date() },
                     });
 

@@ -1,8 +1,16 @@
 import type { TreasuryInput } from "@/lib/validators";
 
+type TreasuryCreateResult = {
+    id?: string;
+    amount: number;
+    description: string;
+    userId: string | null;
+    user?: { fullName: string } | null;
+};
+
 type TreasuryPrismaLike = {
     treasury: {
-        create: (args: any) => Promise<any>;
+        create: (args: { data: { amount: number; description: string; userId: string | null }; include: { user: { select: { fullName: boolean } } } }) => Promise<TreasuryCreateResult>;
     };
 };
 

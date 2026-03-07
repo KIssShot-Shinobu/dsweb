@@ -1,17 +1,28 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { RegisterUploadField } from "@/components/auth/register-upload-field";
+import {
+    INITIAL_FORM,
+    REGISTER_STEPS,
+    SOCIAL_OPTIONS,
+    SOURCE_OPTIONS,
+    type RegistrationFormData,
+    type UploadField,
+    type UploadPreview,
+    type UploadPreviewKey,
+    validateRegisterStep,
+} from "./register-form";
 
-const inputCls = "w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-sm text-white placeholder:text-white/30 outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all";
-const labelCls = "block text-xs font-semibold text-white/50 uppercase tracking-wider mb-1.5";
-const errCls = "text-xs text-red-400 mt-1";
+const inputCls = "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition-all focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20";
+const labelCls = "mb-1.5 block text-xs font-semibold uppercase tracking-wider text-white/50";
+const errCls = "mt-1 text-xs text-red-400";
 
-// Custom Select component — fully dark-themed, no native browser dropdown
 function CustomSelect({ value, onChange, options, placeholder, error }: {
     value: string;
-    onChange: (v: string) => void;
+    onChange: (value: string) => void;
     options: string[];
     placeholder?: string;
     error?: string;
@@ -19,340 +30,275 @@ function CustomSelect({ value, onChange, options, placeholder, error }: {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
-    // Close on outside click
     useEffect(() => {
-        const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handleOutsideClick);
+        return () => document.removeEventListener("mousedown", handleOutsideClick);
     }, []);
 
     return (
         <div ref={ref} className="relative">
             <button
                 type="button"
-                onClick={() => setOpen((o) => !o)}
-                className={`w-full px-4 py-3 rounded-xl border text-sm text-left flex items-center justify-between transition-all ${open ? "border-ds-amber ring-2 ring-ds-amber/20 bg-white/5" : error ? "border-red-500/40 bg-white/5" : "border-white/10 bg-white/5 hover:border-white/20"
-                    }`}
+                onClick={() => setOpen((current) => !current)}
+                className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition-all ${
+                    open ? "border-ds-amber bg-white/5 ring-2 ring-ds-amber/20" : error ? "border-red-500/40 bg-white/5" : "border-white/10 bg-white/5 hover:border-white/20"
+                }`}
             >
-                <span className={value ? "text-white" : "text-white/30"}>
-                    {value || placeholder || "-- Pilih --"}
-                </span>
-                <svg className={`w-4 h-4 text-white/40 transition-transform duration-200 flex-shrink-0 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <span className={value ? "text-white" : "text-white/30"}>{value || placeholder || "-- Pilih --"}</span>
+                <svg className={`h-4 w-4 text-white/40 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
-
-            {open && (
-                <div className="absolute z-50 w-full mt-1 rounded-xl border border-white/10 bg-[#1c1c1c] shadow-2xl overflow-hidden">
-                    {options.map((opt) => (
+            {open ? (
+                <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-white/10 bg-[#1c1c1c] shadow-2xl">
+                    {options.map((option) => (
                         <button
-                            key={opt}
+                            key={option}
                             type="button"
-                            onClick={() => { onChange(opt); setOpen(false); }}
-                            className={`w-full px-4 py-2.5 text-sm text-left transition-all flex items-center gap-2 ${value === opt
-                                ? "bg-ds-amber/15 text-ds-amber font-medium"
-                                : "text-white/70 hover:bg-white/5 hover:text-white"
-                                }`}
+                            onClick={() => { onChange(option); setOpen(false); }}
+                            className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-all ${
+                                value === option ? "bg-ds-amber/15 font-medium text-ds-amber" : "text-white/70 hover:bg-white/5 hover:text-white"
+                            }`}
                         >
-                            {value === opt && <span className="text-xs text-ds-amber">✓</span>}
-                            {opt}
+                            {value === option ? <span className="text-xs">OK</span> : null}
+                            {option}
                         </button>
                     ))}
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }
 
-type FormData = {
-    // Step 1
-    fullName: string; email: string; password: string; confirmPassword: string; phoneWhatsapp: string; city: string;
-    // Step 2
-    duelLinksGameId: string; duelLinksIgn: string; duelLinksScreenshot: string;
-    masterDuelGameId: string; masterDuelIgn: string; masterDuelScreenshot: string;
-    // Step 3
-    sourceInfo: string; prevGuild: string; guildStatus: string; socialMedia: string[];
-    // Step 4
-    agreement: boolean;
-};
-
-const INITIAL: FormData = {
-    fullName: "", email: "", password: "", confirmPassword: "", phoneWhatsapp: "", city: "",
-    duelLinksGameId: "", duelLinksIgn: "", duelLinksScreenshot: "",
-    masterDuelGameId: "", masterDuelIgn: "", masterDuelScreenshot: "",
-    sourceInfo: "", prevGuild: "", guildStatus: "", socialMedia: [],
-    agreement: false,
-};
-
-const SOCIAL_OPTIONS = ["WhatsApp", "Instagram", "Facebook", "TikTok", "Twitter/X", "YouTube", "Discord", "Friend Referral"];
-const SOURCE_OPTIONS = ["Media sosial (Instagram/FB/TikTok)", "YouTube", "Discord", "Teman/Kenalan", "Tournament online", "Lainnya"];
-
-const steps = [
-    { title: "Akun", icon: "👤", desc: "Data akun Anda" },
-    { title: "Game Profile", icon: "🎮", desc: "Profil game Duel Links / Master Duel" },
-    { title: "Info Guild", icon: "🏆", desc: "Background guild Anda" },
-    { title: "Persetujuan", icon: "📋", desc: "Syarat dan ketentuan" },
-];
-
 export default function RegisterPage() {
     const router = useRouter();
     const [step, setStep] = useState(1);
-    const [form, setForm] = useState<FormData>(INITIAL);
+    const [form, setForm] = useState<RegistrationFormData>(INITIAL_FORM);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
-    const [uploadingDL, setUploadingDL] = useState(false);
-    const [uploadingMD, setUploadingMD] = useState(false);
+    const [uploading, setUploading] = useState<Record<UploadPreviewKey, boolean>>({ duelLinks: false, masterDuel: false });
+    const [previews, setPreviews] = useState<Record<UploadPreviewKey, UploadPreview | null>>({ duelLinks: null, masterDuel: null });
 
-    const set = (key: keyof FormData, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
-
-    const validate = (s: number): boolean => {
-        const e: Record<string, string> = {};
-        if (s === 1) {
-            if (!form.fullName || form.fullName.length < 3) e.fullName = "Nama minimal 3 karakter";
-            if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) e.email = "Email tidak valid";
-            if (!form.password || form.password.length < 8) e.password = "Password minimal 8 karakter";
-            if (!/[A-Za-z]/.test(form.password)) e.password = "Password harus mengandung huruf";
-            if (!/[0-9]/.test(form.password)) e.password = "Password harus mengandung angka";
-            if (form.password !== form.confirmPassword) e.confirmPassword = "Password tidak cocok";
-            if (!form.phoneWhatsapp || !/^\+?[0-9]{10,15}$/.test(form.phoneWhatsapp)) e.phoneWhatsapp = "Nomor WhatsApp tidak valid";
-            if (!form.city || form.city.length < 2) e.city = "Kota harus diisi";
-        }
-        if (s === 2) {
-            const hasDL = form.duelLinksGameId && form.duelLinksIgn;
-            const hasMD = form.masterDuelGameId && form.masterDuelIgn;
-            if (!hasDL && !hasMD) e.duelLinksGameId = "Minimal satu game profile wajib diisi";
-            if (form.duelLinksIgn && !/^\[DS\]/.test(form.duelLinksIgn)) e.duelLinksIgn = "IGN wajib diawali [DS]";
-            if (form.masterDuelIgn && !/^\[DS\]/.test(form.masterDuelIgn)) e.masterDuelIgn = "IGN wajib diawali [DS]";
-        }
-        if (s === 3) {
-            if (!form.sourceInfo) e.sourceInfo = "Sumber informasi harus diisi";
-            if (!form.guildStatus) e.guildStatus = "Pilih status guild";
-            if (form.socialMedia.length === 0) e.socialMedia = "Pilih minimal 1 sosial media";
-        }
-        if (s === 4) {
-            if (!form.agreement) e.agreement = "Anda harus menyetujui pernyataan";
-        }
-        setErrors(e);
-        return Object.keys(e).length === 0;
+    const setField = <Key extends keyof RegistrationFormData>(key: Key, value: RegistrationFormData[Key]) => {
+        setForm((current) => ({ ...current, [key]: value }));
     };
 
-    const handleUpload = async (file: File, field: "duelLinksScreenshot" | "masterDuelScreenshot") => {
-        const setUploading = field === "duelLinksScreenshot" ? setUploadingDL : setUploadingMD;
-        setUploading(true);
+    const clearUpload = (previewKey: UploadPreviewKey, uploadField: UploadField) => {
+        setField(uploadField, "");
+        setPreviews((current) => ({ ...current, [previewKey]: null }));
+    };
+
+    const validate = (targetStep: number) => {
+        const nextErrors = validateRegisterStep(form, targetStep);
+        setErrors(nextErrors);
+        return Object.keys(nextErrors).length === 0;
+    };
+
+    const handleUpload = async (file: File, uploadField: UploadField, previewKey: UploadPreviewKey) => {
+        setUploading((current) => ({ ...current, [previewKey]: true }));
+        setServerError(null);
+
         try {
-            const fd = new FormData();
-            fd.append("file", file);
-            const res = await fetch("/api/upload/public", { method: "POST", body: fd });
-            const data = await res.json();
-            if (data.url) set(field, data.url);
-        } catch { /* continue */ } finally { setUploading(false); }
-    };
+            const payload = new FormData();
+            payload.append("file", file);
 
-    const handleNext = () => {
-        if (validate(step)) setStep((s) => s + 1);
+            const response = await fetch("/api/upload/public", { method: "POST", body: payload });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.message || "Upload screenshot gagal.");
+
+            setField(uploadField, result.uploadId as string);
+            setPreviews((current) => ({
+                ...current,
+                [previewKey]: { previewUrl: result.previewUrl as string, expiresAt: result.expiresAt as string },
+            }));
+        } catch (error) {
+            setServerError(error instanceof Error ? error.message : "Upload screenshot gagal.");
+        } finally {
+            setUploading((current) => ({ ...current, [previewKey]: false }));
+        }
     };
 
     const handleSubmit = async () => {
         if (!validate(4)) return;
         setSubmitting(true);
         setServerError(null);
+
         try {
-            const res = await fetch("/api/auth/register", {
+            const response = await fetch("/api/auth/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...form, socialMedia: form.socialMedia }),
+                body: JSON.stringify(form),
             });
-            const data = await res.json();
-            if (data.success) {
+            const result = await response.json();
+
+            if (result.success) {
                 router.push("/register/success");
-            } else {
-                if (data.errors) {
-                    const flatErr: Record<string, string> = {};
-                    for (const [k, v] of Object.entries(data.errors)) flatErr[k] = Array.isArray(v) ? v[0] : String(v);
-                    setErrors(flatErr);
-                }
-                setServerError(data.message || "Registrasi gagal.");
+                return;
             }
-        } catch { setServerError("Network error. Coba lagi."); }
-        finally { setSubmitting(false); }
+
+            if (result.errors && typeof result.errors === "object") {
+                const nextErrors: Record<string, string> = {};
+                for (const [key, value] of Object.entries(result.errors as Record<string, string | string[]>)) {
+                    nextErrors[key] = Array.isArray(value) ? value[0] : value;
+                }
+                setErrors(nextErrors);
+            }
+
+            setServerError(result.message || "Registrasi gagal.");
+        } catch {
+            setServerError("Network error. Coba lagi.");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const Err = ({ field }: { field: string }) => errors[field] ? <p className={errCls}>{errors[field]}</p> : null;
-
-    const progressPct = ((step - 1) / (steps.length - 1)) * 100;
+    const Err = ({ field }: { field: string }) => (errors[field] ? <p className={errCls}>{errors[field]}</p> : null);
+    const progressPct = ((step - 1) / (REGISTER_STEPS.length - 1)) * 100;
 
     return (
-        <div className="w-full max-w-xl mx-auto">
-            {/* Header */}
-            <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-ds-amber mb-3">
+        <div className="mx-auto w-full max-w-xl">
+            <div className="mb-6 text-center">
+                <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-ds-amber">
                     <span className="text-lg font-black text-black">DS</span>
                 </div>
                 <h1 className="text-xl font-bold text-white">Daftar ke Duel Standby</h1>
-                <p className="text-sm text-white/40 mt-0.5">Isi form registrasi guild</p>
+                <p className="mt-0.5 text-sm text-white/40">Isi form registrasi guild</p>
             </div>
-
-            {/* Progress Steps */}
             <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                    {steps.map((s, i) => (
-                        <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${step === i + 1 ? "bg-ds-amber text-black scale-110" : step > i + 1 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-white/30 border border-white/10"}`}>
-                                {step > i + 1 ? "✓" : s.icon}
+                <div className="mb-2 flex items-center justify-between">
+                    {REGISTER_STEPS.map((item, index) => (
+                        <div key={item.title} className="flex flex-1 flex-col items-center gap-1">
+                            <div className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold transition-all ${
+                                step === index + 1 ? "scale-110 bg-ds-amber text-black" : step > index + 1 ? "border border-emerald-500/30 bg-emerald-500/20 text-emerald-400" : "border border-white/10 bg-white/5 text-white/30"
+                            }`}>
+                                {step > index + 1 ? "OK" : item.icon}
                             </div>
-                            <span className={`text-[10px] font-medium hidden sm:block ${step === i + 1 ? "text-ds-amber" : "text-white/30"}`}>{s.title}</span>
+                            <span className={`hidden text-[10px] font-medium sm:block ${step === index + 1 ? "text-ds-amber" : "text-white/30"}`}>{item.title}</span>
                         </div>
                     ))}
                 </div>
-                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-ds-amber rounded-full transition-all duration-500" style={{ width: `${progressPct + (100 / (steps.length - 1)) / steps.length}%` }} />
+                <div className="h-1 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full rounded-full bg-ds-amber transition-all duration-500" style={{ width: `${progressPct + (100 / (REGISTER_STEPS.length - 1)) / REGISTER_STEPS.length}%` }} />
                 </div>
-                <div className="text-center mt-2">
-                    <span className="text-xs text-white/40">Step {step} dari {steps.length} — {steps[step - 1].desc}</span>
+                <div className="mt-2 text-center">
+                    <span className="text-xs text-white/40">Step {step} dari {REGISTER_STEPS.length} - {REGISTER_STEPS[step - 1].desc}</span>
                 </div>
             </div>
-
-            {/* Card */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
-                {serverError && (
-                    <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">{serverError}</div>
-                )}
-
-                {/* ── Step 1: Akun ── */}
-                {step === 1 && (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+                {serverError ? <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{serverError}</div> : null}
+                {step === 1 ? (
                     <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="sm:col-span-2">
                                 <label className={labelCls}>Nama Lengkap *</label>
-                                <input type="text" className={inputCls} placeholder="Nama lengkap sesuai KTP" value={form.fullName} onChange={(e) => set("fullName", e.target.value)} />
+                                <input type="text" className={inputCls} placeholder="Nama lengkap sesuai KTP" value={form.fullName} onChange={(event) => setField("fullName", event.target.value)} />
                                 <Err field="fullName" />
                             </div>
                             <div className="sm:col-span-2">
                                 <label className={labelCls}>Email *</label>
-                                <input type="email" className={inputCls} placeholder="your@email.com" value={form.email} onChange={(e) => set("email", e.target.value)} />
+                                <input type="email" className={inputCls} placeholder="your@email.com" value={form.email} onChange={(event) => setField("email", event.target.value)} />
                                 <Err field="email" />
                             </div>
                             <div>
                                 <label className={labelCls}>Password *</label>
-                                <input type="password" className={inputCls} placeholder="Min. 8 karakter" value={form.password} onChange={(e) => set("password", e.target.value)} />
+                                <input type="password" className={inputCls} placeholder="Min. 8 karakter" value={form.password} onChange={(event) => setField("password", event.target.value)} />
                                 <Err field="password" />
                             </div>
                             <div>
                                 <label className={labelCls}>Konfirmasi Password *</label>
-                                <input type="password" className={inputCls} placeholder="Ulangi password" value={form.confirmPassword} onChange={(e) => set("confirmPassword", e.target.value)} />
+                                <input type="password" className={inputCls} placeholder="Ulangi password" value={form.confirmPassword} onChange={(event) => setField("confirmPassword", event.target.value)} />
                                 <Err field="confirmPassword" />
                             </div>
                             <div>
                                 <label className={labelCls}>WhatsApp *</label>
-                                <input type="tel" className={inputCls} placeholder="+628123456789" value={form.phoneWhatsapp} onChange={(e) => set("phoneWhatsapp", e.target.value)} />
+                                <input type="tel" className={inputCls} placeholder="+628123456789" value={form.phoneWhatsapp} onChange={(event) => setField("phoneWhatsapp", event.target.value)} />
                                 <Err field="phoneWhatsapp" />
-                                <p className="text-xs text-white/30 mt-1">Format: +62... atau 08...</p>
+                                <p className="mt-1 text-xs text-white/30">Format: +62... atau 08...</p>
                             </div>
                             <div>
                                 <label className={labelCls}>Kota *</label>
-                                <input type="text" className={inputCls} placeholder="Jakarta, Surabaya, ..." value={form.city} onChange={(e) => set("city", e.target.value)} />
+                                <input type="text" className={inputCls} placeholder="Jakarta, Surabaya, ..." value={form.city} onChange={(event) => setField("city", event.target.value)} />
                                 <Err field="city" />
                             </div>
                         </div>
                     </div>
-                )}
-
-                {/* ── Step 2: Game Profile ── */}
-                {step === 2 && (
+                ) : null}
+                {step === 2 ? (
                     <div className="space-y-6">
-                        <p className="text-xs text-white/40 bg-white/5 px-3 py-2 rounded-lg">Isi minimal satu game profile. IGN wajib diawali <span className="text-ds-amber font-mono">[DS]</span></p>
-
-                        {/* Duel Links */}
-                        <div className="border border-white/10 rounded-xl p-4 space-y-3">
-                            <h3 className="text-sm font-bold text-white flex items-center gap-2">🃏 Duel Links</h3>
+                        <p className="rounded-lg bg-white/5 px-3 py-2 text-xs text-white/40">Isi minimal satu game profile. IGN wajib diawali <span className="font-mono text-ds-amber">[DS]</span></p>
+                        <div className="space-y-3 rounded-xl border border-white/10 p-4">
+                            <h3 className="text-sm font-bold text-white">Duel Links</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className={labelCls}>Game ID</label>
-                                    <input type="text" className={inputCls} placeholder="123456789" value={form.duelLinksGameId} onChange={(e) => set("duelLinksGameId", e.target.value)} />
+                                    <input type="text" className={inputCls} placeholder="123456789" value={form.duelLinksGameId} onChange={(event) => setField("duelLinksGameId", event.target.value)} />
                                 </div>
                                 <div>
                                     <label className={labelCls}>IGN</label>
-                                    <input type="text" className={inputCls} placeholder="[DS]YourName" value={form.duelLinksIgn} onChange={(e) => set("duelLinksIgn", e.target.value)} />
+                                    <input type="text" className={inputCls} placeholder="[DS]YourName" value={form.duelLinksIgn} onChange={(event) => setField("duelLinksIgn", event.target.value)} />
                                     <Err field="duelLinksIgn" />
                                 </div>
                             </div>
-                            <div>
-                                <label className={labelCls}>Screenshot Profil</label>
-                                {form.duelLinksScreenshot ? (
-                                    <div className="flex items-center gap-2">
-                                        <img src={form.duelLinksScreenshot} className="h-16 rounded-lg object-cover" alt="preview" />
-                                        <button onClick={() => set("duelLinksScreenshot", "")} className="text-xs text-red-400 hover:text-red-300">Hapus</button>
-                                    </div>
-                                ) : (
-                                    <label className="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-xl border border-dashed border-white/20 hover:border-ds-amber/40 transition-all">
-                                        <span className="text-xl">{uploadingDL ? "⏳" : "📷"}</span>
-                                        <span className="text-xs text-white/40">{uploadingDL ? "Mengupload..." : "Upload screenshot"}</span>
-                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "duelLinksScreenshot"); }} />
-                                    </label>
-                                )}
-                            </div>
+                            <RegisterUploadField
+                                label="Screenshot Profil"
+                                preview={previews.duelLinks}
+                                uploading={uploading.duelLinks}
+                                error={errors.duelLinksScreenshotUploadId}
+                                onUpload={(file) => handleUpload(file, "duelLinksScreenshotUploadId", "duelLinks")}
+                                onClear={() => clearUpload("duelLinks", "duelLinksScreenshotUploadId")}
+                            />
                         </div>
-
-                        {/* Master Duel */}
-                        <div className="border border-white/10 rounded-xl p-4 space-y-3">
-                            <h3 className="text-sm font-bold text-white flex items-center gap-2">⚡ Master Duel</h3>
+                        <div className="space-y-3 rounded-xl border border-white/10 p-4">
+                            <h3 className="text-sm font-bold text-white">Master Duel</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className={labelCls}>Game ID</label>
-                                    <input type="text" className={inputCls} placeholder="MD-123456789" value={form.masterDuelGameId} onChange={(e) => set("masterDuelGameId", e.target.value)} />
+                                    <input type="text" className={inputCls} placeholder="MD-123456789" value={form.masterDuelGameId} onChange={(event) => setField("masterDuelGameId", event.target.value)} />
                                 </div>
                                 <div>
                                     <label className={labelCls}>IGN</label>
-                                    <input type="text" className={inputCls} placeholder="[DS]YourName" value={form.masterDuelIgn} onChange={(e) => set("masterDuelIgn", e.target.value)} />
+                                    <input type="text" className={inputCls} placeholder="[DS]YourName" value={form.masterDuelIgn} onChange={(event) => setField("masterDuelIgn", event.target.value)} />
                                     <Err field="masterDuelIgn" />
                                 </div>
                             </div>
-                            <div>
-                                <label className={labelCls}>Screenshot Profil</label>
-                                {form.masterDuelScreenshot ? (
-                                    <div className="flex items-center gap-2">
-                                        <img src={form.masterDuelScreenshot} className="h-16 rounded-lg object-cover" alt="preview" />
-                                        <button onClick={() => set("masterDuelScreenshot", "")} className="text-xs text-red-400 hover:text-red-300">Hapus</button>
-                                    </div>
-                                ) : (
-                                    <label className="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-xl border border-dashed border-white/20 hover:border-ds-amber/40 transition-all">
-                                        <span className="text-xl">{uploadingMD ? "⏳" : "📷"}</span>
-                                        <span className="text-xs text-white/40">{uploadingMD ? "Mengupload..." : "Upload screenshot"}</span>
-                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "masterDuelScreenshot"); }} />
-                                    </label>
-                                )}
-                            </div>
+                            <RegisterUploadField
+                                label="Screenshot Profil"
+                                preview={previews.masterDuel}
+                                uploading={uploading.masterDuel}
+                                error={errors.masterDuelScreenshotUploadId}
+                                onUpload={(file) => handleUpload(file, "masterDuelScreenshotUploadId", "masterDuel")}
+                                onClear={() => clearUpload("masterDuel", "masterDuelScreenshotUploadId")}
+                            />
                         </div>
                         <Err field="duelLinksGameId" />
                     </div>
-                )}
-
-                {/* ── Step 3: Info Guild ── */}
-                {step === 3 && (
+                ) : null}
+                {step === 3 ? (
                     <div className="space-y-4">
                         <div>
                             <label className={labelCls}>Dari mana Anda mengetahui guild ini? *</label>
-                            <CustomSelect
-                                value={form.sourceInfo}
-                                onChange={(v) => set("sourceInfo", v)}
-                                options={SOURCE_OPTIONS}
-                                placeholder="-- Pilih sumber informasi --"
-                                error={errors.sourceInfo}
-                            />
+                            <CustomSelect value={form.sourceInfo} onChange={(value) => setField("sourceInfo", value)} options={SOURCE_OPTIONS} placeholder="-- Pilih sumber informasi --" error={errors.sourceInfo} />
                             <Err field="sourceInfo" />
                         </div>
                         <div>
                             <label className={labelCls}>Guild sebelumnya (opsional)</label>
-                            <input type="text" className={inputCls} placeholder="Nama guild sebelumnya" value={form.prevGuild} onChange={(e) => set("prevGuild", e.target.value)} />
+                            <input type="text" className={inputCls} placeholder="Nama guild sebelumnya" value={form.prevGuild} onChange={(event) => setField("prevGuild", event.target.value)} />
                         </div>
                         <div>
                             <label className={labelCls}>Status guild saat ini *</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                {[{ v: "SOLO_PLAYER", l: "Solo Player", desc: "Tidak dalam guild" }, { v: "LEFT_GUILD", l: "Keluar Guild", desc: "Pernah di guild lain" }, { v: "NEW_PLAYER", l: "Pemain Baru", desc: "Baru mulai" }].map((opt) => (
-                                    <div key={opt.v} onClick={() => set("guildStatus", opt.v)} className={`p-3 rounded-xl border cursor-pointer transition-all ${form.guildStatus === opt.v ? "border-ds-amber bg-ds-amber/10" : "border-white/10 hover:border-white/20"}`}>
-                                        <div className="text-sm font-semibold text-white">{opt.l}</div>
-                                        <div className="text-xs text-white/40">{opt.desc}</div>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                {[
+                                    { value: "SOLO_PLAYER", label: "Solo Player", description: "Tidak dalam guild" },
+                                    { value: "LEFT_GUILD", label: "Keluar Guild", description: "Pernah di guild lain" },
+                                    { value: "NEW_PLAYER", label: "Pemain Baru", description: "Baru mulai" },
+                                ].map((option) => (
+                                    <div key={option.value} onClick={() => setField("guildStatus", option.value)} className={`cursor-pointer rounded-xl border p-3 transition-all ${form.guildStatus === option.value ? "border-ds-amber bg-ds-amber/10" : "border-white/10 hover:border-white/20"}`}>
+                                        <div className="text-sm font-semibold text-white">{option.label}</div>
+                                        <div className="text-xs text-white/40">{option.description}</div>
                                     </div>
                                 ))}
                             </div>
@@ -360,80 +306,67 @@ export default function RegisterPage() {
                         </div>
                         <div>
                             <label className={labelCls}>Aktif di sosial media mana? *</label>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                {SOCIAL_OPTIONS.map((s) => (
-                                    <div key={s} onClick={() => {
-                                        const cur = form.socialMedia;
-                                        set("socialMedia", cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]);
-                                    }} className={`px-3 py-2 rounded-xl border text-xs font-medium cursor-pointer transition-all ${form.socialMedia.includes(s) ? "border-ds-amber bg-ds-amber/10 text-ds-amber" : "border-white/10 text-white/40 hover:border-white/20"}`}>
-                                        {s}
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                {SOCIAL_OPTIONS.map((option) => (
+                                    <div
+                                        key={option}
+                                        onClick={() => setField("socialMedia", form.socialMedia.includes(option) ? form.socialMedia.filter((item) => item !== option) : [...form.socialMedia, option])}
+                                        className={`cursor-pointer rounded-xl border px-3 py-2 text-xs font-medium transition-all ${form.socialMedia.includes(option) ? "border-ds-amber bg-ds-amber/10 text-ds-amber" : "border-white/10 text-white/40 hover:border-white/20"}`}
+                                    >
+                                        {option}
                                     </div>
                                 ))}
                             </div>
                             <Err field="socialMedia" />
                         </div>
                     </div>
-                )}
-
-                {/* ── Step 4: Agreement ── */}
-                {step === 4 && (
+                ) : null}
+                {step === 4 ? (
                     <div className="space-y-4">
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white/70 space-y-2 max-h-48 overflow-y-auto">
+                        <div className="max-h-48 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
                             <p className="font-semibold text-white">Pernyataan Anggota Duel Standby Guild</p>
                             <p>Dengan mendaftar, saya menyatakan bahwa:</p>
                             <ol className="list-decimal list-inside space-y-1 text-xs">
-                                <li>Informasi yang saya berikan adalah <strong>benar dan akurat</strong>.</li>
-                                <li>IGN di game menggunakan prefix <strong>[DS]</strong> sebagaimana ketentuan guild.</li>
-                                <li>Saya bersedia mengikuti <strong>peraturan dan tata tertib</strong> guild.</li>
+                                <li>Informasi yang saya berikan adalah benar dan akurat.</li>
+                                <li>IGN di game menggunakan prefix [DS] sesuai ketentuan guild.</li>
+                                <li>Saya bersedia mengikuti peraturan dan tata tertib guild.</li>
                                 <li>Saya bersedia aktif berkontribusi dalam kegiatan guild.</li>
-                                <li>Pelanggaran dapat berakibat pada <strong>dikeluarkan dari guild</strong>.</li>
+                                <li>Pelanggaran dapat berakibat pada dikeluarkan dari guild.</li>
                             </ol>
                         </div>
-
                         <div>
-                            <p className="text-sm text-white/50 mb-2">Ringkasan pendaftaran Anda:</p>
-                            <div className="bg-white/5 rounded-xl p-3 text-xs space-y-1">
-                                <div className="flex justify-between"><span className="text-white/40">Nama</span><span className="text-white font-medium">{form.fullName}</span></div>
+                            <p className="mb-2 text-sm text-white/50">Ringkasan pendaftaran Anda:</p>
+                            <div className="space-y-1 rounded-xl bg-white/5 p-3 text-xs">
+                                <div className="flex justify-between"><span className="text-white/40">Nama</span><span className="font-medium text-white">{form.fullName}</span></div>
                                 <div className="flex justify-between"><span className="text-white/40">Email</span><span className="text-white">{form.email}</span></div>
                                 <div className="flex justify-between"><span className="text-white/40">Kota</span><span className="text-white">{form.city}</span></div>
-                                {form.duelLinksIgn && <div className="flex justify-between"><span className="text-white/40">DL IGN</span><span className="text-ds-amber font-mono">{form.duelLinksIgn}</span></div>}
-                                {form.masterDuelIgn && <div className="flex justify-between"><span className="text-white/40">MD IGN</span><span className="text-ds-amber font-mono">{form.masterDuelIgn}</span></div>}
+                                {form.duelLinksIgn ? <div className="flex justify-between"><span className="text-white/40">DL IGN</span><span className="font-mono text-ds-amber">{form.duelLinksIgn}</span></div> : null}
+                                {form.masterDuelIgn ? <div className="flex justify-between"><span className="text-white/40">MD IGN</span><span className="font-mono text-ds-amber">{form.masterDuelIgn}</span></div> : null}
                             </div>
                         </div>
-
-                        <div onClick={() => set("agreement", !form.agreement)} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${form.agreement ? "border-ds-amber bg-ds-amber/10" : "border-white/10 hover:border-white/20"}`}>
-                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${form.agreement ? "bg-ds-amber border-ds-amber" : "border-white/30"}`}>
-                                {form.agreement && <span className="text-black text-xs font-bold">✓</span>}
+                        <div onClick={() => setField("agreement", !form.agreement)} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all ${form.agreement ? "border-ds-amber bg-ds-amber/10" : "border-white/10 hover:border-white/20"}`}>
+                            <div className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2 transition-all ${form.agreement ? "border-ds-amber bg-ds-amber text-black" : "border-white/30"}`}>
+                                {form.agreement ? <span className="text-xs font-bold">OK</span> : null}
                             </div>
                             <p className="text-sm text-white/70">Saya telah membaca dan menyetujui seluruh pernyataan di atas, serta bersedia mengikuti peraturan guild Duel Standby.</p>
                         </div>
                         <Err field="agreement" />
                     </div>
-                )}
-
-                {/* Navigation */}
-                <div className="flex gap-3 mt-6">
-                    {step > 1 && (
-                        <button onClick={() => setStep((s) => s - 1)} className="flex-1 py-2.5 rounded-xl border border-white/10 text-sm font-medium text-white/60 hover:bg-white/5 transition-all">
-                            ← Kembali
-                        </button>
-                    )}
+                ) : null}
+                <div className="mt-6 flex gap-3">
+                    {step > 1 ? <button type="button" onClick={() => setStep((current) => current - 1)} className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-white/60 transition-all hover:bg-white/5">Kembali</button> : null}
                     {step < 4 ? (
-                        <button onClick={handleNext} className="flex-1 py-2.5 rounded-xl bg-ds-amber hover:bg-ds-gold text-black font-bold text-sm transition-all">
-                            Lanjut →
+                        <button type="button" onClick={() => { if (validate(step)) setStep((current) => current + 1); }} className="flex-1 rounded-xl bg-ds-amber py-2.5 text-sm font-bold text-black transition-all hover:bg-ds-gold">
+                            Lanjut
                         </button>
                     ) : (
-                        <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-2.5 rounded-xl bg-ds-amber hover:bg-ds-gold text-black font-bold text-sm transition-all disabled:opacity-50">
-                            {submitting ? "Mendaftar..." : "Kirim Pendaftaran 🚀"}
+                        <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 rounded-xl bg-ds-amber py-2.5 text-sm font-bold text-black transition-all hover:bg-ds-gold disabled:opacity-50">
+                            {submitting ? "Mendaftar..." : "Kirim Pendaftaran"}
                         </button>
                     )}
                 </div>
             </div>
-
-            <p className="text-center text-sm text-white/30 mt-4">
-                Sudah punya akun?{" "}
-                <Link href="/login" className="text-ds-amber hover:text-ds-gold font-semibold transition-colors">Masuk</Link>
-            </p>
+            <p className="mt-4 text-center text-sm text-white/30">Sudah punya akun? <Link href="/login" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">Masuk</Link></p>
         </div>
     );
 }

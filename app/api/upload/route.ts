@@ -4,9 +4,10 @@ import { logAudit } from "@/lib/audit-logger";
 import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
+import { getAppUrl, getMaxFileSize, getUploadDir } from "@/lib/runtime-config";
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || "./public/uploads";
-const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || "5242880", 10); // Default 5MB
+const UPLOAD_DIR = getUploadDir();
+const MAX_FILE_SIZE = getMaxFileSize();
 const ALLOWED_EXTENSIONS = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
 export async function POST(request: NextRequest) {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer());
         await fs.writeFile(path.join(uploadPath, uniqueFilename), buffer);
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const appUrl = getAppUrl();
         const publicUrl = `${appUrl}/uploads/${uniqueFilename}`;
 
         // Audit Logging Action

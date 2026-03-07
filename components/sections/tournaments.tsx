@@ -1,118 +1,50 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Calendar, Trophy, Gamepad2 } from "lucide-react";
-
-interface Tournament {
-    id: string;
-    title: string;
-    gameType: string;
-    startDate: string;
-    prizePool: number;
-    status: string;
-    image: string | null;
-}
+import { Trophy } from "lucide-react";
+import { PublicTournamentCard, type PublicTournamentCardData } from "@/components/public/tournament-card";
 
 interface TournamentsProps {
-    tournaments: Tournament[];
+    tournaments: PublicTournamentCardData[];
 }
-
-const getStatusStyle = (status: string) => {
-    switch (status.toUpperCase()) {
-        case "ONGOING":
-            return "text-green-400 bg-green-400/10";
-        case "OPEN":
-            return "text-[#FFC916] bg-[#FFC916]/10";
-        case "COMPLETED":
-            return "text-[#545454] bg-[#545454]/10";
-        case "CANCELLED":
-            return "text-red-400 bg-red-400/10";
-        default:
-            return "text-[#545454] bg-[#545454]/10";
-    }
-};
-
-const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-
-const formatPrize = (n: number) =>
-    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
-
-const formatStatusLabel = (status: string) => {
-    switch (status.toUpperCase()) {
-        case "OPEN":
-            return "Open";
-        case "ONGOING":
-            return "Ongoing";
-        case "COMPLETED":
-            return "Completed";
-        case "CANCELLED":
-            return "Cancelled";
-        default:
-            return status;
-    }
-};
 
 export function Tournaments({ tournaments }: TournamentsProps) {
     return (
-        <section id="tournaments" className="py-24 bg-gray-50 dark:bg-[#2E2E2E] border-y border-gray-200 dark:border-[#3A3A3A]">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-                    <div>
-                        <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Tournaments</h2>
-                        <p className="text-gray-600 dark:text-[#E6E6E6]/60">Compete against the best and win prizes.</p>
+        <section id="tournaments" className="border-y border-gray-200 bg-gray-50 py-24 dark:border-[#3A3A3A] dark:bg-[#2E2E2E]">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                    <div className="max-w-2xl">
+                        <p className="mb-3 text-sm font-bold uppercase tracking-[0.32em] text-[#FFC916]">Public Tournaments</p>
+                        <h2 className="mb-3 text-4xl font-black text-gray-900 dark:text-white">Bracket aktif kini tampil sebagai card, bukan list biasa.</h2>
+                        <p className="text-gray-600 dark:text-[#E6E6E6]/60">
+                            Lihat preview event yang sedang buka, cek hadiah, lalu lanjut ke halaman khusus untuk seluruh tournament dan detail lengkap tiap bracket.
+                        </p>
                     </div>
+                    <Link
+                        href="/tournaments"
+                        className="inline-flex items-center justify-center rounded-2xl border border-gray-300 bg-white px-5 py-3 text-sm font-bold text-gray-900 transition-all hover:border-[#FFC916] hover:text-[#b98a00] dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:border-[#FFC916] dark:hover:text-[#FFC916]"
+                    >
+                        Lihat Semua Tournament
+                    </Link>
                 </div>
 
                 {tournaments.length === 0 ? (
-                    <div className="text-center py-16">
-                        <Trophy className="w-12 h-12 text-[#545454] mx-auto mb-4" />
-                        <p className="text-gray-500 dark:text-[#E6E6E6]/40 text-lg">No tournaments yet. Stay tuned!</p>
+                    <div className="rounded-[28px] border border-white/10 bg-[#141414] px-6 py-16 text-center">
+                        <Trophy className="mx-auto mb-4 h-12 w-12 text-[#FFC916]" />
+                        <p className="text-lg text-white/55">Belum ada tournament aktif. Begitu event baru dibuka, card-nya akan muncul di sini.</p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                         {tournaments.map((tournament, index) => (
                             <motion.div
                                 key={tournament.id}
-                                initial={{ opacity: 0, x: -20 }}
-                                whileInView={{ opacity: 1, x: 0 }}
+                                initial={{ opacity: 0, y: 24 }}
+                                whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: index * 0.08 }}
-                                className="group flex flex-col md:flex-row items-center justify-between p-6 bg-white dark:bg-[#1A1A1A]/50 hover:bg-amber-50 dark:hover:bg-[#3A3A3A] rounded-xl border border-gray-200 dark:border-[#3A3A3A] hover:border-[#FFC916]/30 transition-all cursor-default"
                             >
-                                <div className="flex items-center gap-5 w-full md:w-auto mb-4 md:mb-0">
-                                    <div className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#2E2E2E] flex items-center justify-center group-hover:bg-[#FFC916]/10 transition-colors">
-                                        {tournament.image ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img src={tournament.image} alt={tournament.title} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <Trophy className="w-7 h-7 text-[#FFC916]" />
-                                        )}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-[#FFC916] transition-colors">
-                                            {tournament.title}
-                                        </h3>
-                                        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-[#E6E6E6]/50 mt-1">
-                                            <span className="flex items-center gap-1">
-                                                <Gamepad2 className="w-4 h-4" /> {tournament.gameType}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Calendar className="w-4 h-4" /> {formatDate(tournament.startDate)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-5 w-full md:w-auto justify-between md:justify-end">
-                                    <div className="text-right mr-2">
-                                        <p className="text-xs text-gray-500 dark:text-[#545454] uppercase tracking-wider font-semibold">Prize Pool</p>
-                                        <p className="text-lg font-bold text-[#FFC916]">{formatPrize(tournament.prizePool)}</p>
-                                    </div>
-                                    <span className={`px-4 py-1 rounded-full text-sm font-medium ${getStatusStyle(tournament.status)}`}>
-                                        {formatStatusLabel(tournament.status)}
-                                    </span>
-                                </div>
+                                <PublicTournamentCard tournament={tournament} compact />
                             </motion.div>
                         ))}
                     </div>

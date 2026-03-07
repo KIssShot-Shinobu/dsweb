@@ -5,19 +5,12 @@ import { Socials } from "@/components/sections/socials";
 import { Tournaments } from "@/components/sections/tournaments";
 import { Footer } from "@/components/ui/footer";
 import { prisma } from "@/lib/prisma";
+import type { PublicTournamentCardData } from "@/components/public/tournament-card";
 
 export default async function Home() {
   let activeUserCount = 0;
   let tournamentCount = 0;
-  let tournaments: {
-    id: string;
-    title: string;
-    gameType: string;
-    startDate: string;
-    prizePool: number;
-    status: string;
-    image: string | null;
-  }[] = [];
+  let tournaments: PublicTournamentCardData[] = [];
 
   try {
     const [activeUsers, totalTournaments, dbTournaments] = await Promise.all([
@@ -32,6 +25,10 @@ export default async function Home() {
           prizePool: true,
           status: true,
           image: true,
+          description: true,
+          _count: {
+            select: { participants: true },
+          },
         },
         orderBy: { startDate: "asc" },
         take: 12,
@@ -57,13 +54,15 @@ export default async function Home() {
         prizePool: t.prizePool,
         status: t.status,
         image: t.image,
+        description: t.description,
+        participantCount: t._count.participants,
       }))
       .sort((a, b) => {
         const byStatus = (order[a.status] ?? 9) - (order[b.status] ?? 9);
         if (byStatus !== 0) return byStatus;
         return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
       })
-      .slice(0, 5);
+      .slice(0, 6);
   } catch (error) {
     console.error("[Public Home] Failed to load DB data:", error);
   }

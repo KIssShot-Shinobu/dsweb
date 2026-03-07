@@ -3,6 +3,22 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
 import { buildAuditLogWhere } from "@/lib/audit-query";
 
+type ExportAuditLog = {
+    id: string;
+    createdAt: Date;
+    userId: string;
+    action: string;
+    targetId: string | null;
+    targetType: string | null;
+    ipAddress: string;
+    requestMethod: string | null;
+    requestPath: string | null;
+    responseStatus: number | null;
+    reason: string | null;
+    details: string | null;
+    user: { email: string } | null;
+};
+
 export async function GET(req: NextRequest) {
     try {
         const currentUser = await getCurrentUser();
@@ -25,7 +41,7 @@ export async function GET(req: NextRequest) {
                     let keepFetching = true;
 
                     while (keepFetching) {
-                        const dbLogs: any[] = await prisma.auditLog.findMany({
+                        const dbLogs: ExportAuditLog[] = await prisma.auditLog.findMany({
                             where: buildAuditLogWhere(new URL(req.url).searchParams),
                             take: batchSize,
                             ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),

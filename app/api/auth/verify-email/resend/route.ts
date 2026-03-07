@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { logAudit } from "@/lib/audit-logger";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
+import { getAppUrl } from "@/lib/runtime-config";
 
 const EMAIL_VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
 
@@ -31,7 +32,7 @@ export async function POST() {
             },
         });
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const appUrl = getAppUrl();
         const verifyUrl = `${appUrl}/verify-email?token=${token}`;
 
         try {

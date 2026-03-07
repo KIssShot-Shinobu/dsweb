@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { generateSecureToken, PASSWORD_RESET_TOKEN_TTL_MS } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { sendEmail } from "@/lib/email";
+import { getAppUrl } from "@/lib/runtime-config";
 import { z } from "zod";
 
 const forgotPasswordSchema = z.object({
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const appUrl = getAppUrl();
         const resetUrl = `${appUrl}/reset-password?token=${token}`;
         try {
             await sendEmail({

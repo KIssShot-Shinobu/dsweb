@@ -32,8 +32,8 @@ export const registerSchema = z.object({
         .regex(IGN_REGEX, "IGN Master Duel wajib diawali [DS]")
         .optional()
         .or(z.literal("")),
-    duelLinksScreenshot: z.string().optional(), // URL setelah upload
-    masterDuelScreenshot: z.string().optional(),
+    duelLinksScreenshotUploadId: z.string().cuid("Upload screenshot Duel Links tidak valid").optional().or(z.literal("")),
+    masterDuelScreenshotUploadId: z.string().cuid("Upload screenshot Master Duel tidak valid").optional().or(z.literal("")),
 
     // Step 3 – Guild Info
     sourceInfo: z.string().trim().min(1, "Sumber informasi harus diisi").max(191, "Sumber informasi terlalu panjang"),
@@ -55,6 +55,18 @@ export const registerSchema = z.object({
     {
         message: "Minimal satu game profile wajib diisi (Game ID + IGN)",
         path: ["duelLinksGameId"],
+    }
+).refine(
+    (data) => !data.duelLinksScreenshotUploadId || Boolean(data.duelLinksGameId && data.duelLinksIgn),
+    {
+        message: "Screenshot Duel Links hanya bisa dipakai jika profile Duel Links diisi",
+        path: ["duelLinksScreenshotUploadId"],
+    }
+).refine(
+    (data) => !data.masterDuelScreenshotUploadId || Boolean(data.masterDuelGameId && data.masterDuelIgn),
+    {
+        message: "Screenshot Master Duel hanya bisa dipakai jika profile Master Duel diisi",
+        path: ["masterDuelScreenshotUploadId"],
     }
 );
 

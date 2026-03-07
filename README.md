@@ -19,7 +19,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - Manajemen user approval, role, dan status akun.
 - CRUD tournament + register participant tournament.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
-- Dashboard admin disatukan ke halaman `/dashboard`, termasuk summary users, tournament, treasury, dan quick action approval.
+- Panel operasional disatukan ke halaman `/dashboard`, termasuk summary users, tournament, treasury, dan quick action approval.
 - Hapus tournament di dashboard memakai confirm modal + undo 5 detik.
 - Form tournament mendukung field `Image URL` + preview gambar pada create/edit.
 - Form tournament juga mendukung upload file gambar langsung ke `/api/upload` (URL akan terisi otomatis).
@@ -92,11 +92,13 @@ DATABASE_URL="mysql://USERNAME:PASSWORD@141.11.25.48:3306/DATABASE_NAME?connecti
 Variabel penting:
 
 - `DATABASE_URL`: koneksi utama Prisma ke MySQL.
-- `JWT_SECRET`: secret signing JWT.
+- `JWT_SECRET`: secret signing JWT. Wajib diisi; app tidak lagi memakai fallback default.
 - `DATA_ENCRYPTION_KEY`: kunci enkripsi data sensitif at-rest (`phoneWhatsapp`, `accountNumber`, `twoFactorSecret`).
 - `NEXT_PUBLIC_APP_URL`: base URL app (dipakai URL hasil upload).
 - `UPLOAD_DIR`: lokasi simpan file upload (default `./public/uploads`).
 - `MAX_FILE_SIZE`: batas upload byte (default 5MB).
+- `ALLOW_DEV_SEED_ENDPOINT`: aktifkan `/api/seed` hanya untuk dev lokal yang memang membutuhkan seed admin cepat.
+- `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD`: kredensial seed admin untuk script dan endpoint seed.
 - `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS`: kredensial SMTP provider email.
 - `EMAIL_FROM`: alamat pengirim email untuk verifikasi/reset password.
 - `RESETPASSCONSOLE` (atau `resetpassconsole`): mode pengiriman email (`true` = `console.info`, `false` = SMTP/provider email).
@@ -117,15 +119,13 @@ App berjalan di `http://localhost:3000`.
 ### 1) Seed akun admin
 
 ```bash
+set ADMIN_SEED_EMAIL=admin@example.com
+set ADMIN_SEED_PASSWORD=change-me
 node scripts/seed-admin.js
 ```
 
-Default admin:
-
-- Email: `admin@duelstandby.com`
-- Password: `Admin123!`
-- Role: `ADMIN`
-- Status: `ACTIVE`
+Variabel `ADMIN_SEED_EMAIL` dan `ADMIN_SEED_PASSWORD` wajib diisi sebelum menjalankan script.
+Field tambahan opsional: `ADMIN_SEED_NAME`, `ADMIN_SEED_PHONE`, `ADMIN_SEED_CITY`.
 
 ### 2) Seed data demo (50 records)
 
@@ -167,12 +167,15 @@ Tournament:
 
 Lainnya:
 
-- `GET/POST /api/admin/users`
-- `PUT /api/admin/users/:id/status`
+- `GET /api/users`
+- `GET /api/users/:id`
+- `PUT /api/users/:id/status`
+- `GET /api/admin/users` dan `PUT /api/admin/users/:id/status` tetap tersedia sebagai alias kompatibilitas
 - `GET/POST /api/treasury`, `GET/PUT/DELETE /api/treasury/:id`
 - `GET /api/treasury` mendukung `page`, `limit`, `month`, `year`, `type`, `userId`
 - `POST /api/upload`
-- `POST /api/upload/public` (khusus upload screenshot saat registrasi sebelum login)
+- `POST /api/upload/public` (membuat temp upload screenshot registrasi, rate limit 5/jam/IP)
+- `GET /api/upload/public/:id` (preview temp upload milik IP yang sama)
 - `GET /api/audit-logs`
 - `GET /api/audit-logs/export`
 - `GET /api/health`
@@ -181,7 +184,7 @@ Lainnya:
 
 - `USER/MEMBER`: profile dan menu personal.
 - `OFFICER`: fitur guild level menengah.
-- `ADMIN/FOUNDER`: akses penuh dashboard admin (users, tournaments, treasury, audit).
+- `ADMIN/FOUNDER`: akses penuh dashboard operasional (users, tournaments, treasury, audit).
 
 Catatan: beberapa menu mengikuti pengecekan role di frontend dan backend; backend tetap sumber kebenaran.
 Catatan tambahan: pendaftaran tournament publik memakai status akun `ACTIVE`; role `MEMBER` tidak lagi menjadi syarat khusus untuk register.
@@ -228,6 +231,7 @@ Referensi implementasi: `lib/prisma.ts`.
 ### `api/upload` 401 saat registrasi
 
 Form registrasi sekarang memakai endpoint publik `POST /api/upload/public` untuk upload screenshot sebelum user login.
+Endpoint ini tidak lagi langsung memberi URL permanen. Response-nya berisi `uploadId`, `previewUrl`, dan `expiresAt`, lalu file akan di-claim ke user saat registrasi berhasil.
 Endpoint `POST /api/upload` tetap dipakai untuk area yang membutuhkan user terautentikasi.
 
 ### `api/auth/register` 409 (Conflict)

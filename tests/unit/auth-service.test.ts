@@ -2,12 +2,21 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { authenticateUser, registerUser } from "@/lib/services/auth-service";
 
+type AuthMockUser = {
+    id: string;
+    email: string;
+    fullName: string;
+    password?: string;
+    status: string;
+    role: string;
+};
+
 test("authenticateUser returns user for valid credentials", async () => {
     const result = await authenticateUser(
         {
             prisma: {
                 user: {
-                    findUnique: async () => ({
+                    findUnique: async (): Promise<AuthMockUser> => ({
                         id: "user_1",
                         email: "user@example.com",
                         fullName: "User One",
@@ -16,7 +25,7 @@ test("authenticateUser returns user for valid credentials", async () => {
                         role: "USER",
                     }),
                 },
-            } as any,
+            } as unknown as Parameters<typeof authenticateUser>[0]["prisma"],
             comparePassword: async () => true,
         },
         { email: "user@example.com", password: "secret" }
@@ -33,7 +42,7 @@ test("authenticateUser blocks pending non-admin user", async () => {
         {
             prisma: {
                 user: {
-                    findUnique: async () => ({
+                    findUnique: async (): Promise<AuthMockUser> => ({
                         id: "user_2",
                         email: "pending@example.com",
                         fullName: "Pending User",
@@ -42,7 +51,7 @@ test("authenticateUser blocks pending non-admin user", async () => {
                         role: "USER",
                     }),
                 },
-            } as any,
+            } as unknown as Parameters<typeof authenticateUser>[0]["prisma"],
             comparePassword: async () => true,
         },
         { email: "pending@example.com", password: "secret" }
@@ -56,7 +65,13 @@ test("registerUser rejects duplicate phone number", async () => {
         {
             prisma: {
                 user: {
-                    findUnique: async (args: any) => (args.where.phoneWhatsapp ? { id: "user_3" } : null),
+                    findUnique: async (args: { where: { phoneWhatsapp?: string } }) => (args.where.phoneWhatsapp ? {
+                        id: "user_3",
+                        email: "existing@example.com",
+                        fullName: "Existing User",
+                        status: "ACTIVE",
+                        role: "USER",
+                    } : null),
                     create: async () => {
                         throw new Error("should not create");
                     },
@@ -68,11 +83,11 @@ test("registerUser rejects duplicate phone number", async () => {
                 emailVerificationToken: {
                     upsert: async () => null,
                 },
-            },
+            } as unknown as Parameters<typeof registerUser>[0]["prisma"],
             hashPassword: async () => "hashed",
             comparePassword: async () => false,
             generateSecureToken: () => "verify-token",
-        } as any,
+        },
         {
             fullName: "Test User",
             email: "test@example.com",
@@ -84,8 +99,8 @@ test("registerUser rejects duplicate phone number", async () => {
             duelLinksIgn: "[DS] Test",
             masterDuelGameId: "",
             masterDuelIgn: "",
-            duelLinksScreenshot: "",
-            masterDuelScreenshot: "",
+            duelLinksScreenshotUploadId: "",
+            masterDuelScreenshotUploadId: "",
             sourceInfo: "Discord",
             prevGuild: "",
             guildStatus: "NEW_PLAYER",

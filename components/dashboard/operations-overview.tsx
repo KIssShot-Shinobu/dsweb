@@ -22,23 +22,23 @@ const QUICK_LINKS: QuickLink[] = [
         href: "/dashboard/users?status=PENDING",
         title: "Review Pendaftaran",
         description: "Periksa user baru yang menunggu approval.",
-        icon: "⏳",
+        icon: "R",
     },
     {
         href: "/dashboard/users",
         title: "Users",
         description: "Kelola role, status, dan data user dari satu halaman.",
-        icon: "👤",
+        icon: "U",
     },
     {
         href: "/dashboard/audit-logs",
         title: "Audit Logs",
-        description: "Pantau aktivitas admin dan perubahan penting sistem.",
-        icon: "🧾",
+        description: "Pantau perubahan penting sistem dan aktivitas operator.",
+        icon: "A",
     },
 ];
 
-export function AdminOverview({
+export function OperationsOverview({
     stats,
     loading = false,
 }: {
@@ -48,33 +48,33 @@ export function AdminOverview({
     return (
         <section className="space-y-4">
             <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Ringkasan Registrasi</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Ringkasan Operasional</h2>
                 <p className="text-sm text-gray-500 dark:text-white/40">
-                    Semua metrik approval user sekarang disatukan di dashboard utama.
+                    Approval user dan kontrol utama dashboard disatukan di halaman ini.
                 </p>
             </div>
 
-            <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 md:gap-4">
-                <StatCard label="Total User" value={loading ? "..." : stats.total} icon="👥" change="Seluruh akun terdaftar" primary />
-                <StatCard label="Pending" value={loading ? "..." : stats.pending} icon="⏳" change="Menunggu review" />
-                <StatCard label="Aktif" value={loading ? "..." : stats.active} icon="✅" change="Sudah disetujui" />
-                <StatCard label="Ditolak" value={loading ? "..." : stats.rejected} icon="❌" change="Registrasi ditolak" changeType="negative" />
-                <StatCard label="Banned" value={loading ? "..." : stats.banned} icon="🚫" change="Akun diblokir" changeType="negative" />
+            <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-5">
+                <StatCard label="Total User" value={loading ? "..." : stats.total} icon="U" change="Seluruh akun terdaftar" primary />
+                <StatCard label="Pending" value={loading ? "..." : stats.pending} icon="P" change="Menunggu review" />
+                <StatCard label="Aktif" value={loading ? "..." : stats.active} icon="A" change="Sudah disetujui" />
+                <StatCard label="Ditolak" value={loading ? "..." : stats.rejected} icon="X" change="Registrasi ditolak" changeType="negative" />
+                <StatCard label="Banned" value={loading ? "..." : stats.banned} icon="B" change="Akun diblokir" changeType="negative" />
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
                 {QUICK_LINKS.map((link) => (
                     <a
                         key={link.href}
                         href={link.href}
-                        className="group rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#1a1a1a] p-5 hover:border-ds-amber/40 hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-all"
+                        className="group rounded-2xl border border-gray-100 bg-white p-5 transition-all hover:border-ds-amber/40 hover:bg-gray-50 dark:border-white/5 dark:bg-[#1a1a1a] dark:hover:bg-white/[0.03]"
                     >
                         <div className="flex items-start gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-ds-amber/10 text-2xl">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-ds-amber/10 text-lg font-bold text-ds-amber">
                                 {link.icon}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="text-base font-semibold text-gray-900 dark:text-white group-hover:text-ds-amber transition-colors">
+                                <div className="text-base font-semibold text-gray-900 transition-colors group-hover:text-ds-amber dark:text-white">
                                     {link.title}
                                 </div>
                                 <p className="mt-1 text-sm text-gray-500 dark:text-white/40">

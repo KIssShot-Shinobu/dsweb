@@ -58,6 +58,16 @@ enum Gender {
   PREFER_NOT_TO_SAY
 }
 
+enum PendingUploadPurpose {
+  REGISTER_SCREENSHOT
+}
+
+enum PendingUploadStatus {
+  TEMP
+  CLAIMED
+  EXPIRED
+}
+
 model Tournament {
   id          String           @id @default(cuid())
   title       String
@@ -140,6 +150,7 @@ model User {
   badges          UserBadge[]
   reputationLogs  ReputationLog[]
   treasuryEntries Treasury[]
+  claimedUploads  PendingUpload[]
 
   @@index([accountNumberHash])
 }
@@ -236,6 +247,26 @@ model RegistrationLog {
   socialMedia String?
   agreement   Boolean     @default(true)
   createdAt   DateTime    @default(now())
+}
+
+model PendingUpload {
+  id            String               @id @default(cuid())
+  purpose       PendingUploadPurpose
+  status        PendingUploadStatus  @default(TEMP)
+  storageKey    String               @unique @db.VarChar(191)
+  originalName  String               @db.VarChar(191)
+  mimeType      String               @db.VarChar(100)
+  size          Int
+  ipAddress     String               @db.VarChar(64)
+  claimedByUserId String?
+  claimedByUser User?                @relation(fields: [claimedByUserId], references: [id], onDelete: SetNull)
+  claimedAt     DateTime?
+  expiresAt     DateTime
+  createdAt     DateTime             @default(now())
+
+  @@index([ipAddress, createdAt])
+  @@index([status, expiresAt])
+  @@index([claimedByUserId])
 }
 
 // ─── AUDIT LOG SYSTEM (MERGED AdminLog + AuditLog) ───────────────────────────

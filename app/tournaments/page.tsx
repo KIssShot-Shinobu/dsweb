@@ -1,26 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Navbar } from "@/components/ui/navbar";
+import { Footer } from "@/components/ui/footer";
 import { FormSelect } from "@/components/dashboard/form-select";
+import { PublicTournamentCard, type PublicTournamentCardData } from "@/components/public/tournament-card";
 
-interface Tournament {
-    id: string;
-    title: string;
-    gameType: "DUEL_LINKS" | "MASTER_DUEL";
-    format: "BO1" | "BO3" | "BO5";
-    status: "OPEN" | "ONGOING" | "COMPLETED" | "CANCELLED";
-    entryFee: number;
-    prizePool: number;
-    startDate: string;
+type TournamentResponse = PublicTournamentCardData & {
     _count?: { participants: number };
-}
+};
 
 const statusOptions = [
     { value: "ALL", label: "Semua Status" },
-    { value: "OPEN", label: "OPEN" },
-    { value: "ONGOING", label: "ONGOING" },
-    { value: "COMPLETED", label: "COMPLETED" },
+    { value: "OPEN", label: "Open" },
+    { value: "ONGOING", label: "Ongoing" },
+    { value: "COMPLETED", label: "Completed" },
+    { value: "CANCELLED", label: "Cancelled" },
 ];
 
 const gameOptions = [
@@ -30,184 +25,125 @@ const gameOptions = [
 ];
 
 export default function PublicTournamentsPage() {
-    const [tournaments, setTournaments] = useState<Tournament[]>([]);
+    const [tournaments, setTournaments] = useState<PublicTournamentCardData[]>([]);
     const [loading, setLoading] = useState(true);
-    const [registering, setRegistering] = useState<string | null>(null);
-    const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const [statusFilter, setStatusFilter] = useState("ALL");
     const [gameFilter, setGameFilter] = useState("ALL");
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
+    const [message, setMessage] = useState<string | null>(null);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const fetchTournaments = () => {
+    useEffect(() => {
         setLoading(true);
+        setMessage(null);
+
         const params = new URLSearchParams();
         if (statusFilter !== "ALL") params.set("status", statusFilter);
         if (gameFilter !== "ALL") params.set("gameType", gameFilter);
         if (search.trim()) params.set("search", search.trim());
+        params.set("limit", "24");
 
         fetch(`/api/tournaments?${params.toString()}`)
-            .then((res) => res.json())
+            .then((response) => response.json())
             .then((data) => {
-                setTournaments(data.tournaments || []);
+                const nextTournaments: PublicTournamentCardData[] = (data.tournaments || []).map((tournament: TournamentResponse) => ({
+                    ...tournament,
+                    participantCount: tournament._count?.participants ?? 0,
+                }));
+                setTournaments(nextTournaments);
             })
             .catch(() => {
                 setTournaments([]);
-                setMessage({ type: "error", text: "Gagal memuat daftar turnamen." });
+                setMessage("Gagal memuat daftar tournament.");
             })
             .finally(() => setLoading(false));
-    };
-
-    useEffect(() => {
-        fetchTournaments();
     }, [statusFilter, gameFilter, search]);
 
     useEffect(() => () => {
         if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     }, []);
 
-    const handleRegister = async (tournamentId: string) => {
-        setRegistering(tournamentId);
-        setMessage(null);
-        try {
-            const res = await fetch(`/api/tournaments/${tournamentId}/register`, { method: "POST" });
-            const data = await res.json();
-            if (res.ok) {
-                setMessage({ type: "success", text: data.message || "Berhasil mendaftar turnamen." });
-                setTournaments((prev) =>
-                    prev.map((tournament) =>
-                        tournament.id === tournamentId
-                            ? {
-                                ...tournament,
-                                _count: { participants: (tournament._count?.participants || 0) + 1 },
-                            }
-                            : tournament
-                    )
-                );
-            } else {
-                setMessage({ type: "error", text: data.message || "Gagal mendaftar turnamen." });
-            }
-        } catch {
-            setMessage({ type: "error", text: "Kesalahan jaringan." });
-        } finally {
-            setRegistering(null);
-        }
-    };
-
-    const formatCurrency = (amount: number) =>
-        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
-
-    const getStatusClass = (status: Tournament["status"]) => {
-        if (status === "OPEN") return "bg-emerald-500/20 border-emerald-500/30 text-emerald-300";
-        if (status === "ONGOING") return "bg-amber-500/20 border-amber-500/30 text-amber-300";
-        if (status === "COMPLETED") return "bg-blue-500/20 border-blue-500/30 text-blue-300";
-        return "bg-gray-500/20 border-gray-500/30 text-gray-400";
-    };
+    const headlineCount = useMemo(() => tournaments.length.toString().padStart(2, "0"), [tournaments.length]);
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="mb-2 text-center text-3xl font-bold text-gray-900 dark:text-white">Tournaments</h1>
-            <p className="mb-8 text-center text-gray-500">Ikuti kompetisi guild dan daftar langsung dari halaman ini.</p>
-
-            {message && (
-                <div className={`mx-auto mb-6 max-w-3xl rounded-2xl border px-4 py-3 text-sm ${message.type === "success"
-                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
-                    : "border-red-500/20 bg-red-500/10 text-red-400"
-                    }`}>
-                    {message.text}
-                </div>
-            )}
-
-            <div className="mx-auto mb-6 grid max-w-5xl grid-cols-1 gap-3 md:grid-cols-[1fr_180px_180px]">
-                <input
-                    type="text"
-                    value={searchInput}
-                    onChange={(event) => {
-                        const nextValue = event.target.value;
-                        setSearchInput(nextValue);
-                        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-                        searchTimeoutRef.current = setTimeout(() => {
-                            setSearch(nextValue);
-                        }, 250);
-                    }}
-                    placeholder="Cari judul turnamen..."
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-ds-amber dark:border-white/10 dark:bg-[#1a1a1a] dark:text-white"
-                />
-                <FormSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
-                <FormSelect value={gameFilter} onChange={setGameFilter} options={gameOptions} />
-            </div>
-
-            {loading ? (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    {[1, 2, 3].map((item) => (
-                        <div key={item} className="h-64 animate-pulse rounded-2xl bg-gray-100 dark:bg-white/5" />
-                    ))}
-                </div>
-            ) : tournaments.length === 0 ? (
-                <div className="rounded-2xl border border-gray-100 bg-white py-20 text-center dark:border-white/5 dark:bg-[#1a1a1a]">
-                    <div className="mb-4 text-5xl">[]</div>
-                    <h3 className="text-xl font-bold dark:text-white">Belum Ada Turnamen</h3>
-                    <p className="mt-2 text-gray-400">Coba ubah filter atau tunggu jadwal turnamen berikutnya.</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {tournaments.map((tournament, index) => (
-                        <motion.div
-                            key={tournament.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.06 }}
-                            className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-white/5 dark:bg-[#1a1a1a]"
-                        >
-                            <div className={`border-b border-white/5 p-4 ${tournament.gameType === "MASTER_DUEL"
-                                ? "bg-gradient-to-r from-red-900/40 to-orange-900/40"
-                                : "bg-gradient-to-r from-blue-900/40 to-cyan-900/40"
-                                }`}>
-                                <div className="mb-2 flex items-start justify-between">
-                                    <span className={`rounded-md border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusClass(tournament.status)}`}>
-                                        {tournament.status}
-                                    </span>
-                                    <span className="rounded-md bg-black/20 px-2 py-1 text-xs font-bold text-white/50">{tournament.format}</span>
-                                </div>
-                                <h3 className="truncate text-xl font-bold text-white">{tournament.title}</h3>
+        <main className="min-h-screen bg-[#0f0f0f] text-white">
+            <Navbar />
+            <section className="border-b border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,201,22,0.16),transparent_28%),linear-gradient(180deg,#141414,#0f0f0f)] pt-28">
+                <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-14 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
+                    <div>
+                        <p className="mb-4 text-sm font-bold uppercase tracking-[0.34em] text-[#FFC916]">Tournament Directory</p>
+                        <h1 className="max-w-3xl text-4xl font-black leading-tight sm:text-5xl">
+                            Semua tournament publik kini hadir dalam grid card yang lebih mudah discan.
+                        </h1>
+                        <p className="mt-4 max-w-2xl text-base leading-7 text-white/60">
+                            Cari event yang masih buka, cek prize pool, lihat status bracket, lalu buka halaman detail untuk informasi lengkap dan aksi daftar.
+                        </p>
+                    </div>
+                    <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
+                        <div className="mb-4 text-sm uppercase tracking-[0.28em] text-white/35">Live Snapshot</div>
+                        <div className="mb-2 text-6xl font-black text-[#FFC916]">{headlineCount}</div>
+                        <div className="text-lg font-semibold text-white">Tournament tampil sesuai filter aktif</div>
+                        <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-white/55">
+                            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-white/30">Status</div>
+                                <div>{statusFilter === "ALL" ? "Semua status" : statusFilter}</div>
                             </div>
-
-                            <div className="flex flex-1 flex-col gap-3 p-5">
-                                <div className="grid grid-cols-2 gap-3 text-sm">
-                                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-white/5 dark:bg-white/[0.03]">
-                                        <div className="mb-1 text-[10px] font-bold uppercase text-gray-500">Prize Pool</div>
-                                        <div className="font-bold text-ds-amber">{formatCurrency(tournament.prizePool)}</div>
-                                    </div>
-                                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-white/5 dark:bg-white/[0.03]">
-                                        <div className="mb-1 text-[10px] font-bold uppercase text-gray-500">Entry Fee</div>
-                                        <div className="font-bold text-gray-900 dark:text-white">
-                                            {tournament.entryFee === 0 ? "FREE" : formatCurrency(tournament.entryFee)}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between px-1 text-xs font-medium text-gray-500">
-                                    <span>{new Date(tournament.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
-                                    <span>{tournament._count?.participants || 0} terdaftar</span>
-                                </div>
+                            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-white/30">Game</div>
+                                <div>{gameFilter === "ALL" ? "Semua game" : gameFilter.replace("_", " ")}</div>
                             </div>
-
-                            <div className="p-4 pt-0">
-                                <button
-                                    onClick={() => handleRegister(tournament.id)}
-                                    disabled={tournament.status !== "OPEN" || registering === tournament.id}
-                                    className={`w-full rounded-xl py-3 text-sm font-bold transition-all ${tournament.status === "OPEN"
-                                        ? "bg-ds-amber text-black hover:bg-ds-gold"
-                                        : "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-white/5"
-                                        }`}
-                                >
-                                    {registering === tournament.id ? "Memproses..." : tournament.status === "OPEN" ? "Daftar Sekarang" : "Pendaftaran Ditutup"}
-                                </button>
-                            </div>
-                        </motion.div>
-                    ))}
+                        </div>
+                    </div>
                 </div>
-            )}
-        </div>
+            </section>
+
+            <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+                <div className="mb-8 grid gap-3 md:grid-cols-[1fr_180px_180px]">
+                    <input
+                        type="text"
+                        value={searchInput}
+                        onChange={(event) => {
+                            const nextValue = event.target.value;
+                            setSearchInput(nextValue);
+                            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+                            searchTimeoutRef.current = setTimeout(() => setSearch(nextValue), 250);
+                        }}
+                        placeholder="Cari judul atau deskripsi tournament..."
+                        className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition-all focus:border-[#FFC916]"
+                    />
+                    <FormSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
+                    <FormSelect value={gameFilter} onChange={setGameFilter} options={gameOptions} />
+                </div>
+
+                {message ? (
+                    <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                        {message}
+                    </div>
+                ) : null}
+
+                {loading ? (
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                        {[1, 2, 3, 4, 5, 6].map((item) => (
+                            <div key={item} className="h-[420px] animate-pulse rounded-[28px] bg-white/[0.05]" />
+                        ))}
+                    </div>
+                ) : tournaments.length === 0 ? (
+                    <div className="rounded-[32px] border border-white/10 bg-white/[0.03] px-6 py-20 text-center">
+                        <div className="mb-4 text-5xl text-[#FFC916]">[]</div>
+                        <h2 className="text-2xl font-black">Belum ada tournament yang cocok.</h2>
+                        <p className="mt-3 text-white/55">Coba ubah filter atau kata kunci untuk melihat event lain.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                        {tournaments.map((tournament) => (
+                            <PublicTournamentCard key={tournament.id} tournament={tournament} />
+                        ))}
+                    </div>
+                )}
+            </section>
+
+            <Footer />
+        </main>
     );
 }

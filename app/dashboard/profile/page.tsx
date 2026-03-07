@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { GameProfileForm } from "@/components/dashboard/game-profile-form";
+import type { GameProfile } from "@prisma/client";
 
 // Server component that reads user from cookie and renders profile
 export default async function ProfilePage() {
@@ -28,8 +29,8 @@ export default async function ProfilePage() {
         }),
     ]);
 
-    const dlProfile = userWithProfiles?.gameProfiles.find((p: any) => p.gameType === "DUEL_LINKS");
-    const mdProfile = userWithProfiles?.gameProfiles.find((p: any) => p.gameType === "MASTER_DUEL");
+    const dlProfile = userWithProfiles?.gameProfiles.find((p: GameProfile) => p.gameType === "DUEL_LINKS");
+    const mdProfile = userWithProfiles?.gameProfiles.find((p: GameProfile) => p.gameType === "MASTER_DUEL");
 
     const roleColors: Record<string, string> = {
         USER: "bg-gray-500/10 text-gray-400 border-gray-400/20",

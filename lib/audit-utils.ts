@@ -1,4 +1,14 @@
-export function stringifyDetails(data: Record<string, any>): string {
+export type AuditDetailValue =
+    | string
+    | number
+    | boolean
+    | null
+    | AuditDetailValue[]
+    | { [key: string]: AuditDetailValue };
+
+export type AuditDetails = Record<string, AuditDetailValue>;
+
+export function stringifyDetails(data: AuditDetails): string {
     if (!data) return '';
 
     const {
@@ -23,7 +33,7 @@ export function stringifyDetails(data: Record<string, any>): string {
     return JSON.stringify(safeData);
 }
 
-export function parseDetails(details: string | null): Record<string, any> {
+export function parseDetails(details: string | null): AuditDetails {
     if (!details) return {};
 
     try {
@@ -34,7 +44,7 @@ export function parseDetails(details: string | null): Record<string, any> {
     }
 }
 
-export function validateSafeForLog(data: Record<string, any>): boolean {
+export function validateSafeForLog(data: AuditDetails): boolean {
     const sensitiveKeys = [
         'password', 'pass', 'pwd',
         'token', 'jwt', 'session',

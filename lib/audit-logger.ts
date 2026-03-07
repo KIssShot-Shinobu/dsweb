@@ -1,6 +1,6 @@
 import { prisma } from './prisma';
 import { headers } from 'next/headers';
-import { stringifyDetails, validateSafeForLog } from './audit-utils';
+import { stringifyDetails, validateSafeForLog, type AuditDetails } from './audit-utils';
 import { AuditActionType } from './audit-actions';
 
 export interface AuditLogData {
@@ -9,7 +9,7 @@ export interface AuditLogData {
     targetId?: string;
     targetType?: string;
     reason?: string;
-    details?: Record<string, any>;
+    details?: AuditDetails;
     requestPath?: string;
     requestMethod?: string;
     responseStatus?: number;
@@ -62,7 +62,7 @@ export async function logAudit(data: AuditLogData): Promise<void> {
                 reason: data.reason,
                 details: data.details ? stringifyDetails(data.details) : null,
             },
-        }).catch((e: any) => {
+        }).catch((e: unknown) => {
             console.error("[Audit Logger Error] Failed to write log:", e);
         });
     } catch (error) {

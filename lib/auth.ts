@@ -5,9 +5,14 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || "duel-standby-secret-key-change-in-production"
-);
+function getJwtSecret() {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+        throw new Error("JWT_SECRET is required");
+    }
+
+    return new TextEncoder().encode(jwtSecret);
+}
 const ACCESS_COOKIE_NAME = "ds_auth";
 const REFRESH_COOKIE_NAME = "ds_refresh";
 const ACCESS_TOKEN_EXPIRY = "15m";
@@ -56,12 +61,12 @@ export async function signToken(payload: JWTPayload): Promise<string> {
         .setProtectedHeader({ alg: "HS256" })
         .setExpirationTime(ACCESS_TOKEN_EXPIRY)
         .setIssuedAt()
-        .sign(JWT_SECRET);
+        .sign(getJwtSecret());
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
     try {
-        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const { payload } = await jwtVerify(token, getJwtSecret());
         return payload as unknown as JWTPayload;
     } catch {
         return null;
@@ -209,7 +214,6 @@ export async function getCurrentUser() {
         city: user.city,
         phoneWhatsapp: user.phoneWhatsapp,
         createdAt: user.createdAt,
-        // Compatibility fallback: if DB/client has no lastActiveAt yet, use updatedAt.
         lastActiveAt: (user as { lastActiveAt?: Date }).lastActiveAt ?? user.updatedAt,
         emailVerified: !user.emailVerificationToken,
     };

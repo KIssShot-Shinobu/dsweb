@@ -1,17 +1,28 @@
 import type { RegisterInput, LoginInput } from "@/lib/validators";
 import type { GameType, GuildStatus } from "@prisma/client";
 
+type GameProfileLookup = { id: string } | null;
+type VerificationTokenRecord = { id: string } | null;
+type AuthUserRecord = {
+    id: string;
+    email: string;
+    fullName: string;
+    password?: string;
+    status: string;
+    role: string;
+};
+
 type AuthPrismaLike = {
     user: {
-        findUnique: (args: any) => Promise<any>;
-        create: (args: any) => Promise<any>;
-        update: (args: any) => Promise<any>;
+        findUnique: (args: { where: Record<string, unknown>; select?: Record<string, boolean> }) => Promise<AuthUserRecord | null>;
+        create?: (args: { data: Record<string, unknown> }) => Promise<AuthUserRecord>;
+        update?: (args: { where: Record<string, unknown>; data: Record<string, unknown> }) => Promise<AuthUserRecord | null>;
     };
     gameProfile: {
-        findFirst: (args: any) => Promise<any>;
+        findFirst: (args: { where: Record<string, unknown> }) => Promise<GameProfileLookup>;
     };
     emailVerificationToken: {
-        upsert: (args: any) => Promise<any>;
+        upsert: (args: { where: Record<string, unknown>; update: Record<string, unknown>; create: Record<string, unknown> }) => Promise<VerificationTokenRecord>;
     };
 };
 
@@ -34,6 +45,10 @@ export async function authenticateUser(
 
     if (!user) {
         return { ok: false as const, code: "INVALID_CREDENTIALS" };
+    }
+
+    if (!user.password) {
+        return { ok: false as const, code: "INVALID_CREDENTIALS", userId: user.id };
     }
 
     const isValid = await deps.comparePassword(input.password, user.password);
@@ -84,7 +99,12 @@ export async function registerUser(
 
     const hashedPassword = await deps.hashPassword(data.password);
 
-    const user = await deps.prisma.user.create({
+    const createUser = deps.prisma.user.create;
+    if (!createUser) {
+        throw new Error("User repository create method is required");
+    }
+
+    const user = await createUser({
         data: {
             fullName: data.fullName,
             email: data.email,
@@ -100,7 +120,7 @@ export async function registerUser(
                             gameType: "DUEL_LINKS" as GameType,
                             gameId: data.duelLinksGameId,
                             ign: data.duelLinksIgn,
-                            screenshotUrl: data.duelLinksScreenshot || null,
+                            screenshotUrl: null,
                         }]
                         : []),
                     ...(data.masterDuelGameId && data.masterDuelIgn
@@ -108,7 +128,7 @@ export async function registerUser(
                             gameType: "MASTER_DUEL" as GameType,
                             gameId: data.masterDuelGameId,
                             ign: data.masterDuelIgn,
-                            screenshotUrl: data.masterDuelScreenshot || null,
+                            screenshotUrl: null,
                         }]
                         : []),
                 ],
