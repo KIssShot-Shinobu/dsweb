@@ -1,7 +1,9 @@
-require("dotenv/config");
+﻿require("dotenv/config");
 
 const { execSync } = require("child_process");
 const { URL } = require("url");
+const fs = require("fs");
+const path = require("path");
 
 function getRequiredDatabaseUrl() {
     const databaseUrl = process.env.DATABASE_URL?.trim();
@@ -28,18 +30,6 @@ function run(cmd) {
     execSync(cmd, { stdio: "inherit" });
 }
 
-run("npm install");
-getRequiredDatabaseUrl();
-run("node scripts/migrate-legacy-member-schema.js");
-run("npx prisma generate");
-run("npx prisma db push");
-run("node scripts/migrate-sensitive-user-fields.js");
-run("npm run build");
-
-// Copy static files for standalone mode
-const fs = require("fs");
-const path = require("path");
-
 function copyDir(src, dest) {
     if (!fs.existsSync(src)) return;
     fs.mkdirSync(dest, { recursive: true });
@@ -54,11 +44,37 @@ function copyDir(src, dest) {
     }
 }
 
+function startDevServer() {
+    process.env.PORT = process.env.PORT || "5116";
+    process.env.HOSTNAME = process.env.HOSTNAME || "0.0.0.0";
+    console.warn("\nBuild fallback active: starting Next.js dev server because standalone build is blocked on this Windows environment.");
+    run(`npx next dev -p ${process.env.PORT} -H ${process.env.HOSTNAME}`);
+}
+
+function shouldFallbackToDev(error) {
+    const message = String(error?.message || error || "");
+    return process.platform === "win32" && message.includes("spawn EPERM");
+}
+
+run("npm install");
+getRequiredDatabaseUrl();
+run("npx prisma generate");
+run("npx prisma db push");
+
+try {
+    run("npm run build");
+} catch (error) {
+    if (shouldFallbackToDev(error)) {
+        startDevServer();
+        process.exit(0);
+    }
+    throw error;
+}
+
 console.log("\n=== Copying static files ===");
 copyDir(".next/static", ".next/standalone/.next/static");
 copyDir("public", ".next/standalone/public");
 
-// Copy database and config files to standalone
 console.log("\n=== Copying database files ===");
 if (fs.existsSync("prisma")) {
     copyDir("prisma", ".next/standalone/prisma");

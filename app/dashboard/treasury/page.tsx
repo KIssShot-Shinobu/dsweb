@@ -303,7 +303,7 @@ export default function TreasuryPage() {
                                         <div className="min-w-0 flex-1">
                                             <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{transaction.description}</div>
                                             <div className="truncate text-xs text-slate-400 dark:text-white/40">
-                                                {formatDate(transaction.createdAt)} · {transaction.user?.fullName || "Kas umum"}
+                                                {formatDate(transaction.createdAt)} - {transaction.user?.fullName || "Kas umum"}
                                             </div>
                                         </div>
                                         <div className={`text-sm font-bold ${transaction.amount >= 0 ? "text-emerald-500" : "text-red-500"}`}>

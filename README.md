@@ -1,4 +1,4 @@
-# DSWeb (DuelStandby Web)
+﻿# DSWeb (DuelStandby Web)
 
 Aplikasi web komunitas DuelStandby berbasis Next.js 16 + Prisma + MySQL.
 
@@ -71,7 +71,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - `context/ThemeContext.tsx`: state tema global + sinkronisasi `localStorage` (`ds-theme`)
 - `prisma/schema.prisma`: skema database
 - `scripts/seed-admin.js`: seed admin utama
-- `scripts/seed.mjs`: reset dataset dev lalu seed 20 users, 20 tournaments, 20 treasury
+- `scripts/seed.mjs`: clean break dataset dev lalu seed 20 users, 20 tournaments, 20 treasury, dan 12 audit logs demo
 
 ## Prasyarat
 
@@ -277,7 +277,6 @@ cmd /c npm run dev
 - Jika password DB memakai karakter khusus, gunakan versi URL-encoded pada `DATABASE_URL`.
 - Pastikan folder upload persistent jika deploy container/panel.
 - Jalankan `npx prisma generate` dan `npx prisma db push` di environment target.
-- Setelah schema baru terpasang, jalankan `node scripts/migrate-sensitive-user-fields.js` untuk backfill enkripsi/hash data sensitif jika deploy di luar `start.js`.
 
 ## Testing
 
@@ -300,4 +299,7 @@ Mulai sekarang, setiap ada perubahan fitur/endpoint/role/alur setup:
 2. Jika perubahan menyentuh API, update bagian `API Ringkas`.
 3. Jika perubahan menyentuh auth/role/menu, update bagian `Role Akses`.
 4. Jika perubahan menyentuh setup/env/db, update bagian `Konfigurasi Environment` dan `Instalasi`.
+
+
+
 

@@ -196,7 +196,7 @@ export default function RegisterPage() {
                 <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full rounded-full bg-ds-amber transition-all duration-500" style={{ width: `${progressPct + 33 / REGISTER_STEPS.length}%` }} />
                 </div>
-                <div className="mt-3 text-center text-xs text-white/40">Step {step} dari {REGISTER_STEPS.length} · {REGISTER_STEPS[step - 1].desc}</div>
+                <div className="mt-3 text-center text-xs text-white/40">Step {step} dari {REGISTER_STEPS.length} - {REGISTER_STEPS[step - 1].desc}</div>
             </div>
 
             {serverError ? <div className={`${authAlertCls} mb-5 border-red-500/20 bg-red-500/10 text-red-400`}>{serverError}</div> : null}

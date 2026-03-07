@@ -426,7 +426,7 @@ export default function AdminTournamentsPage() {
                                             <div className="min-w-0 flex-1">
                                                 <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{tournament.title}</div>
                                                 <div className="mt-1 truncate text-xs text-slate-400 dark:text-white/40">
-                                                    {tournament.gameType} · {tournament.format} · {formatDate(tournament.startDate)}
+                                                    {tournament.gameType} - {tournament.format} - {formatDate(tournament.startDate)}
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
                                                     <span className="rounded-full border border-black/5 px-2.5 py-1 text-slate-500 dark:border-white/10 dark:text-white/45">Hadiah {formatCurrency(tournament.prizePool)}</span>

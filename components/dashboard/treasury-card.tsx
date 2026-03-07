@@ -60,7 +60,7 @@ export function TreasuryCard({
                                     <div className="min-w-0 flex-1">
                                         <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{transaction.description}</div>
                                         <div className="text-xs text-slate-400 dark:text-white/40">
-                                            {new Date(transaction.createdAt).toLocaleDateString("id-ID")} · {transaction.user?.fullName || "Kas umum"}
+                                            {new Date(transaction.createdAt).toLocaleDateString("id-ID")} - {transaction.user?.fullName || "Kas umum"}
                                         </div>
                                     </div>
                                     <div className={`flex-shrink-0 text-sm font-semibold ${transaction.amount >= 0 ? "text-emerald-500" : "text-red-500"}`}>

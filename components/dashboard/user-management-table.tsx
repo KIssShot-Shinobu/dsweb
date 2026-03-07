@@ -288,7 +288,7 @@ function UserManagementTableInner({
                                         <div className="min-w-0">
                                             <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{user.fullName}</div>
                                             <div className="truncate text-xs text-slate-400 dark:text-white/40">
-                                                {user.email} · {user.city || "Kota belum diisi"}
+                                                {user.email} - {user.city || "Kota belum diisi"}
                                             </div>
                                         </div>
                                     </div>

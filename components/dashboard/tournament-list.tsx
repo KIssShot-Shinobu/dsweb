@@ -87,7 +87,7 @@ export function TournamentList({
                             <div className="min-w-0 flex-1">
                                 <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{tournament.title}</div>
                                 <div className="text-xs text-slate-400 dark:text-white/40">
-                                    {formatDate(tournament.startDate)} · {formatPrize(tournament.prizePool)} · {tournament._count?.participants || 0} peserta
+                                    {formatDate(tournament.startDate)} - {formatPrize(tournament.prizePool)} - {tournament._count?.participants || 0} peserta
                                 </div>
                             </div>
                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getStatusBadge(tournament.status)}`}>

@@ -70,7 +70,7 @@ function LoginForm() {
                 </div>
                 <div>
                     <label className={authLabelCls}>Password</label>
-                    <input type="password" className={authInputCls} placeholder="••••••••" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required autoComplete="current-password" />
+                    <input type="password" className={authInputCls} placeholder="********" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required autoComplete="current-password" />
                 </div>
 
                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/10 px-4 py-3">

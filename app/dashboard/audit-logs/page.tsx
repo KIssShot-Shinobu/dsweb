@@ -279,7 +279,7 @@ export default function AuditLogsPage() {
                                             <div>
                                                 <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Request</div>
                                                 <div className="mt-2 font-mono text-xs text-slate-500 dark:text-white/45">
-                                                    {[log.requestMethod, log.requestPath, log.responseStatus].filter(Boolean).join(" · ") || "-"}
+                                                    {[log.requestMethod, log.requestPath, log.responseStatus].filter(Boolean).join(" - ") || "-"}
                                                 </div>
                                             </div>
                                             <div>
