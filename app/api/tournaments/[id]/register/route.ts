@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken, hasRole, ROLES } from "@/lib/auth";
+import { verifyToken } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const decoded = await verifyToken(request.cookies.get("ds_auth")?.value || "");
-        if (!decoded || !hasRole(decoded.role, ROLES.MEMBER)) {
-            return NextResponse.json({ success: false, message: "Hanya Member yang telah disetujui yang dapat mendaftar" }, { status: 403 });
+        if (!decoded) {
+            return NextResponse.json({ success: false, message: "Silakan login terlebih dahulu" }, { status: 401 });
+        }
+
+        if (decoded.status !== "ACTIVE") {
+            return NextResponse.json({ success: false, message: "Hanya akun aktif yang dapat mendaftar turnamen" }, { status: 403 });
         }
 
         const userId = decoded.userId;
@@ -58,10 +62,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         await logAudit({
             userId,
-            action: "TOURNAMENT_UPDATED",
+            action: "TOURNAMENT_REGISTERED",
             targetId: tournamentId,
             targetType: "Tournament",
-            details: { action: "User Registered", ign: gameProfile.ign }
+            details: {
+                ign: gameProfile.ign,
+                gameType: tournament.gameType,
+                tournamentTitle: tournament.title,
+            },
         });
 
         return NextResponse.json({ success: true, participant, message: "Berhasil mendaftar turnamen!" }, { status: 201 });

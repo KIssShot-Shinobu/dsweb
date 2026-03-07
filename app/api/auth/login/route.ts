@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators";
 import { clearRefreshCookie, comparePassword, createSession, setAuthCookie, setRefreshCookie, signToken } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
+import { authenticateUser } from "@/lib/services/auth-service";
+import { touchUserLastActiveAt } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
     try {
@@ -16,60 +18,53 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { email, password } = parsed.data;
+        const authResult = await authenticateUser(
+            { prisma: prisma as any, comparePassword },
+            { email: parsed.data.email, password: parsed.data.password }
+        );
 
-        // Find user
-        const user = await prisma.user.findUnique({
-            where: { email },
-            select: { id: true, email: true, fullName: true, password: true, status: true, role: true },
-        });
+        if (!authResult.ok) {
+            if (authResult.code === "INVALID_CREDENTIALS") {
+                await logAudit({
+                    action: "LOGIN_FAILED",
+                    userId: authResult.userId,
+                    details: { email: parsed.data.email, reason: "Invalid credentials" },
+                });
+                return NextResponse.json(
+                    { success: false, message: "Email atau password salah" },
+                    { status: 401 }
+                );
+            }
 
-        if (!user) {
-            await logAudit({ action: "LOGIN_FAILED", details: { email, reason: "User not found" } });
+            const blockedMessages: Record<string, { message: string; status: number }> = {
+                PENDING: {
+                    message: "Akun Anda masih menunggu persetujuan admin. Harap bersabar.",
+                    status: 403,
+                },
+                REJECTED: {
+                    message: "Pendaftaran Anda telah ditolak. Silakan hubungi admin.",
+                    status: 403,
+                },
+                BANNED: {
+                    message: "Akun Anda telah diblokir. Silakan hubungi admin.",
+                    status: 403,
+                },
+            };
+
+            const blocked = blockedMessages[authResult.code] || { message: "Akses ditolak", status: 403 };
             return NextResponse.json(
-                { success: false, message: "Email atau password salah" },
-                { status: 401 }
+                { success: false, message: blocked.message, code: authResult.code },
+                { status: blocked.status }
             );
         }
 
-        // Check password
-        const isValid = await comparePassword(password, user.password);
-        if (!isValid) {
-            await logAudit({ action: "LOGIN_FAILED", userId: user.id, details: { reason: "Wrong password" } });
-            return NextResponse.json(
-                { success: false, message: "Email atau password salah" },
-                { status: 401 }
-            );
-        }
+        const user = authResult.user;
 
-        // Check account status (only block non-admins)
-        const isAdmin = ["ADMIN", "FOUNDER"].includes(user.role);
-        if (!isAdmin) {
-            if (user.status === "PENDING") {
-                return NextResponse.json(
-                    { success: false, message: "Akun Anda masih menunggu persetujuan admin. Harap bersabar.", code: "PENDING" },
-                    { status: 403 }
-                );
-            }
-            if (user.status === "REJECTED") {
-                return NextResponse.json(
-                    { success: false, message: "Pendaftaran Anda telah ditolak. Silakan hubungi admin.", code: "REJECTED" },
-                    { status: 403 }
-                );
-            }
-            if (user.status === "BANNED") {
-                return NextResponse.json(
-                    { success: false, message: "Akun Anda telah diblokir. Silakan hubungi admin.", code: "BANNED" },
-                    { status: 403 }
-                );
-            }
-        }
-
-        // Update last login
         await prisma.user.update({
             where: { id: user.id },
             data: { lastLoginAt: new Date() },
         });
+        await touchUserLastActiveAt(user.id);
 
         // Issue short-lived access token + refresh session token
         const accessToken = await signToken({ userId: user.id, email: user.email, role: user.role, status: user.status });

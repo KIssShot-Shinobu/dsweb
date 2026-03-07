@@ -4,16 +4,16 @@ import { motion } from "framer-motion";
 import { Users, Trophy, BookOpen, ShieldCheck } from "lucide-react";
 
 interface AboutProps {
-    memberCount: number;
+    activeUserCount: number;
     tournamentCount: number;
 }
 
-export function About({ memberCount, tournamentCount }: AboutProps) {
+export function About({ activeUserCount, tournamentCount }: AboutProps) {
     const cards = [
         {
             title: "Community First",
             icon: Users,
-            description: `${memberCount} registered duelists sharing decks, strategies, and replays daily.`,
+            description: `${activeUserCount} active duelists sharing decks, strategies, and replays daily.`,
             color: "bg-[#FFC916]/10 text-[#FFC916]",
         },
         {
@@ -47,8 +47,8 @@ export function About({ memberCount, tournamentCount }: AboutProps) {
                     className="flex justify-center gap-12 mb-16"
                 >
                     <div className="text-center">
-                        <div className="text-4xl font-extrabold text-[#FFC916]">{memberCount}</div>
-                        <div className="text-sm text-gray-500 dark:text-[#E6E6E6]/50 mt-1 uppercase tracking-wider font-semibold">Members</div>
+                        <div className="text-4xl font-extrabold text-[#FFC916]">{activeUserCount}</div>
+                        <div className="text-sm text-gray-500 dark:text-[#E6E6E6]/50 mt-1 uppercase tracking-wider font-semibold">Active Users</div>
                     </div>
                     <div className="w-px bg-gray-200 dark:bg-[#3A3A3A]" />
                     <div className="text-center">

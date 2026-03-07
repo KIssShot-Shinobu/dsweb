@@ -10,7 +10,7 @@ export async function GET() {
             return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
         }
 
-        const [tournamentsJoined, gameProfiles, winLogs] = await Promise.all([
+        const [tournamentsJoined, gameProfiles, winLogs, reputation] = await Promise.all([
             prisma.tournamentParticipant.count({
                 where: { userId: user.id },
             }),
@@ -25,6 +25,10 @@ export async function GET() {
                     sourceType: { in: ["tournament_win", "tournament_prize"] },
                 },
                 select: { sourceId: true, sourceType: true },
+            }),
+            prisma.reputationLog.aggregate({
+                where: { userId: user.id },
+                _sum: { points: true },
             }),
         ]);
 
@@ -60,6 +64,8 @@ export async function GET() {
                 tournamentsWon,
                 winRate,
                 totalPrizeWon,
+                reputationPoints: reputation._sum.points || 0,
+                totalProfiles: gameProfiles.length,
                 memberSince: user.createdAt.toISOString().slice(0, 10),
                 lastActive: user.lastActiveAt.toISOString(),
                 verifiedGameAccounts,

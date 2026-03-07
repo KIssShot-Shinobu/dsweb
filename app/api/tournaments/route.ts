@@ -4,26 +4,71 @@ import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { tournamentSchema } from "@/lib/validators";
 
+function buildTournamentWhere(searchParams: URLSearchParams) {
+    const status = searchParams.get("status");
+    const gameType = searchParams.get("gameType");
+    const search = searchParams.get("search")?.trim();
+
+    const where: Record<string, unknown> = {};
+
+    if (status && status !== "ALL") {
+        where.status = status;
+    }
+
+    if (gameType && gameType !== "ALL") {
+        where.gameType = gameType;
+    }
+
+    if (search) {
+        where.OR = [
+            { title: { contains: search } },
+            { description: { contains: search } },
+        ];
+    }
+
+    return where;
+}
+
 // GET /api/tournaments - Fetch all tournaments
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
-        const status = searchParams.get("status");
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limitParam = searchParams.get("limit");
+        const limit = limitParam ? parseInt(limitParam, 10) : undefined;
+        const where = buildTournamentWhere(searchParams);
 
-        const where: any = {};
-        if (status) where.status = status;
+        const [tournaments, total, open, ongoing, completed, cancelled] = await Promise.all([
+            prisma.tournament.findMany({
+                where,
+                orderBy: [{ startDate: "asc" }, { createdAt: "desc" }],
+                include: {
+                    _count: {
+                        select: { participants: true },
+                    },
+                },
+                ...(limit ? { skip: (page - 1) * limit, take: limit } : {}),
+            }),
+            prisma.tournament.count({ where }),
+            prisma.tournament.count({ where: { ...where, status: "OPEN" } }),
+            prisma.tournament.count({ where: { ...where, status: "ONGOING" } }),
+            prisma.tournament.count({ where: { ...where, status: "COMPLETED" } }),
+            prisma.tournament.count({ where: { ...where, status: "CANCELLED" } }),
+        ]);
 
-        const tournaments = await prisma.tournament.findMany({
-            where,
-            orderBy: { startDate: "desc" },
-            include: {
-                _count: {
-                    select: { participants: true }
-                }
-            }
-        });
-
-        return NextResponse.json({ success: true, tournaments }, { status: 200 });
+        return NextResponse.json({
+            success: true,
+            tournaments,
+            total,
+            page,
+            limit: limit || null,
+            summary: {
+                open,
+                ongoing,
+                completed,
+                cancelled,
+            },
+        }, { status: 200 });
     } catch (error) {
         console.error("Error fetching tournaments:", error);
         return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });
@@ -51,15 +96,15 @@ export async function POST(request: NextRequest) {
         const tournament = await prisma.tournament.create({
             data: {
                 title: data.title,
-                description: data.description,
+                description: data.description || null,
                 format: data.format,
                 gameType: data.gameType,
                 status: data.status || "OPEN",
                 entryFee: data.entryFee,
                 prizePool: data.prizePool,
                 startDate: new Date(data.startDate),
-                image: data.image
-            }
+                image: data.image || null,
+            },
         });
 
         // AUDIT LOG

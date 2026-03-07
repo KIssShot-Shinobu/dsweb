@@ -1,12 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-interface TreasuryData {
-    balance: number;
-    transactions: Transaction[];
-}
-
 interface Transaction {
     id: string;
     amount: number;
@@ -15,19 +8,15 @@ interface Transaction {
     user: { fullName: string } | null;
 }
 
-export function TreasuryCard() {
-    const [data, setData] = useState<TreasuryData | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetch("/api/treasury")
-            .then((res) => res.json())
-            .then((value) => {
-                setData(value);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, []);
+export function TreasuryCard({
+    balance,
+    recentTransactions,
+    loading = false,
+}: {
+    balance: number;
+    recentTransactions: Transaction[];
+    loading?: boolean;
+}) {
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat("id-ID", {
@@ -51,9 +40,6 @@ export function TreasuryCard() {
             </div>
         );
     }
-
-    const balance = data?.balance || 0;
-    const recentTransactions = data?.transactions?.slice(0, 3) || [];
 
     return (
         <div className="rounded-2xl border border-gray-100 bg-white dark:border-white/5 dark:bg-[#1a1a1a]">

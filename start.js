@@ -33,6 +33,7 @@ getRequiredDatabaseUrl();
 run("node scripts/migrate-legacy-member-schema.js");
 run("npx prisma generate");
 run("npx prisma db push");
+run("node scripts/migrate-sensitive-user-fields.js");
 run("npm run build");
 
 // Copy static files for standalone mode

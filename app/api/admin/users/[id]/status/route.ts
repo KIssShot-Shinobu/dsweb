@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
 import { approveSchema } from "@/lib/validators";
 import { logAudit } from "@/lib/audit-logger";
+import { AUDIT_ACTIONS, type AuditActionType } from "@/lib/audit-actions";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -40,10 +41,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         select: { id: true, fullName: true, status: true, role: true },
     });
 
-    let auditAction: any = null;
-    if (status === "ACTIVE") auditAction = "MEMBER_APPROVED";
-    else if (status === "REJECTED") auditAction = "MEMBER_REJECTED";
-    else if (status === "BANNED") auditAction = "MEMBER_BANNED";
+    let auditAction: AuditActionType | null = null;
+    if (status === "ACTIVE") auditAction = AUDIT_ACTIONS.USER_APPROVED;
+    else if (status === "REJECTED") auditAction = AUDIT_ACTIONS.USER_REJECTED;
+    else if (status === "BANNED") auditAction = AUDIT_ACTIONS.USER_BANNED;
 
     if (auditAction) {
         await logAudit({
@@ -59,7 +60,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (role && target.role !== role) {
         await logAudit({
             userId: currentUser.id,
-            action: "ROLE_CHANGED",
+            action: AUDIT_ACTIONS.ROLE_CHANGED,
             targetId: id,
             targetType: "USER",
             reason: reason || undefined,

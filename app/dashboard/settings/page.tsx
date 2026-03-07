@@ -10,10 +10,10 @@ type MeUser = {
 };
 
 export default function SettingsPage() {
-    const [saved, setSaved] = useState(false);
     const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [me, setMe] = useState<MeUser | null>(null);
     const [meLoading, setMeLoading] = useState(true);
     const [verifyLoading, setVerifyLoading] = useState(false);
@@ -61,12 +61,34 @@ export default function SettingsPage() {
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (form.newPassword !== form.confirmPassword) { setError("Password baru tidak cocok."); return; }
-        if (form.newPassword.length < 8) { setError("Password baru minimal 8 karakter."); return; }
+
         setLoading(true);
         setError(null);
-        // TODO: API call to change password
-        setTimeout(() => { setLoading(false); setSaved(true); setTimeout(() => setSaved(false), 3000); }, 800);
+        setSuccessMessage(null);
+
+        try {
+            const res = await fetch("/api/auth/password/change", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(form),
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data?.success) {
+                setError(data?.message || "Gagal mengubah password.");
+                return;
+            }
+
+            setSuccessMessage(data.message || "Password berhasil diubah. Silakan login ulang.");
+            setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+            setTimeout(() => {
+                window.location.href = "/login";
+            }, 1200);
+        } catch {
+            setError("Terjadi gangguan jaringan.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -125,7 +147,7 @@ export default function SettingsPage() {
                 <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 p-5">
                     <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Ubah Password</h3>
                     {error && <div className="mb-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">{error}</div>}
-                    {saved && <div className="mb-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400">Password berhasil diubah!</div>}
+                    {successMessage && <div className="mb-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400">{successMessage}</div>}
                     <form onSubmit={handleChangePassword} className="space-y-3">
                         <div>
                             <label className={labelCls}>Password Saat Ini</label>

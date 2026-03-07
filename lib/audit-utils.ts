@@ -11,6 +11,9 @@ export function stringifyDetails(data: Record<string, any>): string {
         cookie,
         apiKey,
         secret,
+        phoneWhatsapp,
+        accountNumber,
+        twoFactorSecret,
         creditCard,
         cvv,
         pin,
@@ -36,7 +39,8 @@ export function validateSafeForLog(data: Record<string, any>): boolean {
         'password', 'pass', 'pwd',
         'token', 'jwt', 'session',
         'cookie', 'apikey', 'secret',
-        'creditcard', 'cvv', 'pin'
+        'creditcard', 'cvv', 'pin',
+        'phonewhatsapp', 'accountnumber', 'twofactorsecret'
     ];
 
     const keys = Object.keys(data).map(k => k.toLowerCase());

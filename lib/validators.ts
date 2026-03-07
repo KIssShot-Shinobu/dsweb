@@ -3,20 +3,21 @@ import { z } from "zod";
 // ─── Constants ────────────────────────────────────────────────────────────────
 const IGN_REGEX = /^\[DS\].+/;
 const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
+const SAFE_TEXT_REGEX = /^[\p{L}\p{N}\s'.,()\-_/]+$/u;
 
 // ─── Register Schema ──────────────────────────────────────────────────────────
 export const registerSchema = z.object({
     // Step 1 – Account
-    fullName: z.string().min(3, "Nama lengkap minimal 3 karakter"),
-    email: z.string().email("Email tidak valid"),
+    fullName: z.string().trim().min(3, "Nama lengkap minimal 3 karakter").max(191, "Nama terlalu panjang"),
+    email: z.string().trim().toLowerCase().email("Email tidak valid"),
     password: z
         .string()
         .min(8, "Password minimal 8 karakter")
         .regex(/[A-Za-z]/, "Password harus mengandung huruf")
         .regex(/[0-9]/, "Password harus mengandung angka"),
     confirmPassword: z.string(),
-    phoneWhatsapp: z.string().regex(PHONE_REGEX, "Nomor WhatsApp tidak valid (contoh: +628123456789)"),
-    city: z.string().min(2, "Kota harus diisi"),
+    phoneWhatsapp: z.string().trim().regex(PHONE_REGEX, "Nomor WhatsApp tidak valid (contoh: +628123456789)"),
+    city: z.string().trim().min(2, "Kota harus diisi").max(191, "Nama kota terlalu panjang"),
 
     // Step 2 – Game Profile (at least one game required)
     duelLinksGameId: z.string().optional(),
@@ -35,8 +36,8 @@ export const registerSchema = z.object({
     masterDuelScreenshot: z.string().optional(),
 
     // Step 3 – Guild Info
-    sourceInfo: z.string().min(1, "Sumber informasi harus diisi"),
-    prevGuild: z.string().optional(),
+    sourceInfo: z.string().trim().min(1, "Sumber informasi harus diisi").max(191, "Sumber informasi terlalu panjang"),
+    prevGuild: z.string().trim().max(191, "Nama guild terlalu panjang").optional(),
     guildStatus: z.enum(["SOLO_PLAYER", "LEFT_GUILD", "NEW_PLAYER"] as const, {
         message: "Pilih status guild",
     }),
@@ -59,10 +60,29 @@ export const registerSchema = z.object({
 
 // ─── Login Schema ─────────────────────────────────────────────────────────────
 export const loginSchema = z.object({
-    email: z.string().email("Email tidak valid"),
+    email: z.string().trim().toLowerCase().email("Email tidak valid"),
     password: z.string().min(1, "Password harus diisi"),
     rememberMe: z.boolean().optional(),
 });
+
+export const passwordChangeSchema = z
+    .object({
+        currentPassword: z.string().min(1, "Password saat ini harus diisi"),
+        newPassword: z
+            .string()
+            .min(8, "Password baru minimal 8 karakter")
+            .regex(/[A-Za-z]/, "Password baru harus mengandung huruf")
+            .regex(/[0-9]/, "Password baru harus mengandung angka"),
+        confirmPassword: z.string(),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+        message: "Konfirmasi password tidak cocok",
+        path: ["confirmPassword"],
+    })
+    .refine((data) => data.currentPassword !== data.newPassword, {
+        message: "Password baru harus berbeda dari password saat ini",
+        path: ["newPassword"],
+    });
 
 // ─── Approve / Reject Schema ──────────────────────────────────────────────────
 export const approveSchema = z.object({
@@ -74,13 +94,15 @@ export const approveSchema = z.object({
 // ─── Type Exports ─────────────────────────────────────────────────────────────
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
 export type ApproveInput = z.infer<typeof approveSchema>;
 
 // ─── Treasury Schema ──────────────────────────────────────────────────────────
 export const treasurySchema = z.object({
     type: z.enum(["MASUK", "KELUAR"], { message: "Tipe transaksi wajib diisi" }),
     amount: z.coerce.number().min(1, "Nominal tidak boleh 0"),
-    description: z.string().min(3, "Keterangan minimal 3 karakter"),
+    description: z.string().trim().min(3, "Keterangan minimal 3 karakter").max(191, "Keterangan terlalu panjang").regex(SAFE_TEXT_REGEX, "Keterangan mengandung karakter yang tidak diizinkan"),
+    userId: z.string().cuid("User ID tidak valid").optional().nullable(),
 });
 
 export type TreasuryInput = z.infer<typeof treasurySchema>;
@@ -96,8 +118,8 @@ export type UpdateGameProfileInput = z.infer<typeof updateGameProfileSchema>;
 
 // ─── Tournament Schema ────────────────────────────────────────────────────────
 export const tournamentSchema = z.object({
-    title: z.string().min(3, "Judul turnamen minimal 3 karakter"),
-    description: z.string().optional(),
+    title: z.string().trim().min(3, "Judul turnamen minimal 3 karakter").max(191, "Judul turnamen terlalu panjang"),
+    description: z.string().trim().max(1000, "Deskripsi terlalu panjang").optional().or(z.literal("")),
     format: z.enum(["BO1", "BO3", "BO5"], { message: "Format tidak valid" }),
     gameType: z.enum(["DUEL_LINKS", "MASTER_DUEL"], { message: "Pilih game" }),
     status: z.enum(["OPEN", "ONGOING", "COMPLETED", "CANCELLED"]).optional(),
@@ -106,7 +128,9 @@ export const tournamentSchema = z.object({
     startDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
         message: "Tanggal tidak valid",
     }),
-    image: z.string().optional(),
+    image: z.string().url("Image URL tidak valid").optional().or(z.literal("")),
 });
 
 export type TournamentInput = z.infer<typeof tournamentSchema>;
+export const tournamentUpdateSchema = tournamentSchema.partial();
+export type TournamentUpdateInput = z.infer<typeof tournamentUpdateSchema>;

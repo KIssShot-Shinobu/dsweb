@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-interface Member {
+interface ActiveUser {
     id: string;
     fullName: string;
     role: string;
-    gameProfiles: { gameId: string }[];
+    gameProfiles: { gameId: string; ign?: string; gameType?: string }[];
 }
 
 const getRoleBadge = (role: string) => {
@@ -21,20 +19,13 @@ const getRoleBadge = (role: string) => {
     }
 };
 
-export function MemberList() {
-    const [members, setMembers] = useState<Member[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetch("/api/admin/users?status=ACTIVE&role=ALL&perPage=5")
-            .then((response) => response.json())
-            .then((data) => {
-                setMembers(data.data || []);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, []);
-
+export function ActiveUserList({
+    users,
+    loading = false,
+}: {
+    users: ActiveUser[];
+    loading?: boolean;
+}) {
     const getInitials = (name: string) =>
         name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2);
 
@@ -42,7 +33,7 @@ export function MemberList() {
         return (
             <div className="rounded-2xl border border-gray-100 bg-white dark:border-white/5 dark:bg-[#1a1a1a]">
                 <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-white/5">
-                    <span className="text-base font-semibold text-gray-900 dark:text-white">Active Members</span>
+                    <span className="text-base font-semibold text-gray-900 dark:text-white">Active Users</span>
                 </div>
                 <div className="space-y-3 p-5">
                     {[1, 2, 3].map((item) => (
@@ -62,33 +53,33 @@ export function MemberList() {
     return (
         <div className="rounded-2xl border border-gray-100 bg-white dark:border-white/5 dark:bg-[#1a1a1a]">
             <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-white/5">
-                <span className="text-base font-semibold text-gray-900 dark:text-white">Active Members</span>
+                <span className="text-base font-semibold text-gray-900 dark:text-white">Active Users</span>
                 <a href="/dashboard/users?status=ACTIVE" className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5">
                     View All
                 </a>
             </div>
             <div className="p-5">
-                {members.length === 0 ? (
+                {users.length === 0 ? (
                     <div className="py-8 text-center">
-                        <div className="mb-2 text-3xl">👥</div>
-                        <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">No active members yet</div>
+                        <div className="mb-2 text-3xl">Users</div>
+                        <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">No active users yet</div>
                         <p className="text-xs text-gray-400">Approved active users will appear here</p>
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        {members.map((member) => (
-                            <div key={member.id} className="flex items-center gap-3 rounded-xl p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.04]">
+                        {users.map((user) => (
+                            <div key={user.id} className="flex items-center gap-3 rounded-xl p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.04]">
                                 <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-ds-amber text-xs font-bold text-black">
-                                    {getInitials(member.fullName)}
+                                    {getInitials(user.fullName)}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <div className="truncate text-sm font-semibold text-gray-900 dark:text-white">{member.fullName}</div>
+                                    <div className="truncate text-sm font-semibold text-gray-900 dark:text-white">{user.fullName}</div>
                                     <div className="truncate text-xs text-gray-400 dark:text-white/40">
-                                        ID: {member.gameProfiles[0]?.gameId || "-"}
+                                        {user.gameProfiles[0]?.ign || user.gameProfiles[0]?.gameId || "-"}
                                     </div>
                                 </div>
-                                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getRoleBadge(member.role)}`}>
-                                    {member.role}
+                                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getRoleBadge(user.role)}`}>
+                                    {user.role}
                                 </span>
                             </div>
                         ))}

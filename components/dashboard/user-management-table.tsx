@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { FormSelect } from "@/components/dashboard/form-select";
 import { Pagination } from "@/components/dashboard/pagination";
 
 interface UserRow {
@@ -45,6 +46,14 @@ const ROLE_COLORS: Record<string, string> = {
 const ROLE_OPTIONS = ["USER", "MEMBER", "OFFICER", "ADMIN"];
 const STATUS_OPTIONS = ["ALL", "ACTIVE", "PENDING", "REJECTED", "BANNED"];
 const FILTER_ROLE_OPTIONS = ["ALL", "USER", "MEMBER", "OFFICER", "ADMIN", "FOUNDER"];
+const STATUS_FILTER_OPTIONS = STATUS_OPTIONS.map((status) => ({
+    value: status,
+    label: status === "ALL" ? "Semua Status" : status,
+}));
+const ROLE_FILTER_OPTIONS = FILTER_ROLE_OPTIONS.map((role) => ({
+    value: role,
+    label: role === "ALL" ? "Semua Role" : role,
+}));
 
 function RoleDropdown({
     userId,
@@ -190,13 +199,6 @@ function UserManagementTableInner({
     const getInitials = (name: string) =>
         name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2);
 
-    const filterButton = (selected: boolean) =>
-        `whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-            selected
-                ? "bg-ds-amber text-black"
-                : "text-gray-500 hover:bg-gray-100 dark:text-white/40 dark:hover:bg-white/5"
-        }`;
-
     return (
         <>
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -213,23 +215,25 @@ function UserManagementTableInner({
                 />
             </div>
 
-            {!lockStatus && (
-                <div className="mb-3 flex gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1 dark:bg-white/5">
-                    {STATUS_OPTIONS.map((status) => (
-                        <button key={status} className={filterButton(statusFilter === status)} onClick={() => setParam("status", status)}>
-                            {status}
-                        </button>
-                    ))}
-                </div>
-            )}
+            {(!lockStatus || !lockRole) && (
+                <div className="mb-4 flex flex-wrap items-center gap-2">
+                    {!lockStatus && (
+                        <FormSelect
+                            value={statusFilter}
+                            onChange={(value) => setParam("status", value)}
+                            options={STATUS_FILTER_OPTIONS}
+                            className="w-full sm:w-[180px]"
+                        />
+                    )}
 
-            {!lockRole && (
-                <div className="mb-4 flex gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1 dark:bg-white/5">
-                    {FILTER_ROLE_OPTIONS.map((role) => (
-                        <button key={role} className={filterButton(roleFilter === role)} onClick={() => setParam("role", role)}>
-                            {role}
-                        </button>
-                    ))}
+                    {!lockRole && (
+                        <FormSelect
+                            value={roleFilter}
+                            onChange={(value) => setParam("role", value)}
+                            options={ROLE_FILTER_OPTIONS}
+                            className="w-full sm:w-[180px]"
+                        />
+                    )}
                 </div>
             )}
 

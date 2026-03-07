@@ -7,7 +7,7 @@ import { Footer } from "@/components/ui/footer";
 import { prisma } from "@/lib/prisma";
 
 export default async function Home() {
-  let memberCount = 0;
+  let activeUserCount = 0;
   let tournamentCount = 0;
   let tournaments: {
     id: string;
@@ -20,7 +20,7 @@ export default async function Home() {
   }[] = [];
 
   try {
-    const [members, totalTournaments, dbTournaments] = await Promise.all([
+    const [activeUsers, totalTournaments, dbTournaments] = await Promise.all([
       prisma.user.count({ where: { status: "ACTIVE" } }),
       prisma.tournament.count(),
       prisma.tournament.findMany({
@@ -38,7 +38,7 @@ export default async function Home() {
       }),
     ]);
 
-    memberCount = members;
+    activeUserCount = activeUsers;
     tournamentCount = totalTournaments;
 
     const order: Record<string, number> = {
@@ -72,7 +72,7 @@ export default async function Home() {
     <main className="min-h-screen bg-transparent">
       <Navbar />
       <Hero />
-      <About memberCount={memberCount} tournamentCount={tournamentCount} />
+      <About activeUserCount={activeUserCount} tournamentCount={tournamentCount} />
       <Tournaments tournaments={tournaments} />
       <Socials />
       <Footer />

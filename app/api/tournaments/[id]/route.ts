@@ -2,21 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, hasRole, ROLES } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
-import { z } from "zod";
-
-const tournamentUpdateSchema = z.object({
-    title: z.string().min(3, "Judul turnamen minimal 3 karakter").optional(),
-    description: z.string().optional().nullable(),
-    format: z.enum(["BO1", "BO3", "BO5"]).optional(),
-    gameType: z.enum(["DUEL_LINKS", "MASTER_DUEL"]).optional(),
-    status: z.enum(["OPEN", "ONGOING", "COMPLETED", "CANCELLED"]).optional(),
-    entryFee: z.coerce.number().min(0, "Biaya masuk tidak boleh negatif").optional(),
-    prizePool: z.coerce.number().min(0, "Prize pool tidak boleh negatif").optional(),
-    startDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
-        message: "Tanggal tidak valid",
-    }).optional(),
-    image: z.string().optional().nullable(),
-});
+import { tournamentUpdateSchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -73,6 +59,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         if (updateData.description === "") {
             updateData.description = null;
+        }
+
+        if (updateData.image === "") {
+            updateData.image = null;
         }
 
         const tournament = await prisma.tournament.update({

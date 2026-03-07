@@ -187,6 +187,7 @@ export async function getCurrentUser() {
             city: true,
             phoneWhatsapp: true,
             createdAt: true,
+            lastActiveAt: true,
             updatedAt: true,
             emailVerificationToken: {
                 select: {

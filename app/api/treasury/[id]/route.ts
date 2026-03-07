@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getTokenFromCookie, verifyToken } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
+import { treasurySchema } from "@/lib/validators";
+import { normalizeTreasuryAmount } from "@/lib/services/treasury-service";
 
 type Params = Promise<{ id: string }>;
 
@@ -40,16 +42,24 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
 
         const { id } = await params;
         const body = await request.json();
-        const { amount, description, userId } = body;
+        const parsed = treasurySchema.safeParse(body);
+        if (!parsed.success) {
+            return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+        }
 
         const previous = await prisma.treasury.findUnique({ where: { id } });
+        if (!previous) {
+            return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+        }
+
+        const nextAmount = normalizeTreasuryAmount(parsed.data.type, parsed.data.amount);
 
         const transaction = await prisma.treasury.update({
             where: { id },
             data: {
-                ...(amount !== undefined && { amount }),
-                ...(description && { description }),
-                ...(userId !== undefined && { userId }),
+                amount: nextAmount,
+                description: parsed.data.description,
+                userId: parsed.data.userId ?? null,
             },
             include: {
                 user: {
@@ -77,6 +87,7 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
                     amount: transaction.amount,
                     description: transaction.description,
                     userId: transaction.userId,
+                    type: parsed.data.type,
                 },
             },
         });

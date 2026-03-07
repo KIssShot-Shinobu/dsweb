@@ -8,10 +8,25 @@ export default async function ProfilePage() {
     const user = await getCurrentUser();
     if (!user) redirect("/login");
 
-    const userWithProfiles = await prisma.user.findUnique({
-        where: { id: user.id },
-        include: { gameProfiles: true }
-    });
+    const [userWithProfiles, tournamentsJoined, reputation, recentAuditLogs] = await Promise.all([
+        prisma.user.findUnique({
+            where: { id: user.id },
+            include: { gameProfiles: true },
+        }),
+        prisma.tournamentParticipant.count({
+            where: { userId: user.id },
+        }),
+        prisma.reputationLog.aggregate({
+            where: { userId: user.id },
+            _sum: { points: true },
+        }),
+        prisma.auditLog.findMany({
+            where: { userId: user.id },
+            select: { action: true, createdAt: true },
+            orderBy: { createdAt: "desc" },
+            take: 3,
+        }),
+    ]);
 
     const dlProfile = userWithProfiles?.gameProfiles.find((p: any) => p.gameType === "DUEL_LINKS");
     const mdProfile = userWithProfiles?.gameProfiles.find((p: any) => p.gameType === "MASTER_DUEL");
@@ -33,10 +48,14 @@ export default async function ProfilePage() {
 
     const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
     const formatDate = (d: Date) => new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    const formatDateTime = (d: Date) => new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
     const emailVerificationLabel = user.emailVerified ? "Terverifikasi" : "Belum Verifikasi";
     const emailVerificationClass = user.emailVerified
         ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
         : "bg-amber-500/10 text-amber-400 border-amber-500/20";
+    const verifiedProfiles = userWithProfiles?.gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).length || 0;
+    const totalProfiles = userWithProfiles?.gameProfiles.length || 0;
+    const reputationPoints = reputation._sum.points || 0;
 
     return (
         <>
@@ -70,6 +89,25 @@ export default async function ProfilePage() {
 
                 {/* Info */}
                 <div className="lg:col-span-2 space-y-4">
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        <div className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-white/5 dark:bg-[#1a1a1a]">
+                            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">Turnamen Diikuti</div>
+                            <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{tournamentsJoined}</div>
+                        </div>
+                        <div className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-white/5 dark:bg-[#1a1a1a]">
+                            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">Profil Game</div>
+                            <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{totalProfiles}</div>
+                        </div>
+                        <div className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-white/5 dark:bg-[#1a1a1a]">
+                            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">Terverifikasi</div>
+                            <div className="mt-2 text-2xl font-bold text-emerald-400">{verifiedProfiles}</div>
+                        </div>
+                        <div className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-white/5 dark:bg-[#1a1a1a]">
+                            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">Reputasi</div>
+                            <div className="mt-2 text-2xl font-bold text-ds-amber">{reputationPoints}</div>
+                        </div>
+                    </div>
+
                     <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 p-5">
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">Informasi Akun</h3>
                         <div className="space-y-3">
@@ -79,6 +117,7 @@ export default async function ProfilePage() {
                                 { label: "Verifikasi Email", value: emailVerificationLabel },
                                 { label: "WhatsApp", value: user.phoneWhatsapp || "-" },
                                 { label: "Kota", value: user.city || "-" },
+                                { label: "Terakhir Aktif", value: formatDateTime(user.lastActiveAt) },
                                 { label: "Terdaftar Sejak", value: formatDate(user.createdAt) },
                             ].map(({ label, value }) => (
                                 <div key={label} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-white/[0.04] last:border-0">
@@ -113,6 +152,22 @@ export default async function ProfilePage() {
                             gameType="MASTER_DUEL"
                             initialData={mdProfile ? { gameType: "MASTER_DUEL", ign: mdProfile.ign, gameId: mdProfile.gameId } : undefined}
                         />
+                    </div>
+
+                    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 p-5">
+                        <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">Aktivitas Terbaru</h3>
+                        {recentAuditLogs.length === 0 ? (
+                            <p className="text-sm text-gray-400 dark:text-white/40">Belum ada aktivitas tercatat.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {recentAuditLogs.map((log) => (
+                                    <div key={`${log.action}-${log.createdAt.toISOString()}`} className="flex items-center justify-between border-b border-gray-50 py-2 last:border-0 dark:border-white/[0.04]">
+                                        <span className="text-sm font-medium text-gray-900 dark:text-white">{log.action}</span>
+                                        <span className="text-xs text-gray-400 dark:text-white/40">{formatDateTime(log.createdAt)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

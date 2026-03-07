@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { MemberList } from "@/components/dashboard/member-list";
+import { ActiveUserList } from "@/components/dashboard/active-user-list";
 import { TournamentList } from "@/components/dashboard/tournament-list";
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { AnalyticsChart } from "@/components/dashboard/analytics-chart";
@@ -12,55 +12,81 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 
 const ADMIN_ROLES = ["ADMIN", "FOUNDER"];
 
-interface Stats {
-    totalMembers: number;
-    activeTournaments: number;
-    completedTournaments: number;
-    openTournaments: number;
-    treasuryBalance: number;
+interface DashboardSummary {
+    stats: {
+        totalActiveUsers: number;
+        activeTournaments: number;
+        completedTournaments: number;
+        openTournaments: number;
+        treasuryBalance: number;
+    };
+    userStats: {
+        total: number;
+        pending: number;
+        active: number;
+        rejected: number;
+        banned: number;
+    };
+    recentActiveUsers: {
+        id: string;
+        fullName: string;
+        role: string;
+        gameProfiles: { gameId: string; ign?: string; gameType?: string }[];
+    }[];
+    recentTournaments: {
+        id: string;
+        title: string;
+        gameType: string;
+        status: string;
+        startDate: string;
+        prizePool: number;
+        _count?: { participants: number };
+    }[];
+    treasury: {
+        balance: number;
+        recentTransactions: {
+            id: string;
+            amount: number;
+            description: string;
+            createdAt: string;
+            user: { fullName: string } | null;
+        }[];
+        weeklyChart: {
+            label: string;
+            income: number;
+            expense: number;
+        }[];
+    };
 }
 
-interface ChartItem {
-    label: string;
-    income: number;
-    expense: number;
-}
-
-function buildChartData(transactions: { amount: number; createdAt: string }[]): ChartItem[] {
-    const days: ChartItem[] = [];
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const label = date.toLocaleDateString("id-ID", { weekday: "short" }).slice(0, 2);
-        const dateString = date.toISOString().split("T")[0];
-        const dayTransactions = transactions.filter((transaction) => transaction.createdAt.startsWith(dateString));
-
-        days.push({
-            label,
-            income: dayTransactions
-                .filter((transaction) => transaction.amount > 0)
-                .reduce((sum, transaction) => sum + transaction.amount, 0),
-            expense: Math.abs(
-                dayTransactions
-                    .filter((transaction) => transaction.amount < 0)
-                    .reduce((sum, transaction) => sum + transaction.amount, 0)
-            ),
-        });
-    }
-    return days;
-}
-
-export default function DashboardPage() {
-    const router = useRouter();
-    const { user, loading: userLoading } = useCurrentUser();
-    const [stats, setStats] = useState<Stats>({
-        totalMembers: 0,
+const EMPTY_SUMMARY: DashboardSummary = {
+    stats: {
+        totalActiveUsers: 0,
         activeTournaments: 0,
         completedTournaments: 0,
         openTournaments: 0,
         treasuryBalance: 0,
-    });
-    const [chartData, setChartData] = useState<ChartItem[]>([]);
+    },
+    userStats: {
+        total: 0,
+        pending: 0,
+        active: 0,
+        rejected: 0,
+        banned: 0,
+    },
+    recentActiveUsers: [],
+    recentTournaments: [],
+    treasury: {
+        balance: 0,
+        recentTransactions: [],
+        weeklyChart: [],
+    },
+};
+
+export default function DashboardPage() {
+    const router = useRouter();
+    const { user, loading: userLoading } = useCurrentUser();
+    const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -76,28 +102,15 @@ export default function DashboardPage() {
         let active = true;
         setLoading(true);
 
-        Promise.all([
-            fetch("/api/admin/users?status=ACTIVE&role=ALL&perPage=1").then((response) => response.json()),
-            fetch("/api/tournaments").then((response) => response.json()),
-            fetch("/api/treasury").then((response) => response.json()),
-        ])
-            .then(([members, tournaments, treasury]) => {
+        fetch("/api/dashboard/summary")
+            .then((response) => response.json())
+            .then((data) => {
                 if (!active) return;
-
-                setStats({
-                    totalMembers: members.total || 0,
-                    activeTournaments: Array.isArray(tournaments)
-                        ? tournaments.filter((tournament: { status: string }) => tournament.status === "ONGOING").length
-                        : 0,
-                    completedTournaments: Array.isArray(tournaments)
-                        ? tournaments.filter((tournament: { status: string }) => tournament.status === "COMPLETED").length
-                        : 0,
-                    openTournaments: Array.isArray(tournaments)
-                        ? tournaments.filter((tournament: { status: string }) => tournament.status === "OPEN").length
-                        : 0,
-                    treasuryBalance: treasury.balance || 0,
-                });
-                setChartData(buildChartData(treasury.transactions || []));
+                setSummary(data.summary || EMPTY_SUMMARY);
+            })
+            .catch(() => {
+                if (!active) return;
+                setSummary(EMPTY_SUMMARY);
             })
             .finally(() => {
                 if (!active) return;
@@ -117,8 +130,8 @@ export default function DashboardPage() {
 
     if (userLoading || !user || !ADMIN_ROLES.includes(user.role)) {
         return (
-            <div className="flex items-center justify-center min-h-64">
-                <div className="w-8 h-8 rounded-full border-2 border-ds-amber border-t-transparent animate-spin" />
+            <div className="flex min-h-64 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-ds-amber border-t-transparent" />
             </div>
         );
     }
@@ -132,7 +145,7 @@ export default function DashboardPage() {
                         Kelola guild DuelStandby, approval user, dan operasional harian dari satu tempat.
                     </p>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex flex-shrink-0 gap-2">
                     <a href="/dashboard/tournaments" className="rounded-xl bg-ds-amber px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-ds-gold">
                         + New Tournament
                     </a>
@@ -145,26 +158,30 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <div className="mb-5 grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                <StatCard label="Total Members" value={loading ? "..." : stats.totalMembers} icon="👥" change="Guild members" primary />
-                <StatCard label="Open Tournaments" value={loading ? "..." : stats.openTournaments} icon="📅" change="Open registration" />
-                <StatCard label="Active Tournaments" value={loading ? "..." : stats.activeTournaments} icon="🏆" change="Ongoing now" />
-                <StatCard label="Completed" value={loading ? "..." : stats.completedTournaments} icon="✅" change="Tournaments finished" />
-                <StatCard label="Treasury Balance" value={loading ? "..." : formatCurrency(stats.treasuryBalance)} icon="💰" change="Current balance" />
+            <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 xl:grid-cols-5">
+                <StatCard label="Active Users" value={loading ? "..." : summary.stats.totalActiveUsers} icon="U" change="Akun aktif guild" primary />
+                <StatCard label="Open Tournaments" value={loading ? "..." : summary.stats.openTournaments} icon="O" change="Registrasi dibuka" />
+                <StatCard label="Active Tournaments" value={loading ? "..." : summary.stats.activeTournaments} icon="A" change="Sedang berjalan" />
+                <StatCard label="Completed" value={loading ? "..." : summary.stats.completedTournaments} icon="C" change="Turnamen selesai" />
+                <StatCard label="Treasury Balance" value={loading ? "..." : formatCurrency(summary.stats.treasuryBalance)} icon="Rp" change="Saldo kas guild" />
             </div>
 
             <div className="mb-5">
-                <AdminOverview />
+                <AdminOverview stats={summary.userStats} loading={loading} />
             </div>
 
             <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <AnalyticsChart data={chartData} />
-                <TreasuryCard />
+                <AnalyticsChart data={summary.treasury.weeklyChart} loading={loading} />
+                <TreasuryCard
+                    balance={summary.treasury.balance}
+                    recentTransactions={summary.treasury.recentTransactions}
+                    loading={loading}
+                />
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <MemberList />
-                <TournamentList />
+                <ActiveUserList users={summary.recentActiveUsers} loading={loading} />
+                <TournamentList tournaments={summary.recentTournaments} loading={loading} />
             </div>
         </>
     );

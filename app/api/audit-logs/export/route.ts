@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
+import { buildAuditLogWhere } from "@/lib/audit-query";
 
 export async function GET(req: NextRequest) {
     try {
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest) {
 
                     while (keepFetching) {
                         const dbLogs: any[] = await prisma.auditLog.findMany({
+                            where: buildAuditLogWhere(new URL(req.url).searchParams),
                             take: batchSize,
                             ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
                             orderBy: { id: "asc" },

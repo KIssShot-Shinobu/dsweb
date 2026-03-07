@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getRefreshTokenFromCookie, rotateSession, setAuthCookie, setRefreshCookie, signToken } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
+import { touchUserLastActiveAt } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
     try {
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
 
         await setAuthCookie(accessToken);
         await setRefreshCookie(rotated.refreshToken);
+        await touchUserLastActiveAt(user.id);
 
         await logAudit({
             action: "SESSION_REFRESHED",

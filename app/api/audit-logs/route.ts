@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
+import { buildAuditLogWhere } from "@/lib/audit-query";
 
 export async function GET(req: NextRequest) {
     try {
@@ -11,34 +12,9 @@ export async function GET(req: NextRequest) {
         }
 
         const { searchParams } = new URL(req.url);
-        const action = searchParams.get("action");
-        const targetUserId = searchParams.get("userId");
-        const startDate = searchParams.get("startDate");
-        const endDate = searchParams.get("endDate");
-
         const page = parseInt(searchParams.get("page") || "1");
         const perPage = Math.min(parseInt(searchParams.get("limit") || "20"), 100);
-
-        const where: any = {};
-
-        if (action && action !== "ALL") {
-            where.action = action;
-        }
-
-        if (targetUserId) {
-            where.userId = targetUserId;
-        }
-
-        if (startDate || endDate) {
-            where.createdAt = {};
-            if (startDate) where.createdAt.gte = new Date(startDate);
-            if (endDate) {
-                // To include the end date fully:
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
-                where.createdAt.lte = end;
-            }
-        }
+        const where = buildAuditLogWhere(searchParams);
 
         const [logs, total] = await Promise.all([
             prisma.auditLog.findMany({

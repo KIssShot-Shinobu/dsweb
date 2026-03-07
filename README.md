@@ -7,7 +7,7 @@ Aplikasi web komunitas DuelStandby berbasis Next.js 16 + Prisma + MySQL.
 Project ini punya 2 area utama:
 
 - Public website (`/`) untuk branding komunitas + daftar tournament dari database.
-- Dashboard (`/dashboard/*`) untuk manajemen users, tournament, treasury, audit, dan profile.
+- Dashboard (`/dashboard/*`) untuk manajemen users, tournament, treasury, audit, profile, dan ringkasan operasional.
 
 Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 `USER < MEMBER < OFFICER < ADMIN < FOUNDER`.
@@ -16,19 +16,20 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 
 - Registrasi user + game profile (Duel Links / Master Duel).
 - Login/logout + cek sesi user (`/api/auth/me`).
-- Manajemen user approval/admin tools.
+- Manajemen user approval, role, dan status akun.
 - CRUD tournament + register participant tournament.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
-- Dashboard admin disatukan ke halaman `/dashboard`, termasuk ringkasan registrasi user dan quick action approval.
-- Hapus tournament di dashboard memakai confirm modal + undo 5 detik (konsisten dengan members/treasury).
+- Dashboard admin disatukan ke halaman `/dashboard`, termasuk summary users, tournament, treasury, dan quick action approval.
+- Hapus tournament di dashboard memakai confirm modal + undo 5 detik.
 - Form tournament mendukung field `Image URL` + preview gambar pada create/edit.
 - Form tournament juga mendukung upload file gambar langsung ke `/api/upload` (URL akan terisi otomatis).
 - List tournament di dashboard menampilkan thumbnail image kecil per row.
 - Form di dashboard `tournament`, `users`, dan `treasury` menggunakan custom dropdown konsisten (tidak lagi native select browser).
 - Style form/button dashboard dipusatkan di `components/dashboard/form-styles.ts` agar konsisten lintas halaman.
 - Aksi row list (`Edit/Hapus`) dipusatkan di `components/dashboard/row-actions.tsx` agar pola tabel konsisten.
-- Halaman `Users` (`/dashboard/users`) menjadi pusat tunggal untuk registrasi user, member aktif, role, dan status akun.
-- Treasury transaksi + analytics ringkas.
+- Halaman `Users` (`/dashboard/users`) menjadi pusat tunggal untuk registrasi user, akun aktif, role, dan status akun.
+- Treasury transaksi + analytics ringkas dengan filter server-side.
+- Dashboard summary memakai endpoint terpusat `/api/dashboard/summary`.
 - Upload file gambar (screenshot/profile) via API.
 - Audit log aktivitas user/admin.
 - Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
@@ -40,7 +41,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - Enhanced user profile fields (bio, timezone, language, discord/social handle, date of birth, gender).
 - Sistem badge dan reputasi user (`Badge`, `UserBadge`, `ReputationLog`).
 - Endpoint stats profil terhitung untuk progress user.
-- Public homepage tersinkron ke database (total member, total tournament, list tournament terbaru/aktif).
+- Public homepage tersinkron ke database (total user aktif, total tournament, list tournament terbaru/aktif).
 - Navbar public:
 - Belum login: `Sign In` + `Sign Up`.
 - Sudah login admin/founder: profile menu -> `Dashboard`, `Logout`.
@@ -56,6 +57,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - MariaDB/MySQL driver adapter: `@prisma/adapter-mariadb` + `mariadb`
 - JWT (`jose`) + password hashing (`bcryptjs`)
 - Zod untuk validasi request
+- OpenAPI spec manual di `docs/openapi.yaml`
 
 ## Struktur Penting
 
@@ -91,6 +93,7 @@ Variabel penting:
 
 - `DATABASE_URL`: koneksi utama Prisma ke MySQL.
 - `JWT_SECRET`: secret signing JWT.
+- `DATA_ENCRYPTION_KEY`: kunci enkripsi data sensitif at-rest (`phoneWhatsapp`, `accountNumber`, `twoFactorSecret`).
 - `NEXT_PUBLIC_APP_URL`: base URL app (dipakai URL hasil upload).
 - `UPLOAD_DIR`: lokasi simpan file upload (default `./public/uploads`).
 - `MAX_FILE_SIZE`: batas upload byte (default 5MB).
@@ -147,13 +150,15 @@ Auth:
 - `POST /api/auth/refresh`
 - `POST /api/auth/password/forgot`
 - `POST /api/auth/password/reset`
+- `POST /api/auth/password/change`
 - `POST /api/auth/verify-email`
 - `POST /api/auth/verify-email/resend`
 - `GET /api/profile/stats`
+- `GET /api/dashboard/summary`
 
 Tournament:
 
-- `GET /api/tournaments`
+- `GET /api/tournaments` (`search`, `status`, `gameType`, `page`, `limit`)
 - `POST /api/tournaments` (min role OFFICER)
 - `GET /api/tournaments/:id`
 - `PUT /api/tournaments/:id` (min role OFFICER, support update field tournament)
@@ -164,10 +169,12 @@ Lainnya:
 
 - `GET/POST /api/admin/users`
 - `PUT /api/admin/users/:id/status`
-- `GET/POST /api/treasury`, `PUT/DELETE /api/treasury/:id`
+- `GET/POST /api/treasury`, `GET/PUT/DELETE /api/treasury/:id`
+- `GET /api/treasury` mendukung `page`, `limit`, `month`, `year`, `type`, `userId`
 - `POST /api/upload`
 - `POST /api/upload/public` (khusus upload screenshot saat registrasi sebelum login)
 - `GET /api/audit-logs`
+- `GET /api/audit-logs/export`
 - `GET /api/health`
 
 ## Role Akses (UI Dashboard)
@@ -177,16 +184,17 @@ Lainnya:
 - `ADMIN/FOUNDER`: akses penuh dashboard admin (users, tournaments, treasury, audit).
 
 Catatan: beberapa menu mengikuti pengecekan role di frontend dan backend; backend tetap sumber kebenaran.
+Catatan tambahan: pendaftaran tournament publik memakai status akun `ACTIVE`; role `MEMBER` tidak lagi menjadi syarat khusus untuk register.
 
 ## Standar Audit Log
 
 Untuk endpoint penting (terutama operasi write `POST/PUT/DELETE`), audit log wajib ditulis.
 
-- User approval dan role change sudah tercatat (`MEMBER_APPROVED`, `MEMBER_REJECTED`, `MEMBER_BANNED`, `ROLE_CHANGED`).
+- User approval dan role change sudah tercatat (`USER_APPROVED`, `USER_REJECTED`, `USER_BANNED`, `ROLE_CHANGED`).
 - Treasury: add/update/delete sudah tercatat (`TREASURY_ADDED`, `TREASURY_UPDATED`, `TREASURY_DELETED`).
-- Tournament: create/update/delete sudah tercatat.
+- Tournament: create/update/delete/register sudah tercatat.
 - Auth/Profile/Upload: event penting sudah tercatat.
-- Session/Auth integrity: password reset request/success dan session refresh juga tercatat.
+- Session/Auth integrity: password reset request/success, session refresh, dan perubahan field sensitif juga tercatat.
 
 Aturan ke depan:
 
@@ -200,6 +208,8 @@ Aturan ke depan:
 - Access token disimpan di cookie `ds_auth` (httpOnly), umur pendek 15 menit.
 - Refresh token disimpan di cookie `ds_refresh` (httpOnly), umur 7 hari.
 - Refresh token disimpan di tabel `Session` dan selalu dirotasi saat `POST /api/auth/refresh`.
+- Field sensitif `phoneWhatsapp`, `accountNumber`, dan `twoFactorSecret` dienkripsi sebelum disimpan ke database; lookup unik memakai hash field.
+- Prisma extension juga menyentuh `lastActiveAt` saat auth/session flow berjalan dan menulis audit log untuk perubahan field sensitif.
 - Saat password berhasil direset, semua session user direvoke (force logout di semua device).
 - Model `User` menyimpan field keamanan tambahan: `emailVerifiedAt`, `phoneVerifiedAt`, `twoFactorEnabled`, `twoFactorSecret`, `lastActiveAt`, dan `privacySettings`.
 - Model `User` juga menyimpan kelengkapan profil: `bio`, `timezone`, `language`, `discordId`, `instagramHandle`, `twitterHandle`, `dateOfBirth`, `gender`.
@@ -258,11 +268,25 @@ cmd /c npm run dev
 
 ## Deploy Notes
 
-- Pastikan `DATABASE_URL`, `JWT_SECRET`, `NEXT_PUBLIC_APP_URL`, `UPLOAD_DIR` terpasang di server.
+- Pastikan `DATABASE_URL`, `JWT_SECRET`, `DATA_ENCRYPTION_KEY`, `NEXT_PUBLIC_APP_URL`, `UPLOAD_DIR` terpasang di server.
 - Untuk Pterodactyl, isi `DATABASE_URL` di server variables. Jangan mengandalkan `prisma db push` tanpa env ini.
 - Jika password DB memakai karakter khusus, gunakan versi URL-encoded pada `DATABASE_URL`.
 - Pastikan folder upload persistent jika deploy container/panel.
 - Jalankan `npx prisma generate` dan `npx prisma db push` di environment target.
+- Setelah schema baru terpasang, jalankan `node scripts/migrate-sensitive-user-fields.js` untuk backfill enkripsi/hash data sensitif jika deploy di luar `start.js`.
+
+## Testing
+
+- Unit test service layer + proteksi data: `npm run test:unit`
+- Integration test auth flow: `npm run test:integration`
+- Full suite: `npm test`
+
+## Migration Notes
+
+- Setiap perubahan schema wajib disertai migration script dan rollback plan.
+- Untuk update ini, gunakan:
+- `prisma/migrations_manual/20260307_sensitive_user_fields.sql`
+- `prisma/migrations_manual/20260307_sensitive_user_fields.rollback.sql`
 
 ## Aturan Update Dokumentasi
 

@@ -1,0 +1,498 @@
+openapi: 3.1.0
+info:
+  title: Duel Standby API
+  version: 0.3.0
+  description: Auth, dashboard, users, tournaments, treasury, profile, and audit endpoints for DSWeb.
+servers:
+  - url: https://example.com
+components:
+  securitySchemes:
+    dsAuthCookie:
+      type: apiKey
+      in: cookie
+      name: ds_auth
+  schemas:
+    UserStatus:
+      type: string
+      enum:
+        - PENDING
+        - ACTIVE
+        - REJECTED
+        - BANNED
+    UserRole:
+      type: string
+      enum:
+        - USER
+        - MEMBER
+        - OFFICER
+        - ADMIN
+        - FOUNDER
+    TournamentStatus:
+      type: string
+      enum:
+        - OPEN
+        - ONGOING
+        - COMPLETED
+        - CANCELLED
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fullName
+                - email
+                - password
+                - confirmPassword
+                - phoneWhatsapp
+                - city
+                - sourceInfo
+                - guildStatus
+                - socialMedia
+                - agreement
+              properties:
+                fullName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                confirmPassword:
+                  type: string
+                phoneWhatsapp:
+                  type: string
+                city:
+                  type: string
+      responses:
+        "201":
+          description: Registration created
+  /api/auth/login:
+    post:
+      summary: Login and issue auth cookies
+      responses:
+        "200":
+          description: Login success
+        "401":
+          description: Invalid credentials
+  /api/auth/refresh:
+    post:
+      summary: Rotate refresh token and refresh access cookie
+      responses:
+        "200":
+          description: Token refreshed
+  /api/auth/me:
+    get:
+      summary: Get authenticated user session
+      security:
+        - dsAuthCookie: []
+      responses:
+        "200":
+          description: Authenticated user payload
+        "401":
+          description: Unauthorized
+  /api/auth/password/change:
+    post:
+      summary: Change password for authenticated user
+      security:
+        - dsAuthCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+                - confirmPassword
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                confirmPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password changed and sessions revoked
+        "400":
+          description: Validation failed or current password invalid
+        "401":
+          description: Unauthorized
+  /api/dashboard/summary:
+    get:
+      summary: Fetch dashboard summary cards and lists
+      security:
+        - dsAuthCookie: []
+      responses:
+        "200":
+          description: Summary payload for admin dashboard
+        "403":
+          description: Forbidden
+  /api/admin/users:
+    get:
+      summary: List users for dashboard management
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/UserStatus"
+        - in: query
+          name: role
+          schema:
+            $ref: "#/components/schemas/UserRole"
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: perPage
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Paginated user list
+  /api/treasury:
+    get:
+      summary: Fetch treasury transactions with summary
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: month
+          schema:
+            type: integer
+        - in: query
+          name: year
+          schema:
+            type: integer
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum:
+              - SEMUA
+              - MASUK
+              - KELUAR
+        - in: query
+          name: userId
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Treasury list
+    post:
+      summary: Create treasury transaction
+      security:
+        - dsAuthCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - description
+                - type
+                - amount
+              properties:
+                description:
+                  type: string
+                type:
+                  type: string
+                  enum:
+                    - MASUK
+                    - KELUAR
+                amount:
+                  type: number
+                userId:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Treasury transaction created
+        "403":
+          description: Forbidden
+  /api/treasury/{id}:
+    get:
+      summary: Get a treasury transaction detail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Treasury transaction detail
+        "404":
+          description: Not found
+    put:
+      summary: Update treasury transaction
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - description
+                - type
+                - amount
+              properties:
+                description:
+                  type: string
+                type:
+                  type: string
+                  enum:
+                    - MASUK
+                    - KELUAR
+                amount:
+                  type: number
+                userId:
+                  type: string
+                  nullable: true
+      responses:
+        "200":
+          description: Treasury transaction updated
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+    delete:
+      summary: Delete treasury transaction
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Treasury transaction deleted
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+  /api/tournaments:
+    get:
+      summary: List tournaments for public site and dashboard
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/TournamentStatus"
+        - in: query
+          name: gameType
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tournament list with summary counts
+    post:
+      summary: Create a tournament
+      security:
+        - dsAuthCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - format
+                - gameType
+                - entryFee
+                - prizePool
+                - startDate
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+                format:
+                  type: string
+                gameType:
+                  type: string
+                status:
+                  $ref: "#/components/schemas/TournamentStatus"
+                entryFee:
+                  type: number
+                prizePool:
+                  type: number
+                startDate:
+                  type: string
+                  format: date-time
+                image:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Tournament created
+        "403":
+          description: Forbidden
+  /api/tournaments/{id}:
+    get:
+      summary: Get tournament detail including participants
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tournament detail
+        "404":
+          description: Not found
+    put:
+      summary: Update tournament fields
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tournament updated
+        "400":
+          description: Validation failed
+        "403":
+          description: Forbidden
+    delete:
+      summary: Delete a tournament
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tournament deleted
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+  /api/tournaments/{id}/register:
+    post:
+      summary: Register authenticated active user to a tournament
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Tournament registration created
+        "400":
+          description: Registration rejected
+        "401":
+          description: Unauthorized
+        "403":
+          description: Inactive account
+        "404":
+          description: Tournament not found
+  /api/audit-logs:
+    get:
+      summary: List audit logs with filters
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: action
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: userId
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated audit logs
+        "403":
+          description: Forbidden
+  /api/audit-logs/export:
+    get:
+      summary: Export audit logs to CSV using the active filters
+      security:
+        - dsAuthCookie: []
+      responses:
+        "200":
+          description: CSV stream
+        "403":
+          description: Forbidden
+  /api/profile/stats:
+    get:
+      summary: Fetch profile statistics for the current user
+      security:
+        - dsAuthCookie: []
+      responses:
+        "200":
+          description: Profile statistics payload
+        "401":
+          description: Unauthorized

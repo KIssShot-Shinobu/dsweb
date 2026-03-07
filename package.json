@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "node .next/standalone/server.js",
     "lint": "eslint",
-    "migrate:local": "tsx scripts/migrate-sqlite-to-mysql.ts"
+    "migrate:local": "tsx scripts/migrate-sqlite-to-mysql.ts",
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "test:unit": "node --import tsx --test tests/unit/**/*.test.ts",
+    "test:integration": "node --import tsx --test tests/integration/**/*.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.4.2",
@@ -39,6 +42,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

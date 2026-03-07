@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { StatCard } from "@/components/dashboard/stat-card";
 
 interface UserStats {
@@ -39,46 +38,13 @@ const QUICK_LINKS: QuickLink[] = [
     },
 ];
 
-export function AdminOverview() {
-    const [stats, setStats] = useState<UserStats>({
-        total: 0,
-        pending: 0,
-        active: 0,
-        rejected: 0,
-        banned: 0,
-    });
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        let active = true;
-
-        Promise.all([
-            fetch("/api/admin/users?status=ALL&perPage=1").then((r) => r.json()),
-            fetch("/api/admin/users?status=PENDING&perPage=1").then((r) => r.json()),
-            fetch("/api/admin/users?status=ACTIVE&perPage=1").then((r) => r.json()),
-            fetch("/api/admin/users?status=REJECTED&perPage=1").then((r) => r.json()),
-            fetch("/api/admin/users?status=BANNED&perPage=1").then((r) => r.json()),
-        ])
-            .then(([all, pending, activeUsers, rejected, banned]) => {
-                if (!active) return;
-                setStats({
-                    total: all.total || 0,
-                    pending: pending.total || 0,
-                    active: activeUsers.total || 0,
-                    rejected: rejected.total || 0,
-                    banned: banned.total || 0,
-                });
-            })
-            .finally(() => {
-                if (!active) return;
-                setLoading(false);
-            });
-
-        return () => {
-            active = false;
-        };
-    }, []);
-
+export function AdminOverview({
+    stats,
+    loading = false,
+}: {
+    stats: UserStats;
+    loading?: boolean;
+}) {
     return (
         <section className="space-y-4">
             <div className="flex flex-col gap-1">
