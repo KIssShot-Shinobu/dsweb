@@ -7,7 +7,7 @@ Aplikasi web komunitas DuelStandby berbasis Next.js 16 + Prisma + MySQL.
 Project ini punya 2 area utama:
 
 - Public website (`/`) untuk branding komunitas + daftar tournament dari database.
-- Dashboard (`/dashboard/*`) untuk manajemen users, tournament, treasury, audit, profile, dan ringkasan operasional.
+- Dashboard (`/dashboard/*`) untuk manajemen users, tournament, treasury, audit, profile, dan ringkasan operasional. Proteksi dashboard kini ditangani oleh server layout/page guard, bukan file `proxy.ts`.
 
 Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 `USER < MEMBER < OFFICER < ADMIN < FOUNDER`.
@@ -41,7 +41,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - Enhanced user profile fields (bio, timezone, language, discord/social handle, date of birth, gender).
 - Sistem badge dan reputasi user (`Badge`, `UserBadge`, `ReputationLog`).
 - Endpoint stats profil terhitung untuk progress user.
-- Public homepage tersinkron ke database (total user aktif, total tournament, list tournament terbaru/aktif).
+- Public homepage tersinkron ke database (total user aktif, total tournament, list tournament terbaru/aktif).`r`n- Halaman public tournament list/detail kini memakai token warna light/dark yang konsisten agar card, hero, dan CTA tetap terbaca di kedua tema.`r`n- Homepage public (hero, about, tournament section, socials, navbar, footer) juga sudah diselaraskan agar visual light/dark mode konsisten di seluruh area publik.`r`n- Area public juga mendapat pass mobile spacing dan interaction states: CTA full-width di mobile, card spacing lebih rapat, serta state hover/active/focus lebih konsisten.
 - Navbar public:
 - Belum login: `Sign In` + `Sign Up`.
 - Sudah login admin/founder: profile menu -> `Dashboard`, `Logout`.
@@ -299,6 +299,10 @@ Mulai sekarang, setiap ada perubahan fitur/endpoint/role/alur setup:
 2. Jika perubahan menyentuh API, update bagian `API Ringkas`.
 3. Jika perubahan menyentuh auth/role/menu, update bagian `Role Akses`.
 4. Jika perubahan menyentuh setup/env/db, update bagian `Konfigurasi Environment` dan `Instalasi`.
+
+
+
+
 
 
 

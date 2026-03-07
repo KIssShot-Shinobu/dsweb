@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -43,18 +43,20 @@ export function TournamentRegisterButton({
                 disabled={disabled || submitting}
                 className={`w-full rounded-2xl px-5 py-3 text-sm font-black transition-all ${
                     disabled
-                        ? "cursor-not-allowed bg-white/8 text-white/35"
+                        ? "cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-white/8 dark:text-white/35"
                         : "bg-[#FFC916] text-[#111111] hover:bg-[#ffd84c]"
                 }`}
             >
                 {submitting ? "Memproses..." : disabled ? "Pendaftaran Ditutup" : "Daftar Tournament"}
             </button>
             {message ? (
-                <div className={`rounded-2xl border px-4 py-3 text-sm ${
-                    message.type === "success"
-                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                        : "border-red-500/20 bg-red-500/10 text-red-300"
-                }`}>
+                <div
+                    className={`rounded-2xl border px-4 py-3 text-sm ${
+                        message.type === "success"
+                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                            : "border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300"
+                    }`}
+                >
                     {message.text}
                 </div>
             ) : null}
