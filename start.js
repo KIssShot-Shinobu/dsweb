@@ -5,6 +5,8 @@ const { URL } = require("url");
 const fs = require("fs");
 const path = require("path");
 
+process.env.APP_ROOT = process.env.APP_ROOT || __dirname;
+
 function getRequiredDatabaseUrl() {
     const databaseUrl = process.env.DATABASE_URL?.trim();
 
@@ -52,8 +54,15 @@ function startDevServer() {
 }
 
 function shouldFallbackToDev(error) {
-    const message = String(error?.message || error || "");
-    return process.platform === "win32" && message.includes("spawn EPERM");
+    const chunks = [
+        error?.message,
+        error?.stderr?.toString?.(),
+        error?.stdout?.toString?.(),
+        Array.isArray(error?.output) ? error.output.map((item) => item?.toString?.() || "").join("\n") : "",
+        error?.stack,
+    ];
+    const details = chunks.filter(Boolean).join("\n");
+    return process.platform === "win32" && details.includes("spawn EPERM");
 }
 
 run("npm install");

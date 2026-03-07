@@ -1,6 +1,7 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import path from "path";
 import { normalizeAssetUrl } from "@/lib/asset-url";
+import { getPermanentUploadTargets } from "@/lib/runtime-config";
 
 export function resolveTournamentImage(image: string | null | undefined) {
     const normalizedPath = normalizeAssetUrl(image);
@@ -9,7 +10,8 @@ export function resolveTournamentImage(image: string | null | undefined) {
         return null;
     }
 
-    const diskPath = path.join(process.cwd(), "public", normalizedPath.slice(1));
+    const relativePath = normalizedPath.slice("/uploads/".length);
+    const candidates = getPermanentUploadTargets().map((targetDir) => path.join(targetDir, relativePath));
 
-    return existsSync(diskPath) ? normalizedPath : null;
+    return candidates.some((diskPath) => existsSync(diskPath)) ? normalizedPath : null;
 }

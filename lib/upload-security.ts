@@ -1,9 +1,9 @@
-import { promises as fs } from "fs";
+﻿import { promises as fs } from "fs";
 import os from "os";
 import path from "path";
 import crypto from "crypto";
 import type { PrismaClient, GameType } from "@prisma/client";
-import { getAppUrl, getUploadDir } from "@/lib/runtime-config";
+import { getPermanentUploadTargets } from "@/lib/runtime-config";
 
 const REGISTER_UPLOAD_LIMIT_PER_HOUR = 5;
 const PENDING_UPLOAD_TTL_MS = 1000 * 60 * 60 * 24;
@@ -73,8 +73,19 @@ function getPendingUploadPath(storageKey: string) {
     return path.join(getPendingUploadDir(), storageKey);
 }
 
-function getPermanentUploadPath(storageKey: string) {
-    return path.join(path.resolve(getUploadDir()), storageKey);
+async function writePermanentUpload(storageKey: string) {
+    const pendingFile = await fs.readFile(getPendingUploadPath(storageKey));
+    const targetDirs = getPermanentUploadTargets();
+
+    await Promise.all(
+        targetDirs.map(async (targetDir) => {
+            await ensureDirectory(targetDir);
+            await fs.writeFile(path.join(targetDir, storageKey), pendingFile);
+        })
+    );
+
+    await fs.unlink(getPendingUploadPath(storageKey)).catch(() => undefined);
+    return `/uploads/${storageKey}`;
 }
 
 async function deletePendingFile(storageKey: string) {
@@ -264,8 +275,6 @@ export async function claimRegisterUploads(params: {
         },
     });
 
-    await ensureDirectory(path.resolve(getUploadDir()));
-
     for (const [gameType, uploadId] of Object.entries(params.uploads) as Array<[GameType, string | undefined]>) {
         if (!uploadId) continue;
 
@@ -274,12 +283,7 @@ export async function claimRegisterUploads(params: {
             throw new Error(`Upload ${uploadId} tidak ditemukan saat proses claim`);
         }
 
-        await moveFile(
-            getPendingUploadPath(pendingUpload.storageKey),
-            getPermanentUploadPath(pendingUpload.storageKey)
-        );
-
-        const permanentUrl = `${getAppUrl()}/uploads/${pendingUpload.storageKey}`;
+        const permanentUrl = await writePermanentUpload(pendingUpload.storageKey);
 
         await params.prisma.gameProfile.updateMany({
             where: {

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { ReactNode } from "react";
 import {
     btnOutline,
@@ -57,7 +57,7 @@ export function DashboardPanel({
     bodyClassName?: string;
 }) {
     return (
-        <section className={panelCls}>
+        <section className={`${panelCls} overflow-visible`}>
             <div className={panelHeaderCls}>
                 <div className="space-y-1">
                     <h2 className="text-base font-bold text-slate-950 dark:text-white sm:text-lg">{title}</h2>
@@ -65,7 +65,7 @@ export function DashboardPanel({
                 </div>
                 {action ? <div className="flex flex-wrap gap-2">{action}</div> : null}
             </div>
-            <div className={`${panelBodyCls} ${bodyClassName}`.trim()}>{children}</div>
+            <div className={`${panelBodyCls} overflow-visible ${bodyClassName}`.trim()}>{children}</div>
         </section>
     );
 }

@@ -62,8 +62,8 @@ export default function TreasuryPage() {
     const [submitting, setSubmitting] = useState(false);
     const [page, setPage] = useState(1);
     const [filter, setFilter] = useState<"ALL" | "MASUK" | "KELUAR">("ALL");
-    const [month, setMonth] = useState(currentMonth);
-    const [year, setYear] = useState(currentYear);
+    const [month, setMonth] = useState("ALL");
+    const [year, setYear] = useState("ALL");
     const [users, setUsers] = useState<UserOption[]>([]);
     const [usersLoading, setUsersLoading] = useState(true);
 
@@ -88,8 +88,8 @@ export default function TreasuryPage() {
     const fetchTreasury = () => {
         setLoading(true);
         const params = new URLSearchParams({
-            month: String(month),
-            year: String(year),
+            month,
+            year,
             page: String(page),
             limit: String(PER_PAGE),
         });
@@ -240,18 +240,24 @@ export default function TreasuryPage() {
             minute: "2-digit",
         });
 
-    const monthOptions = Array.from({ length: 12 }, (_, index) => {
-        const value = index + 1;
-        return {
-            value: String(value),
-            label: new Date(2000, value - 1).toLocaleString("id-ID", { month: "short" }),
-        };
-    });
+    const monthOptions = [
+        { value: "ALL", label: "Semua Bulan" },
+        ...Array.from({ length: 12 }, (_, index) => {
+            const value = index + 1;
+            return {
+                value: String(value),
+                label: new Date(2000, value - 1).toLocaleString("id-ID", { month: "short" }),
+            };
+        }),
+    ];
 
-    const yearOptions = [currentYear - 1, currentYear, currentYear + 1].map((value) => ({
-        value: String(value),
-        label: String(value),
-    }));
+    const yearOptions = [
+        { value: "ALL", label: "Semua Tahun" },
+        ...[currentYear - 1, currentYear, currentYear + 1].map((value) => ({
+            value: String(value),
+            label: String(value),
+        })),
+    ];
 
     return (
         <DashboardPageShell>
@@ -259,12 +265,12 @@ export default function TreasuryPage() {
                 <DashboardPageHeader
                     kicker="Finance Desk"
                     title="Treasury"
-                    description="Kelola kas guild, hubungkan transaksi ke user aktif bila diperlukan, dan pantau arus masuk-keluar per periode."
+                    description="Kelola kas guild, hubungkan transaksi ke user aktif bila diperlukan, dan pantau arus masuk-keluar dengan default semua periode agar sinkron dengan data dashboard."
                     actions={<button className={btnPrimary} onClick={() => setShowModal(true)}>+ Tambah Transaksi</button>}
                 />
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <DashboardMetricCard label="Saldo Periode" value={loading ? "..." : formatCurrency(balance)} meta="Posisi saldo sesuai filter bulan dan tahun" tone="accent" />
+                    <DashboardMetricCard label="Saldo Tersaring" value={loading ? "..." : formatCurrency(balance)} meta={month === "ALL" && year === "ALL" ? "Default menampilkan seluruh periode" : "Posisi saldo sesuai filter periode"} tone="accent" />
                     <DashboardMetricCard label="Pemasukan" value={loading ? "..." : formatCurrency(income)} meta="Total transaksi masuk" tone="success" />
                     <DashboardMetricCard label="Pengeluaran" value={loading ? "..." : formatCurrency(expense)} meta="Total transaksi keluar" tone="danger" />
                     <DashboardMetricCard label="Jumlah Transaksi" value={loading ? "..." : total} meta="Total record pada periode aktif" />
@@ -273,10 +279,10 @@ export default function TreasuryPage() {
                 <DashboardPanel title="Filter Periode" description="Pilih bulan, tahun, dan tipe transaksi untuk mempersempit daftar kas guild.">
                     <div className={filterBarCls}>
                         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_140px_180px_auto]">
-                            <FormSelect value={String(month)} onChange={(value) => { setMonth(Number(value)); setPage(1); }} options={monthOptions} />
-                            <FormSelect value={String(year)} onChange={(value) => { setYear(Number(value)); setPage(1); }} options={yearOptions} />
+                            <FormSelect value={month} onChange={(value) => { setMonth(value); setPage(1); }} options={monthOptions} />
+                            <FormSelect value={year} onChange={(value) => { setYear(value); setPage(1); }} options={yearOptions} />
                             <FormSelect value={filter} onChange={(value) => { setFilter(value as "ALL" | "MASUK" | "KELUAR"); setPage(1); }} options={filterOptions} />
-                            <button className={btnOutline} onClick={() => { setMonth(currentMonth); setYear(currentYear); setFilter("ALL"); setPage(1); }}>
+                            <button className={btnOutline} onClick={() => { setMonth("ALL"); setYear("ALL"); setFilter("ALL"); setPage(1); }}>
                                 Reset Filter
                             </button>
                         </div>

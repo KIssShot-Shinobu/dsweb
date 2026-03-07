@@ -1,18 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
-import { getMaxFileSize, getUploadDir } from "@/lib/runtime-config";
+import { getMaxFileSize, getPermanentUploadTargets } from "@/lib/runtime-config";
 
-const UPLOAD_DIR = getUploadDir();
 const MAX_FILE_SIZE = getMaxFileSize();
 const ALLOWED_EXTENSIONS = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+const MIME_EXTENSION_MAP = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/webp": "webp",
+} as const;
 
 export async function POST(request: NextRequest) {
     try {
-        // Auth via JWT
         const decoded = await verifyToken(request.cookies.get("ds_auth")?.value || "");
         if (!decoded || !decoded.userId) {
             return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
@@ -32,30 +36,29 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "Format tidak didukung. Harap gunakan PNG, JPG, atau WEBP" }, { status: 400 });
         }
 
-        const fileExt = file.name.split('.').pop();
+        const fileExt = MIME_EXTENSION_MAP[file.type as keyof typeof MIME_EXTENSION_MAP] || "jpg";
         const uuid = crypto.randomUUID();
         const uniqueFilename = `${Date.now()}-${uuid}.${fileExt}`;
-        const uploadPath = path.resolve(UPLOAD_DIR);
-
-        // Pastikan Root Directory tersedia
-        await fs.mkdir(uploadPath, { recursive: true });
-
-        // Tulis Buffer ke file FS lokal
         const buffer = Buffer.from(await file.arrayBuffer());
-        await fs.writeFile(path.join(uploadPath, uniqueFilename), buffer);
+        const uploadTargets = getPermanentUploadTargets();
+
+        await Promise.all(
+            uploadTargets.map(async (targetDir) => {
+                await fs.mkdir(targetDir, { recursive: true });
+                await fs.writeFile(path.join(targetDir, uniqueFilename), buffer);
+            })
+        );
 
         const publicPath = `/uploads/${uniqueFilename}`;
 
-        // Audit Logging Action
         await logAudit({
             userId: decoded.userId,
             action: "FILE_UPLOADED",
             targetType: "File",
-            details: { size: file.size, type: file.type, url: publicPath }
+            details: { size: file.size, type: file.type, url: publicPath },
         });
 
         return NextResponse.json({ success: true, url: publicPath }, { status: 200 });
-
     } catch (error) {
         console.error("Upload error:", error);
         return NextResponse.json({ success: false, message: "Internal Server Error" }, { status: 500 });
