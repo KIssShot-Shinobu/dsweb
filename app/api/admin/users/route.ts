@@ -10,12 +10,14 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
+    const role = searchParams.get("role");
     const search = searchParams.get("search") || "";
     const page = parseInt(searchParams.get("page") || "1");
     const perPage = parseInt(searchParams.get("perPage") || "20");
 
     const where: any = {
         ...(status && status !== "ALL" ? { status } : {}),
+        ...(role && role !== "ALL" ? { role } : {}),
         ...(search ? {
             OR: [
                 { fullName: { contains: search } },

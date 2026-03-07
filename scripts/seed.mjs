@@ -1,5 +1,5 @@
-// Seed script: 50 members, 50 tournaments, 50 treasury transactions
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
@@ -20,8 +20,7 @@ function randomDate(start, end) {
     return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 }
 
-const ranks = ["Legend", "King of Games", "Platinum", "Gold", "Silver", "Bronze", "Rookie"];
-const roles = ["MEMBER", "MEMBER", "MEMBER", "OFFICER", "LEADER"];
+const roles = ["MEMBER", "MEMBER", "MEMBER", "OFFICER", "ADMIN"];
 const gameTypes = ["DUEL_LINKS", "MASTER_DUEL"];
 const statuses = ["OPEN", "ONGOING", "COMPLETED"];
 
@@ -61,26 +60,39 @@ const txDescriptions = [
     "Sponsorship dari brand", "Saldo awal guild", "Pemasukan dari streaming",
     "Biaya design banner", "Pembelian aset digital", "Transfer antar rekening",
     "Hadiah tournament juara 2", "Hadiah tournament juara 3", "Biaya pendaftaran event luar",
-    "Subsidi dari komunitas", "Kontribusi member aktif",
+    "Subsidi dari komunitas", "Kontribusi user aktif",
 ];
 
 async function main() {
-    console.log("Seeding 50 members...");
-    const createdMembers = [];
+    console.log("Seeding 50 users...");
+    const createdUsers = [];
+    const passwordHash = await bcrypt.hash("SeedUser123!", 10);
+
     for (let i = 0; i < 50; i++) {
-        const member = await prisma.member.create({
+        const fullName = memberNames[i];
+        const user = await prisma.user.create({
             data: {
-                name: memberNames[i],
-                gameId: `DS${String(1000 + i).padStart(6, "0")}`,
-                rank: randomFromArray(ranks),
+                fullName,
+                email: `seed-user-${i + 1}@duelstandby.local`,
+                password: passwordHash,
+                city: "Jakarta",
+                status: "ACTIVE",
                 role: randomFromArray(roles),
-                joinedAt: randomDate(new Date("2024-01-01"), new Date()),
+                createdAt: randomDate(new Date("2024-01-01"), new Date()),
+                gameProfiles: {
+                    create: {
+                        gameType: randomFromArray(gameTypes),
+                        gameId: `DS${String(1000 + i).padStart(6, "0")}`,
+                        ign: `[DS] ${fullName}`,
+                        createdAt: randomDate(new Date("2024-01-01"), new Date()),
+                    },
+                },
             },
         });
-        createdMembers.push(member);
+        createdUsers.push(user);
         process.stdout.write(`\r  -> ${i + 1}/50`);
     }
-    console.log("\nMembers done.");
+    console.log("\nUsers done.");
 
     console.log("Seeding 50 tournaments...");
     for (let i = 0; i < 50; i++) {
@@ -91,7 +103,7 @@ async function main() {
                 startDate: randomDate(new Date("2025-01-01"), new Date("2026-12-31")),
                 prizePool: Math.floor(Math.random() * 50) * 10000,
                 status: randomFromArray(statuses),
-                description: "Open to all members. Prizes for top 3 finishers.",
+                description: "Open to all users. Prizes for top 3 finishers.",
             },
         });
         process.stdout.write(`\r  -> ${i + 1}/50`);
@@ -102,14 +114,14 @@ async function main() {
     for (let i = 0; i < 50; i++) {
         const isIncome = Math.random() > 0.35;
         const amount = Math.floor((Math.random() * 39 + 1)) * 5000;
-        const member = Math.random() > 0.4 ? randomFromArray(createdMembers) : null;
+        const user = Math.random() > 0.4 ? randomFromArray(createdUsers) : null;
 
         await prisma.treasury.create({
             data: {
                 amount: isIncome ? amount : -amount,
                 description: randomFromArray(txDescriptions),
                 createdAt: randomDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), new Date()),
-                memberId: member?.id ?? null,
+                userId: user?.id ?? null,
             },
         });
         process.stdout.write(`\r  -> ${i + 1}/50`);
@@ -120,8 +132,8 @@ async function main() {
 }
 
 main()
-    .catch((e) => {
-        console.error(e);
+    .catch((error) => {
+        console.error(error);
         process.exit(1);
     })
     .finally(() => prisma.$disconnect());

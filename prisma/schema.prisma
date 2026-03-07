@@ -58,18 +58,6 @@ enum Gender {
   PREFER_NOT_TO_SAY
 }
 
-// ─── Existing Models (unchanged) ─────────────────────────────────────────────
-
-model Member {
-  id           String     @id @default(cuid())
-  name         String
-  gameId       String     @unique @db.VarChar(191)
-  rank         String?
-  role         String     @default("MEMBER")
-  joinedAt     DateTime   @default(now())
-  transactions Treasury[]
-}
-
 model Tournament {
   id          String           @id @default(cuid())
   title       String
@@ -104,8 +92,8 @@ model Treasury {
   amount      Int
   description String
   createdAt   DateTime @default(now())
-  memberId    String?
-  member      Member?  @relation(fields: [memberId], references: [id])
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 // ─── New: Auth / Registration System ─────────────────────────────────────────
@@ -148,6 +136,7 @@ model User {
   sessions        Session[]
   badges          UserBadge[]
   reputationLogs  ReputationLog[]
+  treasuryEntries Treasury[]
 }
 
 model Badge {

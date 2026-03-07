@@ -68,9 +68,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const messages: Record<string, string> = {
-        ACTIVE: `${target.fullName} telah disetujui sebagai member.`,
+        ACTIVE: `${target.fullName} telah diaktifkan.`,
         REJECTED: `${target.fullName} telah ditolak.`,
-        BANNED: `${target.fullName} telah dibanned.`,
+        BANNED: `${target.fullName} telah diblokir.`,
     };
 
     return NextResponse.json({ success: true, message: messages[status] ?? "Status diperbarui", data: updated });

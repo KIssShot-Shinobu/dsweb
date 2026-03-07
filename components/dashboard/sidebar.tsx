@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/context/SidebarContext";
-import { useEffect, useState } from "react";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import {
     HelpCircle,
     Home,
@@ -11,11 +11,9 @@ import {
     LogOut,
     ScrollText,
     Settings,
-    Shield,
     Trophy,
     User,
     UserCheck,
-    Users,
     Wallet,
     X,
 } from "lucide-react";
@@ -30,19 +28,21 @@ const ICONS = {
     profile: User,
     settings: Settings,
     help: HelpCircle,
-    members: Users,
     tournaments: Trophy,
     treasury: Wallet,
     dashboard: LayoutDashboard,
     users: UserCheck,
-    admin: Shield,
     audit: ScrollText,
     logout: LogOut,
     home: Home,
 } as const;
 
 const ROLE_LEVEL: Record<string, number> = {
-    USER: 0, MEMBER: 1, OFFICER: 2, ADMIN: 3, FOUNDER: 4,
+    USER: 0,
+    MEMBER: 1,
+    OFFICER: 2,
+    ADMIN: 3,
+    FOUNDER: 4,
 };
 
 const ALL_MENU: MenuSection[] = [
@@ -58,7 +58,7 @@ const ALL_MENU: MenuSection[] = [
         section: "GUILD",
         minRole: "OFFICER",
         items: [
-            { name: "Members Guild", href: "/dashboard/members", icon: "members", minRole: "OFFICER" },
+            { name: "Users", href: "/dashboard/users", icon: "users", minRole: "OFFICER" },
             { name: "Tournaments", href: "/dashboard/tournaments", icon: "tournaments", minRole: "ADMIN" },
             { name: "Treasury", href: "/dashboard/treasury", icon: "treasury", minRole: "ADMIN" },
         ],
@@ -68,8 +68,6 @@ const ALL_MENU: MenuSection[] = [
         minRole: "ADMIN",
         items: [
             { name: "Dashboard", href: "/dashboard", icon: "dashboard", minRole: "ADMIN" },
-            { name: "Registrasi User", href: "/dashboard/admin/users", icon: "users", minRole: "ADMIN" },
-            { name: "Admin Panel", href: "/dashboard/admin", icon: "admin", minRole: "ADMIN" },
             { name: "Audit Logs", href: "/dashboard/audit-logs", icon: "audit", minRole: "ADMIN" },
         ],
     },
@@ -78,22 +76,11 @@ const ALL_MENU: MenuSection[] = [
 export function Sidebar() {
     const pathname = usePathname();
     const { isOpen, close } = useSidebar();
-    const [userRole, setUserRole] = useState<string>("USER");
-    const [userName, setUserName] = useState<string>("");
-    const [userStatus, setUserStatus] = useState<string>("PENDING");
+    const { user } = useCurrentUser();
 
-    useEffect(() => {
-        fetch("/api/auth/me")
-            .then((r) => r.json())
-            .then((d) => {
-                if (d.success && d.user) {
-                    setUserRole(d.user.role);
-                    setUserName(d.user.fullName);
-                    setUserStatus(d.user.status);
-                }
-            })
-            .catch(() => { });
-    }, []);
+    const userRole = user?.role ?? "USER";
+    const userName = user?.fullName ?? "";
+    const userStatus = user?.status ?? "PENDING";
 
     const canAccess = (minRole?: string) => {
         if (!minRole) return true;
@@ -101,70 +88,74 @@ export function Sidebar() {
     };
 
     const getInitials = (name: string) =>
-        name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "DS";
+        name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2) || "DS";
 
-    const statusColor = userStatus === "ACTIVE" ? "bg-emerald-500" : userStatus === "PENDING" ? "bg-yellow-500" : "bg-red-500";
+    const statusColor =
+        userStatus === "ACTIVE" ? "bg-emerald-500" : userStatus === "PENDING" ? "bg-yellow-500" : "bg-red-500";
+
+    const bestMatch = ALL_MENU.flatMap((section) => section.items)
+        .filter((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
+        .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
     return (
         <>
-            {isOpen && (
-                <div className="fixed inset-0 bg-black/50 z-20 md:hidden" onClick={close} />
-            )}
+            {isOpen && <div className="fixed inset-0 z-20 bg-black/50 md:hidden" onClick={close} />}
 
-            <aside className={`fixed top-0 left-0 h-full w-64 z-30 bg-white dark:bg-[#111] flex flex-col border-r border-gray-200 dark:border-white/5 transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
-                <div className="flex items-center justify-between px-5 h-16 border-b border-gray-200 dark:border-white/5 flex-shrink-0">
+            <aside className={`fixed top-0 left-0 z-30 flex h-full w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out dark:border-white/5 dark:bg-[#111] ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
+                <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 px-5 dark:border-white/5">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-ds-amber flex items-center justify-center text-black font-bold text-sm">DS</div>
-                        <span className="text-gray-900 dark:text-white font-semibold text-base tracking-tight">DuelStandby</span>
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ds-amber text-sm font-bold text-black">DS</div>
+                        <span className="text-base font-semibold tracking-tight text-gray-900 dark:text-white">DuelStandby</span>
                     </div>
                     <button
                         onClick={close}
-                        className="md:hidden w-8 h-8 flex items-center justify-center text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white md:hidden"
                         aria-label="Close"
                     >
-                        <X className="w-4 h-4" />
+                        <X className="h-4 w-4" />
                     </button>
                 </div>
 
                 {userName && (
-                    <div className="px-3 py-3 border-b border-gray-200 dark:border-white/5">
-                        <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-100 dark:bg-white/5">
+                    <div className="border-b border-gray-200 px-3 py-3 dark:border-white/5">
+                        <div className="flex items-center gap-3 rounded-xl bg-gray-100 px-3 py-2 dark:bg-white/5">
                             <div className="relative">
-                                <div className="w-8 h-8 rounded-lg bg-ds-amber flex items-center justify-center text-black text-xs font-bold">{getInitials(userName)}</div>
-                                <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#161616] ${statusColor}`} />
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ds-amber text-xs font-bold text-black">
+                                    {getInitials(userName)}
+                                </div>
+                                <div className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-[#161616] ${statusColor}`} />
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">{userName}</div>
-                                <div className="text-[10px] text-gray-500 dark:text-white/30 uppercase tracking-wider">{userRole}</div>
+                            <div className="min-w-0 flex-1">
+                                <div className="truncate text-xs font-semibold text-gray-900 dark:text-white">{userName}</div>
+                                <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-white/30">{userRole}</div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                <nav className="flex-1 overflow-y-auto py-4 px-3">
+                <nav className="flex-1 overflow-y-auto px-3 py-4">
                     {ALL_MENU.map((section) => {
                         if (section.minRole && !canAccess(section.minRole)) return null;
                         const visibleItems = section.items.filter((item) => canAccess(item.minRole));
                         if (visibleItems.length === 0) return null;
 
-                        const bestMatch = ALL_MENU.flatMap(s => s.items)
-                            .filter(i => pathname === i.href || pathname.startsWith(i.href + "/"))
-                            .sort((a, b) => b.href.length - a.href.length)[0]?.href;
-
                         return (
                             <div key={section.section} className="mb-4">
-                                <div className="px-3 mb-1.5 text-[10px] font-semibold tracking-widest text-gray-500 dark:text-white/30 uppercase">{section.section}</div>
+                                <div className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-white/30">
+                                    {section.section}
+                                </div>
                                 {visibleItems.map((item) => {
                                     const isActive = item.href === bestMatch || (item.href === "/dashboard" && pathname === "/dashboard");
                                     const ItemIcon = ICONS[item.icon];
+
                                     return (
                                         <Link
                                             key={item.href}
                                             href={item.href}
                                             onClick={close}
-                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 mb-0.5 ${isActive ? "bg-ds-amber text-black" : "text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5"}`}
+                                            className={`mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 ${isActive ? "bg-ds-amber text-black" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"}`}
                                         >
-                                            <ItemIcon className="w-4 h-4" />
+                                            <ItemIcon className="h-4 w-4" />
                                             <span>{item.name}</span>
                                         </Link>
                                     );
@@ -174,16 +165,19 @@ export function Sidebar() {
                     })}
                 </nav>
 
-                <div className="px-3 pb-4 flex-shrink-0 space-y-0.5 border-t border-gray-200 dark:border-white/5 pt-3">
+                <div className="flex-shrink-0 space-y-0.5 border-t border-gray-200 px-3 pt-3 pb-4 dark:border-white/5">
                     <button
-                        onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 dark:text-white/40 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/5 transition-all"
+                        onClick={async () => {
+                            await fetch("/api/auth/logout", { method: "POST" });
+                            window.location.href = "/login";
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 transition-all hover:bg-red-500/5 hover:text-red-500 dark:text-white/40 dark:hover:text-red-400"
                     >
-                        <LogOut className="w-4 h-4" />
+                        <LogOut className="h-4 w-4" />
                         <span>Logout</span>
                     </button>
-                    <Link href="/" onClick={close} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-all">
-                        <Home className="w-4 h-4" />
+                    <Link href="/" onClick={close} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white">
+                        <Home className="h-4 w-4" />
                         <span>Back to Home</span>
                     </Link>
                 </div>

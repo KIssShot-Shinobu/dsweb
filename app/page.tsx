@@ -21,7 +21,7 @@ export default async function Home() {
 
   try {
     const [members, totalTournaments, dbTournaments] = await Promise.all([
-      prisma.member.count(),
+      prisma.user.count({ where: { status: "ACTIVE" } }),
       prisma.tournament.count(),
       prisma.tournament.findMany({
         select: {

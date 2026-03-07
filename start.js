@@ -1,4 +1,27 @@
+require("dotenv/config");
+
 const { execSync } = require("child_process");
+const { URL } = require("url");
+
+function getRequiredDatabaseUrl() {
+    const databaseUrl = process.env.DATABASE_URL?.trim();
+
+    if (!databaseUrl) {
+        throw new Error(
+            "DATABASE_URL is not set. Add it in Pterodactyl server variables or provide it in a .env file before starting the app."
+        );
+    }
+
+    try {
+        new URL(databaseUrl);
+    } catch {
+        throw new Error(
+            "DATABASE_URL is invalid. If the database password contains reserved characters such as @, :, /, ?, or #, URL-encode the password first."
+        );
+    }
+
+    return databaseUrl;
+}
 
 function run(cmd) {
     console.log(`\n=== ${cmd} ===`);
@@ -6,6 +29,8 @@ function run(cmd) {
 }
 
 run("npm install");
+getRequiredDatabaseUrl();
+run("node scripts/migrate-legacy-member-schema.js");
 run("npx prisma generate");
 run("npx prisma db push");
 run("npm run build");
@@ -34,10 +59,6 @@ copyDir("public", ".next/standalone/public");
 
 // Copy database and config files to standalone
 console.log("\n=== Copying database files ===");
-if (fs.existsSync("dev.db")) {
-    fs.copyFileSync("dev.db", ".next/standalone/dev.db");
-    console.log("Copied dev.db to standalone");
-}
 if (fs.existsSync("prisma")) {
     copyDir("prisma", ".next/standalone/prisma");
     console.log("Copied prisma/ to standalone");

@@ -2,18 +2,22 @@
 
 import { ThemeToggle } from "./theme-toggle";
 import { useSidebar } from "@/context/SidebarContext";
+import { useCurrentUser } from "@/hooks/use-current-user";
+
+function getInitials(name: string) {
+    return name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2) || "DS";
+}
 
 export function Header() {
     const { toggle } = useSidebar();
+    const { user } = useCurrentUser();
 
     return (
-        <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-gray-100 dark:border-white/5 bg-white dark:bg-[#161616] flex-shrink-0 gap-3">
-            {/* Left: hamburger + search */}
-            <div className="flex items-center gap-3 min-w-0">
-                {/* Hamburger — only on mobile */}
+        <header className="flex h-16 flex-shrink-0 items-center justify-between gap-3 border-b border-gray-100 bg-white px-4 dark:border-white/5 dark:bg-[#161616] md:px-6">
+            <div className="flex min-w-0 items-center gap-3">
                 <button
                     onClick={toggle}
-                    className="md:hidden w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
+                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-gray-500 transition-all hover:bg-gray-100 dark:text-white/50 dark:hover:bg-white/5 md:hidden"
                     aria-label="Open menu"
                 >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -23,8 +27,7 @@ export function Header() {
                     </svg>
                 </button>
 
-                {/* Search — hidden on very small screens */}
-                <div className="hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-400 w-52 lg:w-64 focus-within:border-ds-amber transition-colors">
+                <div className="hidden w-52 items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50 px-4 py-2 text-gray-400 transition-colors focus-within:border-ds-amber dark:border-white/10 dark:bg-white/5 sm:flex lg:w-64">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="11" cy="11" r="8" />
                         <path d="m21 21-4.3-4.3" />
@@ -32,30 +35,32 @@ export function Header() {
                     <input
                         type="text"
                         placeholder="Search..."
-                        className="bg-transparent text-sm text-gray-700 dark:text-white/70 outline-none placeholder:text-gray-400 dark:placeholder:text-white/30 w-full"
+                        className="w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400 dark:text-white/70 dark:placeholder:text-white/30"
                     />
                 </div>
             </div>
 
-            {/* Right: actions + user */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="flex flex-shrink-0 items-center gap-1.5">
                 <ThemeToggle />
 
-                <button className="w-9 h-9 rounded-xl hidden sm:flex items-center justify-center text-gray-400 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-600 dark:hover:text-white transition-all" title="Notifications">
+                <button className="hidden h-9 w-9 items-center justify-center rounded-xl text-gray-400 transition-all hover:bg-gray-100 hover:text-gray-600 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white sm:flex" title="Notifications">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
                         <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
                     </svg>
                 </button>
 
-                {/* User */}
-                <div className="flex items-center gap-2 ml-1 pl-2 border-l border-gray-100 dark:border-white/10">
-                    <div className="w-8 h-8 rounded-full bg-ds-amber flex items-center justify-center text-black font-bold text-sm flex-shrink-0">
-                        A
+                <div className="ml-1 flex items-center gap-2 border-l border-gray-100 pl-2 dark:border-white/10">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-ds-amber text-sm font-bold text-black">
+                        {getInitials(user?.fullName ?? "Duel Standby")}
                     </div>
                     <div className="hidden lg:flex flex-col">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white leading-none">Admin</span>
-                        <span className="text-xs text-gray-400 dark:text-white/40 mt-0.5">admin@duelstandby.com</span>
+                        <span className="text-sm font-semibold leading-none text-gray-900 dark:text-white">
+                            {user?.fullName ?? "Dashboard User"}
+                        </span>
+                        <span className="mt-0.5 text-xs text-gray-400 dark:text-white/40">
+                            {user?.email ?? "login required"}
+                        </span>
                     </div>
                 </div>
             </div>

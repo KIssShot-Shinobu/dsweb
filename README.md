@@ -7,7 +7,7 @@ Aplikasi web komunitas DuelStandby berbasis Next.js 16 + Prisma + MySQL.
 Project ini punya 2 area utama:
 
 - Public website (`/`) untuk branding komunitas + daftar tournament dari database.
-- Dashboard (`/dashboard/*`) untuk manajemen member, tournament, treasury, audit, dan profile.
+- Dashboard (`/dashboard/*`) untuk manajemen users, tournament, treasury, audit, dan profile.
 
 Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 `USER < MEMBER < OFFICER < ADMIN < FOUNDER`.
@@ -19,14 +19,15 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - Manajemen user approval/admin tools.
 - CRUD tournament + register participant tournament.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
+- Dashboard admin disatukan ke halaman `/dashboard`, termasuk ringkasan registrasi user dan quick action approval.
 - Hapus tournament di dashboard memakai confirm modal + undo 5 detik (konsisten dengan members/treasury).
 - Form tournament mendukung field `Image URL` + preview gambar pada create/edit.
 - Form tournament juga mendukung upload file gambar langsung ke `/api/upload` (URL akan terisi otomatis).
 - List tournament di dashboard menampilkan thumbnail image kecil per row.
-- Form di dashboard `tournament`, `members`, dan `treasury` menggunakan custom dropdown konsisten (tidak lagi native select browser).
+- Form di dashboard `tournament`, `users`, dan `treasury` menggunakan custom dropdown konsisten (tidak lagi native select browser).
 - Style form/button dashboard dipusatkan di `components/dashboard/form-styles.ts` agar konsisten lintas halaman.
 - Aksi row list (`Edit/Hapus`) dipusatkan di `components/dashboard/row-actions.tsx` agar pola tabel konsisten.
-- Manajemen members guild.
+- Halaman `Users` (`/dashboard/users`) menjadi pusat tunggal untuk registrasi user, member aktif, role, dan status akun.
 - Treasury transaksi + analytics ringkas.
 - Upload file gambar (screenshot/profile) via API.
 - Audit log aktivitas user/admin.
@@ -68,7 +69,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - `context/ThemeContext.tsx`: state tema global + sinkronisasi `localStorage` (`ds-theme`)
 - `prisma/schema.prisma`: skema database
 - `scripts/seed-admin.js`: seed admin utama
-- `scripts/seed.mjs`: seed 50 member, 50 tournament, 50 treasury
+- `scripts/seed.mjs`: seed 50 user, 50 tournament, 50 treasury
 
 ## Prasyarat
 
@@ -131,7 +132,7 @@ node scripts/seed.mjs
 
 Isi:
 
-- 50 members
+- 50 users
 - 50 tournaments
 - 50 treasury transactions
 
@@ -161,7 +162,8 @@ Tournament:
 
 Lainnya:
 
-- `GET/POST /api/members`, `PUT/DELETE /api/members/:id`
+- `GET/POST /api/admin/users`
+- `PUT /api/admin/users/:id/status`
 - `GET/POST /api/treasury`, `PUT/DELETE /api/treasury/:id`
 - `POST /api/upload`
 - `POST /api/upload/public` (khusus upload screenshot saat registrasi sebelum login)
@@ -180,7 +182,7 @@ Catatan: beberapa menu mengikuti pengecekan role di frontend dan backend; backen
 
 Untuk endpoint penting (terutama operasi write `POST/PUT/DELETE`), audit log wajib ditulis.
 
-- Member: create/update/delete sudah tercatat (`MEMBER_CREATED`, `MEMBER_UPDATED`, `MEMBER_DELETED`).
+- User approval dan role change sudah tercatat (`MEMBER_APPROVED`, `MEMBER_REJECTED`, `MEMBER_BANNED`, `ROLE_CHANGED`).
 - Treasury: add/update/delete sudah tercatat (`TREASURY_ADDED`, `TREASURY_UPDATED`, `TREASURY_DELETED`).
 - Tournament: create/update/delete sudah tercatat.
 - Auth/Profile/Upload: event penting sudah tercatat.
@@ -234,6 +236,18 @@ npx prisma db push
 
 Lalu restart dev server.
 
+### `prisma db push` gagal di Pterodactyl karena `datasource.url` tidak ada
+
+Ini berarti `DATABASE_URL` tidak terbaca saat container start.
+
+- Pastikan variable `DATABASE_URL` benar-benar diisi di panel Pterodactyl atau tersedia di file `.env`.
+- Jika password MySQL mengandung karakter khusus seperti `@`, `:`, `/`, `?`, atau `#`, password wajib di-URL-encode sebelum dimasukkan ke connection string.
+- Format yang benar:
+
+```env
+DATABASE_URL="mysql://USERNAME:ENCODED_PASSWORD@HOST:3306/DATABASE_NAME?connection_limit=1"
+```
+
 ### Error PowerShell `npm.ps1 cannot be loaded`
 
 Alternatif cepat jalankan command via `cmd`:
@@ -245,6 +259,8 @@ cmd /c npm run dev
 ## Deploy Notes
 
 - Pastikan `DATABASE_URL`, `JWT_SECRET`, `NEXT_PUBLIC_APP_URL`, `UPLOAD_DIR` terpasang di server.
+- Untuk Pterodactyl, isi `DATABASE_URL` di server variables. Jangan mengandalkan `prisma db push` tanpa env ini.
+- Jika password DB memakai karakter khusus, gunakan versi URL-encoded pada `DATABASE_URL`.
 - Pastikan folder upload persistent jika deploy container/panel.
 - Jalankan `npx prisma generate` dan `npx prisma db push` di environment target.
 

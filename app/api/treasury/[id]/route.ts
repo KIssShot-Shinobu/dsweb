@@ -5,35 +5,31 @@ import { logAudit } from "@/lib/audit-logger";
 
 type Params = Promise<{ id: string }>;
 
-// GET /api/treasury/[id] - Get a single transaction
 export async function GET(request: NextRequest, { params }: { params: Params }) {
     try {
         const { id } = await params;
         const transaction = await prisma.treasury.findUnique({
             where: { id },
             include: {
-                member: true,
+                user: {
+                    select: {
+                        fullName: true,
+                    },
+                },
             },
         });
 
         if (!transaction) {
-            return NextResponse.json(
-                { error: "Transaction not found" },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
         }
 
         return NextResponse.json(transaction);
     } catch (error) {
         console.error("Error fetching transaction:", error);
-        return NextResponse.json(
-            { error: "Failed to fetch transaction" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to fetch transaction" }, { status: 500 });
     }
 }
 
-// PUT /api/treasury/[id] - Update a transaction
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
     try {
         const token = await getTokenFromCookie();
@@ -44,7 +40,7 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
 
         const { id } = await params;
         const body = await request.json();
-        const { amount, description, memberId } = body;
+        const { amount, description, userId } = body;
 
         const previous = await prisma.treasury.findUnique({ where: { id } });
 
@@ -53,10 +49,14 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
             data: {
                 ...(amount !== undefined && { amount }),
                 ...(description && { description }),
-                ...(memberId !== undefined && { memberId }),
+                ...(userId !== undefined && { userId }),
             },
             include: {
-                member: true,
+                user: {
+                    select: {
+                        fullName: true,
+                    },
+                },
             },
         });
 
@@ -66,28 +66,31 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
             targetId: transaction.id,
             targetType: "Treasury",
             details: {
-                before: previous ? { amount: previous.amount, description: previous.description, memberId: previous.memberId } : null,
-                after: { amount: transaction.amount, description: transaction.description, memberId: transaction.memberId }
-            }
+                before: previous
+                    ? {
+                        amount: previous.amount,
+                        description: previous.description,
+                        userId: previous.userId,
+                    }
+                    : null,
+                after: {
+                    amount: transaction.amount,
+                    description: transaction.description,
+                    userId: transaction.userId,
+                },
+            },
         });
 
         return NextResponse.json(transaction);
     } catch (error: unknown) {
         console.error("Error updating transaction:", error);
         if (error instanceof Error && error.message.includes("Record to update not found")) {
-            return NextResponse.json(
-                { error: "Transaction not found" },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
         }
-        return NextResponse.json(
-            { error: "Failed to update transaction" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to update transaction" }, { status: 500 });
     }
 }
 
-// DELETE /api/treasury/[id] - Delete a transaction
 export async function DELETE(request: NextRequest, { params }: { params: Params }) {
     try {
         const token = await getTokenFromCookie();
@@ -106,21 +109,19 @@ export async function DELETE(request: NextRequest, { params }: { params: Params 
             action: "TREASURY_DELETED",
             targetId: id,
             targetType: "Treasury",
-            details: { amount: deleted.amount, description: deleted.description, memberId: deleted.memberId }
+            details: {
+                amount: deleted.amount,
+                description: deleted.description,
+                userId: deleted.userId,
+            },
         });
 
         return NextResponse.json({ message: "Transaction deleted successfully" });
     } catch (error: unknown) {
         console.error("Error deleting transaction:", error);
         if (error instanceof Error && error.message.includes("Record to delete does not exist")) {
-            return NextResponse.json(
-                { error: "Transaction not found" },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
         }
-        return NextResponse.json(
-            { error: "Failed to delete transaction" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to delete transaction" }, { status: 500 });
     }
 }
