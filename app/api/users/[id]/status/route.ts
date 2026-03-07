@@ -41,7 +41,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     let auditAction: AuditActionType | null = null;
     if (status === "ACTIVE") auditAction = AUDIT_ACTIONS.USER_APPROVED;
-    else if (status === "REJECTED") auditAction = AUDIT_ACTIONS.USER_REJECTED;
     else if (status === "BANNED") auditAction = AUDIT_ACTIONS.USER_BANNED;
 
     if (auditAction) {
@@ -68,7 +67,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const messages: Record<string, string> = {
         ACTIVE: `${target.fullName} telah diaktifkan.`,
-        REJECTED: `${target.fullName} telah ditolak.`,
         BANNED: `${target.fullName} telah diblokir.`,
     };
 

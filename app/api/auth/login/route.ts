@@ -37,14 +37,6 @@ export async function POST(req: NextRequest) {
             }
 
             const blockedMessages: Record<string, { message: string; status: number }> = {
-                PENDING: {
-                    message: "Akun Anda masih menunggu persetujuan admin. Harap bersabar.",
-                    status: 403,
-                },
-                REJECTED: {
-                    message: "Pendaftaran Anda telah ditolak. Silakan hubungi admin.",
-                    status: 403,
-                },
                 BANNED: {
                     message: "Akun Anda telah diblokir. Silakan hubungi admin.",
                     status: 403,

@@ -53,9 +53,7 @@ export async function GET() {
 
         const [
             totalUsers,
-            pendingUsers,
             activeUsers,
-            rejectedUsers,
             bannedUsers,
             openTournaments,
             ongoingTournaments,
@@ -67,9 +65,7 @@ export async function GET() {
             weeklyTransactions,
         ] = await Promise.all([
             prisma.user.count(),
-            prisma.user.count({ where: { status: "PENDING" } }),
             prisma.user.count({ where: { status: "ACTIVE" } }),
-            prisma.user.count({ where: { status: "REJECTED" } }),
             prisma.user.count({ where: { status: "BANNED" } }),
             prisma.tournament.count({ where: { status: "OPEN" } }),
             prisma.tournament.count({ where: { status: "ONGOING" } }),
@@ -138,9 +134,7 @@ export async function GET() {
                 },
                 userStats: {
                     total: totalUsers,
-                    pending: pendingUsers,
                     active: activeUsers,
-                    rejected: rejectedUsers,
                     banned: bannedUsers,
                 },
                 recentActiveUsers,

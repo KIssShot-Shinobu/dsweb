@@ -99,7 +99,7 @@ export const passwordChangeSchema = z
 
 // ─── Approve / Reject Schema ──────────────────────────────────────────────────
 export const approveSchema = z.object({
-    status: z.enum(["ACTIVE", "REJECTED", "BANNED"]),
+    status: z.enum(["ACTIVE", "BANNED"]),
     reason: z.string().optional(),
     role: z.enum(["USER", "MEMBER", "OFFICER", "ADMIN", "FOUNDER"]).optional(),
 });

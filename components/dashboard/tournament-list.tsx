@@ -1,5 +1,7 @@
 "use client";
 
+import { DashboardEmptyState, DashboardPanel } from "@/components/dashboard/page-shell";
+
 interface Tournament {
     id: string;
     title: string;
@@ -15,7 +17,7 @@ const getStatusBadge = (status: string) => {
         case "ONGOING":
             return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
         case "COMPLETED":
-            return "bg-gray-400/10 text-gray-400 border-gray-400/20";
+            return "bg-slate-400/10 text-slate-400 border-slate-400/20";
         case "CANCELLED":
             return "bg-red-500/10 text-red-400 border-red-500/20";
         default:
@@ -30,8 +32,7 @@ export function TournamentList({
     tournaments: Tournament[];
     loading?: boolean;
 }) {
-    const getGameIcon = (gameType: string) =>
-        gameType.toLowerCase().includes("master") ? "MD" : "DL";
+    const getGameIcon = (gameType: string) => (gameType.toLowerCase().includes("master") ? "MD" : "DL");
 
     const formatDate = (dateString: string) =>
         new Date(dateString).toLocaleDateString("id-ID", {
@@ -47,66 +48,55 @@ export function TournamentList({
             minimumFractionDigits: 0,
         }).format(amount);
 
-    if (loading) {
-        return (
-            <div className="rounded-2xl border border-gray-100 bg-white dark:border-white/5 dark:bg-[#1a1a1a]">
-                <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-white/5">
-                    <span className="text-base font-semibold text-gray-900 dark:text-white">Tournaments</span>
-                </div>
-                <div className="space-y-3 p-5">
+    return (
+        <DashboardPanel
+            title="Tournaments"
+            description="Turnamen terbaru yang sedang dibuka, berjalan, atau baru selesai."
+            action={
+                <a href="/dashboard/tournaments" className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70 dark:hover:bg-white/[0.06]">
+                    Manage
+                </a>
+            }
+        >
+            {loading ? (
+                <div className="space-y-3">
                     {[1, 2, 3].map((item) => (
-                        <div key={item} className="flex items-center gap-3">
-                            <div className="h-10 w-10 animate-pulse rounded-xl bg-gray-100 dark:bg-white/5" />
+                        <div key={item} className="flex items-center gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-3 dark:border-white/6 dark:bg-white/[0.03]">
+                            <div className="h-10 w-10 animate-pulse rounded-2xl bg-slate-200 dark:bg-white/8" />
                             <div className="flex-1 space-y-2">
-                                <div className="h-3 w-3/5 animate-pulse rounded-full bg-gray-100 dark:bg-white/5" />
-                                <div className="h-2.5 w-2/5 animate-pulse rounded-full bg-gray-100 dark:bg-white/5" />
+                                <div className="h-3 w-3/5 animate-pulse rounded-full bg-slate-200 dark:bg-white/8" />
+                                <div className="h-2.5 w-2/5 animate-pulse rounded-full bg-slate-200 dark:bg-white/8" />
                             </div>
                         </div>
                     ))}
                 </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="rounded-2xl border border-gray-100 bg-white dark:border-white/5 dark:bg-[#1a1a1a]">
-            <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-white/5">
-                <span className="text-base font-semibold text-gray-900 dark:text-white">Tournaments</span>
-                <a href="/dashboard/tournaments" className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5">
-                    + New
-                </a>
-            </div>
-            <div className="p-5">
-                {tournaments.length === 0 ? (
-                    <div className="py-8 text-center">
-                        <div className="mb-2 text-3xl">[]</div>
-                        <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">No tournaments</div>
-                        <p className="text-xs text-gray-400">Create your first tournament</p>
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {tournaments.map((tournament) => (
-                            <div key={tournament.id} className="flex items-center gap-3 rounded-xl p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.04]">
-                                <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-xs font-bold ${tournament.gameType.toLowerCase().includes("master")
-                                    ? "bg-purple-500/10 text-purple-400"
-                                    : "bg-blue-500/10 text-blue-400"
-                                    }`}>
-                                    {getGameIcon(tournament.gameType)}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <div className="truncate text-sm font-semibold text-gray-900 dark:text-white">{tournament.title}</div>
-                                    <div className="text-xs text-gray-400 dark:text-white/40">
-                                        {formatDate(tournament.startDate)} Â· {formatPrize(tournament.prizePool)} Â· {tournament._count?.participants || 0} peserta
-                                    </div>
-                                </div>
-                                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusBadge(tournament.status)}`}>
-                                    {tournament.status}
-                                </span>
+            ) : tournaments.length === 0 ? (
+                <DashboardEmptyState
+                    title="Belum ada turnamen"
+                    description="Buat turnamen baru untuk menampilkan jadwal, hadiah, dan peserta di dashboard utama."
+                    actionHref="/dashboard/tournaments"
+                    actionLabel="Buat turnamen"
+                />
+            ) : (
+                <div className="space-y-3">
+                    {tournaments.map((tournament) => (
+                        <div key={tournament.id} className="flex items-center gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-3 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] sm:p-4">
+                            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-bold ${tournament.gameType.toLowerCase().includes("master") ? "bg-purple-500/10 text-purple-400" : "bg-blue-500/10 text-blue-400"}`}>
+                                {getGameIcon(tournament.gameType)}
                             </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{tournament.title}</div>
+                                <div className="text-xs text-slate-400 dark:text-white/40">
+                                    {formatDate(tournament.startDate)} · {formatPrize(tournament.prizePool)} · {tournament._count?.participants || 0} peserta
+                                </div>
+                            </div>
+                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getStatusBadge(tournament.status)}`}>
+                                {tournament.status}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </DashboardPanel>
     );
 }

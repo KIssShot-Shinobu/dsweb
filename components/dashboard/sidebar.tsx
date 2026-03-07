@@ -80,7 +80,7 @@ export function Sidebar() {
 
     const userRole = user?.role ?? "USER";
     const userName = user?.fullName ?? "";
-    const userStatus = user?.status ?? "PENDING";
+    const userStatus = user?.status ?? "ACTIVE";
 
     const canAccess = (minRole?: string) => {
         if (!minRole) return true;
@@ -91,7 +91,7 @@ export function Sidebar() {
         name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2) || "DS";
 
     const statusColor =
-        userStatus === "ACTIVE" ? "bg-emerald-500" : userStatus === "PENDING" ? "bg-yellow-500" : "bg-red-500";
+        userStatus === "ACTIVE" ? "bg-emerald-500" : "bg-red-500";
 
     const bestMatch = ALL_MENU.flatMap((section) => section.items)
         .filter((item) => pathname === item.href || pathname.startsWith(item.href + "/"))

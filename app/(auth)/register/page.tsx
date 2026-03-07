@@ -5,6 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RegisterUploadField } from "@/components/auth/register-upload-field";
 import {
+    AuthShell,
+    authAlertCls,
+    authInputCls,
+    authLabelCls,
+    authPrimaryBtnCls,
+    authSecondaryBtnCls,
+} from "@/components/auth/auth-shell";
+import {
     INITIAL_FORM,
     REGISTER_STEPS,
     SOCIAL_OPTIONS,
@@ -16,8 +24,6 @@ import {
     validateRegisterStep,
 } from "./register-form";
 
-const inputCls = "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition-all focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20";
-const labelCls = "mb-1.5 block text-xs font-semibold uppercase tracking-wider text-white/50";
 const errCls = "mt-1 text-xs text-red-400";
 
 function CustomSelect({ value, onChange, options, placeholder, error }: {
@@ -43,8 +49,8 @@ function CustomSelect({ value, onChange, options, placeholder, error }: {
             <button
                 type="button"
                 onClick={() => setOpen((current) => !current)}
-                className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition-all ${
-                    open ? "border-ds-amber bg-white/5 ring-2 ring-ds-amber/20" : error ? "border-red-500/40 bg-white/5" : "border-white/10 bg-white/5 hover:border-white/20"
+                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition-all ${
+                    open ? "border-ds-amber bg-white/5 ring-4 ring-ds-amber/15" : error ? "border-red-500/40 bg-white/5" : "border-white/10 bg-white/5 hover:border-white/20"
                 }`}
             >
                 <span className={value ? "text-white" : "text-white/30"}>{value || placeholder || "-- Pilih --"}</span>
@@ -53,12 +59,15 @@ function CustomSelect({ value, onChange, options, placeholder, error }: {
                 </svg>
             </button>
             {open ? (
-                <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-white/10 bg-[#1c1c1c] shadow-2xl">
+                <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1c1c1c] shadow-2xl">
                     {options.map((option) => (
                         <button
                             key={option}
                             type="button"
-                            onClick={() => { onChange(option); setOpen(false); }}
+                            onClick={() => {
+                                onChange(option);
+                                setOpen(false);
+                            }}
                             className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-all ${
                                 value === option ? "bg-ds-amber/15 font-medium text-ds-amber" : "text-white/70 hover:bg-white/5 hover:text-white"
                             }`}
@@ -160,143 +169,134 @@ export default function RegisterPage() {
     const progressPct = ((step - 1) / (REGISTER_STEPS.length - 1)) * 100;
 
     return (
-        <div className="mx-auto w-full max-w-xl">
-            <div className="mb-6 text-center">
-                <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-ds-amber">
-                    <span className="text-lg font-black text-black">DS</span>
-                </div>
-                <h1 className="text-xl font-bold text-white">Daftar ke Duel Standby</h1>
-                <p className="mt-0.5 text-sm text-white/40">Isi form registrasi guild</p>
-            </div>
+        <AuthShell
+            eyebrow="Guild Registration"
+            title="Daftar ke Duel Standby"
+            description="Isi data akun, profile game, dan informasi guild. Akun baru akan langsung aktif setelah registrasi berhasil."
+            footer={
+                <>
+                    Sudah punya akun?{" "}
+                    <Link href="/login" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
+                        Masuk
+                    </Link>
+                </>
+            }
+        >
             <div className="mb-6">
-                <div className="mb-2 flex items-center justify-between">
+                <div className="mb-3 flex items-center justify-between gap-2">
                     {REGISTER_STEPS.map((item, index) => (
-                        <div key={item.title} className="flex flex-1 flex-col items-center gap-1">
-                            <div className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold transition-all ${
-                                step === index + 1 ? "scale-110 bg-ds-amber text-black" : step > index + 1 ? "border border-emerald-500/30 bg-emerald-500/20 text-emerald-400" : "border border-white/10 bg-white/5 text-white/30"
-                            }`}>
+                        <div key={item.title} className="flex flex-1 flex-col items-center gap-2">
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-bold transition-all ${step === index + 1 ? "scale-105 bg-ds-amber text-black" : step > index + 1 ? "border border-emerald-500/30 bg-emerald-500/20 text-emerald-400" : "border border-white/10 bg-white/5 text-white/30"}`}>
                                 {step > index + 1 ? "OK" : item.icon}
                             </div>
                             <span className={`hidden text-[10px] font-medium sm:block ${step === index + 1 ? "text-ds-amber" : "text-white/30"}`}>{item.title}</span>
                         </div>
                     ))}
                 </div>
-                <div className="h-1 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-ds-amber transition-all duration-500" style={{ width: `${progressPct + (100 / (REGISTER_STEPS.length - 1)) / REGISTER_STEPS.length}%` }} />
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full rounded-full bg-ds-amber transition-all duration-500" style={{ width: `${progressPct + 33 / REGISTER_STEPS.length}%` }} />
                 </div>
-                <div className="mt-2 text-center">
-                    <span className="text-xs text-white/40">Step {step} dari {REGISTER_STEPS.length} - {REGISTER_STEPS[step - 1].desc}</span>
-                </div>
+                <div className="mt-3 text-center text-xs text-white/40">Step {step} dari {REGISTER_STEPS.length} · {REGISTER_STEPS[step - 1].desc}</div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
-                {serverError ? <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{serverError}</div> : null}
+
+            {serverError ? <div className={`${authAlertCls} mb-5 border-red-500/20 bg-red-500/10 text-red-400`}>{serverError}</div> : null}
+
+            <div className="rounded-[28px] border border-white/10 bg-black/10 p-4 sm:p-5">
                 {step === 1 ? (
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="sm:col-span-2">
-                                <label className={labelCls}>Nama Lengkap *</label>
-                                <input type="text" className={inputCls} placeholder="Nama lengkap sesuai KTP" value={form.fullName} onChange={(event) => setField("fullName", event.target.value)} />
+                                <label className={authLabelCls}>Nama Lengkap *</label>
+                                <input type="text" className={authInputCls} placeholder="Nama lengkap sesuai KTP" value={form.fullName} onChange={(event) => setField("fullName", event.target.value)} />
                                 <Err field="fullName" />
                             </div>
                             <div className="sm:col-span-2">
-                                <label className={labelCls}>Email *</label>
-                                <input type="email" className={inputCls} placeholder="your@email.com" value={form.email} onChange={(event) => setField("email", event.target.value)} />
+                                <label className={authLabelCls}>Email *</label>
+                                <input type="email" className={authInputCls} placeholder="your@email.com" value={form.email} onChange={(event) => setField("email", event.target.value)} />
                                 <Err field="email" />
                             </div>
                             <div>
-                                <label className={labelCls}>Password *</label>
-                                <input type="password" className={inputCls} placeholder="Min. 8 karakter" value={form.password} onChange={(event) => setField("password", event.target.value)} />
+                                <label className={authLabelCls}>Password *</label>
+                                <input type="password" className={authInputCls} placeholder="Min. 8 karakter" value={form.password} onChange={(event) => setField("password", event.target.value)} />
                                 <Err field="password" />
                             </div>
                             <div>
-                                <label className={labelCls}>Konfirmasi Password *</label>
-                                <input type="password" className={inputCls} placeholder="Ulangi password" value={form.confirmPassword} onChange={(event) => setField("confirmPassword", event.target.value)} />
+                                <label className={authLabelCls}>Konfirmasi Password *</label>
+                                <input type="password" className={authInputCls} placeholder="Ulangi password" value={form.confirmPassword} onChange={(event) => setField("confirmPassword", event.target.value)} />
                                 <Err field="confirmPassword" />
                             </div>
                             <div>
-                                <label className={labelCls}>WhatsApp *</label>
-                                <input type="tel" className={inputCls} placeholder="+628123456789" value={form.phoneWhatsapp} onChange={(event) => setField("phoneWhatsapp", event.target.value)} />
+                                <label className={authLabelCls}>WhatsApp *</label>
+                                <input type="tel" className={authInputCls} placeholder="+628123456789" value={form.phoneWhatsapp} onChange={(event) => setField("phoneWhatsapp", event.target.value)} />
                                 <Err field="phoneWhatsapp" />
                                 <p className="mt-1 text-xs text-white/30">Format: +62... atau 08...</p>
                             </div>
                             <div>
-                                <label className={labelCls}>Kota *</label>
-                                <input type="text" className={inputCls} placeholder="Jakarta, Surabaya, ..." value={form.city} onChange={(event) => setField("city", event.target.value)} />
+                                <label className={authLabelCls}>Kota *</label>
+                                <input type="text" className={authInputCls} placeholder="Jakarta, Surabaya, ..." value={form.city} onChange={(event) => setField("city", event.target.value)} />
                                 <Err field="city" />
                             </div>
                         </div>
                     </div>
                 ) : null}
+
                 {step === 2 ? (
                     <div className="space-y-6">
-                        <p className="rounded-lg bg-white/5 px-3 py-2 text-xs text-white/40">Isi minimal satu game profile. IGN wajib diawali <span className="font-mono text-ds-amber">[DS]</span></p>
-                        <div className="space-y-3 rounded-xl border border-white/10 p-4">
+                        <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/45">Isi minimal satu game profile. IGN wajib diawali <span className="font-mono text-ds-amber">[DS]</span>.</p>
+                        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
                             <h3 className="text-sm font-bold text-white">Duel Links</h3>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div>
-                                    <label className={labelCls}>Game ID</label>
-                                    <input type="text" className={inputCls} placeholder="123456789" value={form.duelLinksGameId} onChange={(event) => setField("duelLinksGameId", event.target.value)} />
+                                    <label className={authLabelCls}>Game ID</label>
+                                    <input type="text" className={authInputCls} placeholder="123456789" value={form.duelLinksGameId} onChange={(event) => setField("duelLinksGameId", event.target.value)} />
                                 </div>
                                 <div>
-                                    <label className={labelCls}>IGN</label>
-                                    <input type="text" className={inputCls} placeholder="[DS]YourName" value={form.duelLinksIgn} onChange={(event) => setField("duelLinksIgn", event.target.value)} />
+                                    <label className={authLabelCls}>IGN</label>
+                                    <input type="text" className={authInputCls} placeholder="[DS]YourName" value={form.duelLinksIgn} onChange={(event) => setField("duelLinksIgn", event.target.value)} />
                                     <Err field="duelLinksIgn" />
                                 </div>
                             </div>
-                            <RegisterUploadField
-                                label="Screenshot Profil"
-                                preview={previews.duelLinks}
-                                uploading={uploading.duelLinks}
-                                error={errors.duelLinksScreenshotUploadId}
-                                onUpload={(file) => handleUpload(file, "duelLinksScreenshotUploadId", "duelLinks")}
-                                onClear={() => clearUpload("duelLinks", "duelLinksScreenshotUploadId")}
-                            />
+                            <RegisterUploadField label="Screenshot Profil" preview={previews.duelLinks} uploading={uploading.duelLinks} error={errors.duelLinksScreenshotUploadId} onUpload={(file) => handleUpload(file, "duelLinksScreenshotUploadId", "duelLinks")} onClear={() => clearUpload("duelLinks", "duelLinksScreenshotUploadId")} />
                         </div>
-                        <div className="space-y-3 rounded-xl border border-white/10 p-4">
+                        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
                             <h3 className="text-sm font-bold text-white">Master Duel</h3>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div>
-                                    <label className={labelCls}>Game ID</label>
-                                    <input type="text" className={inputCls} placeholder="MD-123456789" value={form.masterDuelGameId} onChange={(event) => setField("masterDuelGameId", event.target.value)} />
+                                    <label className={authLabelCls}>Game ID</label>
+                                    <input type="text" className={authInputCls} placeholder="MD-123456789" value={form.masterDuelGameId} onChange={(event) => setField("masterDuelGameId", event.target.value)} />
                                 </div>
                                 <div>
-                                    <label className={labelCls}>IGN</label>
-                                    <input type="text" className={inputCls} placeholder="[DS]YourName" value={form.masterDuelIgn} onChange={(event) => setField("masterDuelIgn", event.target.value)} />
+                                    <label className={authLabelCls}>IGN</label>
+                                    <input type="text" className={authInputCls} placeholder="[DS]YourName" value={form.masterDuelIgn} onChange={(event) => setField("masterDuelIgn", event.target.value)} />
                                     <Err field="masterDuelIgn" />
                                 </div>
                             </div>
-                            <RegisterUploadField
-                                label="Screenshot Profil"
-                                preview={previews.masterDuel}
-                                uploading={uploading.masterDuel}
-                                error={errors.masterDuelScreenshotUploadId}
-                                onUpload={(file) => handleUpload(file, "masterDuelScreenshotUploadId", "masterDuel")}
-                                onClear={() => clearUpload("masterDuel", "masterDuelScreenshotUploadId")}
-                            />
+                            <RegisterUploadField label="Screenshot Profil" preview={previews.masterDuel} uploading={uploading.masterDuel} error={errors.masterDuelScreenshotUploadId} onUpload={(file) => handleUpload(file, "masterDuelScreenshotUploadId", "masterDuel")} onClear={() => clearUpload("masterDuel", "masterDuelScreenshotUploadId")} />
                         </div>
                         <Err field="duelLinksGameId" />
                     </div>
                 ) : null}
+
                 {step === 3 ? (
                     <div className="space-y-4">
                         <div>
-                            <label className={labelCls}>Dari mana Anda mengetahui guild ini? *</label>
+                            <label className={authLabelCls}>Dari mana Anda mengetahui guild ini? *</label>
                             <CustomSelect value={form.sourceInfo} onChange={(value) => setField("sourceInfo", value)} options={SOURCE_OPTIONS} placeholder="-- Pilih sumber informasi --" error={errors.sourceInfo} />
                             <Err field="sourceInfo" />
                         </div>
                         <div>
-                            <label className={labelCls}>Guild sebelumnya (opsional)</label>
-                            <input type="text" className={inputCls} placeholder="Nama guild sebelumnya" value={form.prevGuild} onChange={(event) => setField("prevGuild", event.target.value)} />
+                            <label className={authLabelCls}>Guild sebelumnya (opsional)</label>
+                            <input type="text" className={authInputCls} placeholder="Nama guild sebelumnya" value={form.prevGuild} onChange={(event) => setField("prevGuild", event.target.value)} />
                         </div>
                         <div>
-                            <label className={labelCls}>Status guild saat ini *</label>
+                            <label className={authLabelCls}>Status guild saat ini *</label>
                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                                 {[
                                     { value: "SOLO_PLAYER", label: "Solo Player", description: "Tidak dalam guild" },
                                     { value: "LEFT_GUILD", label: "Keluar Guild", description: "Pernah di guild lain" },
                                     { value: "NEW_PLAYER", label: "Pemain Baru", description: "Baru mulai" },
                                 ].map((option) => (
-                                    <div key={option.value} onClick={() => setField("guildStatus", option.value)} className={`cursor-pointer rounded-xl border p-3 transition-all ${form.guildStatus === option.value ? "border-ds-amber bg-ds-amber/10" : "border-white/10 hover:border-white/20"}`}>
+                                    <div key={option.value} onClick={() => setField("guildStatus", option.value)} className={`cursor-pointer rounded-2xl border p-3 transition-all ${form.guildStatus === option.value ? "border-ds-amber bg-ds-amber/10" : "border-white/10 hover:border-white/20"}`}>
                                         <div className="text-sm font-semibold text-white">{option.label}</div>
                                         <div className="text-xs text-white/40">{option.description}</div>
                                     </div>
@@ -305,14 +305,10 @@ export default function RegisterPage() {
                             <Err field="guildStatus" />
                         </div>
                         <div>
-                            <label className={labelCls}>Aktif di sosial media mana? *</label>
+                            <label className={authLabelCls}>Aktif di sosial media mana? *</label>
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                                 {SOCIAL_OPTIONS.map((option) => (
-                                    <div
-                                        key={option}
-                                        onClick={() => setField("socialMedia", form.socialMedia.includes(option) ? form.socialMedia.filter((item) => item !== option) : [...form.socialMedia, option])}
-                                        className={`cursor-pointer rounded-xl border px-3 py-2 text-xs font-medium transition-all ${form.socialMedia.includes(option) ? "border-ds-amber bg-ds-amber/10 text-ds-amber" : "border-white/10 text-white/40 hover:border-white/20"}`}
-                                    >
+                                    <div key={option} onClick={() => setField("socialMedia", form.socialMedia.includes(option) ? form.socialMedia.filter((item) => item !== option) : [...form.socialMedia, option])} className={`cursor-pointer rounded-2xl border px-3 py-2 text-xs font-medium transition-all ${form.socialMedia.includes(option) ? "border-ds-amber bg-ds-amber/10 text-ds-amber" : "border-white/10 text-white/40 hover:border-white/20"}`}>
                                         {option}
                                     </div>
                                 ))}
@@ -321,12 +317,13 @@ export default function RegisterPage() {
                         </div>
                     </div>
                 ) : null}
+
                 {step === 4 ? (
                     <div className="space-y-4">
-                        <div className="max-h-48 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+                        <div className="max-h-52 space-y-2 overflow-y-auto rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
                             <p className="font-semibold text-white">Pernyataan Anggota Duel Standby Guild</p>
                             <p>Dengan mendaftar, saya menyatakan bahwa:</p>
-                            <ol className="list-decimal list-inside space-y-1 text-xs">
+                            <ol className="list-inside list-decimal space-y-1 text-xs">
                                 <li>Informasi yang saya berikan adalah benar dan akurat.</li>
                                 <li>IGN di game menggunakan prefix [DS] sesuai ketentuan guild.</li>
                                 <li>Saya bersedia mengikuti peraturan dan tata tertib guild.</li>
@@ -336,15 +333,15 @@ export default function RegisterPage() {
                         </div>
                         <div>
                             <p className="mb-2 text-sm text-white/50">Ringkasan pendaftaran Anda:</p>
-                            <div className="space-y-1 rounded-xl bg-white/5 p-3 text-xs">
-                                <div className="flex justify-between"><span className="text-white/40">Nama</span><span className="font-medium text-white">{form.fullName}</span></div>
-                                <div className="flex justify-between"><span className="text-white/40">Email</span><span className="text-white">{form.email}</span></div>
-                                <div className="flex justify-between"><span className="text-white/40">Kota</span><span className="text-white">{form.city}</span></div>
-                                {form.duelLinksIgn ? <div className="flex justify-between"><span className="text-white/40">DL IGN</span><span className="font-mono text-ds-amber">{form.duelLinksIgn}</span></div> : null}
-                                {form.masterDuelIgn ? <div className="flex justify-between"><span className="text-white/40">MD IGN</span><span className="font-mono text-ds-amber">{form.masterDuelIgn}</span></div> : null}
+                            <div className="space-y-1 rounded-2xl bg-white/5 p-4 text-xs">
+                                <div className="flex justify-between gap-4"><span className="text-white/40">Nama</span><span className="font-medium text-white">{form.fullName}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-white/40">Email</span><span className="text-white">{form.email}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-white/40">Kota</span><span className="text-white">{form.city}</span></div>
+                                {form.duelLinksIgn ? <div className="flex justify-between gap-4"><span className="text-white/40">DL IGN</span><span className="font-mono text-ds-amber">{form.duelLinksIgn}</span></div> : null}
+                                {form.masterDuelIgn ? <div className="flex justify-between gap-4"><span className="text-white/40">MD IGN</span><span className="font-mono text-ds-amber">{form.masterDuelIgn}</span></div> : null}
                             </div>
                         </div>
-                        <div onClick={() => setField("agreement", !form.agreement)} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all ${form.agreement ? "border-ds-amber bg-ds-amber/10" : "border-white/10 hover:border-white/20"}`}>
+                        <div onClick={() => setField("agreement", !form.agreement)} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition-all ${form.agreement ? "border-ds-amber bg-ds-amber/10" : "border-white/10 hover:border-white/20"}`}>
                             <div className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2 transition-all ${form.agreement ? "border-ds-amber bg-ds-amber text-black" : "border-white/30"}`}>
                                 {form.agreement ? <span className="text-xs font-bold">OK</span> : null}
                             </div>
@@ -353,20 +350,20 @@ export default function RegisterPage() {
                         <Err field="agreement" />
                     </div>
                 ) : null}
-                <div className="mt-6 flex gap-3">
-                    {step > 1 ? <button type="button" onClick={() => setStep((current) => current - 1)} className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-white/60 transition-all hover:bg-white/5">Kembali</button> : null}
-                    {step < 4 ? (
-                        <button type="button" onClick={() => { if (validate(step)) setStep((current) => current + 1); }} className="flex-1 rounded-xl bg-ds-amber py-2.5 text-sm font-bold text-black transition-all hover:bg-ds-gold">
-                            Lanjut
-                        </button>
-                    ) : (
-                        <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 rounded-xl bg-ds-amber py-2.5 text-sm font-bold text-black transition-all hover:bg-ds-gold disabled:opacity-50">
-                            {submitting ? "Mendaftar..." : "Kirim Pendaftaran"}
-                        </button>
-                    )}
-                </div>
             </div>
-            <p className="mt-4 text-center text-sm text-white/30">Sudah punya akun? <Link href="/login" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">Masuk</Link></p>
-        </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                {step > 1 ? <button type="button" onClick={() => setStep((current) => current - 1)} className={authSecondaryBtnCls}>Kembali</button> : null}
+                {step < 4 ? (
+                    <button type="button" onClick={() => { if (validate(step)) setStep((current) => current + 1); }} className={authPrimaryBtnCls}>
+                        Lanjut
+                    </button>
+                ) : (
+                    <button type="button" onClick={handleSubmit} disabled={submitting} className={authPrimaryBtnCls}>
+                        {submitting ? "Mendaftar..." : "Kirim Pendaftaran"}
+                    </button>
+                )}
+            </div>
+        </AuthShell>
     );
 }

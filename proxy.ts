@@ -45,11 +45,9 @@ export async function proxy(req: NextRequest) {
     try {
         const { payload } = await jwtVerify(token, getJwtSecret());
         const userRole = (payload.role as string) ?? "USER";
-        const userStatus = (payload.status as string) ?? "PENDING";
-
+        const userStatus = (payload.status as string) ?? "ACTIVE";
         if (userStatus !== "ACTIVE" && !["ADMIN", "FOUNDER"].includes(userRole)) {
-            const loginUrl = new URL("/login", req.url);
-            loginUrl.searchParams.set("error", "pending");
+            const loginUrl = new URL("/login", req.url);            if (userStatus === "BANNED") loginUrl.searchParams.set("error", "banned");
             return NextResponse.redirect(loginUrl);
         }
 

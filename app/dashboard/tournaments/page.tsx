@@ -1,14 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Pagination } from "@/components/dashboard/pagination";
 import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
-import { FormSelect } from "@/components/dashboard/form-select";
 import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
-import { Pagination } from "@/components/dashboard/pagination";
-import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import { FormSelect } from "@/components/dashboard/form-select";
 import { RowActions } from "@/components/dashboard/row-actions";
+import { btnOutline, btnPrimary, filterBarCls, inputCls, labelCls, searchInputCls } from "@/components/dashboard/form-styles";
+import {
+    DashboardEmptyState,
+    DashboardMetricCard,
+    DashboardPageHeader,
+    DashboardPageShell,
+    DashboardPanel,
+} from "@/components/dashboard/page-shell";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 
 interface Tournament {
@@ -343,140 +350,119 @@ export default function AdminTournamentsPage() {
             minute: "2-digit",
         });
 
+    const publishedSummary = useMemo(() => summary.open + summary.ongoing, [summary]);
+
     return (
-        <>
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white md:text-2xl">Tournaments</h1>
-                    <p className="mt-0.5 text-sm text-gray-400 dark:text-white/40">Kelola turnamen, status, hadiah, dan jadwal dari satu halaman.</p>
-                </div>
-                <button onClick={() => setShowModal(true)} className={btnPrimary}>
-                    + Buat Turnamen
-                </button>
-            </div>
-
-            <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-                <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-blue-400/80">Open</div>
-                    <div className="mt-2 text-2xl font-bold text-blue-400">{summary.open}</div>
-                </div>
-                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-amber-400/80">Ongoing</div>
-                    <div className="mt-2 text-2xl font-bold text-amber-400">{summary.ongoing}</div>
-                </div>
-                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-emerald-400/80">Completed</div>
-                    <div className="mt-2 text-2xl font-bold text-emerald-400">{summary.completed}</div>
-                </div>
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-[#1a1a1a]">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">Cancelled</div>
-                    <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{summary.cancelled}</div>
-                </div>
-            </div>
-
-            <div className="mb-4 flex flex-col gap-3 md:flex-row">
-                <input
-                    type="text"
-                    value={searchInput}
-                    onChange={(event) => {
-                        const nextValue = event.target.value;
-                        setSearchInput(nextValue);
-                        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-                        searchTimeoutRef.current = setTimeout(() => {
-                            setPage(1);
-                            setSearch(nextValue);
-                        }, 250);
-                    }}
-                    placeholder="Cari judul atau deskripsi turnamen..."
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-ds-amber dark:border-white/10 dark:bg-[#1a1a1a] dark:text-white md:flex-1"
+        <DashboardPageShell>
+            <div className="space-y-5 lg:space-y-6">
+                <DashboardPageHeader
+                    kicker="Event Control"
+                    title="Tournaments"
+                    description="Kelola jadwal event, thumbnail, hadiah, dan pergerakan status bracket dari satu halaman yang lebih ringkas."
+                    actions={<button onClick={() => setShowModal(true)} className={btnPrimary}>+ Buat Turnamen</button>}
                 />
-                <div className="w-full md:w-[180px]">
-                    <FormSelect value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={selectOptions.filterStatus} />
-                </div>
-                <div className="w-full md:w-[180px]">
-                    <FormSelect value={gameTypeFilter} onChange={(value) => { setGameTypeFilter(value); setPage(1); }} options={selectOptions.filterGameType} />
-                </div>
-            </div>
 
-            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-white/5 dark:bg-[#1a1a1a]">
-                <div className="border-b border-gray-100 p-4 text-base font-semibold text-gray-900 dark:border-white/5 dark:text-white md:p-5">
-                    Daftar Turnamen ({total})
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <DashboardMetricCard label="Open" value={loading ? "..." : summary.open} meta="Registrasi dibuka" tone="accent" />
+                    <DashboardMetricCard label="Ongoing" value={loading ? "..." : summary.ongoing} meta="Sedang berjalan" tone="success" />
+                    <DashboardMetricCard label="Completed" value={loading ? "..." : summary.completed} meta="Event selesai" />
+                    <DashboardMetricCard label="Published Total" value={loading ? "..." : publishedSummary} meta="Open + ongoing yang tampil ke user" />
                 </div>
-                <div className="p-4 md:p-5">
+
+                <DashboardPanel title="Filter Tournament" description="Cari judul event, sempitkan berdasarkan status, dan pisahkan Duel Links atau Master Duel.">
+                    <div className={filterBarCls}>
+                        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_190px_190px]">
+                            <input
+                                type="text"
+                                value={searchInput}
+                                onChange={(event) => {
+                                    const nextValue = event.target.value;
+                                    setSearchInput(nextValue);
+                                    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+                                    searchTimeoutRef.current = setTimeout(() => {
+                                        setPage(1);
+                                        setSearch(nextValue);
+                                    }, 250);
+                                }}
+                                placeholder="Cari judul atau deskripsi turnamen..."
+                                className={searchInputCls}
+                            />
+                            <FormSelect value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={selectOptions.filterStatus} />
+                            <FormSelect value={gameTypeFilter} onChange={(value) => { setGameTypeFilter(value); setPage(1); }} options={selectOptions.filterGameType} />
+                        </div>
+                    </div>
+                </DashboardPanel>
+
+                <DashboardPanel title="Daftar Tournament" description={`Menampilkan ${total} turnamen yang sesuai dengan filter aktif.`}>
                     {loading ? (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             {[1, 2, 3, 4, 5].map((item) => (
-                                <div key={item} className="h-20 animate-pulse rounded-xl bg-gray-100 dark:bg-white/5" />
+                                <div key={item} className="h-24 animate-pulse rounded-2xl border border-black/5 bg-slate-100/90 dark:border-white/6 dark:bg-white/[0.04]" />
                             ))}
                         </div>
                     ) : tournaments.length === 0 ? (
-                        <div className="py-12 text-center">
-                            <div className="mb-2 text-4xl">[]</div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white">Tidak ada turnamen</div>
-                            <p className="text-xs text-gray-400">Coba ubah filter atau buat turnamen baru.</p>
-                        </div>
+                        <DashboardEmptyState title="Tidak ada turnamen" description="Coba ubah filter atau buat turnamen baru untuk mengisi halaman ini." actionHref="/dashboard/tournaments" actionLabel="Reset via halaman ini" />
                     ) : (
                         <>
-                            <div className="space-y-2">
-                                {tournaments.map((tournament) => (
-                                    <div key={tournament.id} className="flex items-center gap-3 rounded-xl bg-gray-50 p-3 transition-colors hover:bg-gray-100 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]">
-                                        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 text-xs text-gray-400 dark:bg-white/5">
-                                            {tournament.image ? (
-                                                // eslint-disable-next-line @next/next/no-img-element
-                                                <img src={normalizeAssetUrl(tournament.image) || ""} alt={tournament.title} className="h-full w-full object-cover" />
-                                            ) : (
-                                                tournament.gameType === "MASTER_DUEL" ? "MD" : "DL"
-                                            )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="truncate text-sm font-semibold text-gray-900 dark:text-white">{tournament.title}</div>
-                                            <div className="truncate text-xs text-gray-400 dark:text-white/40">
-                                                {tournament.gameType} Â· {tournament.format} Â· {formatDate(tournament.startDate)}
+                            <div className="space-y-3">
+                                {tournaments.map((tournament) => {
+                                    const statusTone = tournament.status === "OPEN"
+                                        ? "border-blue-500/20 bg-blue-500/10 text-blue-400"
+                                        : tournament.status === "ONGOING"
+                                          ? "border-amber-500/20 bg-amber-500/10 text-amber-400"
+                                          : tournament.status === "COMPLETED"
+                                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                                            : "border-red-500/20 bg-red-500/10 text-red-400";
+
+                                    return (
+                                        <div key={tournament.id} className="flex flex-col gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-4 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] lg:flex-row lg:items-center">
+                                            <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 text-xs font-bold text-slate-400 dark:bg-white/5">
+                                                {tournament.image ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img src={normalizeAssetUrl(tournament.image) || ""} alt={tournament.title} className="h-full w-full object-cover" />
+                                                ) : tournament.gameType === "MASTER_DUEL" ? "MD" : "DL"}
                                             </div>
-                                            <div className="mt-1 flex flex-wrap gap-2 text-[11px]">
-                                                <span className="rounded-full border border-gray-200 px-2 py-0.5 text-gray-500 dark:border-white/10 dark:text-white/50">
-                                                    Hadiah {formatCurrency(tournament.prizePool)}
+
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{tournament.title}</div>
+                                                <div className="mt-1 truncate text-xs text-slate-400 dark:text-white/40">
+                                                    {tournament.gameType} · {tournament.format} · {formatDate(tournament.startDate)}
+                                                </div>
+                                                <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                                                    <span className="rounded-full border border-black/5 px-2.5 py-1 text-slate-500 dark:border-white/10 dark:text-white/45">Hadiah {formatCurrency(tournament.prizePool)}</span>
+                                                    <span className="rounded-full border border-black/5 px-2.5 py-1 text-slate-500 dark:border-white/10 dark:text-white/45">Entry {tournament.entryFee === 0 ? "FREE" : formatCurrency(tournament.entryFee)}</span>
+                                                    <span className="rounded-full border border-black/5 px-2.5 py-1 text-slate-500 dark:border-white/10 dark:text-white/45">{tournament._count?.participants || 0} peserta</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                                                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${statusTone}`}>
+                                                    {tournament.status}
                                                 </span>
-                                                <span className="rounded-full border border-gray-200 px-2 py-0.5 text-gray-500 dark:border-white/10 dark:text-white/50">
-                                                    Entry {tournament.entryFee === 0 ? "FREE" : formatCurrency(tournament.entryFee)}
-                                                </span>
-                                                <span className="rounded-full border border-gray-200 px-2 py-0.5 text-gray-500 dark:border-white/10 dark:text-white/50">
-                                                    {tournament._count?.participants || 0} peserta
-                                                </span>
+                                                <RowActions
+                                                    onEdit={() => openEditModal(tournament)}
+                                                    onDelete={() => handleDeleteClick(tournament.id, tournament.title)}
+                                                    extra={
+                                                        <button
+                                                            onClick={() => updateStatus(tournament)}
+                                                            disabled={tournament.status === "COMPLETED" || tournament.status === "CANCELLED"}
+                                                            className={`${btnOutline} disabled:opacity-40`}
+                                                        >
+                                                            Next Status
+                                                        </button>
+                                                    }
+                                                />
                                             </div>
                                         </div>
-                                        <div className="hidden min-w-[96px] flex-col items-end gap-1 md:flex">
-                                            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tournament.status === "OPEN"
-                                                ? "border-blue-500/20 bg-blue-500/10 text-blue-400"
-                                                : tournament.status === "ONGOING"
-                                                    ? "border-amber-500/20 bg-amber-500/10 text-amber-400"
-                                                    : tournament.status === "COMPLETED"
-                                                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                                                        : "border-red-500/20 bg-red-500/10 text-red-400"
-                                                }`}>
-                                                {tournament.status}
-                                            </span>
-                                        </div>
-                                        <RowActions
-                                            onEdit={() => openEditModal(tournament)}
-                                            onDelete={() => handleDeleteClick(tournament.id, tournament.title)}
-                                            extra={(
-                                                <button
-                                                    onClick={() => updateStatus(tournament)}
-                                                    disabled={tournament.status === "COMPLETED" || tournament.status === "CANCELLED"}
-                                                    className={`${btnOutline} disabled:opacity-40`}
-                                                >
-                                                    Next Status
-                                                </button>
-                                            )}
-                                        />
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
-                            <Pagination page={page} totalPages={totalPages} total={total} perPage={PER_PAGE} onPage={setPage} />
+                            <div className="mt-5">
+                                <Pagination page={page} totalPages={totalPages} total={total} perPage={PER_PAGE} onPage={setPage} />
+                            </div>
                         </>
                     )}
-                </div>
+                </DashboardPanel>
             </div>
 
             <Modal open={showModal} onClose={() => { setShowModal(false); resetForm(); }} title="Buat Turnamen Baru">
@@ -513,13 +499,8 @@ export default function AdminTournamentsPage() {
                 onCancel={() => setConfirmState({ open: false, id: "", title: "" })}
             />
 
-            <UndoSnackbar
-                open={!!pendingDelete}
-                message={`"${pendingDelete?.title}" akan dihapus`}
-                duration={UNDO_DURATION}
-                onUndo={handleUndo}
-            />
-        </>
+            <UndoSnackbar open={!!pendingDelete} message={`"${pendingDelete?.title}" akan dihapus`} duration={UNDO_DURATION} onUndo={handleUndo} />
+        </DashboardPageShell>
     );
 }
 
@@ -570,7 +551,7 @@ function TournamentForm({
             </div>
             <div>
                 <label className={labelCls}>Deskripsi</label>
-                <textarea className={inputCls} rows={3} value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} />
+                <textarea className={`${inputCls} min-h-[104px] resize-y`} rows={3} value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} />
             </div>
             <div className={`grid gap-4 ${showStatus ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
                 <div>
@@ -581,12 +562,12 @@ function TournamentForm({
                     <label className={labelCls}>Format</label>
                     <FormSelect value={formData.format} onChange={(value) => setFormData((prev) => ({ ...prev, format: value }))} options={selectOptions.format} />
                 </div>
-                {showStatus && (
+                {showStatus ? (
                     <div>
                         <label className={labelCls}>Status</label>
                         <FormSelect value={formData.status} onChange={(value) => setFormData((prev) => ({ ...prev, status: value }))} options={selectOptions.status} />
                     </div>
-                )}
+                ) : null}
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
@@ -603,7 +584,7 @@ function TournamentForm({
                 <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp"
-                    className={`${inputCls} file:mr-3 file:rounded-lg file:border-0 file:bg-ds-amber/20 file:px-3 file:py-1.5 file:font-semibold file:text-ds-amber`}
+                    className={`${inputCls} file:mr-3 file:rounded-xl file:border-0 file:bg-ds-amber/20 file:px-3 file:py-1.5 file:font-semibold file:text-ds-amber`}
                     onChange={async (e) => {
                         const inputEl = e.currentTarget;
                         const file = e.target.files?.[0];
@@ -613,28 +594,22 @@ function TournamentForm({
                     }}
                     disabled={uploadingImage}
                 />
-                {uploadingImage && <p className="mt-1 text-xs text-gray-400">Mengupload gambar...</p>}
+                {uploadingImage ? <p className="mt-2 text-xs text-slate-400 dark:text-white/40">Mengupload gambar...</p> : null}
             </div>
             <div>
                 <label className={labelCls}>Path Gambar Lokal</label>
-                <input
-                    type="text"
-                    className={inputCls}
-                    placeholder="/uploads/namafile.jpg"
-                    value={formData.image}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, image: e.target.value }))}
-                />
-                <p className="mt-1 text-xs text-gray-400">Gunakan upload internal. URL eksternal tidak didukung lagi.</p>
+                <input type="text" className={inputCls} placeholder="/uploads/namafile.jpg" value={formData.image} onChange={(e) => setFormData((prev) => ({ ...prev, image: e.target.value }))} />
+                <p className="mt-2 text-xs text-slate-400 dark:text-white/40">Gunakan upload internal. URL eksternal tidak didukung lagi.</p>
             </div>
-            {formData.image && (
-                <div className="rounded-xl border border-gray-200 p-2 dark:border-white/10">
+            {formData.image ? (
+                <div className="rounded-2xl border border-black/5 p-2 dark:border-white/10">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={normalizeAssetUrl(formData.image) || ""} alt="Preview tournament" className="h-40 w-full rounded-lg object-cover" />
-                    <button type="button" onClick={() => setFormData((prev) => ({ ...prev, image: "" }))} className="mt-2 text-xs text-red-500 hover:text-red-600">
+                    <img src={normalizeAssetUrl(formData.image) || ""} alt="Preview tournament" className="h-44 w-full rounded-xl object-cover" />
+                    <button type="button" onClick={() => setFormData((prev) => ({ ...prev, image: "" }))} className="mt-3 text-xs font-medium text-red-500 hover:text-red-600">
                         Hapus gambar
                     </button>
                 </div>
-            )}
+            ) : null}
             <div>
                 <label className={labelCls}>Tanggal & Waktu Mulai</label>
                 <input type="datetime-local" className={inputCls} required value={formData.startDate} onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))} />

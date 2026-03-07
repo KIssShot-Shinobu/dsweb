@@ -11,11 +11,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <SidebarProvider>
             <DashboardUserProvider>
                 <ToastProvider>
-                    <div className="flex h-screen bg-gray-50 dark:bg-[#0f0f0f] overflow-hidden">
+                    <div className="flex h-screen overflow-hidden bg-[linear-gradient(180deg,_#f8fafc_0%,_#eef2f7_100%)] dark:bg-[linear-gradient(180deg,_#09090b_0%,_#101014_100%)]">
                         <Sidebar />
-                        <main className="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden min-w-0">
+                        <main className="flex min-w-0 flex-1 flex-col overflow-hidden md:ml-64">
                             <Header />
-                            <div className="flex-1 overflow-y-auto p-4 md:p-6">{children}</div>
+                            <div className="flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-5">
+                                {children}
+                            </div>
                         </main>
                     </div>
                 </ToastProvider>

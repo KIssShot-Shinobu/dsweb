@@ -15,9 +15,7 @@ components:
     UserStatus:
       type: string
       enum:
-        - PENDING
         - ACTIVE
-        - REJECTED
         - BANNED
     UserRole:
       type: string
@@ -513,7 +511,7 @@ paths:
         "201":
           description: Tournament registration created
         "400":
-          description: Registration rejected
+          description: Registration blocked
         "401":
           description: Unauthorized
         "403":

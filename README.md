@@ -16,10 +16,10 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 
 - Registrasi user + game profile (Duel Links / Master Duel).
 - Login/logout + cek sesi user (`/api/auth/me`).
-- Manajemen user approval, role, dan status akun.
+- Manajemen role dan status akun user.
 - CRUD tournament + register participant tournament.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
-- Panel operasional disatukan ke halaman `/dashboard`, termasuk summary users, tournament, treasury, dan quick action approval.
+- Panel operasional disatukan ke halaman `/dashboard`, termasuk summary users, tournament, treasury, dan quick actions.
 - Hapus tournament di dashboard memakai confirm modal + undo 5 detik.
 - Form tournament hanya menerima gambar lokal hasil upload internal (`/uploads/...`) dan preview gambar pada create/edit.
 - Form tournament mendukung upload file gambar langsung ke `/api/upload` (path lokal akan terisi otomatis).
@@ -187,13 +187,13 @@ Lainnya:
 - `ADMIN/FOUNDER`: akses penuh dashboard operasional (users, tournaments, treasury, audit).
 
 Catatan: beberapa menu mengikuti pengecekan role di frontend dan backend; backend tetap sumber kebenaran.
-Catatan tambahan: pendaftaran tournament publik memakai status akun `ACTIVE`; role `MEMBER` tidak lagi menjadi syarat khusus untuk register.
+Catatan tambahan: pendaftaran tournament publik memakai status akun `ACTIVE`; role `MEMBER` tidak lagi menjadi syarat khusus untuk register. Sistem tidak lagi memakai status `PENDING` atau `REJECTED`; registrasi baru langsung dibuat `ACTIVE` dan status user kini hanya `ACTIVE` atau `BANNED`.
 
 ## Standar Audit Log
 
 Untuk endpoint penting (terutama operasi write `POST/PUT/DELETE`), audit log wajib ditulis.
 
-- User approval dan role change sudah tercatat (`USER_APPROVED`, `USER_REJECTED`, `USER_BANNED`, `ROLE_CHANGED`).
+- Perubahan status user dan role change sudah tercatat (`USER_APPROVED`, `USER_BANNED`, `ROLE_CHANGED`).
 - Treasury: add/update/delete sudah tercatat (`TREASURY_ADDED`, `TREASURY_UPDATED`, `TREASURY_DELETED`).
 - Tournament: create/update/delete/register sudah tercatat.
 - Auth/Profile/Upload: event penting sudah tercatat.
@@ -300,3 +300,4 @@ Mulai sekarang, setiap ada perubahan fitur/endpoint/role/alur setup:
 2. Jika perubahan menyentuh API, update bagian `API Ringkas`.
 3. Jika perubahan menyentuh auth/role/menu, update bagian `Role Akses`.
 4. Jika perubahan menyentuh setup/env/db, update bagian `Konfigurasi Environment` dan `Instalasi`.
+

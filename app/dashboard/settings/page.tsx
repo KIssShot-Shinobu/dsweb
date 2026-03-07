@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { btnDanger, btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import {
+    DashboardMetricCard,
+    DashboardPageHeader,
+    DashboardPageShell,
+    DashboardPanel,
+} from "@/components/dashboard/page-shell";
 
 type MeUser = {
     id: string;
@@ -18,9 +25,6 @@ export default function SettingsPage() {
     const [meLoading, setMeLoading] = useState(true);
     const [verifyLoading, setVerifyLoading] = useState(false);
     const [verifyMessage, setVerifyMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-    const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 outline-none focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 transition-all";
-    const labelCls = "block text-xs font-semibold text-gray-600 dark:text-white/50 uppercase tracking-wider mb-1.5";
 
     useEffect(() => {
         fetch("/api/auth/me")
@@ -92,91 +96,89 @@ export default function SettingsPage() {
     };
 
     return (
-        <>
-            <div className="mb-6">
-                <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Pengaturan</h1>
-                <p className="text-sm text-gray-400 dark:text-white/40 mt-0.5">Kelola preferensi akun Anda</p>
-            </div>
+        <DashboardPageShell>
+            <div className="space-y-5 lg:space-y-6">
+                <DashboardPageHeader
+                    kicker="Account Center"
+                    title="Pengaturan"
+                    description="Kelola keamanan akun, status verifikasi email, dan sesi aktif dari satu halaman yang lebih rapi."
+                />
 
-            <div className="max-w-lg space-y-4">
-                <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 p-5">
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Verifikasi Email</h3>
-                    {verifyMessage && (
-                        <div
-                            className={`mb-3 px-4 py-3 rounded-xl border text-sm ${verifyMessage.type === "success"
-                                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
-                                : "bg-red-500/10 border-red-500/20 text-red-400"
-                                }`}
-                        >
-                            {verifyMessage.text}
-                        </div>
-                    )}
-                    {meLoading ? (
-                        <p className="text-sm text-gray-500 dark:text-white/50">Memuat status verifikasi...</p>
-                    ) : !me ? (
-                        <p className="text-sm text-red-500">Tidak bisa memuat data akun.</p>
-                    ) : (
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-3">
-                                <div>
-                                    <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-white/40">Email</p>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">{me.email}</p>
-                                </div>
-                                <span
-                                    className={`text-xs font-semibold px-3 py-1 rounded-full border ${me.emailVerified
-                                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
-                                        : "bg-amber-500/10 text-amber-500 border-amber-500/30"
-                                        }`}
-                                >
-                                    {me.emailVerified ? "Terverifikasi" : "Belum Verifikasi"}
-                                </span>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <DashboardMetricCard label="Akun" value={meLoading ? "..." : me?.fullName || "Tidak tersedia"} meta="Identitas akun aktif" tone="accent" />
+                    <DashboardMetricCard label="Email Status" value={meLoading ? "..." : me?.emailVerified ? "Verified" : "Pending"} meta={me?.email || "Email belum termuat"} tone={me?.emailVerified ? "success" : "default"} />
+                    <DashboardMetricCard label="Security" value="Password" meta="Perubahan password akan memutus sesi login saat ini" tone="danger" />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+                    <DashboardPanel title="Verifikasi Email" description="Cek status email aktif dan kirim ulang link verifikasi jika diperlukan.">
+                        {verifyMessage ? (
+                            <div className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${verifyMessage.type === "success" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" : "border-red-500/20 bg-red-500/10 text-red-500"}`}>
+                                {verifyMessage.text}
                             </div>
-                            {!me.emailVerified && (
-                                <button
-                                    onClick={handleResendVerification}
-                                    disabled={verifyLoading}
-                                    className="w-full py-2.5 rounded-xl border border-ds-amber/40 text-ds-amber hover:bg-ds-amber/10 text-sm font-semibold transition-all disabled:opacity-50"
-                                >
-                                    {verifyLoading ? "Mengirim..." : "Kirim Ulang Verifikasi Email"}
+                        ) : null}
+
+                        {meLoading ? (
+                            <p className="text-sm text-slate-500 dark:text-white/45">Memuat status verifikasi...</p>
+                        ) : !me ? (
+                            <p className="text-sm text-red-500">Tidak bisa memuat data akun.</p>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="rounded-2xl border border-black/5 bg-slate-50/80 px-4 py-4 dark:border-white/6 dark:bg-white/[0.03]">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Email</p>
+                                            <p className="mt-2 text-sm font-medium text-slate-950 dark:text-white">{me.email}</p>
+                                        </div>
+                                        <span className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${me.emailVerified ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500" : "border-amber-500/30 bg-amber-500/10 text-amber-500"}`}>
+                                            {me.emailVerified ? "Terverifikasi" : "Belum Verifikasi"}
+                                        </span>
+                                    </div>
+                                </div>
+                                {!me.emailVerified ? (
+                                    <button onClick={handleResendVerification} disabled={verifyLoading} className={btnOutline}>
+                                        {verifyLoading ? "Mengirim..." : "Kirim Ulang Verifikasi Email"}
+                                    </button>
+                                ) : null}
+                            </div>
+                        )}
+                    </DashboardPanel>
+
+                    <DashboardPanel title="Keamanan Akun" description="Ubah password dan putuskan sesi untuk menjaga akses tetap aman.">
+                        {error ? <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500">{error}</div> : null}
+                        {successMessage ? <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-500">{successMessage}</div> : null}
+                        <form onSubmit={handleChangePassword} className="space-y-4">
+                            <div>
+                                <label className={labelCls}>Password Saat Ini</label>
+                                <input type="password" className={inputCls} placeholder="********" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} required />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Password Baru</label>
+                                <input type="password" className={inputCls} placeholder="Min. 8 karakter" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} required />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Konfirmasi Password Baru</label>
+                                <input type="password" className={inputCls} placeholder="Ulangi password baru" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required />
+                            </div>
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                                <button type="submit" disabled={loading} className={btnPrimary}>
+                                    {loading ? "Menyimpan..." : "Simpan Password"}
                                 </button>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 p-5">
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Ubah Password</h3>
-                    {error && <div className="mb-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">{error}</div>}
-                    {successMessage && <div className="mb-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400">{successMessage}</div>}
-                    <form onSubmit={handleChangePassword} className="space-y-3">
-                        <div>
-                            <label className={labelCls}>Password Saat Ini</label>
-                            <input type="password" className={inputCls} placeholder="********" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} required />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Password Baru</label>
-                            <input type="password" className={inputCls} placeholder="Min. 8 karakter" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} required />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Konfirmasi Password Baru</label>
-                            <input type="password" className={inputCls} placeholder="Ulangi password baru" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required />
-                        </div>
-                        <button type="submit" disabled={loading} className="w-full py-2.5 rounded-xl bg-ds-amber hover:bg-ds-gold text-black font-semibold text-sm transition-all disabled:opacity-50">
-                            {loading ? "Menyimpan..." : "Simpan Password"}
-                        </button>
-                    </form>
-                </div>
-
-                <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 p-5">
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Sesi & Logout</h3>
-                    <button
-                        onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; }}
-                        className="w-full py-2.5 rounded-xl border border-red-200 dark:border-red-900 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
-                    >
-                        Keluar dari Akun
-                    </button>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        await fetch("/api/auth/logout", { method: "POST" });
+                                        window.location.href = "/login";
+                                    }}
+                                    className={btnDanger}
+                                >
+                                    Keluar dari Akun
+                                </button>
+                            </div>
+                        </form>
+                    </DashboardPanel>
                 </div>
             </div>
-        </>
+        </DashboardPageShell>
     );
 }

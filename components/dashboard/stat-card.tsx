@@ -16,31 +16,53 @@ export function StatCard({
     primary = false,
 }: StatCardProps) {
     return (
-        <div className={`rounded-2xl p-5 border ${primary
-                ? "bg-ds-amber border-ds-amber text-black"
-                : "bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/5"
-            }`}>
-            <div className="flex items-center justify-between mb-3">
-                <span className={`text-xs font-semibold uppercase tracking-wider ${primary ? "text-black/60" : "text-gray-400 dark:text-white/40"
-                    }`}>
-                    {label}
-                </span>
-                <div className="text-xl">{icon}</div>
-            </div>
-            <div className={`text-3xl font-bold mb-1.5 ${primary ? "text-black" : "text-gray-900 dark:text-white"
-                }`}>
-                {value}
-            </div>
-            {change && (
-                <div className={`text-xs font-medium ${primary
-                        ? "text-black/50"
-                        : changeType === "negative"
-                            ? "text-red-500"
-                            : "text-emerald-500"
-                    }`}>
-                    {changeType === "positive" ? "↑" : "↓"} {change}
+        <div
+            className={`rounded-2xl border p-4 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 sm:p-5 ${
+                primary
+                    ? "border-ds-amber/30 bg-ds-amber text-black"
+                    : "border-black/5 bg-white/85 dark:border-white/6 dark:bg-white/[0.04]"
+            }`}
+        >
+            <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                    <div
+                        className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${
+                            primary ? "text-black/55" : "text-slate-400 dark:text-white/35"
+                        }`}
+                    >
+                        {label}
+                    </div>
+                    <div
+                        className={`mt-3 text-3xl font-black tracking-tight ${
+                            primary ? "text-black" : "text-slate-950 dark:text-white"
+                        }`}
+                    >
+                        {value}
+                    </div>
                 </div>
-            )}
+                <div
+                    className={`flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-bold ${
+                        primary
+                            ? "bg-black/10 text-black"
+                            : "bg-slate-100 text-slate-500 dark:bg-white/8 dark:text-white/55"
+                    }`}
+                >
+                    {icon}
+                </div>
+            </div>
+            {change ? (
+                <div
+                    className={`text-sm ${
+                        primary
+                            ? "text-black/60"
+                            : changeType === "negative"
+                              ? "text-red-500"
+                              : "text-emerald-500"
+                    }`}
+                >
+                    {change}
+                </div>
+            ) : null}
         </div>
     );
 }

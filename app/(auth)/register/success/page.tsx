@@ -1,23 +1,37 @@
 "use client";
 
 import Link from "next/link";
+import { AuthShell, authPrimaryBtnCls } from "@/components/auth/auth-shell";
 
 export default function RegisterSuccessPage() {
     return (
-        <div className="w-full max-w-md mx-auto text-center">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
-                <div className="text-6xl mb-4">🎉</div>
-                <h1 className="text-2xl font-bold text-white mb-2">Pendaftaran Berhasil!</h1>
-                <p className="text-white/50 text-sm leading-relaxed mb-6">
-                    Akun Anda sudah aktif! Silakan login menggunakan email dan password yang sudah Anda daftarkan.
-                </p>
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 mb-6">
-                    <p className="text-emerald-400 text-sm font-medium">✅ Akun Aktif — Siap Login</p>
-                </div>
-                <Link href="/login" className="inline-block w-full py-3 rounded-xl bg-ds-amber hover:bg-ds-gold text-black font-bold text-sm transition-all">
-                    Login Sekarang →
+        <AuthShell
+            eyebrow="Registration Complete"
+            title="Pendaftaran Berhasil"
+            description="Akun Anda sudah aktif. Anda bisa langsung masuk dan mulai melengkapi profile atau mengikuti tournament yang tersedia."
+            footer={
+                <Link href="/" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
+                    Kembali ke homepage
                 </Link>
+            }
+        >
+            <div className="rounded-[28px] border border-emerald-500/20 bg-emerald-500/10 p-6 text-center">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-500/15 text-3xl font-black text-emerald-400">
+                    OK
+                </div>
+                <h3 className="mt-5 text-2xl font-black tracking-tight text-white">Akun Aktif dan Siap Dipakai</h3>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-white/55">
+                    Login menggunakan email dan password yang baru Anda buat. Setelah masuk, Anda bisa membuka dashboard atau melengkapi profile game lebih lanjut.
+                </p>
+                <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-black/10 px-4 py-3 text-sm font-medium text-emerald-300">
+                    Status: ACTIVE
+                </div>
+                <div className="mt-6">
+                    <Link href="/login" className={authPrimaryBtnCls}>
+                        Login Sekarang
+                    </Link>
+                </div>
             </div>
-        </div>
+        </AuthShell>
     );
 }

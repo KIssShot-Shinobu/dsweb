@@ -1,6 +1,6 @@
 "use client";
 
-type UploadPreview = {
+export type UploadPreview = {
     previewUrl: string;
     expiresAt: string;
 };
@@ -24,23 +24,22 @@ export function RegisterUploadField({
 }: RegisterUploadFieldProps) {
     return (
         <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-white/50">
-                {label}
-            </label>
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">{label}</label>
             {preview ? (
-                <div className="flex items-center gap-3">
-                    <img src={preview.previewUrl} className="h-16 rounded-lg object-cover" alt={label} />
-                    <div className="space-y-1 text-xs text-white/40">
+                <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 sm:flex-row sm:items-center">
+                    <img src={preview.previewUrl} className="h-20 w-full rounded-xl object-cover sm:w-28" alt={label} />
+                    <div className="flex-1 space-y-1 text-xs text-white/40">
                         <p>Tersimpan sementara sampai pendaftaran selesai.</p>
                         <p>Expired: {new Date(preview.expiresAt).toLocaleString("id-ID")}</p>
                     </div>
-                    <button type="button" onClick={onClear} className="text-xs text-red-400 hover:text-red-300">
+                    <button type="button" onClick={onClear} className="w-fit text-xs font-medium text-red-400 hover:text-red-300">
                         Hapus
                     </button>
                 </div>
             ) : (
-                <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-white/20 px-4 py-3 transition-all hover:border-ds-amber/40">
-                    <span className="text-sm text-white/40">{uploading ? "Mengupload..." : "Upload screenshot"}</span>
+                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-dashed border-white/20 bg-white/[0.02] px-4 py-3 transition-all hover:border-ds-amber/40 hover:bg-white/[0.04]">
+                    <span className="text-sm text-white/45">{uploading ? "Mengupload..." : "Upload screenshot"}</span>
+                    <span className="rounded-xl bg-ds-amber/10 px-3 py-1.5 text-xs font-semibold text-ds-amber">Pilih file</span>
                     <input
                         type="file"
                         accept="image/png,image/jpeg,image/webp"

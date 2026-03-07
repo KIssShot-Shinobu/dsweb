@@ -7,8 +7,15 @@ import { useToast } from "@/components/dashboard/toast";
 import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
 import { FormSelect } from "@/components/dashboard/form-select";
-import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { RowActions } from "@/components/dashboard/row-actions";
+import { btnOutline, btnPrimary, filterBarCls, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import {
+    DashboardEmptyState,
+    DashboardMetricCard,
+    DashboardPageHeader,
+    DashboardPageShell,
+    DashboardPanel,
+} from "@/components/dashboard/page-shell";
 
 interface Transaction {
     id: string;
@@ -111,7 +118,7 @@ export default function TreasuryPage() {
 
     const fetchUsers = () => {
         setUsersLoading(true);
-                fetch("/api/users?status=ACTIVE&role=ALL&perPage=100")
+        fetch("/api/users?status=ACTIVE&role=ALL&perPage=100")
             .then((res) => res.json())
             .then((data) => {
                 setUsers(data.data || []);
@@ -247,137 +254,91 @@ export default function TreasuryPage() {
     }));
 
     return (
-        <>
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white md:text-2xl">Treasury</h1>
-                    <p className="mt-0.5 text-sm text-gray-400 dark:text-white/40">Kelola kas guild, transaksi, dan relasi transaksi ke user.</p>
+        <DashboardPageShell>
+            <div className="space-y-5 lg:space-y-6">
+                <DashboardPageHeader
+                    kicker="Finance Desk"
+                    title="Treasury"
+                    description="Kelola kas guild, hubungkan transaksi ke user aktif bila diperlukan, dan pantau arus masuk-keluar per periode."
+                    actions={<button className={btnPrimary} onClick={() => setShowModal(true)}>+ Tambah Transaksi</button>}
+                />
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <DashboardMetricCard label="Saldo Periode" value={loading ? "..." : formatCurrency(balance)} meta="Posisi saldo sesuai filter bulan dan tahun" tone="accent" />
+                    <DashboardMetricCard label="Pemasukan" value={loading ? "..." : formatCurrency(income)} meta="Total transaksi masuk" tone="success" />
+                    <DashboardMetricCard label="Pengeluaran" value={loading ? "..." : formatCurrency(expense)} meta="Total transaksi keluar" tone="danger" />
+                    <DashboardMetricCard label="Jumlah Transaksi" value={loading ? "..." : total} meta="Total record pada periode aktif" />
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-white p-1 dark:border-white/10 dark:bg-[#161616]">
-                        <div className="w-24">
+
+                <DashboardPanel title="Filter Periode" description="Pilih bulan, tahun, dan tipe transaksi untuk mempersempit daftar kas guild.">
+                    <div className={filterBarCls}>
+                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_140px_180px_auto]">
                             <FormSelect value={String(month)} onChange={(value) => { setMonth(Number(value)); setPage(1); }} options={monthOptions} />
-                        </div>
-                        <div className="ml-1 w-24 border-l border-gray-200 pl-1 dark:border-white/10">
                             <FormSelect value={String(year)} onChange={(value) => { setYear(Number(value)); setPage(1); }} options={yearOptions} />
+                            <FormSelect value={filter} onChange={(value) => { setFilter(value as "ALL" | "MASUK" | "KELUAR"); setPage(1); }} options={filterOptions} />
+                            <button className={btnOutline} onClick={() => { setMonth(currentMonth); setYear(currentYear); setFilter("ALL"); setPage(1); }}>
+                                Reset Filter
+                            </button>
                         </div>
                     </div>
-                    <div className="w-[160px]">
-                        <FormSelect value={filter} onChange={(value) => { setFilter(value as "ALL" | "MASUK" | "KELUAR"); setPage(1); }} options={filterOptions} />
-                    </div>
-                    <button className={btnPrimary} onClick={() => setShowModal(true)}>
-                        + Tambah Transaksi
-                    </button>
-                </div>
-            </div>
+                </DashboardPanel>
 
-            <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-4 md:gap-4">
-                <div className="rounded-2xl border border-ds-amber bg-ds-amber p-5">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-black/60">Saldo Periode</div>
-                    <div className="text-2xl font-bold text-black">{formatCurrency(balance)}</div>
-                </div>
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-white/5 dark:bg-[#1a1a1a]">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">Pemasukan</div>
-                    <div className="text-2xl font-bold text-emerald-500">{formatCurrency(income)}</div>
-                </div>
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-white/5 dark:bg-[#1a1a1a]">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">Pengeluaran</div>
-                    <div className="text-2xl font-bold text-red-500">{formatCurrency(expense)}</div>
-                </div>
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-white/5 dark:bg-[#1a1a1a]">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">Jumlah Transaksi</div>
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{total}</div>
-                </div>
-            </div>
-
-            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-white/5 dark:bg-[#1a1a1a]">
-                <div className="border-b border-gray-100 p-4 dark:border-white/5 md:p-5">
-                    <span className="text-base font-semibold text-gray-900 dark:text-white">Daftar Transaksi</span>
-                </div>
-                <div className="p-4 md:p-5">
+                <DashboardPanel title="Daftar Transaksi" description={`Menampilkan ${total} transaksi pada periode yang dipilih.`}>
                     {loading ? (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             {[1, 2, 3, 4, 5].map((item) => (
-                                <div key={item} className="h-14 animate-pulse rounded-xl bg-gray-100 dark:bg-white/5" />
+                                <div key={item} className="h-20 animate-pulse rounded-2xl border border-black/5 bg-slate-100/90 dark:border-white/6 dark:bg-white/[0.04]" />
                             ))}
                         </div>
                     ) : transactions.length === 0 ? (
-                        <div className="py-12 text-center">
-                            <div className="mb-3 text-4xl">Rp</div>
-                            <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">Belum ada transaksi</div>
-                            <p className="text-xs text-gray-400">Tidak ada data untuk periode dan filter ini.</p>
-                        </div>
+                        <DashboardEmptyState title="Belum ada transaksi" description="Tidak ada data untuk periode dan filter ini. Tambahkan transaksi baru atau ganti filter bulan." />
                     ) : (
                         <>
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {transactions.map((transaction) => (
-                                    <div key={transaction.id} className="flex items-center gap-3 rounded-xl bg-gray-50 p-3 transition-colors hover:bg-gray-100 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] md:p-3.5">
-                                        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${transaction.amount >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
+                                    <div key={transaction.id} className="flex flex-col gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-4 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] lg:flex-row lg:items-center">
+                                        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-sm font-bold ${transaction.amount >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
                                             {transaction.amount >= 0 ? "+" : "-"}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <div className="truncate text-sm font-semibold text-gray-900 dark:text-white">{transaction.description}</div>
-                                            <div className="truncate text-xs text-gray-400 dark:text-white/40">
-                                                {formatDate(transaction.createdAt)} Â· {transaction.user?.fullName || "Kas umum"}
+                                            <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{transaction.description}</div>
+                                            <div className="truncate text-xs text-slate-400 dark:text-white/40">
+                                                {formatDate(transaction.createdAt)} · {transaction.user?.fullName || "Kas umum"}
                                             </div>
                                         </div>
-                                        <div className={`flex-shrink-0 text-sm font-bold ${transaction.amount >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                                        <div className={`text-sm font-bold ${transaction.amount >= 0 ? "text-emerald-500" : "text-red-500"}`}>
                                             {transaction.amount >= 0 ? "+" : "-"}
                                             {formatCurrency(Math.abs(transaction.amount))}
                                         </div>
-                                        <RowActions
-                                            className="flex-shrink-0"
-                                            onEdit={() => handleEdit(transaction)}
-                                            onDelete={() => handleDeleteClick(transaction.id, transaction.description)}
-                                        />
+                                        <RowActions className="flex-shrink-0" onEdit={() => handleEdit(transaction)} onDelete={() => handleDeleteClick(transaction.id, transaction.description)} />
                                     </div>
                                 ))}
                             </div>
-                            <Pagination page={page} totalPages={totalPages} total={total} perPage={PER_PAGE} onPage={setPage} />
+                            <div className="mt-5">
+                                <Pagination page={page} totalPages={totalPages} total={total} perPage={PER_PAGE} onPage={setPage} />
+                            </div>
                         </>
                     )}
-                </div>
+                </DashboardPanel>
             </div>
 
             <Modal open={showModal} onClose={resetForm} title={editingId ? "Edit Transaksi" : "Tambah Transaksi Baru"}>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-5 grid grid-cols-1 gap-4">
-                        <div>
-                            <label className={labelCls}>Tipe Transaksi</label>
-                            <FormSelect value={formData.type} onChange={(value) => setFormData((prev) => ({ ...prev, type: value }))} options={transactionTypeOptions} />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Terkait User</label>
-                            <FormSelect
-                                value={formData.userId}
-                                onChange={(value) => setFormData((prev) => ({ ...prev, userId: value }))}
-                                options={userSelectOptions}
-                                disabled={usersLoading}
-                            />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Nominal (IDR)</label>
-                            <input
-                                type="number"
-                                className={inputCls}
-                                value={formData.amount || ""}
-                                onChange={(event) => setFormData((prev) => ({ ...prev, amount: Number(event.target.value) }))}
-                                required
-                                min="1"
-                                placeholder="10000"
-                            />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Deskripsi</label>
-                            <input
-                                type="text"
-                                className={inputCls}
-                                value={formData.description}
-                                onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
-                                required
-                                placeholder="Contoh: Iuran bulanan guild"
-                            />
-                        </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className={labelCls}>Tipe Transaksi</label>
+                        <FormSelect value={formData.type} onChange={(value) => setFormData((prev) => ({ ...prev, type: value }))} options={transactionTypeOptions} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Terkait User</label>
+                        <FormSelect value={formData.userId} onChange={(value) => setFormData((prev) => ({ ...prev, userId: value }))} options={userSelectOptions} disabled={usersLoading} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Nominal (IDR)</label>
+                        <input type="number" className={inputCls} value={formData.amount || ""} onChange={(event) => setFormData((prev) => ({ ...prev, amount: Number(event.target.value) }))} required min="1" placeholder="10000" />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Deskripsi</label>
+                        <input type="text" className={inputCls} value={formData.description} onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))} required placeholder="Contoh: Iuran bulanan guild" />
                     </div>
                     <div className="flex justify-end gap-3">
                         <button type="button" className={btnOutline} onClick={resetForm}>Batal</button>
@@ -388,21 +349,8 @@ export default function TreasuryPage() {
                 </form>
             </Modal>
 
-            <ConfirmModal
-                open={confirmState.open}
-                title="Hapus Transaksi"
-                message={`Hapus "${confirmState.label}"? Anda punya 5 detik untuk undo.`}
-                confirmLabel="Hapus"
-                onConfirm={handleConfirmDelete}
-                onCancel={() => setConfirmState({ open: false, id: "", label: "" })}
-            />
-
-            <UndoSnackbar
-                open={!!pendingDelete}
-                message={`"${pendingDelete?.label}" akan dihapus`}
-                duration={UNDO_DURATION}
-                onUndo={handleUndo}
-            />
-        </>
+            <ConfirmModal open={confirmState.open} title="Hapus Transaksi" message={`Hapus "${confirmState.label}"? Anda punya 5 detik untuk undo.`} confirmLabel="Hapus" onConfirm={handleConfirmDelete} onCancel={() => setConfirmState({ open: false, id: "", label: "" })} />
+            <UndoSnackbar open={!!pendingDelete} message={`"${pendingDelete?.label}" akan dihapus`} duration={UNDO_DURATION} onUndo={handleUndo} />
+        </DashboardPageShell>
     );
 }

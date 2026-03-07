@@ -13,9 +13,7 @@ datasource db {
 // ─── ENUMS FOR TYPE SAFETY ───────────────────────────────────────────────────
 
 enum UserStatus {
-  PENDING
   ACTIVE
-  REJECTED
   BANNED
 }
 
@@ -133,7 +131,7 @@ model User {
   accountNumberHash String? @db.VarChar(64)
   city          String?    @db.VarChar(191)
   avatarUrl     String?
-  status        UserStatus @default(PENDING)
+  status        UserStatus @default(ACTIVE)
   role          UserRole   @default(USER)
   lastLoginAt   DateTime?
   createdAt     DateTime   @default(now())
