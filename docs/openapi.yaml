@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Duel Standby API
-  version: 0.3.0
-  description: Auth, dashboard, users, tournaments, treasury, profile, and audit endpoints for DSWeb.
+  version: 0.4.0
+  description: Auth, dashboard, users, teams, tournaments, treasury, profile, and audit endpoints for DSWeb.
 servers:
   - url: https://example.com
 components:
@@ -25,6 +25,12 @@ components:
         - OFFICER
         - ADMIN
         - FOUNDER
+    TeamStatusFilter:
+      type: string
+      enum:
+        - ALL
+        - ACTIVE
+        - INACTIVE
     TournamentStatus:
       type: string
       enum:
@@ -35,7 +41,7 @@ components:
 paths:
   /api/auth/register:
     post:
-      summary: Register a new user
+      summary: Register a new public user
       requestBody:
         required: true
         content:
@@ -74,6 +80,55 @@ paths:
       responses:
         "201":
           description: Registration created
+  /api/auth/login:
+    post:
+      summary: Login and issue auth cookies
+      responses:
+        "200":
+          description: Login success
+        "401":
+          description: Invalid credentials
+  /api/auth/me:
+    get:
+      summary: Get authenticated user session or guest payload
+      responses:
+        "200":
+          description: Session payload
+  /api/auth/refresh:
+    post:
+      summary: Rotate refresh token and refresh access cookie
+      responses:
+        "200":
+          description: Token refreshed
+  /api/auth/password/change:
+    post:
+      summary: Change password for authenticated user
+      security:
+        - dsAuthCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+                - confirmPassword
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                confirmPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password changed and sessions revoked
+        "400":
+          description: Validation failed or current password invalid
+        "401":
+          description: Unauthorized
   /api/upload/public:
     post:
       summary: Create temporary public upload for registration screenshot
@@ -108,59 +163,6 @@ paths:
           description: Image preview
         "404":
           description: Upload not found or expired
-  /api/auth/login:
-    post:
-      summary: Login and issue auth cookies
-      responses:
-        "200":
-          description: Login success
-        "401":
-          description: Invalid credentials
-  /api/auth/refresh:
-    post:
-      summary: Rotate refresh token and refresh access cookie
-      responses:
-        "200":
-          description: Token refreshed
-  /api/auth/me:
-    get:
-      summary: Get authenticated user session
-      security:
-        - dsAuthCookie: []
-      responses:
-        "200":
-          description: Authenticated user payload
-        "401":
-          description: Unauthorized
-  /api/auth/password/change:
-    post:
-      summary: Change password for authenticated user
-      security:
-        - dsAuthCookie: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - currentPassword
-                - newPassword
-                - confirmPassword
-              properties:
-                currentPassword:
-                  type: string
-                newPassword:
-                  type: string
-                confirmPassword:
-                  type: string
-      responses:
-        "200":
-          description: Password changed and sessions revoked
-        "400":
-          description: Validation failed or current password invalid
-        "401":
-          description: Unauthorized
   /api/dashboard/summary:
     get:
       summary: Fetch dashboard summary cards and lists
@@ -180,11 +182,26 @@ paths:
         - in: query
           name: status
           schema:
-            $ref: "#/components/schemas/UserStatus"
+            type: string
+            enum:
+              - ALL
+              - ACTIVE
+              - BANNED
         - in: query
           name: role
           schema:
-            $ref: "#/components/schemas/UserRole"
+            type: string
+            enum:
+              - ALL
+              - USER
+              - MEMBER
+              - OFFICER
+              - ADMIN
+              - FOUNDER
+        - in: query
+          name: teamId
+          schema:
+            type: string
         - in: query
           name: search
           schema:
@@ -199,7 +216,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: Paginated user list
+          description: Paginated user list with team filter options
   /api/users/{id}:
     get:
       summary: Get a single managed user detail
@@ -213,12 +230,103 @@ paths:
             type: string
       responses:
         "200":
-          description: User detail payload
+          description: User detail payload including current team
         "404":
           description: Not found
   /api/users/{id}/status:
     put:
-      summary: Update status or role for a managed user
+      summary: Update status, role, or team assignment for a managed user
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  $ref: "#/components/schemas/UserStatus"
+                role:
+                  $ref: "#/components/schemas/UserRole"
+                teamId:
+                  type:
+                    - string
+                    - "null"
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: User updated
+        "400":
+          description: Validation failed
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+  /api/teams:
+    get:
+      summary: List guild teams for dashboard management
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/TeamStatusFilter"
+      responses:
+        "200":
+          description: Team list payload
+        "403":
+          description: Forbidden
+    post:
+      summary: Create a new guild team
+      security:
+        - dsAuthCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - slug
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+                description:
+                  type: string
+                logoUrl:
+                  type: string
+                isActive:
+                  type: boolean
+      responses:
+        "201":
+          description: Team created
+        "400":
+          description: Validation failed
+        "403":
+          description: Forbidden
+        "409":
+          description: Slug already used
+  /api/teams/{id}:
+    get:
+      summary: Get a guild team with roster summary
       security:
         - dsAuthCookie: []
       parameters:
@@ -229,13 +337,134 @@ paths:
             type: string
       responses:
         "200":
-          description: User status updated
+          description: Team detail payload
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+    put:
+      summary: Update a guild team
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - slug
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+                description:
+                  type: string
+                logoUrl:
+                  type: string
+                isActive:
+                  type: boolean
+      responses:
+        "200":
+          description: Team updated
         "400":
           description: Validation failed
         "403":
           description: Forbidden
         "404":
           description: Not found
+        "409":
+          description: Slug already used
+    delete:
+      summary: Delete an empty guild team
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Team deleted
+        "400":
+          description: Team still has members
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+  /api/teams/{id}/roster:
+    post:
+      summary: Assign an eligible member to a team roster
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: string
+      responses:
+        "200":
+          description: Member assigned to team roster
+        "400":
+          description: Validation failed or user not eligible
+        "403":
+          description: Forbidden
+        "404":
+          description: Team or user not found
+        "409":
+          description: User already belongs to another team
+    delete:
+      summary: Remove a member from a team roster
+      security:
+        - dsAuthCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: string
+      responses:
+        "200":
+          description: Member removed from team roster
+        "400":
+          description: Validation failed or user not attached to this team
+        "403":
+          description: Forbidden
+        "404":
+          description: Team or user not found
   /api/treasury:
     get:
       summary: Fetch treasury transactions with summary
@@ -284,12 +513,10 @@ paths:
             schema:
               type: object
               required:
-                - description
                 - type
                 - amount
+                - description
               properties:
-                description:
-                  type: string
                 type:
                   type: string
                   enum:
@@ -297,85 +524,17 @@ paths:
                     - KELUAR
                 amount:
                   type: number
-                userId:
+                description:
                   type: string
-                  nullable: true
+                userId:
+                  type:
+                    - string
+                    - "null"
       responses:
         "201":
           description: Treasury transaction created
         "403":
           description: Forbidden
-  /api/treasury/{id}:
-    get:
-      summary: Get a treasury transaction detail
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Treasury transaction detail
-        "404":
-          description: Not found
-    put:
-      summary: Update treasury transaction
-      security:
-        - dsAuthCookie: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - description
-                - type
-                - amount
-              properties:
-                description:
-                  type: string
-                type:
-                  type: string
-                  enum:
-                    - MASUK
-                    - KELUAR
-                amount:
-                  type: number
-                userId:
-                  type: string
-                  nullable: true
-      responses:
-        "200":
-          description: Treasury transaction updated
-        "403":
-          description: Forbidden
-        "404":
-          description: Not found
-    delete:
-      summary: Delete treasury transaction
-      security:
-        - dsAuthCookie: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Treasury transaction deleted
-        "403":
-          description: Forbidden
-        "404":
-          description: Not found
   /api/tournaments:
     get:
       summary: List tournaments for public site and dashboard
@@ -402,47 +561,11 @@ paths:
             type: integer
       responses:
         "200":
-          description: Tournament list with summary counts
+          description: Tournament list payload
     post:
-      summary: Create a tournament
+      summary: Create tournament
       security:
         - dsAuthCookie: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - title
-                - format
-                - gameType
-                - entryFee
-                - prizePool
-                - startDate
-              properties:
-                title:
-                  type: string
-                description:
-                  type: string
-                  nullable: true
-                format:
-                  type: string
-                gameType:
-                  type: string
-                status:
-                  $ref: "#/components/schemas/TournamentStatus"
-                entryFee:
-                  type: number
-                prizePool:
-                  type: number
-                startDate:
-                  type: string
-                  format: date-time
-                image:
-                  type: string
-                  nullable: true
-                  description: Local upload path only, for example /uploads/example.jpg
       responses:
         "201":
           description: Tournament created
@@ -459,43 +582,27 @@ paths:
             type: string
       responses:
         "200":
-          description: Tournament detail
+          description: Tournament detail payload
         "404":
           description: Not found
     put:
-      summary: Update tournament fields
+      summary: Update tournament
       security:
         - dsAuthCookie: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
       responses:
         "200":
           description: Tournament updated
-        "400":
-          description: Validation failed
         "403":
           description: Forbidden
     delete:
-      summary: Delete a tournament
+      summary: Delete tournament
       security:
         - dsAuthCookie: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
       responses:
         "200":
           description: Tournament deleted
         "403":
           description: Forbidden
-        "404":
-          description: Not found
   /api/tournaments/{id}/register:
     post:
       summary: Register authenticated active user to a tournament
@@ -508,64 +615,11 @@ paths:
           schema:
             type: string
       responses:
-        "201":
-          description: Tournament registration created
+        "200":
+          description: Registration success
         "400":
-          description: Registration blocked
+          description: Registration rejected
         "401":
           description: Unauthorized
-        "403":
-          description: Inactive account
         "404":
-          description: Tournament not found
-  /api/audit-logs:
-    get:
-      summary: List audit logs with filters
-      security:
-        - dsAuthCookie: []
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-        - in: query
-          name: limit
-          schema:
-            type: integer
-        - in: query
-          name: action
-          schema:
-            type: string
-        - in: query
-          name: search
-          schema:
-            type: string
-        - in: query
-          name: userId
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Paginated audit logs
-        "403":
-          description: Forbidden
-  /api/audit-logs/export:
-    get:
-      summary: Export audit logs to CSV using the active filters
-      security:
-        - dsAuthCookie: []
-      responses:
-        "200":
-          description: CSV stream
-        "403":
-          description: Forbidden
-  /api/profile/stats:
-    get:
-      summary: Fetch profile statistics for the current user
-      security:
-        - dsAuthCookie: []
-      responses:
-        "200":
-          description: Profile statistics payload
-        "401":
-          description: Unauthorized
+          description: Not found

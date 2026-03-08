@@ -19,12 +19,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             city: true,
             status: true,
             role: true,
+            teamId: true,
+            teamJoinedAt: true,
             createdAt: true,
             lastLoginAt: true,
             gameProfiles: true,
             registrationLog: true,
+            team: {
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    isActive: true,
+                },
+            },
             auditLogs: {
-                select: { action: true, reason: true, createdAt: true, user: { select: { fullName: true, email: true } } },
+                select: {
+                    action: true,
+                    reason: true,
+                    createdAt: true,
+                    user: { select: { fullName: true, email: true } },
+                },
                 orderBy: { createdAt: "desc" },
                 take: 10,
             },

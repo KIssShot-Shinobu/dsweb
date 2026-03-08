@@ -26,11 +26,16 @@ interface DashboardSummary {
         total: number;
         active: number;
         banned: number;
+        guildMembers: number;
+        assignedToTeam: number;
+        teams: number;
+        activeTeams: number;
     };
     recentActiveUsers: {
         id: string;
         fullName: string;
         role: string;
+        team: { id: string; name: string; slug: string } | null;
         gameProfiles: { gameId: string; ign?: string; gameType?: string }[];
     }[];
     recentTournaments: {
@@ -71,6 +76,10 @@ const EMPTY_SUMMARY: DashboardSummary = {
         total: 0,
         active: 0,
         banned: 0,
+        guildMembers: 0,
+        assignedToTeam: 0,
+        teams: 0,
+        activeTeams: 0,
     },
     recentActiveUsers: [],
     recentTournaments: [],
@@ -140,7 +149,7 @@ export default function DashboardPage() {
                 <DashboardPageHeader
                     kicker="Operations Center"
                     title="Dashboard"
-                    description="Kelola users, tournament, treasury, dan aktivitas sistem dari satu workspace yang lebih ringkas dan konsisten."
+                    description="Kelola akun publik, member Duel Standby, roster team, tournament, treasury, dan aktivitas sistem dari satu workspace yang lebih ringkas dan konsisten."
                     actions={(
                         <>
                             <a href="/dashboard/tournaments" className={btnPrimary}>
@@ -154,7 +163,7 @@ export default function DashboardPage() {
                 />
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                    <StatCard label="Active Users" value={loading ? "..." : summary.stats.totalActiveUsers} icon="U" change="Akun aktif guild" primary />
+                    <StatCard label="Active Users" value={loading ? "..." : summary.stats.totalActiveUsers} icon="U" change="Akun aktif siap ikut flow publik" primary />
                     <StatCard label="Open Tournaments" value={loading ? "..." : summary.stats.openTournaments} icon="O" change="Registrasi dibuka" />
                     <StatCard label="Active Tournaments" value={loading ? "..." : summary.stats.activeTournaments} icon="A" change="Sedang berjalan" />
                     <StatCard label="Completed" value={loading ? "..." : summary.stats.completedTournaments} icon="C" change="Turnamen selesai" />
@@ -176,4 +185,3 @@ export default function DashboardPage() {
         </DashboardPageShell>
     );
 }
-

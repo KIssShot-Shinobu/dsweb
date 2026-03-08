@@ -12,6 +12,8 @@ type AuthUserRecord = {
     role: string;
 };
 
+type RegisterConflictCode = "EMAIL_EXISTS" | "PHONE_EXISTS" | "GAME_ID_EXISTS";
+
 type AuthPrismaLike = {
     user: {
         findUnique: (args: { where: Record<string, unknown>; select?: Record<string, boolean> }) => Promise<AuthUserRecord | null>;
@@ -33,6 +35,51 @@ type AuthDeps = {
     generateSecureToken: (size?: number) => string;
     now?: () => Date;
 };
+
+type RegisterUserOptions = {
+    skipConflictCheck?: boolean;
+};
+
+async function findExistingGameProfile(prisma: AuthPrismaLike, data: RegisterInput) {
+    const gameIdsToCheck: string[] = [];
+    if (data.duelLinksGameId) gameIdsToCheck.push(data.duelLinksGameId);
+    if (data.masterDuelGameId) gameIdsToCheck.push(data.masterDuelGameId);
+
+    if (gameIdsToCheck.length === 0) {
+        return null;
+    }
+
+    return prisma.gameProfile.findFirst({
+        where: { gameId: { in: gameIdsToCheck } },
+    });
+}
+
+export async function findRegisterConflict(
+    deps: Pick<AuthDeps, "prisma">,
+    data: RegisterInput
+): Promise<RegisterConflictCode | null> {
+    const [emailExists, phoneExists, existingGameProfile] = await Promise.all([
+        deps.prisma.user.findUnique({ where: { email: data.email } }),
+        data.phoneWhatsapp
+            ? deps.prisma.user.findUnique({ where: { phoneWhatsapp: data.phoneWhatsapp } })
+            : Promise.resolve(null),
+        findExistingGameProfile(deps.prisma, data),
+    ]);
+
+    if (emailExists) {
+        return "EMAIL_EXISTS";
+    }
+
+    if (phoneExists) {
+        return "PHONE_EXISTS";
+    }
+
+    if (existingGameProfile) {
+        return "GAME_ID_EXISTS";
+    }
+
+    return null;
+}
 
 export async function authenticateUser(
     deps: Pick<AuthDeps, "prisma" | "comparePassword">,
@@ -66,34 +113,13 @@ export async function authenticateUser(
 
 export async function registerUser(
     deps: AuthDeps,
-    data: RegisterInput
+    data: RegisterInput,
+    options: RegisterUserOptions = {}
 ) {
-    const [emailExists, phoneExists] = await Promise.all([
-        deps.prisma.user.findUnique({ where: { email: data.email } }),
-        data.phoneWhatsapp
-            ? deps.prisma.user.findUnique({ where: { phoneWhatsapp: data.phoneWhatsapp } })
-            : null,
-    ]);
-
-    if (emailExists) {
-        return { ok: false as const, code: "EMAIL_EXISTS" };
-    }
-
-    if (phoneExists) {
-        return { ok: false as const, code: "PHONE_EXISTS" };
-    }
-
-    const gameIdsToCheck: string[] = [];
-    if (data.duelLinksGameId) gameIdsToCheck.push(data.duelLinksGameId);
-    if (data.masterDuelGameId) gameIdsToCheck.push(data.masterDuelGameId);
-
-    if (gameIdsToCheck.length > 0) {
-        const existingGameProfile = await deps.prisma.gameProfile.findFirst({
-            where: { gameId: { in: gameIdsToCheck } },
-        });
-
-        if (existingGameProfile) {
-            return { ok: false as const, code: "GAME_ID_EXISTS" };
+    if (!options.skipConflictCheck) {
+        const conflictCode = await findRegisterConflict(deps, data);
+        if (conflictCode) {
+            return { ok: false as const, code: conflictCode };
         }
     }
 

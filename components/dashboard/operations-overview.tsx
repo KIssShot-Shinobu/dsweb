@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { StatCard } from "@/components/dashboard/stat-card";
 
@@ -6,6 +6,10 @@ interface UserStats {
     total: number;
     active: number;
     banned: number;
+    guildMembers: number;
+    assignedToTeam: number;
+    teams: number;
+    activeTeams: number;
 }
 
 type QuickLink = {
@@ -19,14 +23,14 @@ const QUICK_LINKS: QuickLink[] = [
     {
         href: "/dashboard/users",
         title: "Users",
-        description: "Kelola role, status, dan data user dari satu halaman.",
+        description: "Kelola akun publik, role komunitas, dan status user dari satu halaman.",
         icon: "U",
     },
     {
-        href: "/dashboard/tournaments",
-        title: "Tournaments",
-        description: "Atur jadwal, status bracket, dan event guild yang sedang berjalan.",
-        icon: "T",
+        href: "/dashboard/teams",
+        title: "Teams",
+        description: "Atur roster Duel Standby tanpa mencampur status member dengan afiliasi team.",
+        icon: "G",
     },
     {
         href: "/dashboard/audit-logs",
@@ -42,13 +46,16 @@ export function OperationsOverview({ stats, loading = false }: { stats: UserStat
             <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-black tracking-tight text-slate-950 dark:text-white">Ringkasan Operasional</h2>
                 <p className="text-sm text-slate-500 dark:text-white/45">
-                    Kontrol utama dashboard disatukan di halaman ini tanpa antrean approval terpisah.
+                    Kontrol utama dashboard disatukan di halaman ini tanpa mencampur akun publik, member Duel Standby, dan roster team.
                 </p>
             </div>
 
             <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <StatCard label="Total User" value={loading ? "..." : stats.total} icon="U" change="Seluruh akun terdaftar" primary />
+                <StatCard label="Guild Members" value={loading ? "..." : stats.guildMembers} icon="M" change="Member Duel Standby" />
+                <StatCard label="Assigned Team" value={loading ? "..." : stats.assignedToTeam} icon="T" change="Member yang sudah masuk team" />
                 <StatCard label="Aktif" value={loading ? "..." : stats.active} icon="A" change="Akun siap dipakai" />
+                <StatCard label="Teams" value={loading ? "..." : stats.teams} icon="G" change={`${loading ? "..." : stats.activeTeams} team aktif`} />
                 <StatCard label="Banned" value={loading ? "..." : stats.banned} icon="B" change="Akun diblokir" changeType="negative" />
             </div>
 

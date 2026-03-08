@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getCurrentUser, hasRole } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
@@ -55,6 +55,10 @@ export async function GET() {
             totalUsers,
             activeUsers,
             bannedUsers,
+            totalGuildMembers,
+            assignedGuildMembers,
+            totalTeams,
+            activeTeams,
             openTournaments,
             ongoingTournaments,
             completedTournaments,
@@ -67,6 +71,15 @@ export async function GET() {
             prisma.user.count(),
             prisma.user.count({ where: { status: "ACTIVE" } }),
             prisma.user.count({ where: { status: "BANNED" } }),
+            prisma.user.count({ where: { role: { in: ["MEMBER", "OFFICER", "ADMIN", "FOUNDER"] } } }),
+            prisma.user.count({
+                where: {
+                    role: { in: ["MEMBER", "OFFICER", "ADMIN", "FOUNDER"] },
+                    teamId: { not: null },
+                },
+            }),
+            prisma.team.count(),
+            prisma.team.count({ where: { isActive: true } }),
             prisma.tournament.count({ where: { status: "OPEN" } }),
             prisma.tournament.count({ where: { status: "ONGOING" } }),
             prisma.tournament.count({ where: { status: "COMPLETED" } }),
@@ -76,6 +89,13 @@ export async function GET() {
                     id: true,
                     fullName: true,
                     role: true,
+                    team: {
+                        select: {
+                            id: true,
+                            name: true,
+                            slug: true,
+                        },
+                    },
                     gameProfiles: {
                         select: { gameId: true, ign: true, gameType: true },
                         orderBy: { createdAt: "asc" },
@@ -136,6 +156,10 @@ export async function GET() {
                     total: totalUsers,
                     active: activeUsers,
                     banned: bannedUsers,
+                    guildMembers: totalGuildMembers,
+                    assignedToTeam: assignedGuildMembers,
+                    teams: totalTeams,
+                    activeTeams,
                 },
                 recentActiveUsers,
                 recentTournaments: recentTournaments

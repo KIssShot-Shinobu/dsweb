@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { GameType } from "@prisma/client";
@@ -32,10 +32,7 @@ export async function GET() {
             }),
         ]);
 
-        const winTournamentIds = Array.from(
-            new Set(winLogs.map((l) => l.sourceId).filter((v): v is string => Boolean(v)))
-        );
-
+        const winTournamentIds = Array.from(new Set(winLogs.map((log) => log.sourceId).filter((value): value is string => Boolean(value))));
         const tournamentsWon = winTournamentIds.length;
 
         let totalPrizeWon = 0;
@@ -44,15 +41,11 @@ export async function GET() {
                 where: { id: { in: winTournamentIds } },
                 select: { id: true, prizePool: true },
             });
-            totalPrizeWon = wonTournaments.reduce((sum, t) => sum + (t.prizePool || 0), 0);
+            totalPrizeWon = wonTournaments.reduce((sum, tournament) => sum + (tournament.prizePool || 0), 0);
         }
 
         const verifiedGameAccounts = Array.from(
-            new Set(
-                gameProfiles
-                    .filter((profile) => Boolean(profile.screenshotUrl))
-                    .map((profile) => profile.gameType)
-            )
+            new Set(gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).map((profile) => profile.gameType))
         ) as GameType[];
 
         const winRate = tournamentsJoined > 0 ? tournamentsWon / tournamentsJoined : 0;
@@ -66,6 +59,9 @@ export async function GET() {
                 totalPrizeWon,
                 reputationPoints: reputation._sum.points || 0,
                 totalProfiles: gameProfiles.length,
+                communityRole: user.role,
+                hasTeam: Boolean(user.teamId),
+                teamName: user.team?.name || null,
                 memberSince: user.createdAt.toISOString().slice(0, 10),
                 lastActive: user.lastActiveAt.toISOString(),
                 verifiedGameAccounts,

@@ -89,7 +89,7 @@ export function FormSelect({
                   <div className="fixed inset-0 z-[399]" onClick={() => setOpen(false)} />
                   <div
                       ref={menuRef}
-                      className="fixed z-[400] max-h-72 overflow-auto rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#1b1b1b]"
+                      className="fixed z-[400] max-h-72 overflow-auto rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#11161d]"
                       style={{ top: menuStyle.top, left: menuStyle.left, width: menuStyle.width }}
                   >
                       {options.map((opt) => {
@@ -125,7 +125,7 @@ export function FormSelect({
                     type="button"
                     disabled={disabled}
                     onClick={() => setOpen((v) => !v)}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-left text-sm text-gray-900 outline-none transition-all focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-left text-sm text-gray-900 outline-none transition-all focus:border-ds-amber focus:ring-2 focus:ring-ds-amber/20 disabled:opacity-60 dark:border-white/10 dark:bg-[#11161d] dark:text-white"
                 >
                     <span className={`${selected ? "" : "text-gray-400 dark:text-white/40"}`}>{selected?.label || placeholder}</span>
                     <ChevronDown

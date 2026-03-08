@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { ReactNode } from "react";
 
 export function AuthShell({
@@ -26,9 +26,9 @@ export function AuthShell({
 
                     <div className="mt-8 grid gap-3 sm:grid-cols-3">
                         {[
-                            { label: "Unified Users", value: "1 sumber data untuk akun, roles, dan guild access." },
-                            { label: "Safe Upload", value: "Upload publik sementara, lalu otomatis di-claim saat registrasi." },
-                            { label: "Audit Ready", value: "Aksi sensitif dan perubahan role tercatat untuk monitoring." },
+                            { label: "Public First", value: "Akun publik aktif bisa langsung dibuat tanpa menunggu approval terpisah." },
+                            { label: "Role Terpisah", value: "Role komunitas, akses dashboard, dan afiliasi team dipisah dengan jelas." },
+                            { label: "Safe Upload", value: "Upload publik sementara akan di-claim otomatis saat registrasi berhasil." },
                         ].map((item) => (
                             <div key={item.label} className="rounded-2xl border border-white/8 bg-black/20 p-4">
                                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-ds-amber/90">{item.label}</div>

@@ -6,9 +6,9 @@ export default function UsersPage() {
     return (
         <UserManagementTable
             title="Users"
-            description="Satu halaman untuk registrasi user, akun aktif, role, dan status akun."
+            description="Kelola akun publik, member Duel Standby, role komunitas, dan afiliasi team dari satu halaman."
             emptyTitle="Tidak ada user ditemukan"
-            emptyDescription="Ubah filter status, role, atau kata kunci pencarian."
+            emptyDescription="Ubah filter status, role, team, atau kata kunci pencarian."
         />
     );
 }

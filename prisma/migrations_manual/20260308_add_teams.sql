@@ -1,0 +1,23 @@
+CREATE TABLE `Team` (
+  `id` VARCHAR(191) NOT NULL,
+  `name` VARCHAR(191) NOT NULL,
+  `slug` VARCHAR(191) NOT NULL,
+  `description` VARCHAR(500) NULL,
+  `logoUrl` LONGTEXT NULL,
+  `isActive` BOOLEAN NOT NULL DEFAULT true,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL,
+  UNIQUE INDEX `Team_slug_key`(`slug`),
+  PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+ALTER TABLE `User`
+  ADD COLUMN `teamId` VARCHAR(191) NULL,
+  ADD COLUMN `teamJoinedAt` DATETIME(3) NULL;
+
+CREATE INDEX `User_teamId_idx` ON `User`(`teamId`);
+
+ALTER TABLE `User`
+  ADD CONSTRAINT `User_teamId_fkey`
+  FOREIGN KEY (`teamId`) REFERENCES `Team`(`id`)
+  ON DELETE SET NULL ON UPDATE CASCADE;

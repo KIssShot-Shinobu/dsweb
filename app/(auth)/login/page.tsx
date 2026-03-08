@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
@@ -49,9 +49,9 @@ function LoginForm() {
 
     return (
         <AuthShell
-            eyebrow="Guild Access"
+            eyebrow="Account Access"
             title="Masuk ke Duel Standby"
-            description="Akses dashboard, profile, dan fitur guild menggunakan akun aktif Anda."
+            description="Gunakan akun aktif Anda untuk membuka profile, tournament publik, atau dashboard operasional sesuai role komunitas Anda."
             footer={
                 <>
                     Belum punya akun?{" "}

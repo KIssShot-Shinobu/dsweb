@@ -26,6 +26,21 @@ import {
 
 const errCls = "mt-1 text-xs text-red-400";
 
+function getErrorStep(fieldErrors: Record<string, string>) {
+    const stepFieldMap: Array<{ step: number; fields: string[] }> = [
+        { step: 1, fields: ["fullName", "email", "password", "confirmPassword", "phoneWhatsapp", "city"] },
+        { step: 2, fields: ["duelLinksGameId", "duelLinksIgn", "duelLinksScreenshotUploadId", "masterDuelGameId", "masterDuelIgn", "masterDuelScreenshotUploadId"] },
+        { step: 3, fields: ["sourceInfo", "prevGuild", "guildStatus", "socialMedia"] },
+        { step: 4, fields: ["agreement"] },
+    ];
+
+    const firstMatched = stepFieldMap.find((group) =>
+        group.fields.some((field) => Object.prototype.hasOwnProperty.call(fieldErrors, field))
+    );
+
+    return firstMatched?.step ?? 1;
+}
+
 function CustomSelect({ value, onChange, options, placeholder, error }: {
     value: string;
     onChange: (value: string) => void;
@@ -132,6 +147,7 @@ export default function RegisterPage() {
     };
 
     const handleSubmit = async () => {
+        if (submitting) return;
         if (!validate(4)) return;
         setSubmitting(true);
         setServerError(null);
@@ -155,6 +171,7 @@ export default function RegisterPage() {
                     nextErrors[key] = Array.isArray(value) ? value[0] : value;
                 }
                 setErrors(nextErrors);
+                setStep(getErrorStep(nextErrors));
             }
 
             setServerError(result.message || "Registrasi gagal.");
@@ -170,9 +187,9 @@ export default function RegisterPage() {
 
     return (
         <AuthShell
-            eyebrow="Guild Registration"
-            title="Daftar ke Duel Standby"
-            description="Isi data akun, profile game, dan informasi guild. Akun baru akan langsung aktif setelah registrasi berhasil."
+            eyebrow="Account Registration"
+            title="Buat Akun Duel Standby"
+            description="Isi data akun, profile game, dan informasi komunitas. Akun baru akan langsung aktif sebagai akun publik setelah registrasi berhasil."
             footer={
                 <>
                     Sudah punya akun?{" "}
@@ -242,7 +259,7 @@ export default function RegisterPage() {
 
                 {step === 2 ? (
                     <div className="space-y-6">
-                        <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/45">Isi minimal satu game profile. IGN wajib diawali <span className="font-mono text-ds-amber">[DS]</span>.</p>
+                        <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/45">Isi minimal satu game profile. Anda bisa memakai IGN yang benar-benar aktif dipakai saat bermain.</p>
                         <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
                             <h3 className="text-sm font-bold text-white">Duel Links</h3>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -252,7 +269,7 @@ export default function RegisterPage() {
                                 </div>
                                 <div>
                                     <label className={authLabelCls}>IGN</label>
-                                    <input type="text" className={authInputCls} placeholder="[DS]YourName" value={form.duelLinksIgn} onChange={(event) => setField("duelLinksIgn", event.target.value)} />
+                                    <input type="text" className={authInputCls} placeholder="Nama yang dipakai saat main" value={form.duelLinksIgn} onChange={(event) => setField("duelLinksIgn", event.target.value)} />
                                     <Err field="duelLinksIgn" />
                                 </div>
                             </div>
@@ -267,7 +284,7 @@ export default function RegisterPage() {
                                 </div>
                                 <div>
                                     <label className={authLabelCls}>IGN</label>
-                                    <input type="text" className={authInputCls} placeholder="[DS]YourName" value={form.masterDuelIgn} onChange={(event) => setField("masterDuelIgn", event.target.value)} />
+                                    <input type="text" className={authInputCls} placeholder="Nama yang dipakai saat main" value={form.masterDuelIgn} onChange={(event) => setField("masterDuelIgn", event.target.value)} />
                                     <Err field="masterDuelIgn" />
                                 </div>
                             </div>
@@ -280,16 +297,16 @@ export default function RegisterPage() {
                 {step === 3 ? (
                     <div className="space-y-4">
                         <div>
-                            <label className={authLabelCls}>Dari mana Anda mengetahui guild ini? *</label>
+                            <label className={authLabelCls}>Dari mana Anda mengetahui Duel Standby? *</label>
                             <CustomSelect value={form.sourceInfo} onChange={(value) => setField("sourceInfo", value)} options={SOURCE_OPTIONS} placeholder="-- Pilih sumber informasi --" error={errors.sourceInfo} />
                             <Err field="sourceInfo" />
                         </div>
                         <div>
-                            <label className={authLabelCls}>Guild sebelumnya (opsional)</label>
+                            <label className={authLabelCls}>Komunitas / guild sebelumnya (opsional)</label>
                             <input type="text" className={authInputCls} placeholder="Nama guild sebelumnya" value={form.prevGuild} onChange={(event) => setField("prevGuild", event.target.value)} />
                         </div>
                         <div>
-                            <label className={authLabelCls}>Status guild saat ini *</label>
+                            <label className={authLabelCls}>Status komunitas saat ini *</label>
                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                                 {[
                                     { value: "SOLO_PLAYER", label: "Solo Player", description: "Tidak dalam guild" },
@@ -321,14 +338,14 @@ export default function RegisterPage() {
                 {step === 4 ? (
                     <div className="space-y-4">
                         <div className="max-h-52 space-y-2 overflow-y-auto rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
-                            <p className="font-semibold text-white">Pernyataan Anggota Duel Standby Guild</p>
-                            <p>Dengan mendaftar, saya menyatakan bahwa:</p>
+                            <p className="font-semibold text-white">Pernyataan Pendaftaran Akun</p>
+                            <p>Dengan mendaftar, saya menyatakan bahwa data akun yang saya kirim dapat dipakai untuk operasional Duel Standby dan partisipasi event publik.</p>
                             <ol className="list-inside list-decimal space-y-1 text-xs">
                                 <li>Informasi yang saya berikan adalah benar dan akurat.</li>
-                                <li>IGN di game menggunakan prefix [DS] sesuai ketentuan guild.</li>
-                                <li>Saya bersedia mengikuti peraturan dan tata tertib guild.</li>
-                                <li>Saya bersedia aktif berkontribusi dalam kegiatan guild.</li>
-                                <li>Pelanggaran dapat berakibat pada dikeluarkan dari guild.</li>
+                                <li>Game ID dan IGN yang saya kirim benar-benar milik saya.</li>
+                                <li>Saya bersedia mengikuti aturan platform dan ketentuan event yang saya ikuti.</li>
+                                <li>Jika nanti saya menjadi member Duel Standby, role komunitas dan team akan diatur terpisah oleh admin.</li>
+                                <li>Pelanggaran dapat berakibat pada pembatasan akses atau pemblokiran akun.</li>
                             </ol>
                         </div>
                         <div>
@@ -345,7 +362,7 @@ export default function RegisterPage() {
                             <div className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2 transition-all ${form.agreement ? "border-ds-amber bg-ds-amber text-black" : "border-white/30"}`}>
                                 {form.agreement ? <span className="text-xs font-bold">OK</span> : null}
                             </div>
-                            <p className="text-sm text-white/70">Saya telah membaca dan menyetujui seluruh pernyataan di atas, serta bersedia mengikuti peraturan guild Duel Standby.</p>
+                            <p className="text-sm text-white/70">Saya telah membaca dan menyetujui seluruh pernyataan di atas, serta memahami bahwa akun publik, role komunitas, dan team adalah tiga hal yang dipisahkan di sistem Duel Standby.</p>
                         </div>
                         <Err field="agreement" />
                     </div>
@@ -367,3 +384,5 @@ export default function RegisterPage() {
         </AuthShell>
     );
 }
+
+

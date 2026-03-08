@@ -11,6 +11,7 @@ import {
     LogOut,
     ScrollText,
     Settings,
+    Shield,
     Trophy,
     User,
     UserCheck,
@@ -32,6 +33,7 @@ const ICONS = {
     treasury: Wallet,
     dashboard: LayoutDashboard,
     users: UserCheck,
+    teams: Shield,
     audit: ScrollText,
     logout: LogOut,
     home: Home,
@@ -59,6 +61,7 @@ const ALL_MENU: MenuSection[] = [
         minRole: "OFFICER",
         items: [
             { name: "Users", href: "/dashboard/users", icon: "users", minRole: "OFFICER" },
+            { name: "Teams", href: "/dashboard/teams", icon: "teams", minRole: "OFFICER" },
             { name: "Tournaments", href: "/dashboard/tournaments", icon: "tournaments", minRole: "ADMIN" },
             { name: "Treasury", href: "/dashboard/treasury", icon: "treasury", minRole: "ADMIN" },
         ],
@@ -90,8 +93,7 @@ export function Sidebar() {
     const getInitials = (name: string) =>
         name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2) || "DS";
 
-    const statusColor =
-        userStatus === "ACTIVE" ? "bg-emerald-500" : "bg-red-500";
+    const statusColor = userStatus === "ACTIVE" ? "bg-emerald-500" : "bg-red-500";
 
     const bestMatch = ALL_MENU.flatMap((section) => section.items)
         .filter((item) => pathname === item.href || pathname.startsWith(item.href + "/"))

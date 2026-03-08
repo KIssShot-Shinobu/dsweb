@@ -10,8 +10,7 @@ datasource db {
   provider = "mysql"
 }
 
-// ─── ENUMS FOR TYPE SAFETY ───────────────────────────────────────────────────
-
+// ENUMS FOR TYPE SAFETY
 enum UserStatus {
   ACTIVE
   BANNED
@@ -66,6 +65,19 @@ enum PendingUploadStatus {
   EXPIRED
 }
 
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(191)
+  slug        String   @unique @db.VarChar(191)
+  description String?  @db.VarChar(500)
+  logoUrl     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     User[]
+}
+
 model Tournament {
   id          String           @id @default(cuid())
   title       String
@@ -104,7 +116,7 @@ model Treasury {
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
-// ─── New: Auth / Registration System ─────────────────────────────────────────
+//  New: Auth / Registration System 
 
 model User {
   id            String     @id @default(cuid())
@@ -133,11 +145,14 @@ model User {
   avatarUrl     String?
   status        UserStatus @default(ACTIVE)
   role          UserRole   @default(USER)
+  teamId        String?
+  teamJoinedAt  DateTime?
   lastLoginAt   DateTime?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   deletedAt     DateTime?
 
+  team            Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
   gameProfiles    GameProfile[]
   registrationLog RegistrationLog?
   auditLogs       AuditLog[]
@@ -150,6 +165,7 @@ model User {
   treasuryEntries Treasury[]
   claimedUploads  PendingUpload[]
 
+  @@index([teamId])
   @@index([accountNumberHash])
 }
 
@@ -267,7 +283,7 @@ model PendingUpload {
   @@index([claimedByUserId])
 }
 
-// ─── AUDIT LOG SYSTEM (MERGED AdminLog + AuditLog) ───────────────────────────
+//  AUDIT LOG SYSTEM (MERGED AdminLog + AuditLog) 
 
 model AuditLog {
   id             String   @id @default(cuid())
@@ -291,3 +307,7 @@ model AuditLog {
   @@index([createdAt])
   @@index([responseStatus])
 }
+
+
+
+

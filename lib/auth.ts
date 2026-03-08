@@ -1,10 +1,10 @@
-import bcrypt from "bcryptjs";
+﻿import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getJwtSecret() {
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
@@ -21,7 +21,7 @@ const REFRESH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const REFRESH_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 export const PASSWORD_RESET_TOKEN_TTL_MS = 1000 * 60 * 15; // 15 minutes
 
-// ─── Role Hierarchy ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Role Hierarchy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const ROLES = {
     USER: "USER",
     MEMBER: "MEMBER",
@@ -44,11 +44,11 @@ export function hasRole(userRole: string, requiredRole: string): boolean {
     return (ROLE_LEVEL[userRole] ?? 0) >= (ROLE_LEVEL[requiredRole] ?? 99);
 }
 
-// ─── Password ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const hashPassword = (password: string) => bcrypt.hash(password, 12);
 export const comparePassword = (password: string, hash: string) => bcrypt.compare(password, hash);
 
-// ─── JWT ──────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ JWT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export interface JWTPayload {
     userId: string;
     email: string;
@@ -73,7 +73,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
     }
 }
 
-// ─── Cookie helpers ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Cookie helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function setAuthCookie(token: string) {
     const cookieStore = await cookies();
     cookieStore.set(ACCESS_COOKIE_NAME, token, {
@@ -172,7 +172,7 @@ export async function revokeAllUserSessions(userId: string) {
     await prisma.session.deleteMany({ where: { userId } });
 }
 
-// ─── Get current user ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Get current user â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function getCurrentUser() {
     const token = await getTokenFromCookie();
     if (!token) return null;
@@ -191,6 +191,16 @@ export async function getCurrentUser() {
             avatarUrl: true,
             city: true,
             phoneWhatsapp: true,
+            teamId: true,
+            teamJoinedAt: true,
+            team: {
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    isActive: true,
+                },
+            },
             createdAt: true,
             lastActiveAt: true,
             updatedAt: true,
@@ -213,15 +223,20 @@ export async function getCurrentUser() {
         avatarUrl: user.avatarUrl,
         city: user.city,
         phoneWhatsapp: user.phoneWhatsapp,
+        teamId: user.teamId,
+        teamJoinedAt: user.teamJoinedAt,
+        team: user.team,
         createdAt: user.createdAt,
-        lastActiveAt: (user as { lastActiveAt?: Date }).lastActiveAt ?? user.updatedAt,
+        lastActiveAt: user.lastActiveAt ?? user.updatedAt,
         emailVerified: !user.emailVerificationToken,
     };
 }
 
-// ─── Get current user from token string (for middleware/API) ──────────────────
+// â”€â”€â”€ Get current user from token string (for middleware/API) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function getUserFromToken(token: string) {
     const payload = await verifyToken(token);
     if (!payload) return null;
     return payload;
 }
+
+

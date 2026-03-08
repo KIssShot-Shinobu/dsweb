@@ -16,27 +16,50 @@ const DEV_EMAIL_SUFFIX = "@duelstandby.local";
 const DEV_PASSWORD = process.env.DEV_SEED_PASSWORD || "DevSeed123!";
 const SYSTEM_USER_ID = "0";
 
+const teamFixtures = [
+    {
+        name: "Duel Standby Alpha",
+        slug: "duel-standby-alpha",
+        description: "Roster utama untuk scrim intensif dan turnamen publik besar.",
+    },
+    {
+        name: "Duel Standby Nova",
+        slug: "duel-standby-nova",
+        description: "Roster pengembangan untuk member aktif yang fokus adaptasi meta terbaru.",
+    },
+    {
+        name: "Duel Standby Flux",
+        slug: "duel-standby-flux",
+        description: "Roster fleksibel untuk pemain lintas Duel Links dan Master Duel.",
+    },
+    {
+        name: "Duel Standby Echo",
+        slug: "duel-standby-echo",
+        description: "Roster cadangan untuk sparring, event komunitas, dan eksperimen format.",
+    },
+];
+
 const userFixtures = [
-    { fullName: "Yugi Muto", role: "MEMBER", status: "ACTIVE", city: "Jakarta", gameType: "DUEL_LINKS", gameId: "DL-DEV-001", ign: "[DS] Yugi", guildStatus: "NEW_PLAYER" },
-    { fullName: "Seto Kaiba", role: "OFFICER", status: "ACTIVE", city: "Bandung", gameType: "MASTER_DUEL", gameId: "MD-DEV-002", ign: "[DS] Kaiba", guildStatus: "LEFT_GUILD" },
-    { fullName: "Joey Wheeler", role: "USER", status: "ACTIVE", city: "Bekasi", gameType: "DUEL_LINKS", gameId: "DL-DEV-003", ign: "[DS] Joey", guildStatus: "SOLO_PLAYER" },
-    { fullName: "Mai Valentine", role: "MEMBER", status: "ACTIVE", city: "Surabaya", gameType: "MASTER_DUEL", gameId: "MD-DEV-004", ign: "[DS] Mai", guildStatus: "LEFT_GUILD" },
-    { fullName: "Tea Gardner", role: "USER", status: "ACTIVE", city: "Depok", gameType: "DUEL_LINKS", gameId: "DL-DEV-005", ign: "[DS] Tea", guildStatus: "NEW_PLAYER" },
-    { fullName: "Tristan Taylor", role: "USER", status: "ACTIVE", city: "Bogor", gameType: "MASTER_DUEL", gameId: "MD-DEV-006", ign: "[DS] Tristan", guildStatus: "SOLO_PLAYER" },
-    { fullName: "Bakura Ryou", role: "MEMBER", status: "ACTIVE", city: "Jakarta", gameType: "DUEL_LINKS", gameId: "DL-DEV-007", ign: "[DS] Bakura", guildStatus: "LEFT_GUILD" },
-    { fullName: "Marik Ishtar", role: "OFFICER", status: "ACTIVE", city: "Tangerang", gameType: "MASTER_DUEL", gameId: "MD-DEV-008", ign: "[DS] Marik", guildStatus: "SOLO_PLAYER" },
-    { fullName: "Pegasus Crawford", role: "USER", status: "BANNED", city: "Bekasi", gameType: "DUEL_LINKS", gameId: "DL-DEV-009", ign: "[DS] Pegasus", guildStatus: "LEFT_GUILD" },
-    { fullName: "Mokuba Kaiba", role: "USER", status: "ACTIVE", city: "Bandung", gameType: "MASTER_DUEL", gameId: "MD-DEV-010", ign: "[DS] Mokuba", guildStatus: "NEW_PLAYER" },
-    { fullName: "Jaden Yuki", role: "MEMBER", status: "ACTIVE", city: "Jakarta", gameType: "DUEL_LINKS", gameId: "DL-DEV-011", ign: "[DS] Jaden", guildStatus: "SOLO_PLAYER" },
-    { fullName: "Aster Phoenix", role: "OFFICER", status: "ACTIVE", city: "Surabaya", gameType: "MASTER_DUEL", gameId: "MD-DEV-012", ign: "[DS] Aster", guildStatus: "LEFT_GUILD" },
-    { fullName: "Alexis Rhodes", role: "MEMBER", status: "ACTIVE", city: "Yogyakarta", gameType: "DUEL_LINKS", gameId: "DL-DEV-013", ign: "[DS] Alexis", guildStatus: "NEW_PLAYER" },
-    { fullName: "Zane Truesdale", role: "USER", status: "ACTIVE", city: "Semarang", gameType: "MASTER_DUEL", gameId: "MD-DEV-014", ign: "[DS] Zane", guildStatus: "SOLO_PLAYER" },
-    { fullName: "Yusei Fudo", role: "MEMBER", status: "ACTIVE", city: "Jakarta", gameType: "DUEL_LINKS", gameId: "DL-DEV-015", ign: "[DS] Yusei", guildStatus: "LEFT_GUILD" },
-    { fullName: "Jack Atlas", role: "OFFICER", status: "ACTIVE", city: "Bandung", gameType: "MASTER_DUEL", gameId: "MD-DEV-016", ign: "[DS] Jack", guildStatus: "SOLO_PLAYER" },
-    { fullName: "Akiza Izinski", role: "MEMBER", status: "ACTIVE", city: "Depok", gameType: "DUEL_LINKS", gameId: "DL-DEV-017", ign: "[DS] Akiza", guildStatus: "NEW_PLAYER" },
-    { fullName: "Crow Hogan", role: "USER", status: "ACTIVE", city: "Bogor", gameType: "MASTER_DUEL", gameId: "MD-DEV-018", ign: "[DS] Crow", guildStatus: "LEFT_GUILD" },
-    { fullName: "Yuma Tsukumo", role: "USER", status: "ACTIVE", city: "Malang", gameType: "DUEL_LINKS", gameId: "DL-DEV-019", ign: "[DS] Yuma", guildStatus: "SOLO_PLAYER" },
-    { fullName: "Kite Tenjo", role: "MEMBER", status: "ACTIVE", city: "Solo", gameType: "MASTER_DUEL", gameId: "MD-DEV-020", ign: "[DS] Kite", guildStatus: "NEW_PLAYER" },
+    { fullName: "Yugi Muto", role: "MEMBER", status: "ACTIVE", city: "Jakarta", gameType: "DUEL_LINKS", gameId: "DL-DEV-001", ign: "[DS] Yugi", guildStatus: "NEW_PLAYER", teamSlug: "duel-standby-alpha" },
+    { fullName: "Seto Kaiba", role: "OFFICER", status: "ACTIVE", city: "Bandung", gameType: "MASTER_DUEL", gameId: "MD-DEV-002", ign: "[DS] Kaiba", guildStatus: "LEFT_GUILD", teamSlug: "duel-standby-alpha" },
+    { fullName: "Joey Wheeler", role: "USER", status: "ACTIVE", city: "Bekasi", gameType: "DUEL_LINKS", gameId: "DL-DEV-003", ign: "[DS] Joey", guildStatus: "SOLO_PLAYER", teamSlug: null },
+    { fullName: "Mai Valentine", role: "MEMBER", status: "ACTIVE", city: "Surabaya", gameType: "MASTER_DUEL", gameId: "MD-DEV-004", ign: "[DS] Mai", guildStatus: "LEFT_GUILD", teamSlug: "duel-standby-flux" },
+    { fullName: "Tea Gardner", role: "USER", status: "ACTIVE", city: "Depok", gameType: "DUEL_LINKS", gameId: "DL-DEV-005", ign: "[DS] Tea", guildStatus: "NEW_PLAYER", teamSlug: null },
+    { fullName: "Tristan Taylor", role: "USER", status: "ACTIVE", city: "Bogor", gameType: "MASTER_DUEL", gameId: "MD-DEV-006", ign: "[DS] Tristan", guildStatus: "SOLO_PLAYER", teamSlug: null },
+    { fullName: "Bakura Ryou", role: "MEMBER", status: "ACTIVE", city: "Jakarta", gameType: "DUEL_LINKS", gameId: "DL-DEV-007", ign: "[DS] Bakura", guildStatus: "LEFT_GUILD", teamSlug: null },
+    { fullName: "Marik Ishtar", role: "OFFICER", status: "ACTIVE", city: "Tangerang", gameType: "MASTER_DUEL", gameId: "MD-DEV-008", ign: "[DS] Marik", guildStatus: "SOLO_PLAYER", teamSlug: "duel-standby-nova" },
+    { fullName: "Pegasus Crawford", role: "USER", status: "BANNED", city: "Bekasi", gameType: "DUEL_LINKS", gameId: "DL-DEV-009", ign: "[DS] Pegasus", guildStatus: "LEFT_GUILD", teamSlug: null },
+    { fullName: "Mokuba Kaiba", role: "USER", status: "ACTIVE", city: "Bandung", gameType: "MASTER_DUEL", gameId: "MD-DEV-010", ign: "[DS] Mokuba", guildStatus: "NEW_PLAYER", teamSlug: null },
+    { fullName: "Jaden Yuki", role: "MEMBER", status: "ACTIVE", city: "Jakarta", gameType: "DUEL_LINKS", gameId: "DL-DEV-011", ign: "[DS] Jaden", guildStatus: "SOLO_PLAYER", teamSlug: "duel-standby-nova" },
+    { fullName: "Aster Phoenix", role: "OFFICER", status: "ACTIVE", city: "Surabaya", gameType: "MASTER_DUEL", gameId: "MD-DEV-012", ign: "[DS] Aster", guildStatus: "LEFT_GUILD", teamSlug: "duel-standby-echo" },
+    { fullName: "Alexis Rhodes", role: "MEMBER", status: "ACTIVE", city: "Yogyakarta", gameType: "DUEL_LINKS", gameId: "DL-DEV-013", ign: "[DS] Alexis", guildStatus: "NEW_PLAYER", teamSlug: "duel-standby-nova" },
+    { fullName: "Zane Truesdale", role: "USER", status: "ACTIVE", city: "Semarang", gameType: "MASTER_DUEL", gameId: "MD-DEV-014", ign: "[DS] Zane", guildStatus: "SOLO_PLAYER", teamSlug: null },
+    { fullName: "Yusei Fudo", role: "MEMBER", status: "ACTIVE", city: "Jakarta", gameType: "DUEL_LINKS", gameId: "DL-DEV-015", ign: "[DS] Yusei", guildStatus: "LEFT_GUILD", teamSlug: "duel-standby-flux" },
+    { fullName: "Jack Atlas", role: "OFFICER", status: "ACTIVE", city: "Bandung", gameType: "MASTER_DUEL", gameId: "MD-DEV-016", ign: "[DS] Jack", guildStatus: "SOLO_PLAYER", teamSlug: null },
+    { fullName: "Akiza Izinski", role: "MEMBER", status: "ACTIVE", city: "Depok", gameType: "DUEL_LINKS", gameId: "DL-DEV-017", ign: "[DS] Akiza", guildStatus: "NEW_PLAYER", teamSlug: "duel-standby-alpha" },
+    { fullName: "Crow Hogan", role: "USER", status: "ACTIVE", city: "Bogor", gameType: "MASTER_DUEL", gameId: "MD-DEV-018", ign: "[DS] Crow", guildStatus: "LEFT_GUILD", teamSlug: null },
+    { fullName: "Yuma Tsukumo", role: "USER", status: "ACTIVE", city: "Malang", gameType: "DUEL_LINKS", gameId: "DL-DEV-019", ign: "[DS] Yuma", guildStatus: "SOLO_PLAYER", teamSlug: null },
+    { fullName: "Kite Tenjo", role: "MEMBER", status: "ACTIVE", city: "Solo", gameType: "MASTER_DUEL", gameId: "MD-DEV-020", ign: "[DS] Kite", guildStatus: "NEW_PLAYER", teamSlug: null },
 ];
 
 const tournamentFixtures = [
@@ -96,9 +119,7 @@ async function cleanupDevData() {
     console.log("Cleaning old dev data...");
 
     const keepUsers = await prisma.user.findMany({
-        where: {
-            role: { in: ["ADMIN", "FOUNDER"] },
-        },
+        where: { role: { in: ["ADMIN", "FOUNDER"] } },
         select: { id: true },
     });
 
@@ -125,9 +146,29 @@ async function cleanupDevData() {
     await prisma.gameProfile.deleteMany({ where: keepUserIds.length > 0 ? { userId: { notIn: keepUserIds } } : undefined });
     await prisma.registrationLog.deleteMany({ where: keepUserIds.length > 0 ? { userId: { notIn: keepUserIds } } : undefined });
     await prisma.user.deleteMany({ where: keepUserIds.length > 0 ? { id: { notIn: keepUserIds } } : undefined });
+    await prisma.team.deleteMany();
 }
 
-async function seedUsers() {
+async function seedTeams() {
+    console.log("Seeding guild teams...");
+
+    const teamMap = new Map();
+    for (const fixture of teamFixtures) {
+        const team = await prisma.team.create({
+            data: {
+                name: fixture.name,
+                slug: fixture.slug,
+                description: fixture.description,
+                isActive: true,
+            },
+        });
+        teamMap.set(team.slug, team.id);
+    }
+
+    return teamMap;
+}
+
+async function seedUsers(teamMap) {
     console.log("Seeding 20 dev users...");
 
     const passwordHash = await bcrypt.hash(DEV_PASSWORD, 10);
@@ -137,6 +178,7 @@ async function seedUsers() {
         const fixture = userFixtures[index];
         const createdAt = getFixtureDate(index - 25, 10 + (index % 6));
         const isActive = fixture.status === "ACTIVE";
+        const teamId = fixture.teamSlug ? teamMap.get(fixture.teamSlug) || null : null;
         const user = await prisma.user.create({
             data: {
                 fullName: fixture.fullName,
@@ -146,6 +188,8 @@ async function seedUsers() {
                 city: fixture.city,
                 status: fixture.status,
                 role: fixture.role,
+                teamId,
+                teamJoinedAt: teamId ? createdAt : null,
                 timezone: "Asia/Jakarta",
                 language: "id",
                 emailVerifiedAt: isActive ? getFixtureDate(index - 24, 9) : null,
@@ -257,7 +301,7 @@ async function seedAuditLogs(createdUsers) {
         "TOURNAMENT_REGISTERED",
         "TREASURY_ADDED",
         "ROLE_CHANGED",
-        "SENSITIVE_FIELD_CHANGED",
+        "TEAM_ASSIGNED",
     ];
 
     for (let index = 0; index < 12; index += 1) {
@@ -284,12 +328,13 @@ async function seedAuditLogs(createdUsers) {
 
 async function main() {
     await cleanupDevData();
-    const createdUsers = await seedUsers();
+    const teamMap = await seedTeams();
+    const createdUsers = await seedUsers(teamMap);
     await seedTournaments(createdUsers);
     await seedTreasury(createdUsers);
     await seedAuditLogs(createdUsers);
 
-    console.log("Dev seed complete: 20 users, 20 tournaments, 20 treasury transactions, 12 audit logs.");
+    console.log("Dev seed complete: 4 teams, 20 users, 20 tournaments, 20 treasury transactions, 12 audit logs.");
     console.log(`Dev seed user password: ${DEV_PASSWORD}`);
 }
 

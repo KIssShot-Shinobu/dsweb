@@ -8,36 +8,36 @@ const DiscordIcon = ({ className }: { className?: string }) => (
 );
 
 const footerLinks = {
-    community: [{ name: "Discord Server", href: "https://discord.gg/duelstandby" }, { name: "YouTube Channel", href: "https://youtube.com/@duelstandby" }, { name: "Twitter / X", href: "https://twitter.com/duelstandby" }],
+    community: [{ name: "Server Discord", href: "https://discord.gg/duelstandby" }, { name: "Channel YouTube", href: "https://youtube.com/@duelstandby" }, { name: "Twitter / X", href: "https://twitter.com/duelstandby" }],
     resources: [{ name: "Tier List", href: "#" }, { name: "Deck Builder", href: "#" }, { name: "Card Database", href: "#" }],
     tournaments: [{ name: "Upcoming Events", href: "#tournaments" }, { name: "Past Results", href: "#" }, { name: "Leaderboard", href: "#" }],
-    legal: [{ name: "Privacy Policy", href: "#" }, { name: "Terms of Service", href: "#" }, { name: "Contact Us", href: "#" }],
+    legal: [{ name: "Kebijakan Privasi", href: "#" }, { name: "Syarat Layanan", href: "#" }, { name: "Kontak", href: "#" }],
 };
 
 export function Footer() {
     return (
-        <footer className="border-t border-slate-200 bg-[linear-gradient(180deg,_#fffdf8_0%,_#f8fafc_100%)] dark:border-[#3A3A3A] dark:bg-[#1A1A1A]">
+        <footer className="border-t border-slate-200 bg-[linear-gradient(180deg,_#fffdf8_0%,_#f8fafc_100%)] dark:border-white/10 dark:bg-[linear-gradient(180deg,_#0d0e12_0%,_#08090c_100%)]">
             <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
                 <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-5 lg:gap-12">
                     <div className="lg:col-span-2">
                         <div className="mb-4 flex items-center gap-2"><Swords className="h-8 w-8 text-[#FFC916]" /><span className="text-2xl font-bold text-slate-950 dark:text-white">DuelStandby</span></div>
-                        <p className="mb-6 max-w-sm leading-relaxed text-slate-600 dark:text-[#E6E6E6]/50">The ultimate online community for Yu-Gi-Oh! Duel Links and Master Duel players. Join us for tournaments, strategy discussions, and more.</p>
+                        <p className="mb-6 max-w-sm leading-relaxed text-slate-600 dark:text-white/52">Komunitas duel yang merangkum turnamen, diskusi, dan ruang bermain dalam satu tempat yang ringkas dan nyaman diikuti.</p>
                         <div className="flex flex-wrap gap-3 sm:gap-4">
-                            <a href="https://discord.gg/duelstandby" target="_blank" rel="noopener noreferrer" className="group rounded-lg bg-slate-100 p-2 transition-colors hover:bg-[#5865F2] active:scale-[0.97] dark:bg-[#3A3A3A]"><DiscordIcon className="h-5 w-5 text-slate-500 transition-colors group-hover:text-white dark:text-[#E6E6E6]/50" /></a>
-                            <a href="https://youtube.com/@duelstandby" target="_blank" rel="noopener noreferrer" className="group rounded-lg bg-slate-100 p-2 transition-colors hover:bg-[#FF0000] active:scale-[0.97] dark:bg-[#3A3A3A]"><Youtube className="h-5 w-5 text-slate-500 transition-colors group-hover:text-white dark:text-[#E6E6E6]/50" /></a>
-                            <a href="https://twitter.com/duelstandby" target="_blank" rel="noopener noreferrer" className="group rounded-lg bg-slate-100 p-2 transition-colors hover:bg-[#1DA1F2] active:scale-[0.97] dark:bg-[#3A3A3A]"><Twitter className="h-5 w-5 text-slate-500 transition-colors group-hover:text-white dark:text-[#E6E6E6]/50" /></a>
-                            <a href="mailto:contact@duelstandby.com" className="group rounded-lg bg-slate-100 p-2 transition-colors hover:bg-slate-500 active:scale-[0.97] dark:bg-[#3A3A3A]"><Mail className="h-5 w-5 text-slate-500 transition-colors group-hover:text-white dark:text-[#E6E6E6]/50" /></a>
+                            <a href="https://discord.gg/duelstandby" target="_blank" rel="noopener noreferrer" className="group relative rounded-xl border border-slate-200 bg-slate-100 p-2.5 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-1 hover:border-[#5865F2]/40 hover:bg-[#5865F2] hover:shadow-[0_18px_40px_rgba(88,101,242,0.32)] active:scale-[0.97] dark:border-white/10 dark:bg-white/[0.05] dark:hover:bg-[#5865F2] dark:hover:shadow-[0_18px_40px_rgba(88,101,242,0.28)]"><DiscordIcon className="h-5 w-5 text-slate-500 transition-all duration-300 group-hover:scale-110 group-hover:text-white dark:text-white/52" /></a>
+                            <a href="https://youtube.com/@duelstandby" target="_blank" rel="noopener noreferrer" className="group relative rounded-xl border border-slate-200 bg-slate-100 p-2.5 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-1 hover:border-[#FF0000]/40 hover:bg-[#FF0000] hover:shadow-[0_18px_40px_rgba(255,0,0,0.28)] active:scale-[0.97] dark:border-white/10 dark:bg-white/[0.05] dark:hover:bg-[#FF0000] dark:hover:shadow-[0_18px_40px_rgba(255,0,0,0.22)]"><Youtube className="h-5 w-5 text-slate-500 transition-all duration-300 group-hover:scale-110 group-hover:text-white dark:text-white/52" /></a>
+                            <a href="https://twitter.com/duelstandby" target="_blank" rel="noopener noreferrer" className="group relative rounded-xl border border-slate-200 bg-slate-100 p-2.5 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-1 hover:border-[#1DA1F2]/40 hover:bg-[#1DA1F2] hover:shadow-[0_18px_40px_rgba(29,161,242,0.3)] active:scale-[0.97] dark:border-white/10 dark:bg-white/[0.05] dark:hover:bg-[#1DA1F2] dark:hover:shadow-[0_18px_40px_rgba(29,161,242,0.24)]"><Twitter className="h-5 w-5 text-slate-500 transition-all duration-300 group-hover:scale-110 group-hover:text-white dark:text-white/52" /></a>
+                            <a href="mailto:contact@duelstandby.com" className="group relative rounded-xl border border-slate-200 bg-slate-100 p-2.5 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-1 hover:border-slate-500/40 hover:bg-slate-500 hover:shadow-[0_18px_40px_rgba(71,85,105,0.28)] active:scale-[0.97] dark:border-white/10 dark:bg-white/[0.05] dark:hover:bg-slate-500 dark:hover:shadow-[0_18px_40px_rgba(71,85,105,0.22)]"><Mail className="h-5 w-5 text-slate-500 transition-all duration-300 group-hover:scale-110 group-hover:text-white dark:text-white/52" /></a>
                         </div>
                     </div>
-                    <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Community</h4><ul className="space-y-3">{footerLinks.community.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-[#E6E6E6]/50">{link.name}</Link></li>)}</ul></div>
-                    <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Tournaments</h4><ul className="space-y-3">{footerLinks.tournaments.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-[#E6E6E6]/50">{link.name}</Link></li>)}</ul></div>
-                    <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Resources</h4><ul className="space-y-3">{footerLinks.resources.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-[#E6E6E6]/50">{link.name}</Link></li>)}</ul></div>
+                    <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Komunitas</h4><ul className="space-y-3">{footerLinks.community.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-white/52">{link.name}</Link></li>)}</ul></div>
+                    <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Tournament</h4><ul className="space-y-3">{footerLinks.tournaments.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-white/52">{link.name}</Link></li>)}</ul></div>
+                    <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Referensi</h4><ul className="space-y-3">{footerLinks.resources.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-white/52">{link.name}</Link></li>)}</ul></div>
                 </div>
             </div>
-            <div className="border-t border-slate-200 dark:border-[#3A3A3A]">
+            <div className="border-t border-slate-200 dark:border-white/10">
                 <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-center sm:px-6 md:flex-row md:text-left lg:px-8">
-                    <p className="text-sm text-slate-500 dark:text-[#545454]">&copy; {new Date().getFullYear()} DuelStandby. All rights reserved.</p>
-                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:justify-end">{footerLinks.legal.map((link) => <Link key={link.name} href={link.href} className="text-sm text-slate-500 transition-colors hover:text-[#FFC916] dark:text-[#545454]">{link.name}</Link>)}</div>
+                    <p className="text-sm text-slate-500 dark:text-white/38">&copy; {new Date().getFullYear()} DuelStandby. All rights reserved.</p>
+                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:justify-end">{footerLinks.legal.map((link) => <Link key={link.name} href={link.href} className="text-sm text-slate-500 transition-colors hover:text-[#FFC916] dark:text-white/38">{link.name}</Link>)}</div>
                 </div>
             </div>
         </footer>

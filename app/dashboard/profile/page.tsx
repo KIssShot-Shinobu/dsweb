@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth";
+﻿import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { GameProfileForm } from "@/components/dashboard/game-profile-form";
@@ -12,7 +12,7 @@ export default async function ProfilePage() {
     const [userWithProfiles, tournamentsJoined, reputation, recentAuditLogs] = await Promise.all([
         prisma.user.findUnique({
             where: { id: user.id },
-            include: { gameProfiles: true },
+            include: { gameProfiles: true, team: true },
         }),
         prisma.tournamentParticipant.count({ where: { userId: user.id } }),
         prisma.reputationLog.aggregate({ where: { userId: user.id }, _sum: { points: true } }),
@@ -32,7 +32,7 @@ export default async function ProfilePage() {
         MEMBER: "bg-blue-500/10 text-blue-400 border-blue-400/20",
         OFFICER: "bg-purple-500/10 text-purple-400 border-purple-400/20",
         ADMIN: "bg-ds-amber/10 text-ds-amber border-ds-amber/30",
-        FOUNDER: "bg-red-500/10 text-red-400 border-red-400/20",
+        FOUNDER: "bg-red-500/10 text-red-400 border-red-500/20",
     };
 
     const statusColors: Record<string, string> = {
@@ -57,6 +57,8 @@ export default async function ProfilePage() {
     const verifiedProfiles = userWithProfiles?.gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).length || 0;
     const totalProfiles = userWithProfiles?.gameProfiles.length || 0;
     const reputationPoints = reputation._sum.points || 0;
+    const teamName = userWithProfiles?.team?.name || (user.role === "USER" ? "Public User" : "Belum masuk team");
+    const teamMeta = userWithProfiles?.teamJoinedAt ? formatDate(userWithProfiles.teamJoinedAt) : "-";
 
     return (
         <DashboardPageShell>
@@ -64,7 +66,7 @@ export default async function ProfilePage() {
                 <DashboardPageHeader
                     kicker="Player Profile"
                     title="Profil Saya"
-                    description="Ringkasan akun, identitas guild, statistik partisipasi, dan game profile Anda dalam satu halaman yang lebih rapi."
+                    description="Ringkasan akun, identitas komunitas, afiliasi team, statistik partisipasi, dan game profile Anda dalam satu halaman yang lebih rapi."
                 />
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -75,7 +77,7 @@ export default async function ProfilePage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.92fr_1.08fr]">
-                    <DashboardPanel title="Kartu Akun" description="Identitas dasar, role, status, dan kondisi verifikasi email akun Anda.">
+                    <DashboardPanel title="Kartu Akun" description="Identitas dasar, role komunitas, status akun, dan kondisi verifikasi email Anda.">
                         <div className="flex flex-col items-center rounded-[28px] border border-black/5 bg-slate-50/80 px-6 py-8 text-center dark:border-white/6 dark:bg-white/[0.03]">
                             <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-ds-amber text-3xl font-black text-black">
                                 {getInitials(user.fullName)}
@@ -89,10 +91,14 @@ export default async function ProfilePage() {
                                 <span className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] ${roleColors[user.role] || roleColors.USER}`}>{user.role}</span>
                                 <span className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] ${statusColors[user.status] || ""}`}>{user.status}</span>
                             </div>
+                            <div className="mt-4 rounded-2xl border border-sky-500/15 bg-sky-500/8 px-4 py-3 text-center">
+                                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-500/80">Team</div>
+                                <div className="mt-1 text-sm font-semibold text-slate-950 dark:text-white">{teamName}</div>
+                            </div>
                         </div>
                     </DashboardPanel>
 
-                    <DashboardPanel title="Informasi Akun" description="Data akun utama, kontak, dan histori singkat aktivitas Anda.">
+                    <DashboardPanel title="Informasi Akun" description="Data akun utama, kontak, afiliasi guild, dan histori singkat aktivitas Anda.">
                         <div className="space-y-3 rounded-[28px] border border-black/5 bg-slate-50/80 p-5 dark:border-white/6 dark:bg-white/[0.03]">
                             {[
                                 { label: "Nama Lengkap", value: user.fullName },
@@ -100,6 +106,9 @@ export default async function ProfilePage() {
                                 { label: "Verifikasi Email", value: emailVerificationLabel },
                                 { label: "WhatsApp", value: user.phoneWhatsapp || "-" },
                                 { label: "Kota", value: user.city || "-" },
+                                { label: "Role Komunitas", value: user.role },
+                                { label: "Team Saat Ini", value: teamName },
+                                { label: "Masuk Team Sejak", value: teamMeta },
                                 { label: "Terakhir Aktif", value: formatDateTime(user.lastActiveAt) },
                                 { label: "Terdaftar Sejak", value: formatDate(user.createdAt) },
                             ].map(({ label, value }) => (

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma, type UserRole, type UserStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
+import { usersQuerySchema } from "@/lib/validators";
 
 export async function GET(req: NextRequest) {
     const currentUser = await getCurrentUser();
@@ -10,26 +11,48 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get("status");
-    const role = searchParams.get("role");
-    const search = searchParams.get("search") || "";
-    const page = parseInt(searchParams.get("page") || "1");
-    const perPage = parseInt(searchParams.get("perPage") || "20");
-    const normalizedStatus = status && status !== "ALL" ? status as UserStatus : undefined;
-    const normalizedRole = role && role !== "ALL" ? role as UserRole : undefined;
+    const parsedQuery = usersQuerySchema.safeParse({
+        status: searchParams.get("status") || undefined,
+        role: searchParams.get("role") || undefined,
+        teamId: searchParams.get("teamId") || undefined,
+        search: searchParams.get("search") || undefined,
+        page: searchParams.get("page") || undefined,
+        perPage: searchParams.get("perPage") || undefined,
+    });
+
+    if (!parsedQuery.success) {
+        return NextResponse.json({ success: false, message: "Filter users tidak valid" }, { status: 400 });
+    }
+
+    const {
+        status = "ALL",
+        role = "ALL",
+        teamId = "ALL",
+        search = "",
+        page = 1,
+        perPage = 20,
+    } = parsedQuery.data;
+
+    const normalizedStatus = status !== "ALL" ? (status as UserStatus) : undefined;
+    const normalizedRole = role !== "ALL" ? (role as UserRole) : undefined;
 
     const where: Prisma.UserWhereInput = {
         ...(normalizedStatus ? { status: normalizedStatus } : {}),
         ...(normalizedRole ? { role: normalizedRole } : {}),
-        ...(search ? {
-            OR: [
-                { fullName: { contains: search } },
-                { email: { contains: search } },
-            ],
-        } : {}),
+        ...(teamId === "NO_TEAM" ? { teamId: null } : teamId !== "ALL" ? { teamId } : {}),
+        ...(search
+            ? {
+                  OR: [
+                      { fullName: { contains: search } },
+                      { email: { contains: search } },
+                      { city: { contains: search } },
+                      { team: { name: { contains: search } } },
+                  ],
+              }
+            : {}),
     };
 
-    const [users, total] = await Promise.all([
+    const [users, total, teams] = await Promise.all([
         prisma.user.findMany({
             where,
             select: {
@@ -40,16 +63,54 @@ export async function GET(req: NextRequest) {
                 city: true,
                 status: true,
                 role: true,
+                teamId: true,
+                teamJoinedAt: true,
                 createdAt: true,
                 lastLoginAt: true,
                 gameProfiles: { select: { gameType: true, ign: true, gameId: true } },
+                team: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                        isActive: true,
+                    },
+                },
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ role: "desc" }, { createdAt: "desc" }],
             skip: (page - 1) * perPage,
             take: perPage,
         }),
         prisma.user.count({ where }),
+        prisma.team.findMany({
+            where: { isActive: true },
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                isActive: true,
+                _count: {
+                    select: { members: true },
+                },
+            },
+            orderBy: { name: "asc" },
+        }),
     ]);
 
-    return NextResponse.json({ success: true, data: users, total, page, perPage });
+    return NextResponse.json({
+        success: true,
+        data: users,
+        total,
+        page,
+        perPage,
+        filters: {
+            teams: teams.map((team) => ({
+                id: team.id,
+                name: team.name,
+                slug: team.slug,
+                isActive: team.isActive,
+                memberCount: team._count.members,
+            })),
+        },
+    });
 }

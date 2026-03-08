@@ -1,4 +1,4 @@
-export type RegistrationFormData = {
+﻿export type RegistrationFormData = {
     fullName: string;
     email: string;
     password: string;
@@ -46,11 +46,13 @@ export const INITIAL_FORM: RegistrationFormData = {
 export const SOCIAL_OPTIONS = ["WhatsApp", "Instagram", "Facebook", "TikTok", "Twitter/X", "YouTube", "Discord", "Friend Referral"];
 export const SOURCE_OPTIONS = ["Media sosial (Instagram/FB/TikTok)", "YouTube", "Discord", "Teman/Kenalan", "Tournament online", "Lainnya"];
 export const REGISTER_STEPS = [
-    { title: "Akun", icon: "1", desc: "Data akun Anda" },
-    { title: "Game Profile", icon: "2", desc: "Profil game Duel Links / Master Duel" },
-    { title: "Info Guild", icon: "3", desc: "Background guild Anda" },
-    { title: "Persetujuan", icon: "4", desc: "Syarat dan ketentuan" },
+    { title: "Akun", icon: "1", desc: "Data akun aktif Anda" },
+    { title: "Game Profile", icon: "2", desc: "Profil Duel Links / Master Duel" },
+    { title: "Komunitas", icon: "3", desc: "Background komunitas dan kontak" },
+    { title: "Persetujuan", icon: "4", desc: "Syarat penggunaan akun" },
 ];
+
+const IGN_REGEX = /^[A-Za-z0-9 _.\-\[\]()]{2,32}$/;
 
 export function validateRegisterStep(form: RegistrationFormData, targetStep: number): FormErrors {
     const nextErrors: FormErrors = {};
@@ -71,13 +73,13 @@ export function validateRegisterStep(form: RegistrationFormData, targetStep: num
         const hasMasterDuel = Boolean(form.masterDuelGameId && form.masterDuelIgn);
 
         if (!hasDuelLinks && !hasMasterDuel) nextErrors.duelLinksGameId = "Minimal satu game profile wajib diisi";
-        if (form.duelLinksIgn && !/^\[DS\]/.test(form.duelLinksIgn)) nextErrors.duelLinksIgn = "IGN wajib diawali [DS]";
-        if (form.masterDuelIgn && !/^\[DS\]/.test(form.masterDuelIgn)) nextErrors.masterDuelIgn = "IGN wajib diawali [DS]";
+        if (form.duelLinksIgn && !IGN_REGEX.test(form.duelLinksIgn)) nextErrors.duelLinksIgn = "IGN Duel Links mengandung karakter yang tidak valid";
+        if (form.masterDuelIgn && !IGN_REGEX.test(form.masterDuelIgn)) nextErrors.masterDuelIgn = "IGN Master Duel mengandung karakter yang tidak valid";
     }
 
     if (targetStep === 3) {
         if (!form.sourceInfo) nextErrors.sourceInfo = "Sumber informasi harus diisi";
-        if (!form.guildStatus) nextErrors.guildStatus = "Pilih status guild";
+        if (!form.guildStatus) nextErrors.guildStatus = "Pilih status komunitas Anda";
         if (form.socialMedia.length === 0) nextErrors.socialMedia = "Pilih minimal 1 sosial media";
     }
 

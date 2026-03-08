@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { DashboardEmptyState, DashboardPanel } from "@/components/dashboard/page-shell";
 
@@ -6,6 +6,7 @@ interface ActiveUser {
     id: string;
     fullName: string;
     role: string;
+    team: { id: string; name: string; slug: string } | null;
     gameProfiles: { gameId: string; ign?: string; gameType?: string }[];
 }
 
@@ -16,8 +17,10 @@ const getRoleBadge = (role: string) => {
             return "bg-ds-amber/20 text-ds-amber border-ds-amber/30";
         case "OFFICER":
             return "bg-purple-500/10 text-purple-400 border-purple-400/20";
-        default:
+        case "MEMBER":
             return "bg-blue-500/10 text-blue-400 border-blue-400/20";
+        default:
+            return "bg-slate-500/10 text-slate-500 border-slate-500/20 dark:text-white/55";
     }
 };
 
@@ -39,7 +42,7 @@ export function ActiveUserList({
     return (
         <DashboardPanel
             title="Active Users"
-            description="Snapshot akun aktif terbaru beserta identitas game utamanya."
+            description="Snapshot akun aktif terbaru, role komunitas, dan afiliasi team jika sudah ditetapkan."
             action={
                 <a href="/dashboard/users?status=ACTIVE" className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70 dark:hover:bg-white/[0.06]">
                     View All
@@ -61,7 +64,7 @@ export function ActiveUserList({
             ) : users.length === 0 ? (
                 <DashboardEmptyState
                     title="Belum ada active users"
-                    description="Akun aktif guild akan muncul di sini setelah registrasi dan login mulai berjalan."
+                    description="Akun aktif akan muncul di sini setelah registrasi dan login mulai berjalan."
                     actionHref="/dashboard/users"
                     actionLabel="Buka halaman users"
                 />
@@ -76,6 +79,9 @@ export function ActiveUserList({
                                 <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{user.fullName}</div>
                                 <div className="truncate text-xs text-slate-400 dark:text-white/40">
                                     {user.gameProfiles[0]?.ign || user.gameProfiles[0]?.gameId || "Belum ada game profile"}
+                                </div>
+                                <div className="truncate text-[11px] text-slate-400 dark:text-white/35">
+                                    {user.team ? `Team ${user.team.name}` : user.role === "USER" ? "Public user" : "Belum masuk team"}
                                 </div>
                             </div>
                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getRoleBadge(user.role)}`}>

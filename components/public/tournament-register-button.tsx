@@ -44,10 +44,10 @@ export function TournamentRegisterButton({
                 className={`w-full rounded-2xl px-5 py-3 text-sm font-black transition-all ${
                     disabled
                         ? "cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-white/8 dark:text-white/35"
-                        : "bg-[#FFC916] text-[#111111] hover:bg-[#ffd84c]"
+                        : "bg-[#FFC916] text-[#111111] hover:bg-[#ffd84c] dark:shadow-[0_12px_30px_rgba(255,201,22,0.18)]"
                 }`}
             >
-                {submitting ? "Memproses..." : disabled ? "Pendaftaran Ditutup" : "Daftar Tournament"}
+                {submitting ? "Memproses..." : disabled ? "Pendaftaran Ditutup" : "Ikut Tournament"}
             </button>
             {message ? (
                 <div
