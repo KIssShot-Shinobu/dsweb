@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
         const authResult = await authenticateUser(
             { prisma: prisma as any, comparePassword },
-            { email: parsed.data.email, password: parsed.data.password }
+            { identifier: parsed.data.identifier, password: parsed.data.password }
         );
 
         if (!authResult.ok) {
@@ -28,10 +28,10 @@ export async function POST(req: NextRequest) {
                 await logAudit({
                     action: "LOGIN_FAILED",
                     userId: authResult.userId,
-                    details: { email: parsed.data.email, reason: "Invalid credentials" },
+                    details: { identifier: parsed.data.identifier, reason: "Invalid credentials" },
                 });
                 return NextResponse.json(
-                    { success: false, message: "Email atau password salah" },
+                    { success: false, message: "Username/email atau password salah" },
                     { status: 401 }
                 );
             }
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             success: true,
             message: "Login berhasil",
-            user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role, status: user.status },
+            user: { id: user.id, username: user.username, fullName: user.fullName, email: user.email, role: user.role, status: user.status },
         });
     } catch (error) {
         console.error("[Login API]", error);

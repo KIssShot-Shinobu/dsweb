@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken, hasRole, ROLES } from "@/lib/auth";
+import { hasRole, ROLES } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { tournamentSchema } from "@/lib/validators";
 import { resolveTournamentImage } from "@/lib/tournament-image";
+import { getServerCurrentUser } from "@/lib/server-current-user";
 
 function buildTournamentWhere(searchParams: URLSearchParams) {
     const status = searchParams.get("status");
@@ -85,8 +86,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         // SECURITY: Verify token and role
-        const decoded = await verifyToken(request.cookies.get("ds_auth")?.value || "");
-        if (!decoded || !hasRole(decoded.role, ROLES.OFFICER)) {
+        const currentUser = await getServerCurrentUser();
+        if (!currentUser || !hasRole(currentUser.role, ROLES.OFFICER)) {
             return NextResponse.json({ success: false, message: "Akses Ditolak. Minimal Officer." }, { status: 403 });
         }
 
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
 
         // AUDIT LOG
         await logAudit({
-            userId: decoded.userId,
+            userId: currentUser.id,
             action: "TOURNAMENT_CREATED",
             targetId: tournament.id,
             targetType: "Tournament",

@@ -40,6 +40,9 @@ const ACTION_OPTIONS = [
     { value: "USER_APPROVED", label: "User Disetujui" },
     { value: "USER_BANNED", label: "User Diblokir" },
     { value: "PASSWORD_RESET_SUCCESS", label: "Password Diubah/Reset" },
+    { value: "OAUTH_GOOGLE_LOGIN_SUCCESS", label: "Google Login" },
+    { value: "OAUTH_GOOGLE_ACCOUNT_LINKED", label: "Google Ditautkan" },
+    { value: "OAUTH_GOOGLE_ACCOUNT_CREATED", label: "User Baru dari Google" },
     { value: "SENSITIVE_FIELD_CHANGED", label: "Perubahan Data Sensitif" },
     { value: "TOURNAMENT_REGISTERED", label: "Daftar Turnamen" },
     { value: "ROLE_CHANGED", label: "Perubahan Role" },
@@ -118,7 +121,14 @@ const formatDetails = (detailsStr: string | null) => {
     }
 };
 
+const ACTION_LABELS: Record<string, string> = Object.fromEntries(
+    ACTION_OPTIONS.filter((item) => item.value !== "ALL").map((item) => [item.value, item.label])
+);
+
 const getActionBadgeColor = (action: string) => {
+    if (action.startsWith("OAUTH_GOOGLE")) {
+        return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+    }
     if (action.includes("SUCCESS") || action.includes("APPROVED") || action.includes("REGISTERED")) {
         return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
     }
@@ -149,7 +159,7 @@ export default function AuditLogsPage() {
         () => ({
             failed: logs.filter((log) => log.action.includes("FAILED") || log.action.includes("BANNED")).length,
             sensitive: logs.filter((log) => log.action === "SENSITIVE_FIELD_CHANGED").length,
-            auth: logs.filter((log) => log.action.startsWith("LOGIN") || log.action.startsWith("PASSWORD_")).length,
+            auth: logs.filter((log) => log.action.startsWith("LOGIN") || log.action.startsWith("PASSWORD_") || log.action.startsWith("OAUTH_GOOGLE")).length,
         }),
         [logs]
     );
@@ -262,7 +272,7 @@ export default function AuditLogsPage() {
                                         <div className="space-y-3">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getActionBadgeColor(log.action)}`}>
-                                                    {log.action}
+                                                    {ACTION_LABELS[log.action] ?? log.action}
                                                 </span>
                                                 <span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500 dark:bg-white/5 dark:text-white/40" title={log.userId}>
                                                     {log.userId === "0" ? "SYSTEM" : log.userId.slice(-8)}
@@ -307,3 +317,4 @@ export default function AuditLogsPage() {
         </DashboardPageShell>
     );
 }
+

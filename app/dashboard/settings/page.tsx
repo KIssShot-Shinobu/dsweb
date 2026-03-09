@@ -2,15 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { btnDanger, btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
-import {
-    DashboardMetricCard,
-    DashboardPageHeader,
-    DashboardPageShell,
-    DashboardPanel,
-} from "@/components/dashboard/page-shell";
+import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
+import { clientLogout } from "@/lib/client-auth";
 
 type MeUser = {
     id: string;
+    username: string;
     email: string;
     fullName: string;
     emailVerified: boolean;
@@ -28,11 +25,12 @@ export default function SettingsPage() {
 
     useEffect(() => {
         fetch("/api/auth/me")
-            .then((r) => (r.ok ? r.json() : null))
+            .then((response) => (response.ok ? response.json() : null))
             .then((data) => {
                 if (data?.success && data.user) {
                     setMe({
                         id: data.user.id,
+                        username: data.user.username ?? data.user.fullName,
                         email: data.user.email,
                         fullName: data.user.fullName,
                         emailVerified: Boolean(data.user.emailVerified),
@@ -49,9 +47,9 @@ export default function SettingsPage() {
         setVerifyLoading(true);
         setVerifyMessage(null);
         try {
-            const res = await fetch("/api/auth/verify-email/resend", { method: "POST" });
-            const data = await res.json();
-            if (!res.ok || !data?.success) {
+            const response = await fetch("/api/auth/verify-email/resend", { method: "POST" });
+            const data = await response.json();
+            if (!response.ok || !data?.success) {
                 setVerifyMessage({ type: "error", text: data?.message || "Gagal kirim ulang verifikasi email." });
                 return;
             }
@@ -63,22 +61,21 @@ export default function SettingsPage() {
         }
     };
 
-    const handleChangePassword = async (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const handleChangePassword = async (event: React.FormEvent) => {
+        event.preventDefault();
         setLoading(true);
         setError(null);
         setSuccessMessage(null);
 
         try {
-            const res = await fetch("/api/auth/password/change", {
+            const response = await fetch("/api/auth/password/change", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(form),
             });
-            const data = await res.json();
+            const data = await response.json();
 
-            if (!res.ok || !data?.success) {
+            if (!response.ok || !data?.success) {
                 setError(data?.message || "Gagal mengubah password.");
                 return;
             }
@@ -101,84 +98,146 @@ export default function SettingsPage() {
                 <DashboardPageHeader
                     kicker="Account Center"
                     title="Pengaturan"
-                    description="Kelola keamanan akun, status verifikasi email, dan sesi aktif dari satu halaman yang lebih rapi."
+                    description="Kelola verifikasi email dan keamanan akun dari satu halaman yang lebih minimal."
                 />
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <DashboardMetricCard label="Akun" value={meLoading ? "..." : me?.fullName || "Tidak tersedia"} meta="Identitas akun aktif" tone="accent" />
-                    <DashboardMetricCard label="Email Status" value={meLoading ? "..." : me?.emailVerified ? "Verified" : "Pending"} meta={me?.email || "Email belum termuat"} tone={me?.emailVerified ? "success" : "default"} />
-                    <DashboardMetricCard label="Security" value="Password" meta="Perubahan password akan memutus sesi login saat ini" tone="danger" />
-                </div>
+                <DashboardPanel
+                    title="Akun & Keamanan"
+                    description="Status verifikasi email dan perubahan password digabung dalam satu panel agar tetap ringan dipakai."
+                >
+                    {verifyMessage ? (
+                        <div
+                            className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+                                verifyMessage.type === "success"
+                                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+                                    : "border-red-500/20 bg-red-500/10 text-red-500"
+                            }`}
+                        >
+                            {verifyMessage.text}
+                        </div>
+                    ) : null}
 
-                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-                    <DashboardPanel title="Verifikasi Email" description="Cek status email aktif dan kirim ulang link verifikasi jika diperlukan.">
-                        {verifyMessage ? (
-                            <div className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${verifyMessage.type === "success" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" : "border-red-500/20 bg-red-500/10 text-red-500"}`}>
-                                {verifyMessage.text}
-                            </div>
-                        ) : null}
-
-                        {meLoading ? (
-                            <p className="text-sm text-slate-500 dark:text-white/45">Memuat status verifikasi...</p>
-                        ) : !me ? (
-                            <p className="text-sm text-red-500">Tidak bisa memuat data akun.</p>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="rounded-2xl border border-black/5 bg-slate-50/80 px-4 py-4 dark:border-white/6 dark:bg-white/[0.03]">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <div>
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Email</p>
-                                            <p className="mt-2 text-sm font-medium text-slate-950 dark:text-white">{me.email}</p>
-                                        </div>
-                                        <span className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${me.emailVerified ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500" : "border-amber-500/30 bg-amber-500/10 text-amber-500"}`}>
-                                            {me.emailVerified ? "Terverifikasi" : "Belum Verifikasi"}
-                                        </span>
+                    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[0.92fr_1.08fr]">
+                        <div className="rounded-[28px] border border-black/5 bg-slate-50/80 p-5 dark:border-white/6 dark:bg-white/[0.03]">
+                            <div className="space-y-3">
+                                <div className="border-b border-black/5 pb-3 dark:border-white/8">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Username</div>
+                                    <div className="mt-2 text-sm font-semibold text-slate-950 dark:text-white">
+                                        {meLoading ? "Memuat..." : me ? `@${me.username}` : "Tidak tersedia"}
                                     </div>
                                 </div>
-                                {!me.emailVerified ? (
-                                    <button onClick={handleResendVerification} disabled={verifyLoading} className={btnOutline}>
-                                        {verifyLoading ? "Mengirim..." : "Kirim Ulang Verifikasi Email"}
-                                    </button>
-                                ) : null}
-                            </div>
-                        )}
-                    </DashboardPanel>
 
-                    <DashboardPanel title="Keamanan Akun" description="Ubah password dan putuskan sesi untuk menjaga akses tetap aman.">
-                        {error ? <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500">{error}</div> : null}
-                        {successMessage ? <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-500">{successMessage}</div> : null}
-                        <form onSubmit={handleChangePassword} className="space-y-4">
-                            <div>
-                                <label className={labelCls}>Password Saat Ini</label>
-                                <input type="password" className={inputCls} placeholder="********" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} required />
+                                <div className="border-b border-black/5 pb-3 dark:border-white/8">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Email</div>
+                                    <div className="mt-2 text-sm font-medium text-slate-950 dark:text-white">
+                                        {meLoading ? "Memuat..." : me?.email || "Tidak bisa memuat email"}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Status Verifikasi</div>
+                                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                                        <span
+                                            className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${
+                                                me?.emailVerified
+                                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+                                                    : "border-amber-500/30 bg-amber-500/10 text-amber-500"
+                                            }`}
+                                        >
+                                            {meLoading ? "Memuat..." : me?.emailVerified ? "Terverifikasi" : "Belum Verifikasi"}
+                                        </span>
+                                        {!meLoading && me && !me.emailVerified ? (
+                                            <button onClick={handleResendVerification} disabled={verifyLoading} className={btnOutline}>
+                                                {verifyLoading ? "Mengirim..." : "Kirim Ulang Verifikasi"}
+                                            </button>
+                                        ) : null}
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label className={labelCls}>Password Baru</label>
-                                <input type="password" className={inputCls} placeholder="Min. 8 karakter" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} required />
+                        </div>
+
+                        <div className="rounded-[28px] border border-black/5 bg-slate-50/80 p-5 dark:border-white/6 dark:bg-white/[0.03]">
+                            <div className="mb-4">
+                                <div className="text-sm font-semibold text-slate-950 dark:text-white">Ubah Password</div>
+                                <p className="mt-1 text-sm text-slate-500 dark:text-white/45">
+                                    Setelah password diubah, sesi login saat ini akan ditutup dan Anda perlu masuk kembali.
+                                </p>
                             </div>
-                            <div>
-                                <label className={labelCls}>Konfirmasi Password Baru</label>
-                                <input type="password" className={inputCls} placeholder="Ulangi password baru" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required />
-                            </div>
-                            <div className="flex flex-col gap-2 sm:flex-row">
-                                <button type="submit" disabled={loading} className={btnPrimary}>
-                                    {loading ? "Menyimpan..." : "Simpan Password"}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={async () => {
-                                        await fetch("/api/auth/logout", { method: "POST" });
-                                        window.location.href = "/login";
-                                    }}
-                                    className={btnDanger}
-                                >
-                                    Keluar dari Akun
-                                </button>
-                            </div>
-                        </form>
-                    </DashboardPanel>
-                </div>
+
+                            {meLoading ? (
+                                <p className="text-sm text-slate-500 dark:text-white/45">Memuat data akun...</p>
+                            ) : !me ? (
+                                <p className="text-sm text-red-500">Tidak bisa memuat data akun.</p>
+                            ) : (
+                                <>
+                                    {error ? (
+                                        <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500">
+                                            {error}
+                                        </div>
+                                    ) : null}
+                                    {successMessage ? (
+                                        <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-500">
+                                            {successMessage}
+                                        </div>
+                                    ) : null}
+
+                                    <form onSubmit={handleChangePassword} className="space-y-4">
+                                        <div>
+                                            <label className={labelCls}>Password Saat Ini</label>
+                                            <input
+                                                type="password"
+                                                className={inputCls}
+                                                placeholder="********"
+                                                value={form.currentPassword}
+                                                onChange={(event) => setForm({ ...form, currentPassword: event.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls}>Password Baru</label>
+                                            <input
+                                                type="password"
+                                                className={inputCls}
+                                                placeholder="Min. 8 karakter"
+                                                value={form.newPassword}
+                                                onChange={(event) => setForm({ ...form, newPassword: event.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls}>Konfirmasi Password Baru</label>
+                                            <input
+                                                type="password"
+                                                className={inputCls}
+                                                placeholder="Ulangi password baru"
+                                                value={form.confirmPassword}
+                                                onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-2 sm:flex-row">
+                                            <button type="submit" disabled={loading} className={btnPrimary}>
+                                                {loading ? "Menyimpan..." : "Simpan Password"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    await clientLogout("/login");
+                                                }}
+                                                className={btnDanger}
+                                            >
+                                                Keluar dari Akun
+                                            </button>
+                                        </div>
+                                    </form>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </DashboardPanel>
             </div>
         </DashboardPageShell>
     );
 }
+
+

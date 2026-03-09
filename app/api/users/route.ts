@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
                 id: true,
                 fullName: true,
                 email: true,
+                avatarUrl: true,
                 phoneWhatsapp: true,
                 city: true,
                 status: true,

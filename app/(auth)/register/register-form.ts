@@ -1,5 +1,5 @@
 ﻿export type RegistrationFormData = {
-    fullName: string;
+    username: string;
     email: string;
     password: string;
     confirmPassword: string;
@@ -12,8 +12,6 @@
     masterDuelIgn: string;
     masterDuelScreenshotUploadId: string;
     sourceInfo: string;
-    prevGuild: string;
-    guildStatus: string;
     socialMedia: string[];
     agreement: boolean;
 };
@@ -24,7 +22,7 @@ export type UploadPreview = { previewUrl: string; expiresAt: string };
 export type FormErrors = Record<string, string>;
 
 export const INITIAL_FORM: RegistrationFormData = {
-    fullName: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -37,8 +35,6 @@ export const INITIAL_FORM: RegistrationFormData = {
     masterDuelIgn: "",
     masterDuelScreenshotUploadId: "",
     sourceInfo: "",
-    prevGuild: "",
-    guildStatus: "",
     socialMedia: [],
     agreement: false,
 };
@@ -46,9 +42,9 @@ export const INITIAL_FORM: RegistrationFormData = {
 export const SOCIAL_OPTIONS = ["WhatsApp", "Instagram", "Facebook", "TikTok", "Twitter/X", "YouTube", "Discord", "Friend Referral"];
 export const SOURCE_OPTIONS = ["Media sosial (Instagram/FB/TikTok)", "YouTube", "Discord", "Teman/Kenalan", "Tournament online", "Lainnya"];
 export const REGISTER_STEPS = [
-    { title: "Akun", icon: "1", desc: "Data akun aktif Anda" },
+    { title: "Akun", icon: "1", desc: "Username dan data akun aktif Anda" },
     { title: "Game Profile", icon: "2", desc: "Profil Duel Links / Master Duel" },
-    { title: "Komunitas", icon: "3", desc: "Background komunitas dan kontak" },
+    { title: "Komunitas", icon: "3", desc: "Sumber info dan kontak sosial" },
     { title: "Persetujuan", icon: "4", desc: "Syarat penggunaan akun" },
 ];
 
@@ -58,7 +54,8 @@ export function validateRegisterStep(form: RegistrationFormData, targetStep: num
     const nextErrors: FormErrors = {};
 
     if (targetStep === 1) {
-        if (!form.fullName || form.fullName.length < 3) nextErrors.fullName = "Nama minimal 3 karakter";
+        if (!form.username || form.username.length < 3) nextErrors.username = "Username minimal 3 karakter";
+        if (form.username && !/^[a-zA-Z0-9._-]{3,24}$/.test(form.username)) nextErrors.username = "Username hanya boleh huruf, angka, titik, underscore, dan strip";
         if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) nextErrors.email = "Email tidak valid";
         if (!form.password || form.password.length < 8) nextErrors.password = "Password minimal 8 karakter";
         if (!/[A-Za-z]/.test(form.password)) nextErrors.password = "Password harus mengandung huruf";
@@ -79,7 +76,6 @@ export function validateRegisterStep(form: RegistrationFormData, targetStep: num
 
     if (targetStep === 3) {
         if (!form.sourceInfo) nextErrors.sourceInfo = "Sumber informasi harus diisi";
-        if (!form.guildStatus) nextErrors.guildStatus = "Pilih status komunitas Anda";
         if (form.socialMedia.length === 0) nextErrors.socialMedia = "Pilih minimal 1 sosial media";
     }
 

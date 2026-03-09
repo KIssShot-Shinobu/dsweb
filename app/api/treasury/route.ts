@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getTokenFromCookie, verifyToken } from "@/lib/auth";
 import { treasurySchema } from "@/lib/validators";
 import { logAudit } from "@/lib/audit-logger";
 import { createTreasuryEntry } from "@/lib/services/treasury-service";
+import { getServerCurrentUser } from "@/lib/server-current-user";
 
 function buildTreasuryWhere(searchParams: URLSearchParams) {
     const userId = searchParams.get("userId");
@@ -102,12 +102,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const token = await getTokenFromCookie();
-        const decoded = token ? await verifyToken(token) : null;
-        const userRole = decoded?.role;
-        const actorUserId = decoded?.userId;
-
-        if (!userRole || !["ADMIN", "FOUNDER"].includes(userRole)) {
+        const currentUser = await getServerCurrentUser();
+        if (!currentUser || !["ADMIN", "FOUNDER"].includes(currentUser.role)) {
             return NextResponse.json({ success: false, message: "Akses Ditolak" }, { status: 403 });
         }
 
@@ -121,7 +117,7 @@ export async function POST(request: NextRequest) {
         const transaction = await createTreasuryEntry(prisma as any, validBody.data);
 
         await logAudit({
-            userId: actorUserId || "0",
+            userId: currentUser.id,
             action: "TREASURY_ADDED",
             targetId: transaction.id,
             targetType: "Treasury",

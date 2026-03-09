@@ -1,10 +1,12 @@
-﻿"use client";
+"use client";
 
+import { normalizeAssetUrl } from "@/lib/asset-url";
 import { DashboardEmptyState, DashboardPanel } from "@/components/dashboard/page-shell";
 
 interface ActiveUser {
     id: string;
     fullName: string;
+    avatarUrl?: string | null;
     role: string;
     team: { id: string; name: string; slug: string } | null;
     gameProfiles: { gameId: string; ign?: string; gameType?: string }[];
@@ -70,25 +72,37 @@ export function ActiveUserList({
                 />
             ) : (
                 <div className="space-y-3">
-                    {users.map((user) => (
-                        <div key={user.id} className="flex items-center gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-3 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] sm:p-4">
-                            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
-                                {getInitials(user.fullName)}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{user.fullName}</div>
-                                <div className="truncate text-xs text-slate-400 dark:text-white/40">
-                                    {user.gameProfiles[0]?.ign || user.gameProfiles[0]?.gameId || "Belum ada game profile"}
+                    {users.map((user) => {
+                        const avatarUrl = normalizeAssetUrl(user.avatarUrl);
+
+                        return (
+                            <div key={user.id} className="flex items-center gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-3 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] sm:p-4">
+                                {avatarUrl ? (
+                                    <img
+                                        src={avatarUrl}
+                                        alt={user.fullName}
+                                        className="h-11 w-11 flex-shrink-0 rounded-2xl border border-black/5 object-cover dark:border-white/10"
+                                    />
+                                ) : (
+                                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
+                                        {getInitials(user.fullName)}
+                                    </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                    <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{user.fullName}</div>
+                                    <div className="truncate text-xs text-slate-400 dark:text-white/40">
+                                        {user.gameProfiles[0]?.ign || user.gameProfiles[0]?.gameId || "Belum ada game profile"}
+                                    </div>
+                                    <div className="truncate text-[11px] text-slate-400 dark:text-white/35">
+                                        {user.team ? `Team ${user.team.name}` : user.role === "USER" ? "Public user" : "Belum masuk team"}
+                                    </div>
                                 </div>
-                                <div className="truncate text-[11px] text-slate-400 dark:text-white/35">
-                                    {user.team ? `Team ${user.team.name}` : user.role === "USER" ? "Public user" : "Belum masuk team"}
-                                </div>
+                                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getRoleBadge(user.role)}`}>
+                                    {user.role}
+                                </span>
                             </div>
-                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getRoleBadge(user.role)}`}>
-                                {user.role}
-                            </span>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </DashboardPanel>

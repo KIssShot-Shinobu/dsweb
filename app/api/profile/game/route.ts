@@ -1,24 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken, getTokenFromCookie } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { updateGameProfileSchema } from "@/lib/validators";
+import { getServerCurrentUser } from "@/lib/server-current-user";
 
 // POST /api/profile/game - Create or Update Game Profile
 export async function POST(request: NextRequest) {
     try {
         // SECURITY: Verify token strictly
-        const token = await getTokenFromCookie();
-        if (!token) {
+        const currentUser = await getServerCurrentUser();
+        if (!currentUser) {
             return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
         }
 
-        const decoded = await verifyToken(token);
-        if (!decoded || !decoded.userId) {
-            return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-        }
-
-        const userId = decoded.userId;
+        const userId = currentUser.id;
         const body = await request.json();
         const validBody = updateGameProfileSchema.safeParse(body);
 

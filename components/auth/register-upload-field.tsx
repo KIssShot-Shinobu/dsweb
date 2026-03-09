@@ -7,6 +7,7 @@ export type UploadPreview = {
 
 type RegisterUploadFieldProps = {
     label: string;
+    helperText?: string;
     preview: UploadPreview | null;
     uploading: boolean;
     error?: string;
@@ -16,6 +17,7 @@ type RegisterUploadFieldProps = {
 
 export function RegisterUploadField({
     label,
+    helperText,
     preview,
     uploading,
     error,
@@ -25,6 +27,7 @@ export function RegisterUploadField({
     return (
         <div>
             <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">{label}</label>
+            {helperText ? <p className="mb-2 text-xs text-white/35">{helperText}</p> : null}
             {preview ? (
                 <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 sm:flex-row sm:items-center">
                     <img src={preview.previewUrl} className="h-20 w-full rounded-xl object-cover sm:w-28" alt={label} />

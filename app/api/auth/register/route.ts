@@ -5,6 +5,7 @@ import { registerSchema } from "@/lib/validators";
 import { generateSecureToken, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { sendEmail } from "@/lib/email";
+import { buildActionEmail } from "@/lib/email-templates";
 import { findRegisterConflict, registerUser } from "@/lib/services/auth-service";
 import { getAppUrl } from "@/lib/runtime-config";
 import { extractRequestIp } from "@/lib/request-ip";
@@ -12,6 +13,13 @@ import { assertClaimableRegisterUploads, claimRegisterUploads } from "@/lib/uplo
 import type { RegisterInput } from "@/lib/validators";
 
 function buildRegisterConflictResponse(code: string) {
+    if (code === "USERNAME_EXISTS") {
+        return NextResponse.json(
+            { success: false, message: "Username sudah terdaftar", errors: { username: ["Username sudah digunakan"] } },
+            { status: 409 }
+        );
+    }
+
     if (code === "EMAIL_EXISTS") {
         return NextResponse.json(
             { success: false, message: "Email sudah terdaftar", errors: { email: ["Email sudah digunakan"] } },
@@ -50,11 +58,22 @@ function getRegisterUploadMap(data: RegisterInput) {
     } as const;
 }
 
-function queueRegisterEmail(fullName: string, email: string, verifyUrl: string) {
+function queueRegisterEmail(username: string, email: string, verifyUrl: string) {
+    const emailContent = buildActionEmail({
+        recipientName: username,
+        preheader: "Email Verification",
+        title: "Verifikasi email akun Anda",
+        body: "Terima kasih sudah bergabung. Konfirmasi email Anda untuk mengamankan akun dan memastikan notifikasi penting bisa kami kirim dengan benar.",
+        actionLabel: "Verifikasi Email",
+        actionUrl: verifyUrl,
+        expiryLabel: "Link verifikasi berlaku selama 24 jam.",
+    });
+
     void sendEmail({
         to: email,
-        subject: "Verifikasi Email DuelStandby",
-        text: `Halo ${fullName},\n\nVerifikasi email akun Anda di link berikut:\n${verifyUrl}\n\nJika Anda tidak merasa mendaftar, abaikan email ini.`,
+        subject: "Verifikasi Email Duel Standby",
+        text: emailContent.text,
+        html: emailContent.html,
         debugTag: "Auth][VerifyEmail",
     }).catch((emailError) => {
         console.error("[Register API][Email]", emailError);
@@ -84,6 +103,10 @@ function buildPrismaConflictResponse(error: Prisma.PrismaClientKnownRequestError
 
     if (targets.includes("email")) {
         return buildRegisterConflictResponse("EMAIL_EXISTS");
+    }
+
+    if (targets.includes("username")) {
+        return buildRegisterConflictResponse("USERNAME_EXISTS");
     }
 
     if (targets.includes("phoneWhatsappHash") || targets.includes("phoneWhatsapp")) {
@@ -142,7 +165,7 @@ export async function POST(req: NextRequest) {
         const appUrl = getAppUrl();
         const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`;
 
-        queueRegisterEmail(user.fullName, user.email, verifyUrl);
+        queueRegisterEmail(user.username, user.email, verifyUrl);
         await logAudit({ action: "USER_REGISTERED", userId: user.id });
 
         return NextResponse.json(

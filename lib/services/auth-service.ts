@@ -1,22 +1,26 @@
 import type { RegisterInput, LoginInput } from "@/lib/validators";
-import type { GameType, GuildStatus } from "@prisma/client";
+import type { GameType } from "@prisma/client";
 
 type GameProfileLookup = { id: string } | null;
 type VerificationTokenRecord = { id: string } | null;
 type AuthUserRecord = {
     id: string;
     email: string;
+    username: string;
     fullName: string;
     password?: string;
     status: string;
     role: string;
+    teamId?: string | null;
+    emailVerifiedAt?: Date | null;
 };
 
-type RegisterConflictCode = "EMAIL_EXISTS" | "PHONE_EXISTS" | "GAME_ID_EXISTS";
+type RegisterConflictCode = "USERNAME_EXISTS" | "EMAIL_EXISTS" | "PHONE_EXISTS" | "GAME_ID_EXISTS";
 
 type AuthPrismaLike = {
     user: {
         findUnique: (args: { where: Record<string, unknown>; select?: Record<string, boolean> }) => Promise<AuthUserRecord | null>;
+        findFirst?: (args: { where: Record<string, unknown>; select?: Record<string, boolean> }) => Promise<AuthUserRecord | null>;
         create?: (args: { data: Record<string, unknown> }) => Promise<AuthUserRecord>;
         update?: (args: { where: Record<string, unknown>; data: Record<string, unknown> }) => Promise<AuthUserRecord | null>;
     };
@@ -58,13 +62,18 @@ export async function findRegisterConflict(
     deps: Pick<AuthDeps, "prisma">,
     data: RegisterInput
 ): Promise<RegisterConflictCode | null> {
-    const [emailExists, phoneExists, existingGameProfile] = await Promise.all([
+    const [usernameExists, emailExists, phoneExists, existingGameProfile] = await Promise.all([
+        deps.prisma.user.findUnique({ where: { username: data.username } }),
         deps.prisma.user.findUnique({ where: { email: data.email } }),
         data.phoneWhatsapp
             ? deps.prisma.user.findUnique({ where: { phoneWhatsapp: data.phoneWhatsapp } })
             : Promise.resolve(null),
         findExistingGameProfile(deps.prisma, data),
     ]);
+
+    if (usernameExists) {
+        return "USERNAME_EXISTS";
+    }
 
     if (emailExists) {
         return "EMAIL_EXISTS";
@@ -83,12 +92,21 @@ export async function findRegisterConflict(
 
 export async function authenticateUser(
     deps: Pick<AuthDeps, "prisma" | "comparePassword">,
-    input: Pick<LoginInput, "email" | "password">
+    input: Pick<LoginInput, "identifier" | "password">
 ) {
-    const user = await deps.prisma.user.findUnique({
-        where: { email: input.email },
-        select: { id: true, email: true, fullName: true, password: true, status: true, role: true },
-    });
+    const identifier = input.identifier.trim().toLowerCase();
+    const findUser = deps.prisma.user.findFirst;
+    const user = findUser
+        ? await findUser({
+              where: {
+                  OR: [{ email: identifier }, { username: identifier }],
+              },
+              select: { id: true, email: true, username: true, fullName: true, password: true, status: true, role: true, teamId: true, emailVerifiedAt: true },
+          })
+        : await deps.prisma.user.findUnique({
+              where: { email: identifier },
+              select: { id: true, email: true, username: true, fullName: true, password: true, status: true, role: true, teamId: true, emailVerifiedAt: true },
+          });
 
     if (!user) {
         return { ok: false as const, code: "INVALID_CREDENTIALS" };
@@ -132,7 +150,8 @@ export async function registerUser(
 
     const user = await createUser({
         data: {
-            fullName: data.fullName,
+            username: data.username,
+            fullName: data.username,
             email: data.email,
             password: hashedPassword,
             phoneWhatsapp: data.phoneWhatsapp,
@@ -162,8 +181,6 @@ export async function registerUser(
             registrationLog: {
                 create: {
                     sourceInfo: data.sourceInfo,
-                    prevGuild: data.prevGuild || null,
-                    guildStatus: data.guildStatus as GuildStatus,
                     socialMedia: JSON.stringify(data.socialMedia),
                     agreement: data.agreement,
                 },

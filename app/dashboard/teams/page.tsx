@@ -56,6 +56,7 @@ export default function TeamsPage() {
     const [status, setStatus] = useState("ALL");
     const [modalOpen, setModalOpen] = useState(false);
     const [editingTeam, setEditingTeam] = useState<TeamRow | null>(null);
+    const [teamToDelete, setTeamToDelete] = useState<TeamRow | null>(null);
     const [form, setForm] = useState(emptyForm);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -135,8 +136,6 @@ export default function TeamsPage() {
     };
 
     const handleDelete = async (team: TeamRow) => {
-        if (!confirm(`Hapus team ${team.name}?`)) return;
-
         setError(null);
         setMessage(null);
         const response = await fetch(`/api/teams/${team.id}`, { method: "DELETE" });
@@ -152,8 +151,10 @@ export default function TeamsPage() {
     };
 
     const activeTeams = teams.filter((team) => team.isActive).length;
+    const inactiveTeams = teams.filter((team) => !team.isActive).length;
     const totalAssignedMembers = teams.reduce((sum, team) => sum + team.memberCount, 0);
     const avgRoster = teams.length ? Math.round(totalAssignedMembers / teams.length) : 0;
+    const isFiltering = Boolean(search.trim()) || status !== "ALL";
 
     const helperText = useMemo(
         () =>
@@ -176,7 +177,12 @@ export default function TeamsPage() {
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <DashboardMetricCard label="Total Teams" value={loading ? "..." : teams.length} meta="Seluruh team yang tersedia di Duel Standby" tone="accent" />
                     <DashboardMetricCard label="Teams Aktif" value={loading ? "..." : activeTeams} meta="Team yang masih bisa dipakai untuk roster aktif" tone="success" />
-                    <DashboardMetricCard label="Avg. Roster" value={loading ? "..." : avgRoster} meta={helperText} tone="default" />
+                    <DashboardMetricCard
+                        label="Avg. Roster"
+                        value={loading ? "..." : avgRoster}
+                        meta={`${helperText} ${inactiveTeams ? `Saat ini ada ${inactiveTeams} team nonaktif.` : ""}`.trim()}
+                        tone="default"
+                    />
                 </div>
 
                 {message ? (
@@ -203,6 +209,23 @@ export default function TeamsPage() {
                             />
                             <FormSelect value={status} onChange={setStatus} options={STATUS_OPTIONS} className="w-full" />
                         </div>
+                        {isFiltering ? (
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 dark:text-white/35">
+                                <span>
+                                    Menampilkan {teams.length} team untuk filter yang sedang aktif.
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSearch("");
+                                        setStatus("ALL");
+                                    }}
+                                    className="font-medium text-ds-amber transition-colors hover:text-ds-gold"
+                                >
+                                    Reset Filter
+                                </button>
+                            </div>
+                        ) : null}
                     </div>
                 </DashboardPanel>
 
@@ -215,8 +238,14 @@ export default function TeamsPage() {
                         </div>
                     ) : teams.length === 0 ? (
                         <DashboardEmptyState
-                            title="Belum ada team"
-                            description="Buat struktur team dulu, lalu hubungkan member Duel Standby dari halaman detail team atau halaman Users."
+                            title={isFiltering ? "Tidak ada team yang cocok" : "Belum ada team"}
+                            description={
+                                isFiltering
+                                    ? "Coba longgarkan kata kunci atau ubah status filter agar daftar team muncul kembali."
+                                    : "Buat struktur team dulu, lalu hubungkan member Duel Standby dari halaman detail team atau halaman Users."
+                            }
+                            actionLabel={isFiltering ? "Reset Filter" : undefined}
+                            actionHref={isFiltering ? "/dashboard/teams" : undefined}
                         />
                     ) : (
                         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -255,7 +284,7 @@ export default function TeamsPage() {
                                             <button onClick={() => openEdit(team)} className={btnOutline}>Edit Team</button>
                                         ) : null}
                                         {isAdmin ? (
-                                            <button onClick={() => handleDelete(team)} className={btnDanger} disabled={team.memberCount > 0}>
+                                            <button onClick={() => setTeamToDelete(team)} className={btnDanger} disabled={team.memberCount > 0}>
                                                 Hapus Team
                                             </button>
                                         ) : null}
@@ -346,6 +375,53 @@ export default function TeamsPage() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            ) : null}
+
+            {teamToDelete ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setTeamToDelete(null)} />
+                    <div className="relative w-full max-w-lg rounded-3xl border border-black/5 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-[#1a1a1a]">
+                        <div className="space-y-2">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-red-500">
+                                Konfirmasi Hapus
+                            </div>
+                            <h2 className="text-xl font-bold text-slate-950 dark:text-white">Hapus team ini?</h2>
+                            <p className="text-sm leading-6 text-slate-500 dark:text-white/45">
+                                Team <span className="font-semibold text-slate-950 dark:text-white">{teamToDelete.name}</span> akan dihapus permanen.
+                                Pastikan roster team ini sudah kosong sebelum melanjutkan.
+                            </p>
+                        </div>
+
+                        <div className="mt-5 rounded-2xl border border-black/5 bg-slate-50/80 p-4 text-sm dark:border-white/6 dark:bg-white/[0.03]">
+                            <div className="font-semibold text-slate-950 dark:text-white">{teamToDelete.name}</div>
+                            <div className="mt-1 text-slate-500 dark:text-white/45">/{teamToDelete.slug}</div>
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-white/35">
+                                <span>{teamToDelete.isActive ? "Team aktif" : "Team nonaktif"}</span>
+                                <span>|</span>
+                                <span>Roster saat ini: {teamToDelete.memberCount}</span>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                            <button type="button" onClick={() => setTeamToDelete(null)} className={btnOutline}>
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const target = teamToDelete;
+                                    setTeamToDelete(null);
+                                    if (target) {
+                                        await handleDelete(target);
+                                    }
+                                }}
+                                className={btnDanger}
+                            >
+                                Ya, Hapus Team
+                            </button>
+                        </div>
                     </div>
                 </div>
             ) : null}

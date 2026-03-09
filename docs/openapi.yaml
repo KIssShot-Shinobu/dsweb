@@ -49,18 +49,17 @@ paths:
             schema:
               type: object
               required:
-                - fullName
+                - username
                 - email
                 - password
                 - confirmPassword
                 - phoneWhatsapp
                 - city
                 - sourceInfo
-                - guildStatus
                 - socialMedia
                 - agreement
               properties:
-                fullName:
+                username:
                   type: string
                 email:
                   type: string
@@ -77,23 +76,86 @@ paths:
                   type: string
                 masterDuelScreenshotUploadId:
                   type: string
+                sourceInfo:
+                  type: string
+                socialMedia:
+                  type: array
+                  items:
+                    type: string
+                agreement:
+                  type: boolean
       responses:
         "201":
           description: Registration created
   /api/auth/login:
     post:
-      summary: Login and issue auth cookies
+      summary: Legacy credentials login endpoint for compatibility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - identifier
+                - password
+              properties:
+                identifier:
+                  type: string
+                  description: Username atau email
+                password:
+                  type: string
+                rememberMe:
+                  type: boolean
       responses:
         "200":
           description: Login success
         "401":
           description: Invalid credentials
+  /api/auth/finalize:
+    get:
+      summary: Finalize Auth.js session into internal auth cookies and redirect
+      responses:
+        "302":
+          description: Redirect to dashboard or requested internal path after issuing auth cookies
+    post:
+      summary: Finalize Auth.js session into internal auth cookies for client-side login
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum:
+                    - credentials
+                    - google
+                redirect:
+                  type: string
+      responses:
+        "200":
+          description: Internal cookies issued and redirect target returned
+        "401":
+          description: Auth.js session missing or invalid
   /api/auth/me:
     get:
       summary: Get authenticated user session or guest payload
       responses:
         "200":
           description: Session payload
+  /api/auth/oauth/finalize:
+    get:
+      summary: Compatibility alias to Auth.js finalize route
+      responses:
+        "302":
+          description: Redirect to dashboard or requested internal path after issuing auth cookies
+    post:
+      summary: Compatibility alias to Auth.js finalize route
+      responses:
+        "200":
+          description: Internal cookies issued and redirect target returned
   /api/auth/refresh:
     post:
       summary: Rotate refresh token and refresh access cookie
@@ -623,3 +685,4 @@ paths:
           description: Unauthorized
         "404":
           description: Not found
+

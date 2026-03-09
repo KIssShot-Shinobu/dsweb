@@ -88,6 +88,7 @@ export async function GET() {
                 select: {
                     id: true,
                     fullName: true,
+                    avatarUrl: true,
                     role: true,
                     team: {
                         select: {

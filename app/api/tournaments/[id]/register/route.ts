@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
+import { getServerCurrentUser } from "@/lib/server-current-user";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const decoded = await verifyToken(request.cookies.get("ds_auth")?.value || "");
-        if (!decoded) {
+        const currentUser = await getServerCurrentUser();
+        if (!currentUser) {
             return NextResponse.json({ success: false, message: "Silakan login terlebih dahulu" }, { status: 401 });
         }
 
-        if (decoded.status !== "ACTIVE") {
+        if (currentUser.status !== "ACTIVE") {
             return NextResponse.json({ success: false, message: "Hanya akun aktif yang dapat mendaftar turnamen" }, { status: 403 });
         }
 
-        const userId = decoded.userId;
+        const userId = currentUser.id;
         const { id: tournamentId } = await params;
 
         const tournament = await prisma.tournament.findUnique({

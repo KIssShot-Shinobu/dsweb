@@ -14,17 +14,33 @@ if (!adminEmail || !adminPassword) {
     throw new Error("ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD are required");
 }
 
+function toUsername(value) {
+    return (
+        value
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9._-]+/g, ".")
+            .replace(/\.{2,}/g, ".")
+            .replace(/^\.|\.$/g, "")
+            .slice(0, 24) || "duelstandby.admin"
+    );
+}
+
 const prisma = new PrismaClient({
     adapter: new PrismaMariaDb(databaseUrl),
 });
 
 async function main() {
     const hash = await bcrypt.hash(adminPassword, 12);
+    const adminName = process.env.ADMIN_SEED_NAME || "Admin Duel Standby";
+    const adminUsername = process.env.ADMIN_SEED_USERNAME || toUsername(adminName || adminEmail.split("@")[0] || "duelstandby.admin");
+
     const user = await prisma.user.upsert({
         where: { email: adminEmail },
         update: {},
         create: {
-            fullName: process.env.ADMIN_SEED_NAME || "Admin Duel Standby",
+            fullName: adminName,
+            username: adminUsername,
             email: adminEmail,
             password: hash,
             phoneWhatsapp: process.env.ADMIN_SEED_PHONE || "+628000000001",

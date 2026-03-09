@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Swords, MoonStar, SunMedium } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { normalizeAssetUrl } from "@/lib/asset-url";
+import { clientLogout } from "@/lib/client-auth";
 
 const navLinks = [
     { name: "Home", href: "/" },
@@ -14,7 +15,7 @@ const navLinks = [
     { name: "Community", href: "/#socials" },
 ];
 
-type MeUser = { fullName: string; avatarUrl: string | null; role: string; emailVerified: boolean; };
+type MeUser = { username: string; fullName: string; avatarUrl: string | null; role: string; emailVerified: boolean; };
 
 export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
@@ -24,11 +25,46 @@ export function Navbar() {
     const { theme, toggleTheme } = useTheme();
 
     useEffect(() => {
-        fetch("/api/auth/me").then((r) => (r.ok ? r.json() : null)).then((data) => {
-            if (data?.success && data.user) {
-                setMe({ fullName: data.user.fullName, avatarUrl: data.user.avatarUrl ?? null, role: data.user.role ?? "USER", emailVerified: Boolean(data.user.emailVerified) });
+        let active = true;
+
+        const loadMe = async () => {
+            const response = await fetch("/api/auth/me");
+            if (!response.ok) {
+                return null;
             }
-        }).catch(() => setMe(null));
+
+            return response.json();
+        };
+
+        const syncMe = () => {
+            loadMe()
+                .then((data) => {
+                    if (!active) return;
+                    if (data?.success && data.user) {
+                        setMe({
+                            username: data.user.username ?? data.user.fullName,
+                            fullName: data.user.fullName,
+                            avatarUrl: data.user.avatarUrl ?? null,
+                            role: data.user.role ?? "USER",
+                            emailVerified: Boolean(data.user.emailVerified),
+                        });
+                    } else {
+                        setMe(null);
+                    }
+                })
+                .catch(() => {
+                    if (!active) return;
+                    setMe(null);
+                });
+        };
+
+        syncMe();
+        window.addEventListener("ds:user-updated", syncMe);
+
+        return () => {
+            active = false;
+            window.removeEventListener("ds:user-updated", syncMe);
+        };
     }, []);
 
     useEffect(() => {
@@ -40,8 +76,8 @@ export function Navbar() {
         return () => document.removeEventListener("mousedown", onClickOutside);
     }, []);
 
-    const initials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-    const handleLogout = async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; };
+    const initials = (name: string) => name.split(/[\s._-]+/).map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+    const handleLogout = async () => { await clientLogout("/login"); };
     const isAdmin = me ? ["ADMIN", "FOUNDER"].includes(me.role) : false;
     const avatarUrl = normalizeAssetUrl(me?.avatarUrl);
     const isDark = theme === "dark";
@@ -80,7 +116,7 @@ export function Navbar() {
                             {!me ? (<><Link href="/login" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:border-[#FFC916]/40 hover:text-[#FFC916] active:scale-[0.98] dark:border-white/15 dark:text-gray-300">Sign In</Link><Link href="/register" className="rounded-lg bg-gradient-to-r from-[#FFC916] to-[#FFC000] px-4 py-2 text-sm font-semibold text-[#2E2E2E] transition-all hover:shadow-[0_0_20px_rgba(255,201,22,0.3)] active:scale-[0.98]">Sign Up</Link></>) : (
                                 <div className="relative" ref={menuRef}>
                                     <button onClick={() => setMenuOpen((v) => !v)} className="relative h-10 w-10 overflow-hidden rounded-full border border-slate-200 transition-colors hover:border-[#FFC916]/50 dark:border-white/20" aria-label="Open profile menu">
-                                        {avatarUrl ? <img src={avatarUrl} alt={me.fullName} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center bg-[#FFC916] text-xs font-bold text-[#2E2E2E]">{initials(me.fullName)}</div>}
+                                        {avatarUrl ? <img src={avatarUrl} alt={me.username} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center bg-[#FFC916] text-xs font-bold text-[#2E2E2E]">{initials(me.username)}</div>}
                                         {!me.emailVerified && <span className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-white dark:ring-[#2E2E2E]" />}
                                     </button>
                                     <AnimatePresence>{menuOpen && <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-[#13161c] dark:shadow-[0_18px_45px_rgba(0,0,0,0.35)]"><Link href={isAdmin ? "/dashboard" : "/dashboard/profile"} onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:text-gray-200 dark:hover:bg-white/10">{isAdmin ? "Dashboard" : "Profile"}</Link>{!me.emailVerified && <Link href="/dashboard/settings" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-500/10">Verifikasi Email</Link>}<button onClick={handleLogout} className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10">Logout</button></motion.div>}</AnimatePresence>
@@ -95,3 +131,5 @@ export function Navbar() {
         </nav>
     );
 }
+
+

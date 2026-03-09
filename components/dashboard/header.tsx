@@ -3,6 +3,7 @@
 import { ThemeToggle } from "./theme-toggle";
 import { useSidebar } from "@/context/SidebarContext";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { normalizeAssetUrl } from "@/lib/asset-url";
 
 function getInitials(name: string) {
     return name
@@ -16,6 +17,8 @@ function getInitials(name: string) {
 export function Header() {
     const { toggle } = useSidebar();
     const { user } = useCurrentUser();
+    const displayName = user?.username || user?.fullName || "Dashboard User";
+    const avatarUrl = normalizeAssetUrl(user?.avatarUrl);
 
     return (
         <header className="sticky top-0 z-10 flex h-16 flex-shrink-0 items-center justify-between gap-3 border-b border-black/5 bg-white/80 px-4 backdrop-blur dark:border-white/6 dark:bg-[#101014]/80 md:px-6">
@@ -56,12 +59,20 @@ export function Header() {
                 </button>
 
                 <div className="ml-1 flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-2 py-1.5 shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
-                        {getInitials(user?.fullName ?? "Duel Standby")}
-                    </div>
+                    {avatarUrl ? (
+                        <img
+                            src={avatarUrl}
+                            alt={displayName}
+                            className="h-9 w-9 flex-shrink-0 rounded-2xl border border-black/5 object-cover dark:border-white/10"
+                        />
+                    ) : (
+                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
+                            {getInitials(displayName)}
+                        </div>
+                    )}
                     <div className="hidden min-w-0 lg:flex lg:flex-col">
                         <span className="truncate text-sm font-semibold leading-none text-slate-950 dark:text-white">
-                            {user?.fullName ?? "Dashboard User"}
+                            {displayName}
                         </span>
                         <span className="mt-1 truncate text-xs text-slate-400 dark:text-white/40">
                             {user?.email ?? "login required"}

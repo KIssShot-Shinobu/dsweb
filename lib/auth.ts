@@ -174,62 +174,8 @@ export async function revokeAllUserSessions(userId: string) {
 
 // â”€â”€â”€ Get current user â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function getCurrentUser() {
-    const token = await getTokenFromCookie();
-    if (!token) return null;
-
-    const payload = await verifyToken(token);
-    if (!payload) return null;
-
-    const user = await prisma.user.findUnique({
-        where: { id: payload.userId },
-        select: {
-            id: true,
-            fullName: true,
-            email: true,
-            role: true,
-            status: true,
-            avatarUrl: true,
-            city: true,
-            phoneWhatsapp: true,
-            teamId: true,
-            teamJoinedAt: true,
-            team: {
-                select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                    isActive: true,
-                },
-            },
-            createdAt: true,
-            lastActiveAt: true,
-            updatedAt: true,
-            emailVerificationToken: {
-                select: {
-                    id: true,
-                },
-            },
-        },
-    });
-
-    if (!user) return null;
-
-    return {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-        avatarUrl: user.avatarUrl,
-        city: user.city,
-        phoneWhatsapp: user.phoneWhatsapp,
-        teamId: user.teamId,
-        teamJoinedAt: user.teamJoinedAt,
-        team: user.team,
-        createdAt: user.createdAt,
-        lastActiveAt: user.lastActiveAt ?? user.updatedAt,
-        emailVerified: !user.emailVerificationToken,
-    };
+    const { getServerCurrentUser } = await import("@/lib/server-current-user");
+    return getServerCurrentUser();
 }
 
 // â”€â”€â”€ Get current user from token string (for middleware/API) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

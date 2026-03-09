@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Navbar } from "@/components/ui/navbar";
 import { Footer } from "@/components/ui/footer";
 import { TournamentRegisterButton } from "@/components/public/tournament-register-button";
+import { normalizeAssetUrl } from "@/lib/asset-url";
 import { resolveTournamentImage } from "@/lib/tournament-image";
 
 function formatCurrency(amount: number) {
@@ -128,9 +129,17 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                         {tournament.participants.map((participant, index) => (
                                             <div key={participant.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-[#161b23]">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFC916] font-black text-[#111111]">
-                                                        {participant.user.fullName.slice(0, 1).toUpperCase()}
-                                                    </div>
+                                                    {normalizeAssetUrl(participant.user.avatarUrl) ? (
+                                                        <img
+                                                            src={normalizeAssetUrl(participant.user.avatarUrl) || undefined}
+                                                            alt={participant.user.fullName}
+                                                            className="h-10 w-10 rounded-full border border-slate-200 object-cover dark:border-white/10"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFC916] font-black text-[#111111]">
+                                                            {participant.user.fullName.slice(0, 1).toUpperCase()}
+                                                        </div>
+                                                    )}
                                                     <div>
                                                         <div className="font-semibold text-slate-900 dark:text-white">{participant.user.fullName}</div>
                                                         <div className="text-xs text-slate-500 dark:text-white/45">{participant.gameId}</div>

@@ -15,7 +15,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 ## Fitur Utama
 
 - Registrasi akun publik + game profile (Duel Links / Master Duel). Role komunitas dan team diatur terpisah setelah akun dibuat. Pre-check conflict email/nomor/game ID dijalankan lebih awal agar error 409 muncul cepat, dan pengiriman email verifikasi tidak lagi menahan response sukses.
-- Login/logout + cek sesi user (`/api/auth/me`), termasuk payload role komunitas dan team aktif jika ada.
+- Login/logout + cek sesi user (`/api/auth/me`), termasuk payload role komunitas dan team aktif jika ada. Login Google dan login username/email+password kini sama-sama melewati Auth.js terlebih dahulu, lalu difinalisasi ke cookie JWT internal (`ds_auth`) agar flow dashboard lama tetap hidup.
 - Manajemen role dan status akun user.
 - CRUD tournament + register participant tournament.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
@@ -81,6 +81,11 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - `scripts/seed-admin.js`: seed admin utama
 - `scripts/seed.mjs`: clean break dataset dev lalu seed 4 teams, 20 users, 20 tournaments, 20 treasury, dan 12 audit logs demo
 
+## Workflow Next.js
+
+- Untuk versi Next.js yang terpasang saat ini, cek implementasi dan type surface di `node_modules/next/dist/` terlebih dahulu saat mengubah flow framework.
+- Jika bundled docs lokal belum tersedia di versi yang dipakai, gunakan dokumentasi resmi Next.js sebagai sumber kebenaran tambahan.
+
 ## Prasyarat
 
 - Node.js 20+ (disarankan LTS)
@@ -100,7 +105,9 @@ DATABASE_URL="mysql://USERNAME:PASSWORD@141.11.25.48:3306/DATABASE_NAME?connecti
 Variabel penting:
 
 - `DATABASE_URL`: koneksi utama Prisma ke MySQL.
-- `JWT_SECRET`: secret signing JWT. Wajib diisi; app tidak lagi memakai fallback default.
+- `JWT_SECRET`: secret signing JWT internal. Wajib diisi; app tidak lagi memakai fallback default.
+- `AUTH_SECRET`: secret Auth.js untuk flow Google login fase 1.
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`: kredensial Google OAuth untuk Auth.js.
 - `DATA_ENCRYPTION_KEY`: kunci enkripsi data sensitif at-rest (`phoneWhatsapp`, `accountNumber`, `twoFactorSecret`).
 - `NEXT_PUBLIC_APP_URL`: base URL app (dipakai URL hasil upload).
 - `UPLOAD_DIR`: lokasi simpan file upload permanen (default `./public/uploads`). `APP_ROOT` ditetapkan otomatis oleh `start.js` agar runtime build lokal dan standalone memakai root upload yang sama. Asset `/uploads/*` juga dilayani oleh route server agar gambar tetap tampil meski static copy berbeda antar runtime.
@@ -111,6 +118,16 @@ Variabel penting:
 - `EMAIL_FROM`: alamat pengirim email untuk verifikasi/reset password.
 - `RESETPASSCONSOLE` (atau `resetpassconsole`): mode pengiriman email (`true` = `console.info`, `false` = SMTP/provider email).
 
+## Auth.js Migration (Phase 2)
+
+- Auth.js kini dipakai untuk dua jalur login: Google OAuth dan credentials (`username/email + password`).
+- Halaman login menampilkan helper copy singkat agar user paham role komunitas, team, dan akses dashboard tetap mengikuti akun internal Duel Standby.
+- Setelah login Auth.js sukses, route `/api/auth/finalize` akan menukar sesi Auth.js menjadi cookie internal `ds_auth` + `ds_refresh`, sehingga guard dashboard dan API lama tetap kompatibel.
+- Pembacaan sesi server kini mulai beralih ke Auth.js sebagai sumber utama melalui helper server-side yang memuat user internal berdasarkan email sesi. Cookie `ds_auth` masih dipakai sebagai fallback transisi untuk route yang belum dimigrasikan penuh.
+- Linking akun dilakukan berdasarkan email. Jika email sudah ada, akun lama akan di-link ke `googleId`. Jika belum ada, user publik baru dibuat dengan `role=USER` dan `status=ACTIVE`.
+- Jalur Google lama `/api/auth/oauth/finalize` tetap hidup sebagai alias kompatibilitas ke route finalisasi yang baru.
+- Endpoint legacy `POST /api/auth/login` masih tersedia untuk kompatibilitas client lama, tetapi UI login utama sekarang memakai Auth.js Credentials provider.
+- Logout client kini membersihkan cookie JWT internal dan sesi Auth.js sekaligus. Audit log dashboard juga sudah punya filter khusus untuk event OAuth Google.
 ## Instalasi & Menjalankan Lokal
 
 ```bash
@@ -166,6 +183,8 @@ Auth:
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
+- `GET/POST /api/auth/finalize` (finalisasi sesi Auth.js ke cookie internal)
+- `GET/POST /api/auth/oauth/finalize` (alias kompatibilitas ke finalisasi Auth.js)
 - `POST /api/auth/refresh`
 - `POST /api/auth/password/forgot`
 - `POST /api/auth/password/reset`
@@ -320,23 +339,6 @@ Mulai sekarang, setiap ada perubahan fitur/endpoint/role/alur setup:
 2. Jika perubahan menyentuh API, update bagian `API Ringkas`.
 3. Jika perubahan menyentuh auth/role/menu, update bagian `Role Akses`.
 4. Jika perubahan menyentuh setup/env/db, update bagian `Konfigurasi Environment` dan `Instalasi`.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

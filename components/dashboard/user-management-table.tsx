@@ -1,19 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { normalizeAssetUrl } from "@/lib/asset-url";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { Pagination } from "@/components/dashboard/pagination";
 import {
     btnDanger,
     btnOutline,
+    btnPrimary,
     filterBarCls,
     inputCls,
     searchInputCls,
 } from "@/components/dashboard/form-styles";
 import {
     DashboardEmptyState,
-    DashboardMetricCard,
     DashboardPageHeader,
     DashboardPageShell,
     DashboardPanel,
@@ -30,6 +32,7 @@ interface UserRow {
     id: string;
     fullName: string;
     email: string;
+    avatarUrl: string | null;
     phoneWhatsapp: string | null;
     city: string | null;
     status: string;
@@ -91,12 +94,14 @@ function RoleDropdown({
     currentStatus,
     currentTeamId,
     onChanged,
+    onFeedback,
 }: {
     userId: string;
     currentRole: string;
     currentStatus: string;
     currentTeamId: string | null;
     onChanged: () => void;
+    onFeedback: (feedback: { type: "success" | "error"; message: string }) => void;
 }) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -109,7 +114,7 @@ function RoleDropdown({
 
         setLoading(true);
         setOpen(false);
-        await fetch(`/api/users/${userId}/status`, {
+        const response = await fetch(`/api/users/${userId}/status`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -118,7 +123,19 @@ function RoleDropdown({
                 teamId: newRole === "USER" ? null : currentTeamId,
             }),
         });
+        const data = await response.json();
         setLoading(false);
+        if (!response.ok) {
+            onFeedback({ type: "error", message: data.message || "Gagal memperbarui role user." });
+            return;
+        }
+        onFeedback({
+            type: "success",
+            message:
+                newRole === "USER" && currentTeamId
+                    ? "Role user diperbarui dan afiliasi team dilepas otomatis."
+                    : data.message || `Role user berhasil diubah ke ${newRole}.`,
+        });
         onChanged();
     };
 
@@ -164,10 +181,12 @@ function TeamDropdown({
     user,
     teams,
     onChanged,
+    onFeedback,
 }: {
     user: UserRow;
     teams: TeamOption[];
     onChanged: () => void;
+    onFeedback: (feedback: { type: "success" | "error"; message: string }) => void;
 }) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -183,7 +202,7 @@ function TeamDropdown({
 
         setLoading(true);
         setOpen(false);
-        await fetch(`/api/users/${user.id}/status`, {
+        const response = await fetch(`/api/users/${user.id}/status`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -192,7 +211,16 @@ function TeamDropdown({
                 teamId: nextTeamId,
             }),
         });
+        const data = await response.json();
         setLoading(false);
+        if (!response.ok) {
+            onFeedback({ type: "error", message: data.message || "Gagal memperbarui afiliasi team." });
+            return;
+        }
+        onFeedback({
+            type: "success",
+            message: nextTeamId ? "Afiliasi team user berhasil diperbarui." : "User berhasil dilepas dari team.",
+        });
         onChanged();
     };
 
@@ -272,7 +300,10 @@ function UserManagementTableInner({
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [banModal, setBanModal] = useState<{ id: string; name: string } | null>(null);
+    const [unbanModal, setUnbanModal] = useState<{ id: string; name: string; role: string; teamId: string | null } | null>(null);
     const [reason, setReason] = useState("");
+    const [searchInput, setSearchInput] = useState(search);
+    const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
     const perPage = 15;
     const totalPages = Math.max(1, Math.ceil(total / perPage));
@@ -298,6 +329,10 @@ function UserManagementTableInner({
         return params.toString();
     }, [page, perPage, roleFilter, search, statusFilter, teamFilter]);
 
+    useEffect(() => {
+        setSearchInput(search);
+    }, [search]);
+
     const fetchUsers = () => {
         setLoading(true);
         fetch(`/api/users?${paramsString}`)
@@ -314,25 +349,86 @@ function UserManagementTableInner({
         fetchUsers();
     }, [paramsString]);
 
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (searchInput !== search) {
+                setParam("search", searchInput);
+            }
+        }, 250);
+
+        return () => clearTimeout(timeoutId);
+    }, [search, searchInput]);
+
     const setParam = (key: string, value: string) => {
         const params = new URLSearchParams(searchParams.toString());
-        params.set(key, value);
+        if (value) {
+            params.set(key, value);
+        } else {
+            params.delete(key);
+        }
         if (key !== "page") params.set("page", "1");
         if (lockStatus) params.set("status", defaultStatus);
         if (lockRole) params.set("role", defaultRole);
-        router.push(`?${params.toString()}`);
+        router.replace(`?${params.toString()}`, { scroll: false });
+    };
+
+    const resetFilters = () => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("search");
+        params.delete("teamId");
+        params.set("page", "1");
+
+        if (lockStatus) {
+            params.set("status", defaultStatus);
+        } else {
+            params.delete("status");
+        }
+
+        if (lockRole) {
+            params.set("role", defaultRole);
+        } else {
+            params.delete("role");
+        }
+
+        router.replace(`?${params.toString()}`, { scroll: false });
     };
 
     const handleBan = async (id: string, banReason?: string) => {
         setActionLoading(id);
-        await fetch(`/api/users/${id}/status`, {
+        setFeedback(null);
+        const response = await fetch(`/api/users/${id}/status`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: "BANNED", reason: banReason }),
         });
+        const data = await response.json();
         setActionLoading(null);
+        if (!response.ok) {
+            setFeedback({ type: "error", message: data.message || "Gagal memblokir user." });
+            return;
+        }
+        setFeedback({ type: "success", message: data.message || "User berhasil diblokir." });
         setBanModal(null);
         setReason("");
+        fetchUsers();
+    };
+
+    const handleUnban = async (user: { id: string; name: string; role: string; teamId: string | null }) => {
+        setActionLoading(user.id);
+        setFeedback(null);
+        const response = await fetch(`/api/users/${user.id}/status`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "ACTIVE", role: user.role, teamId: user.teamId }),
+        });
+        const data = await response.json();
+        setActionLoading(null);
+        if (!response.ok) {
+            setFeedback({ type: "error", message: data.message || "Gagal mengaktifkan kembali user." });
+            return;
+        }
+        setFeedback({ type: "success", message: data.message || "User berhasil diaktifkan kembali." });
+        setUnbanModal(null);
         fetchUsers();
     };
 
@@ -347,25 +443,36 @@ function UserManagementTableInner({
     const visibleActiveCount = users.filter((user) => user.status === "ACTIVE").length;
     const visibleMemberCount = users.filter((user) => user.role !== "USER").length;
     const withoutTeamCount = users.filter((user) => user.role !== "USER" && !user.teamId).length;
+    const hasActiveFilters =
+        Boolean(search.trim()) ||
+        (!lockStatus && statusFilter !== defaultStatus) ||
+        (!lockRole && roleFilter !== defaultRole) ||
+        teamFilter !== "ALL";
 
     return (
         <DashboardPageShell>
             <div className="space-y-5 lg:space-y-6">
                 <DashboardPageHeader kicker="Guild Directory" title={title} description={description} />
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <DashboardMetricCard label="Visible Results" value={loading ? "..." : users.length} meta="Jumlah akun pada halaman ini" tone="accent" />
-                    <DashboardMetricCard label="Guild Members" value={loading ? "..." : visibleMemberCount} meta="Role MEMBER ke atas pada hasil filter sekarang" tone="success" />
-                    <DashboardMetricCard label="No Team Yet" value={loading ? "..." : withoutTeamCount} meta="Member Duel Standby yang belum masuk team" tone="danger" />
-                </div>
+                {feedback ? (
+                    <div
+                        className={`rounded-2xl border px-4 py-3 text-sm ${
+                            feedback.type === "success"
+                                ? "border-emerald-500/20 bg-emerald-500/8 text-emerald-500"
+                                : "border-red-500/20 bg-red-500/8 text-red-500"
+                        }`}
+                    >
+                        {feedback.message}
+                    </div>
+                ) : null}
 
                 <DashboardPanel title="Filter & Search" description="Cari akun publik, member Duel Standby, atau roster team aktif dari satu tempat.">
                     <div className={filterBarCls}>
                         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_180px_180px_220px]">
                             <input
                                 type="text"
-                                value={search}
-                                onChange={(event) => setParam("search", event.target.value)}
+                                value={searchInput}
+                                onChange={(event) => setSearchInput(event.target.value)}
                                 placeholder="Cari nama, email, kota, atau team..."
                                 className={searchInputCls}
                             />
@@ -377,10 +484,36 @@ function UserManagementTableInner({
                             ) : null}
                             <FormSelect value={teamFilter} onChange={(value) => setParam("teamId", value)} options={teamFilterOptions} className="w-full" />
                         </div>
+                        {hasActiveFilters ? (
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 dark:text-white/35">
+                                <span>Menampilkan {total} akun yang sesuai dengan filter aktif.</span>
+                                <button
+                                    type="button"
+                                    onClick={resetFilters}
+                                    className="font-medium text-ds-amber transition-colors hover:text-ds-gold"
+                                >
+                                    Reset Filter
+                                </button>
+                            </div>
+                        ) : null}
                     </div>
                 </DashboardPanel>
 
                 <DashboardPanel title="Daftar Users" description={`Menampilkan ${total} akun yang sesuai dengan filter role komunitas, status, dan team.`}>
+                    <div className="mb-4 flex flex-wrap gap-2">
+                        <span className="rounded-full border border-ds-amber/20 bg-ds-amber/10 px-3 py-1 text-[11px] font-semibold text-ds-amber">
+                            Visible: {loading ? "..." : users.length}
+                        </span>
+                        <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-500">
+                            Active: {loading ? "..." : visibleActiveCount}
+                        </span>
+                        <span className="rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/55">
+                            Members: {loading ? "..." : visibleMemberCount}
+                        </span>
+                        <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-[11px] font-semibold text-red-400">
+                            No Team: {loading ? "..." : withoutTeamCount}
+                        </span>
+                    </div>
                     {loading ? (
                         <div className="space-y-3">
                             {[1, 2, 3, 4, 5].map((item) => (
@@ -388,15 +521,30 @@ function UserManagementTableInner({
                             ))}
                         </div>
                     ) : users.length === 0 ? (
-                        <DashboardEmptyState title={emptyTitle} description={emptyDescription} />
+                        <DashboardEmptyState
+                            title={hasActiveFilters ? "Tidak ada user yang cocok" : emptyTitle}
+                            description={
+                                hasActiveFilters
+                                    ? "Coba longgarkan kata kunci pencarian atau ubah filter role, status, dan team."
+                                    : emptyDescription
+                            }
+                        />
                     ) : (
                         <div className="space-y-3">
                             {users.map((user) => (
                                 <div key={user.id} className="flex flex-col gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-4 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] xl:flex-row xl:items-center">
                                     <div className="flex items-center gap-3 xl:w-[260px] xl:flex-shrink-0">
-                                        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
-                                            {getInitials(user.fullName)}
-                                        </div>
+                                        {normalizeAssetUrl(user.avatarUrl) ? (
+                                            <img
+                                                src={normalizeAssetUrl(user.avatarUrl) || undefined}
+                                                alt={user.fullName}
+                                                className="h-11 w-11 flex-shrink-0 rounded-2xl border border-black/5 object-cover dark:border-white/10"
+                                            />
+                                        ) : (
+                                            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
+                                                {getInitials(user.fullName)}
+                                            </div>
+                                        )}
                                         <div className="min-w-0">
                                             <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{user.fullName}</div>
                                             <div className="truncate text-xs text-slate-400 dark:text-white/40">{user.email}</div>
@@ -434,11 +582,17 @@ function UserManagementTableInner({
                                             currentStatus={user.status}
                                             currentTeamId={user.teamId}
                                             onChanged={fetchUsers}
+                                            onFeedback={setFeedback}
                                         />
 
-                                        <TeamDropdown user={user} teams={teams} onChanged={fetchUsers} />
+                                        <TeamDropdown user={user} teams={teams} onChanged={fetchUsers} onFeedback={setFeedback} />
 
                                         <div className="flex flex-wrap items-center justify-start gap-2 xl:justify-end">
+                                            {user.team ? (
+                                                <Link href={`/dashboard/teams/${user.team.id}`} className={btnOutline}>
+                                                    Lihat Team
+                                                </Link>
+                                            ) : null}
                                             {user.team ? (
                                                 <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-500">
                                                     {user.team.name}
@@ -466,16 +620,7 @@ function UserManagementTableInner({
 
                                             {user.status === "BANNED" ? (
                                                 <button
-                                                    onClick={async () => {
-                                                        setActionLoading(user.id);
-                                                        await fetch(`/api/users/${user.id}/status`, {
-                                                            method: "PUT",
-                                                            headers: { "Content-Type": "application/json" },
-                                                            body: JSON.stringify({ status: "ACTIVE", role: user.role, teamId: user.teamId }),
-                                                        });
-                                                        setActionLoading(null);
-                                                        fetchUsers();
-                                                    }}
+                                                    onClick={() => setUnbanModal({ id: user.id, name: user.fullName, role: user.role, teamId: user.teamId })}
                                                     disabled={actionLoading === user.id}
                                                     className={btnOutline}
                                                     title="Unban user"
@@ -517,6 +662,30 @@ function UserManagementTableInner({
                             </button>
                             <button onClick={() => handleBan(banModal.id, reason)} className={btnDanger}>
                                 Ban User
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
+            {unbanModal ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setUnbanModal(null)} />
+                    <div className="relative w-full max-w-md rounded-3xl border border-black/5 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-[#1a1a1a]">
+                        <h3 className="text-lg font-bold text-slate-950 dark:text-white">Aktifkan Kembali User</h3>
+                        <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-white/45">
+                            <strong className="text-slate-950 dark:text-white">{unbanModal.name}</strong> akan diaktifkan kembali dan bisa mengakses fitur sesuai role yang dimilikinya.
+                        </p>
+                        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                            <button onClick={() => setUnbanModal(null)} className={btnOutline}>
+                                Batal
+                            </button>
+                            <button
+                                onClick={() => handleUnban(unbanModal)}
+                                className={btnPrimary}
+                                disabled={actionLoading === unbanModal.id}
+                            >
+                                {actionLoading === unbanModal.id ? "Memproses..." : "Aktifkan Kembali"}
                             </button>
                         </div>
                     </div>

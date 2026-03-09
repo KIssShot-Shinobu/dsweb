@@ -1,10 +1,10 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
 import { getMaxFileSize, getPermanentUploadTargets } from "@/lib/runtime-config";
+import { getServerCurrentUser } from "@/lib/server-current-user";
 
 const MAX_FILE_SIZE = getMaxFileSize();
 const ALLOWED_EXTENSIONS = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
@@ -17,8 +17,8 @@ const MIME_EXTENSION_MAP = {
 
 export async function POST(request: NextRequest) {
     try {
-        const decoded = await verifyToken(request.cookies.get("ds_auth")?.value || "");
-        if (!decoded || !decoded.userId) {
+        const currentUser = await getServerCurrentUser();
+        if (!currentUser) {
             return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
         }
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         const publicPath = `/uploads/${uniqueFilename}`;
 
         await logAudit({
-            userId: decoded.userId,
+            userId: currentUser.id,
             action: "FILE_UPLOADED",
             targetType: "File",
             details: { size: file.size, type: file.type, url: publicPath },

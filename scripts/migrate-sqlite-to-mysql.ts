@@ -8,6 +8,16 @@ const sqliteDbPath = process.env.SQLITE_SOURCE_DB_PATH
 
 const prismaMySQL = new PrismaClient();
 
+function toUsername(value: string | null | undefined) {
+    return (value || "user")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]+/g, ".")
+        .replace(/\.{2,}/g, ".")
+        .replace(/^\.|\.$/g, "")
+        .slice(0, 24) || "user";
+}
+
 async function migrate() {
     console.log("Memulai migrasi data SQLite -> MySQL...");
 
@@ -24,6 +34,7 @@ async function migrate() {
         if (users.length > 0) {
             const parsedUsers = users.map((user) => ({
                 ...user,
+                username: user.username || toUsername(user.fullName || user.email),
                 createdAt: new Date(user.createdAt),
                 updatedAt: new Date(user.updatedAt),
                 deletedAt: user.deletedAt ? new Date(user.deletedAt) : null,

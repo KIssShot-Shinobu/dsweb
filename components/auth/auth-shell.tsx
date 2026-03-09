@@ -16,7 +16,7 @@ export function AuthShell({
 }) {
     return (
         <div className="mx-auto w-full max-w-6xl">
-            <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div className="grid gap-4 lg:gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
                 <section className="hidden rounded-[32px] border border-white/10 bg-white/[0.04] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.35)] backdrop-blur lg:block xl:p-10">
                     <div className="inline-flex items-center gap-3 rounded-full border border-ds-amber/20 bg-ds-amber/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-ds-amber">
                         {eyebrow}
@@ -38,24 +38,24 @@ export function AuthShell({
                     </div>
                 </section>
 
-                <section className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.04)_100%)] p-5 shadow-[0_30px_100px_rgba(0,0,0,0.35)] backdrop-blur sm:p-6 xl:p-8">
-                    <div className="mb-6 flex items-center justify-between gap-4">
+                <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.04)_100%)] p-4 shadow-[0_30px_100px_rgba(0,0,0,0.35)] backdrop-blur sm:rounded-[30px] sm:p-6 xl:p-8">
+                    <div className="mb-5 flex items-start justify-between gap-3 sm:mb-6 sm:items-center sm:gap-4">
                         <div>
-                            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-ds-amber">
+                            <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-ds-amber sm:h-12 sm:w-12">
                                 <span className="text-lg font-black text-black">DS</span>
                             </div>
-                            <div className="mt-4 text-[11px] font-semibold uppercase tracking-[0.26em] text-ds-amber/90 lg:hidden">{eyebrow}</div>
-                            <h2 className="mt-2 text-2xl font-black tracking-tight text-white">{title}</h2>
-                            <p className="mt-2 text-sm leading-6 text-white/50">{description}</p>
+                            <div className="mt-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-ds-amber/90 lg:hidden sm:mt-4 sm:text-[11px] sm:tracking-[0.26em]">{eyebrow}</div>
+                            <h2 className="mt-2 text-xl font-black tracking-tight text-white sm:text-2xl">{title}</h2>
+                            <p className="mt-2 max-w-xl text-sm leading-6 text-white/50">{description}</p>
                         </div>
-                        <Link href="/" className="hidden rounded-2xl border border-white/10 px-3.5 py-2 text-sm font-medium text-white/60 transition-all hover:bg-white/5 hover:text-white sm:inline-flex">
+                        <Link href="/" className="inline-flex rounded-2xl border border-white/10 px-3 py-2 text-xs font-medium text-white/60 transition-all hover:bg-white/5 hover:text-white sm:px-3.5 sm:text-sm">
                             Home
                         </Link>
                     </div>
 
                     {children}
 
-                    {footer ? <div className="mt-6 border-t border-white/10 pt-5 text-center text-sm text-white/40">{footer}</div> : null}
+                    {footer ? <div className="mt-5 border-t border-white/10 pt-4 text-center text-sm text-white/40 sm:mt-6 sm:pt-5">{footer}</div> : null}
                 </section>
             </div>
         </div>
@@ -63,16 +63,16 @@ export function AuthShell({
 }
 
 export const authInputCls =
-    "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition-all focus:border-ds-amber focus:ring-4 focus:ring-ds-amber/15";
+    "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition-all focus:border-ds-amber focus:ring-4 focus:ring-ds-amber/15 sm:py-3";
 
 export const authLabelCls =
     "mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45";
 
 export const authPrimaryBtnCls =
-    "inline-flex w-full items-center justify-center rounded-2xl bg-ds-amber px-4 py-3 text-sm font-bold text-black transition-all hover:-translate-y-0.5 hover:bg-ds-gold disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex w-full items-center justify-center rounded-2xl bg-ds-amber px-4 py-3 text-sm font-bold text-black transition-all hover:-translate-y-0.5 hover:bg-ds-gold disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-[160px]";
 
 export const authSecondaryBtnCls =
-    "inline-flex items-center justify-center rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-white/65 transition-all hover:bg-white/5 hover:text-white";
+    "inline-flex w-full items-center justify-center rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-white/65 transition-all hover:bg-white/5 hover:text-white sm:w-auto";
 
 export const authAlertCls =
     "rounded-2xl border px-4 py-3 text-sm";

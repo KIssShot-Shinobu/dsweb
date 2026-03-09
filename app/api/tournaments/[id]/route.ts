@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken, hasRole, ROLES } from "@/lib/auth";
+import { hasRole, ROLES } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { tournamentUpdateSchema } from "@/lib/validators";
 import { resolveTournamentImage } from "@/lib/tournament-image";
+import { getServerCurrentUser } from "@/lib/server-current-user";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -41,8 +42,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const decoded = await verifyToken(request.cookies.get("ds_auth")?.value || "");
-        if (!decoded || !hasRole(decoded.role, ROLES.OFFICER)) {
+        const currentUser = await getServerCurrentUser();
+        if (!currentUser || !hasRole(currentUser.role, ROLES.OFFICER)) {
             return NextResponse.json({ success: false, message: "Akses Ditolak" }, { status: 403 });
         }
 
@@ -78,7 +79,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         });
 
         await logAudit({
-            userId: decoded.userId,
+            userId: currentUser.id,
             action: "TOURNAMENT_UPDATED",
             targetId: tournament.id,
             targetType: "Tournament",
@@ -94,8 +95,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const decoded = await verifyToken(request.cookies.get("ds_auth")?.value || "");
-        if (!decoded || !hasRole(decoded.role, ROLES.OFFICER)) {
+        const currentUser = await getServerCurrentUser();
+        if (!currentUser || !hasRole(currentUser.role, ROLES.OFFICER)) {
             return NextResponse.json({ success: false, message: "Akses Ditolak" }, { status: 403 });
         }
 
@@ -106,7 +107,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         });
 
         await logAudit({
-            userId: decoded.userId,
+            userId: currentUser.id,
             action: "TOURNAMENT_DELETED",
             targetId: id,
             targetType: "Tournament",
