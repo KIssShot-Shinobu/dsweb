@@ -137,6 +137,9 @@ model User {
   phoneWhatsappHash String? @unique @db.VarChar(64)
   accountNumber String?    @db.VarChar(255)
   accountNumberHash String? @db.VarChar(64)
+  provinceCode  String?    @db.VarChar(16)
+  provinceName  String?    @db.VarChar(191)
+  cityCode      String?    @db.VarChar(16)
   city          String?    @db.VarChar(191)
   avatarUrl     String?
   status        UserStatus @default(ACTIVE)
@@ -288,6 +291,7 @@ model AuditLog {
   @@index([createdAt])
   @@index([responseStatus])
 }
+
 
 
 

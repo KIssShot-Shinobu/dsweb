@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { updateGameProfileSchema } from "@/lib/validators";
 import { getServerCurrentUser } from "@/lib/server-current-user";
+import { normalizeGameIdDigits } from "@/lib/game-id";
 
 // POST /api/profile/game - Create or Update Game Profile
 export async function POST(request: NextRequest) {
@@ -31,9 +32,11 @@ export async function POST(request: NextRequest) {
             }
         });
 
+        const gameIdCandidates = Array.from(new Set([gameId, normalizeGameIdDigits(gameId)].filter(Boolean)));
+
         const duplicateGameId = await prisma.gameProfile.findFirst({
             where: {
-                gameId,
+                gameId: { in: gameIdCandidates },
                 NOT: existingProfile ? { id: existingProfile.id } : undefined,
             },
             select: { id: true },
@@ -78,3 +81,5 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });
     }
 }
+
+

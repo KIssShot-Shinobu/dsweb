@@ -37,7 +37,8 @@ export const registerSchema = z
             .regex(/[0-9]/, "Password harus mengandung angka"),
         confirmPassword: z.string(),
         phoneWhatsapp: z.string().trim().regex(PHONE_REGEX, "Nomor WhatsApp tidak valid (contoh: +628123456789)"),
-        city: z.string().trim().min(2, "Kota harus diisi").max(191, "Nama kota terlalu panjang"),
+        provinceCode: z.string().trim().min(2, "Provinsi harus dipilih").max(16, "Kode provinsi tidak valid"),
+        cityCode: z.string().trim().min(4, "Kabupaten / kota harus dipilih").max(16, "Kode kabupaten / kota tidak valid"),
         duelLinksGameId: gameIdFieldSchema.optional(),
         duelLinksIgn: z.string().min(2, "IGN Duel Links minimal 2 karakter").regex(IGN_REGEX, "IGN Duel Links mengandung karakter yang tidak valid").optional().or(z.literal("")),
         masterDuelGameId: gameIdFieldSchema.optional(),
@@ -158,7 +159,7 @@ export const updateGameProfileSchema = z.object({
     gameId: z
         .string()
         .trim()
-        .min(1, "Game ID / Friend ID tidak boleh kosong")
+        .min(1, "Game ID / DUELIST ID tidak boleh kosong")
         .transform((value) => formatGameId(value))
         .refine((value) => normalizeGameIdDigits(value).length === 9 && isFormattedGameId(value), "Game ID harus terdiri dari 9 angka dengan format XXX-XXX-XXX"),
 });
@@ -181,7 +182,8 @@ export const profileUpdateSchema = z.object({
         .transform((value) => value.toLowerCase()),
     email: z.string().trim().toLowerCase().email("Email tidak valid"),
     phoneWhatsapp: z.string().trim().regex(PHONE_REGEX, "Nomor WhatsApp tidak valid (contoh: +628123456789)"),
-    city: z.string().trim().min(2, "Kota harus diisi").max(191, "Nama kota terlalu panjang"),
+    provinceCode: z.string().trim().min(2, "Provinsi harus dipilih").max(16, "Kode provinsi tidak valid"),
+    cityCode: z.string().trim().min(4, "Kabupaten / kota harus dipilih").max(16, "Kode kabupaten / kota tidak valid"),
 });
 
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
@@ -201,4 +203,6 @@ export const tournamentSchema = z.object({
 export type TournamentInput = z.infer<typeof tournamentSchema>;
 export const tournamentUpdateSchema = tournamentSchema.partial();
 export type TournamentUpdateInput = z.infer<typeof tournamentUpdateSchema>;
+
+
 

@@ -40,7 +40,7 @@ export function ProfileGameSection({
                 gameType: "DUEL_LINKS",
                 title: "Duel Links",
                 subtitle: "Data akun game",
-                idLabel: "Friend ID",
+                idLabel: "DUELIST ID",
                 badge: "DL",
                 accent: "from-blue-600 to-cyan-500",
                 profile: duelLinksProfile,

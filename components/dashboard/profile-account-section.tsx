@@ -2,15 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Edit3, Mail, MapPin, Phone, User2 } from "lucide-react";
+import { Edit3, Mail, MapPin, MapPinned, Phone, User2 } from "lucide-react";
 import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import { IndonesiaRegionFields, type RegionFormValue } from "@/components/shared/indonesia-region-fields";
 
 type ProfileAccountSectionProps = {
     username: string;
     email: string;
     phoneWhatsapp: string;
+    provinceCode?: string | null;
+    provinceName?: string | null;
+    cityCode?: string | null;
     city: string;
     emailVerified: boolean;
 };
@@ -19,7 +23,10 @@ type ProfileFormState = {
     username: string;
     email: string;
     phoneWhatsapp: string;
-    city: string;
+    provinceCode: string;
+    provinceName: string;
+    cityCode: string;
+    cityName: string;
 };
 
 type ProfileFormErrors = Partial<Record<keyof ProfileFormState, string[]>>;
@@ -50,6 +57,9 @@ export function ProfileAccountSection({
     username,
     email,
     phoneWhatsapp,
+    provinceCode,
+    provinceName,
+    cityCode,
     city,
     emailVerified,
 }: ProfileAccountSectionProps) {
@@ -61,9 +71,12 @@ export function ProfileAccountSection({
             username,
             email,
             phoneWhatsapp,
-            city,
+            provinceCode: provinceCode || "",
+            provinceName: provinceName || "",
+            cityCode: cityCode || "",
+            cityName: city || "",
         }),
-        [city, email, phoneWhatsapp, username],
+        [city, cityCode, email, phoneWhatsapp, provinceCode, provinceName, username],
     );
 
     const [open, setOpen] = useState(false);
@@ -120,6 +133,13 @@ export function ProfileAccountSection({
     const FieldError = ({ field }: { field: keyof ProfileFormState }) =>
         errors[field]?.length ? <div className="mt-1 text-xs text-red-400">{errors[field]?.[0]}</div> : null;
 
+    const regionValue: RegionFormValue = {
+        provinceCode: form.provinceCode,
+        provinceName: form.provinceName,
+        cityCode: form.cityCode,
+        cityName: form.cityName,
+    };
+
     return (
         <>
             <button
@@ -133,7 +153,7 @@ export function ProfileAccountSection({
                             Data Akun
                         </div>
                         <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-white/45">
-                            Klik ringkasan ini untuk mengubah username, email, WhatsApp, dan kota.
+                            Klik ringkasan ini untuk mengubah username, email, WhatsApp, dan wilayah domisili.
                         </p>
                     </div>
 
@@ -147,7 +167,10 @@ export function ProfileAccountSection({
                     <SummaryRow icon={<User2 className="h-4 w-4" />} label="Username" value={`@${username}`} />
                     <SummaryRow icon={<Mail className="h-4 w-4" />} label="Email" value={email} />
                     <SummaryRow icon={<Phone className="h-4 w-4" />} label="WhatsApp" value={phoneWhatsapp || "-"} />
-                    <SummaryRow icon={<MapPin className="h-4 w-4" />} label="Kota" value={city || "-"} />
+                    <SummaryRow icon={<MapPinned className="h-4 w-4" />} label="Provinsi" value={provinceName || "-"} />
+                    <div className="xl:col-span-2">
+                        <SummaryRow icon={<MapPin className="h-4 w-4" />} label="Kabupaten / Kota" value={city || "-"} />
+                    </div>
                 </div>
 
                 {!emailVerified ? (
@@ -198,18 +221,12 @@ export function ProfileAccountSection({
                         <FieldError field="phoneWhatsapp" />
                     </div>
 
-                    <div>
-                        <label className={labelCls}>Kota</label>
-                        <input
-                            type="text"
-                            value={form.city}
-                            onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))}
-                            className={inputCls}
-                            placeholder="Jakarta"
-                            required
-                        />
-                        <FieldError field="city" />
-                    </div>
+                    <IndonesiaRegionFields
+                        variant="dashboard"
+                        value={regionValue}
+                        onChange={(region) => setForm((current) => ({ ...current, ...region }))}
+                        errors={{ provinceCode: errors.provinceCode, cityCode: errors.cityCode }}
+                    />
 
                     <div className="rounded-2xl border border-black/5 bg-slate-50/80 px-4 py-3 text-sm leading-6 text-slate-500 dark:border-white/8 dark:bg-white/[0.03] dark:text-white/45">
                         Jika email diubah, status verifikasi email akan direset. Anda bisa mengirim ulang link verifikasi dari halaman settings.

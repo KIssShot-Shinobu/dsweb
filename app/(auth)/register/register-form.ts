@@ -6,7 +6,10 @@ export type RegistrationFormData = {
     password: string;
     confirmPassword: string;
     phoneWhatsapp: string;
-    city: string;
+    provinceCode: string;
+    provinceName: string;
+    cityCode: string;
+    cityName: string;
     duelLinksGameId: string;
     duelLinksIgn: string;
     duelLinksScreenshotUploadId: string;
@@ -29,7 +32,10 @@ export const INITIAL_FORM: RegistrationFormData = {
     password: "",
     confirmPassword: "",
     phoneWhatsapp: "",
-    city: "",
+    provinceCode: "",
+    provinceName: "",
+    cityCode: "",
+    cityName: "",
     duelLinksGameId: "",
     duelLinksIgn: "",
     duelLinksScreenshotUploadId: "",
@@ -64,7 +70,8 @@ export function validateRegisterStep(form: RegistrationFormData, targetStep: num
         if (!/[0-9]/.test(form.password)) nextErrors.password = "Password harus mengandung angka";
         if (form.password !== form.confirmPassword) nextErrors.confirmPassword = "Password tidak cocok";
         if (!form.phoneWhatsapp || !/^\+?[0-9]{10,15}$/.test(form.phoneWhatsapp)) nextErrors.phoneWhatsapp = "Nomor WhatsApp tidak valid";
-        if (!form.city || form.city.length < 2) nextErrors.city = "Kota harus diisi";
+        if (!form.provinceCode) nextErrors.provinceCode = "Provinsi harus dipilih";
+        if (!form.cityCode) nextErrors.cityCode = "Kabupaten / kota harus dipilih";
     }
 
     if (targetStep === 2) {

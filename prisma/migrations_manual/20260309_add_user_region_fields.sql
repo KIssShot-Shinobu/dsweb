@@ -1,0 +1,4 @@
+ALTER TABLE `User`
+  ADD COLUMN `provinceCode` VARCHAR(16) NULL,
+  ADD COLUMN `provinceName` VARCHAR(191) NULL,
+  ADD COLUMN `cityCode` VARCHAR(16) NULL;

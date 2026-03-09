@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RegisterUploadField } from "@/components/auth/register-upload-field";
+import { IndonesiaRegionFields } from "@/components/shared/indonesia-region-fields";
 import {
     AuthShell,
     authAlertCls,
@@ -29,7 +30,7 @@ const errCls = "mt-1 text-xs text-red-400";
 
 function getErrorStep(fieldErrors: Record<string, string>) {
     const stepFieldMap: Array<{ step: number; fields: string[] }> = [
-        { step: 1, fields: ["username", "email", "password", "confirmPassword", "phoneWhatsapp", "city"] },
+        { step: 1, fields: ["username", "email", "password", "confirmPassword", "phoneWhatsapp", "provinceCode", "cityCode"] },
         { step: 2, fields: ["duelLinksGameId", "duelLinksIgn", "duelLinksScreenshotUploadId", "masterDuelGameId", "masterDuelIgn", "masterDuelScreenshotUploadId"] },
         { step: 3, fields: ["sourceInfo", "socialMedia"] },
         { step: 4, fields: ["agreement"] },
@@ -250,10 +251,23 @@ export default function RegisterPage() {
                                 <Err field="phoneWhatsapp" />
                                 <p className="mt-1 text-xs text-white/30">Format: +62... atau 08...</p>
                             </div>
-                            <div>
-                                <label className={authLabelCls}>Kota *</label>
-                                <input type="text" className={authInputCls} placeholder="Jakarta, Surabaya, ..." value={form.city} onChange={(event) => setField("city", event.target.value)} />
-                                <Err field="city" />
+                            <div className="sm:col-span-2">
+                                <IndonesiaRegionFields
+                                    variant="auth"
+                                    value={{
+                                        provinceCode: form.provinceCode,
+                                        provinceName: form.provinceName,
+                                        cityCode: form.cityCode,
+                                        cityName: form.cityName,
+                                    }}
+                                    onChange={(region) => {
+                                        setField("provinceCode", region.provinceCode);
+                                        setField("provinceName", region.provinceName);
+                                        setField("cityCode", region.cityCode);
+                                        setField("cityName", region.cityName);
+                                    }}
+                                    errors={{ provinceCode: errors.provinceCode, cityCode: errors.cityCode }}
+                                />
                             </div>
                         </div>
                     </div>
@@ -358,7 +372,8 @@ export default function RegisterPage() {
                             <div className="space-y-1 rounded-2xl bg-white/5 p-4 text-xs">
                                 <div className="flex justify-between gap-4"><span className="text-white/40">Username</span><span className="font-medium text-white">@{form.username}</span></div>
                                 <div className="flex justify-between gap-4"><span className="text-white/40">Email</span><span className="text-white">{form.email}</span></div>
-                                <div className="flex justify-between gap-4"><span className="text-white/40">Kota</span><span className="text-white">{form.city}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-white/40">Provinsi</span><span className="text-white">{form.provinceName || "-"}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-white/40">Kab/Kota</span><span className="text-white">{form.cityName || "-"}</span></div>
                                 <div className="flex justify-between gap-4"><span className="text-white/40">Sumber info</span><span className="text-white">{form.sourceInfo}</span></div>
                                 <div className="flex justify-between gap-4"><span className="text-white/40">Sosial media aktif</span><span className="text-right text-white">{form.socialMedia.join(", ")}</span></div>
                                 {form.duelLinksIgn ? <div className="flex justify-between gap-4"><span className="text-white/40">DL IGN</span><span className="font-mono text-ds-amber">{form.duelLinksIgn}</span></div> : null}
@@ -393,5 +408,7 @@ export default function RegisterPage() {
         </AuthShell>
     );
 }
+
+
 
 

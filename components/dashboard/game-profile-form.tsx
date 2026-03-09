@@ -30,7 +30,7 @@ export function GameProfileForm({
     const { success, error } = useToast();
 
     const title = gameType === "DUEL_LINKS" ? "Yu-Gi-Oh! Duel Links" : "Yu-Gi-Oh! Master Duel";
-    const idLabel = gameType === "DUEL_LINKS" ? "Friend ID" : "Duelist ID";
+    const idLabel = gameType === "DUEL_LINKS" ? "DUELIST ID" : "Duelist ID";
     const isMasterDuel = gameType === "MASTER_DUEL";
 
     const handleSubmit = async (e: React.FormEvent) => {

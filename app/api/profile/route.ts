@@ -4,6 +4,7 @@ import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import { logAudit } from "@/lib/audit-logger";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { profileUpdateSchema } from "@/lib/validators";
+import { resolveIndonesiaRegionSelection } from "@/lib/indonesia-regions";
 
 export async function PATCH(request: NextRequest) {
     try {
@@ -28,6 +29,7 @@ export async function PATCH(request: NextRequest) {
         }
 
         const nextData = parsed.data;
+        const resolvedRegion = await resolveIndonesiaRegionSelection(nextData.provinceCode, nextData.cityCode);
 
         const existingUser = await prisma.user.findUnique({
             where: { id: currentUser.id },
@@ -36,6 +38,9 @@ export async function PATCH(request: NextRequest) {
                 username: true,
                 email: true,
                 phoneWhatsapp: true,
+                provinceCode: true,
+                provinceName: true,
+                cityCode: true,
                 city: true,
             },
         });
@@ -80,7 +85,10 @@ export async function PATCH(request: NextRequest) {
             existingUser.username !== nextData.username ? "username" : null,
             emailChanged ? "email" : null,
             existingUser.phoneWhatsapp !== nextData.phoneWhatsapp ? "phoneWhatsapp" : null,
-            existingUser.city !== nextData.city ? "city" : null,
+            existingUser.provinceCode !== resolvedRegion.provinceCode ? "provinceCode" : null,
+            existingUser.provinceName !== resolvedRegion.provinceName ? "provinceName" : null,
+            existingUser.cityCode !== resolvedRegion.cityCode ? "cityCode" : null,
+            existingUser.city !== resolvedRegion.cityName ? "city" : null,
         ].filter(Boolean) as string[];
 
         if (changedFields.length === 0) {
@@ -91,6 +99,9 @@ export async function PATCH(request: NextRequest) {
                     username: existingUser.username,
                     email: existingUser.email,
                     phoneWhatsapp: existingUser.phoneWhatsapp,
+                    provinceCode: existingUser.provinceCode,
+                    provinceName: existingUser.provinceName,
+                    cityCode: existingUser.cityCode,
                     city: existingUser.city,
                     emailVerificationReset: false,
                 },
@@ -99,9 +110,7 @@ export async function PATCH(request: NextRequest) {
 
         const updatedUser = await prisma.$transaction(async (tx) => {
             if (emailChanged) {
-                await tx.emailVerificationToken.deleteMany({
-                    where: { userId: currentUser.id },
-                });
+                await tx.emailVerificationToken.deleteMany({ where: { userId: currentUser.id } });
             }
 
             return tx.user.update({
@@ -111,13 +120,19 @@ export async function PATCH(request: NextRequest) {
                     fullName: nextData.username,
                     email: nextData.email,
                     phoneWhatsapp: nextData.phoneWhatsapp,
-                    city: nextData.city,
+                    provinceCode: resolvedRegion.provinceCode,
+                    provinceName: resolvedRegion.provinceName,
+                    cityCode: resolvedRegion.cityCode,
+                    city: resolvedRegion.cityName,
                     ...(emailChanged ? { emailVerifiedAt: null } : {}),
                 },
                 select: {
                     username: true,
                     email: true,
                     phoneWhatsapp: true,
+                    provinceCode: true,
+                    provinceName: true,
+                    cityCode: true,
                     city: true,
                     emailVerifiedAt: true,
                 },
@@ -134,23 +149,29 @@ export async function PATCH(request: NextRequest) {
                 emailChanged,
                 phoneChanged: changedFields.includes("phoneWhatsapp"),
                 verificationReset: emailChanged,
+                regionChanged: changedFields.some((field) => ["provinceCode", "provinceName", "cityCode", "city"].includes(field)),
             },
         });
 
         return NextResponse.json({
             success: true,
-            message: emailChanged
-                ? "Profil berhasil diperbarui. Email perlu diverifikasi ulang."
-                : "Profil berhasil diperbarui.",
+            message: emailChanged ? "Profil berhasil diperbarui. Email perlu diverifikasi ulang." : "Profil berhasil diperbarui.",
             user: {
                 username: updatedUser.username,
                 email: updatedUser.email,
                 phoneWhatsapp: updatedUser.phoneWhatsapp,
+                provinceCode: updatedUser.provinceCode,
+                provinceName: updatedUser.provinceName,
+                cityCode: updatedUser.cityCode,
                 city: updatedUser.city,
                 emailVerificationReset: emailChanged,
             },
         });
     } catch (error) {
+        if (error instanceof Error) {
+            return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+        }
+
         console.error("[Profile API]", error);
         return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
     }

@@ -19,6 +19,13 @@ type AuthUserRecord = {
 
 type RegisterConflictCode = "USERNAME_EXISTS" | "EMAIL_EXISTS" | "PHONE_EXISTS" | "GAME_ID_EXISTS";
 
+type ResolvedRegionInput = {
+    provinceCode?: string;
+    provinceName?: string;
+    cityCode?: string;
+    cityName?: string;
+};
+
 type AuthPrismaLike = {
     user: {
         findUnique: (args: { where: Record<string, unknown>; select?: Record<string, boolean> }) => Promise<AuthUserRecord | null>;
@@ -142,7 +149,7 @@ export async function authenticateUser(
 
 export async function registerUser(
     deps: AuthDeps,
-    data: RegisterInput,
+    data: RegisterInput & ResolvedRegionInput,
     options: RegisterUserOptions = {}
 ) {
     if (!options.skipConflictCheck) {
@@ -166,7 +173,10 @@ export async function registerUser(
             email: data.email,
             password: hashedPassword,
             phoneWhatsapp: data.phoneWhatsapp,
-            city: data.city,
+            provinceCode: data.provinceCode || null,
+            provinceName: data.provinceName || null,
+            cityCode: data.cityCode || null,
+            city: data.cityName || null,
             status: "ACTIVE",
             role: "USER",
             gameProfiles: {
@@ -218,3 +228,5 @@ export async function registerUser(
 
     return { ok: true as const, user, verifyToken };
 }
+
+

@@ -9,7 +9,10 @@ type StoredUser = {
     fullName: string;
     password: string;
     phoneWhatsapp: string;
-    city: string;
+    provinceCode?: string;
+    provinceName?: string;
+    cityCode?: string;
+    city?: string;
     status: string;
     role: string;
 };
@@ -70,8 +73,11 @@ test("auth flow integration: register then login against in-memory repository", 
             password: "Password123",
             confirmPassword: "Password123",
             phoneWhatsapp: "+628123456789",
-            city: "Jakarta",
-            duelLinksGameId: "dl-123",
+            provinceCode: "31",
+            provinceName: "DKI Jakarta",
+            cityCode: "3171",
+            cityName: "Kota Jakarta Pusat",
+            duelLinksGameId: "123-456-789",
             duelLinksIgn: "[DS] Integrator",
             masterDuelGameId: "",
             masterDuelIgn: "",
@@ -80,7 +86,7 @@ test("auth flow integration: register then login against in-memory repository", 
             sourceInfo: "Discord",
             socialMedia: ["discord"],
             agreement: true,
-        }
+        },
     );
 
     assert.equal(registerResult.ok, true);
@@ -95,7 +101,7 @@ test("auth flow integration: register then login against in-memory repository", 
         {
             identifier: "integration.user",
             password: "Password123",
-        }
+        },
     );
 
     assert.equal(authResult.ok, true);

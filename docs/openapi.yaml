@@ -54,7 +54,8 @@ paths:
                 - password
                 - confirmPassword
                 - phoneWhatsapp
-                - city
+                - provinceCode
+                - cityCode
                 - sourceInfo
                 - socialMedia
                 - agreement
@@ -70,9 +71,21 @@ paths:
                   type: string
                 phoneWhatsapp:
                   type: string
-                city:
+                provinceCode:
+                  type: string
+                cityCode:
+                  type: string
+                duelLinksGameId:
+                  type: string
+                  description: Formatted as XXX-XXX-XXX
+                duelLinksIgn:
                   type: string
                 duelLinksScreenshotUploadId:
+                  type: string
+                masterDuelGameId:
+                  type: string
+                  description: Formatted as XXX-XXX-XXX
+                masterDuelIgn:
                   type: string
                 masterDuelScreenshotUploadId:
                   type: string
@@ -120,6 +133,44 @@ paths:
       responses:
         "200":
           description: Session payload
+  /api/profile:
+    put:
+      summary: Update account identity and region fields for the current user
+      security:
+        - authjsSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - phoneWhatsapp
+                - provinceCode
+                - cityCode
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                phoneWhatsapp:
+                  type: string
+                provinceCode:
+                  type: string
+                cityCode:
+                  type: string
+      responses:
+        "200":
+          description: Profile updated
+        "400":
+          description: Validation failed
+        "401":
+          description: Unauthorized
+        "409":
+          description: Username, email, or phone conflict
   /api/auth/oauth/finalize:
     get:
       summary: Compatibility alias to the Auth.js finalization redirect route
@@ -194,6 +245,26 @@ paths:
           description: Image preview
         "404":
           description: Upload not found or expired
+  /api/regions/provinces:
+    get:
+      summary: List provinces for Indonesia region combobox
+      responses:
+        "200":
+          description: Province list payload
+  /api/regions/regencies:
+    get:
+      summary: List regencies or cities by province code
+      parameters:
+        - in: query
+          name: provinceCode
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Regency list payload
+        "400":
+          description: provinceCode is required
   /api/dashboard/summary:
     get:
       summary: Fetch dashboard summary cards and lists
@@ -654,4 +725,5 @@ paths:
           description: Unauthorized
         "404":
           description: Not found
+
 

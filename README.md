@@ -14,7 +14,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 
 ## Fitur Utama
 
-- Registrasi akun publik + game profile (Duel Links / Master Duel). Role komunitas dan team diatur terpisah setelah akun dibuat. Pre-check conflict email/nomor/game ID dijalankan lebih awal agar error 409 muncul cepat, dan pengiriman email verifikasi tidak lagi menahan response sukses.
+- Registrasi akun publik + game profile (Duel Links / Master Duel). Role komunitas dan team diatur terpisah setelah akun dibuat. Form wilayah kini memakai combobox provinsi + kabupaten/kota Indonesia berbasis kode wilayah, dengan cache lokal agar request tidak boros dan input kota tidak ngawur. Pre-check conflict email/nomor/game ID dijalankan lebih awal agar error 409 muncul cepat, dan pengiriman email verifikasi tidak lagi menahan response sukses.
 - Login/logout + cek sesi user (`/api/auth/me`), termasuk payload role komunitas dan team aktif jika ada. Login Google dan login username/email+password kini sama-sama melewati Auth.js, lalu difinalisasi ke state internal aplikasi untuk audit, role, dan sinkronisasi profil.
 - Manajemen role dan status akun user.
 - CRUD tournament + register participant tournament.
@@ -41,7 +41,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Halaman `Profile` kini lebih minimal: data akun tampil lebih dulu, lalu ringkasan Duel Links dan Master Duel diletakkan tepat di bawahnya. Form edit/tambah profile game hanya muncul lewat modal saat dibutuhkan.
 - Card `Profile Game` di halaman `Profile` kini memakai judul dan copy yang lebih singkat agar nama game dan data inti lebih mudah dipindai.
 - Game ID untuk Duel Links dan Master Duel kini distandardkan ke format `XXX-XXX-XXX` dengan tepat 9 digit, baik di form registrasi maupun edit profile game.
-- Data akun utama di halaman `Profile` juga kini tampil sebagai ringkasan saja. Edit `username`, `email`, `WhatsApp`, dan `kota` dilakukan lewat satu modal agar halaman tidak ramai card/form terbuka sekaligus.
+- Data akun utama di halaman `Profile` juga kini tampil sebagai ringkasan saja. Edit `username`, `email`, `WhatsApp`, `provinsi`, dan `kabupaten/kota` dilakukan lewat satu modal agar halaman tidak ramai card/form terbuka sekaligus.
 - Susunan halaman `Profile` kini lebih ringkas: data akun diikuti profile game dalam panel yang sama, sementara aktivitas terbaru ditampilkan sebagai daftar kecil yang lebih tenang agar tidak mengambil fokus utama.
 - Surface `Data Akun` dan `Profile Game` di halaman `Profile` kini disatukan dalam satu kelompok visual agar halaman terasa lebih tenang dan tidak penuh card yang saling bersaing.
 - Enhanced user profile fields (bio, timezone, language, discord/social handle, date of birth, gender).
@@ -55,7 +55,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Surface card public di dark mode kini memakai dark panel solid yang konsisten agar tidak muncul panel putih atau teks yang kehilangan kontras.
 - Navbar public kini memakai icon toggle light/dark dengan animasi transisi, dan social icons di footer kembali memakai hover glow/lift agar terasa hidup.
 - Landing page memakai reveal animation ringan berbasis `framer-motion` pada hero, heading section, dan card penting; dashboard sengaja tidak diberi animasi scroll agar tetap ringan dipakai admin.
-- Copywriting public dirapikan menjadi lebih singkat, elegan, dan konsisten dalam Bahasa Indonesia pada homepage, card tournament, footer, serta halaman tournament publik.
+- Copywriting public dirapikan menjadi lebih singkat, elegan, dan konsisten dalam Bahasa Indonesia pada homepage, card tournament, footer, serta halaman tournament publik.`r`n- Halaman auth publik kini memakai layout hero kiri + glass panel form yang lebih bersih, tanpa kartu penjelasan tambahan agar fokus user tetap ke aksi login/registrasi.
 - Navbar public:
   - Belum login: `Sign In` + `Sign Up`.
   - Sudah login admin/founder: profile menu -> `Dashboard`, `Logout`.
@@ -117,6 +117,9 @@ Variabel penting:
 - `NEXT_PUBLIC_APP_URL`: base URL app (dipakai URL hasil upload).
 - `UPLOAD_DIR`: lokasi simpan file upload permanen (default `./public/uploads`). `APP_ROOT` ditetapkan otomatis oleh `start.js` agar runtime build lokal dan standalone memakai root upload yang sama. Asset `/uploads/*` juga dilayani oleh route server agar gambar tetap tampil meski static copy berbeda antar runtime.
 - `MAX_FILE_SIZE`: batas upload byte (default 5MB).
+- `REGION_CACHE_DIR`: lokasi cache lokal dataset wilayah Indonesia (default `./data/regions-cache`).
+- `REGION_CACHE_TTL_HOURS`: TTL cache wilayah lokal dalam jam (default 720 / 30 hari).
+- `EMSIFA_API_BASE_URL`: base URL dataset wilayah Indonesia Emsifa.
 - `ALLOW_DEV_SEED_ENDPOINT`: aktifkan `/api/seed` hanya untuk dev lokal yang memang membutuhkan seed admin cepat.
 - `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD`: kredensial seed admin untuk script dan endpoint seed.
 - `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS`: kredensial SMTP provider email.
@@ -166,7 +169,7 @@ node scripts/seed-admin.js
 ```
 
 Variabel `ADMIN_SEED_EMAIL` dan `ADMIN_SEED_PASSWORD` wajib diisi sebelum menjalankan script.
-Field tambahan opsional: `ADMIN_SEED_NAME`, `ADMIN_SEED_PHONE`, `ADMIN_SEED_CITY`.
+Field tambahan opsional: `ADMIN_SEED_NAME`, `ADMIN_SEED_USERNAME`, `ADMIN_SEED_PHONE`, `ADMIN_SEED_CITY`, `ADMIN_SEED_PROVINCE_CODE`, `ADMIN_SEED_PROVINCE_NAME`, `ADMIN_SEED_CITY_CODE`, `ADMIN_SEED_CITY_NAME`.
 
 ### 2) Seed data dev (reset + teams/users/tournament/treasury demo)
 
@@ -186,7 +189,7 @@ Isi:
 
 Auth:
 
-- `POST /api/auth/register`
+- `POST /api/auth/register` (wajib `provinceCode` + `cityCode`; nama wilayah diselesaikan server-side dari kode)
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
 - `GET/POST /api/auth/finalize` (`GET` hanya redirect aman ke halaman transisi, `POST` menyelesaikan finalisasi login Auth.js + audit)
@@ -222,6 +225,8 @@ Lainnya:
 - `GET /api/upload/public/:id` (preview temp upload milik IP yang sama)
 - `GET /api/audit-logs`
 - `GET /api/audit-logs/export`
+- `GET /api/regions/provinces`
+- `GET /api/regions/regencies?provinceCode=...`
 - `GET /api/health`
 
 ## Role Akses (UI Dashboard)
@@ -361,6 +366,9 @@ Mulai sekarang, setiap ada perubahan fitur/endpoint/role/alur setup:
 2. Jika perubahan menyentuh API, update bagian `API Ringkas`.
 3. Jika perubahan menyentuh auth/role/menu, update bagian `Role Akses`.
 4. Jika perubahan menyentuh setup/env/db, update bagian `Konfigurasi Environment` dan `Instalasi`.
+
+
+
 
 
 

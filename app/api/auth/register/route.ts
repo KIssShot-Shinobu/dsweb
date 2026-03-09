@@ -10,27 +10,28 @@ import { findRegisterConflict, registerUser } from "@/lib/services/auth-service"
 import { getAppUrl } from "@/lib/runtime-config";
 import { extractRequestIp } from "@/lib/request-ip";
 import { assertClaimableRegisterUploads, claimRegisterUploads } from "@/lib/upload-security";
+import { resolveIndonesiaRegionSelection } from "@/lib/indonesia-regions";
 import type { RegisterInput } from "@/lib/validators";
 
 function buildRegisterConflictResponse(code: string) {
     if (code === "USERNAME_EXISTS") {
         return NextResponse.json(
             { success: false, message: "Username sudah terdaftar", errors: { username: ["Username sudah digunakan"] } },
-            { status: 409 }
+            { status: 409 },
         );
     }
 
     if (code === "EMAIL_EXISTS") {
         return NextResponse.json(
             { success: false, message: "Email sudah terdaftar", errors: { email: ["Email sudah digunakan"] } },
-            { status: 409 }
+            { status: 409 },
         );
     }
 
     if (code === "PHONE_EXISTS") {
         return NextResponse.json(
             { success: false, message: "Nomor WhatsApp sudah terdaftar", errors: { phoneWhatsapp: ["Nomor sudah digunakan"] } },
-            { status: 409 }
+            { status: 409 },
         );
     }
 
@@ -44,7 +45,7 @@ function buildRegisterConflictResponse(code: string) {
                     masterDuelGameId: ["Periksa kembali Game ID yang Anda masukkan"],
                 },
             },
-            { status: 409 }
+            { status: 409 },
         );
     }
 
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
         if (!parsed.success) {
             return NextResponse.json(
                 { success: false, message: "Validasi gagal", errors: parsed.error.flatten().fieldErrors },
-                { status: 400 }
+                { status: 400 },
             );
         }
 
@@ -137,6 +138,7 @@ export async function POST(req: NextRequest) {
             return buildRegisterConflictResponse(conflictCode);
         }
 
+        const resolvedRegion = await resolveIndonesiaRegionSelection(parsed.data.provinceCode, parsed.data.cityCode);
         const ipAddress = extractRequestIp(req.headers);
         const uploadIds = Object.values(getRegisterUploadMap(parsed.data)).filter((value): value is string => Boolean(value));
 
@@ -153,8 +155,8 @@ export async function POST(req: NextRequest) {
                 comparePassword: async () => false,
                 generateSecureToken,
             },
-            parsed.data,
-            { skipConflictCheck: true }
+            { ...parsed.data, ...resolvedRegion },
+            { skipConflictCheck: true },
         );
 
         if (!result.ok) return buildRegisterConflictResponse(result.code);
@@ -175,7 +177,7 @@ export async function POST(req: NextRequest) {
                 userId: user.id,
                 ...(process.env.NODE_ENV !== "production" ? { debugVerifyUrl: verifyUrl } : {}),
             },
-            { status: 201 }
+            { status: 201 },
         );
     } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {

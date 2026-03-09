@@ -12,6 +12,27 @@ type AuthMockUser = {
     role: string;
 };
 
+const baseRegisterInput = {
+    username: "test.user",
+    email: "test@example.com",
+    password: "Password123",
+    confirmPassword: "Password123",
+    phoneWhatsapp: "+628123456789",
+    provinceCode: "31",
+    provinceName: "DKI Jakarta",
+    cityCode: "3171",
+    cityName: "Kota Jakarta Pusat",
+    duelLinksGameId: "123-456-789",
+    duelLinksIgn: "[DS] Test",
+    masterDuelGameId: "",
+    masterDuelIgn: "",
+    duelLinksScreenshotUploadId: "",
+    masterDuelScreenshotUploadId: "",
+    sourceInfo: "Discord",
+    socialMedia: ["discord"],
+    agreement: true as const,
+};
+
 test("authenticateUser returns user for valid credentials", async () => {
     const result = await authenticateUser(
         {
@@ -30,7 +51,7 @@ test("authenticateUser returns user for valid credentials", async () => {
             } as unknown as Parameters<typeof authenticateUser>[0]["prisma"],
             comparePassword: async () => true,
         },
-        { identifier: "user@example.com", password: "secret" }
+        { identifier: "user@example.com", password: "secret" },
     );
 
     assert.equal(result.ok, true);
@@ -58,7 +79,7 @@ test("authenticateUser also accepts username as identifier", async () => {
             } as unknown as Parameters<typeof authenticateUser>[0]["prisma"],
             comparePassword: async () => true,
         },
-        { identifier: "user.one", password: "secret" }
+        { identifier: "user.one", password: "secret" },
     );
 
     assert.equal(result.ok, true);
@@ -85,7 +106,7 @@ test("authenticateUser blocks banned non-admin user", async () => {
             } as unknown as Parameters<typeof authenticateUser>[0]["prisma"],
             comparePassword: async () => true,
         },
-        { identifier: "banned@example.com", password: "secret" }
+        { identifier: "banned@example.com", password: "secret" },
     );
 
     assert.deepEqual(result, { ok: false, code: "BANNED", userId: "user_2" });
@@ -126,22 +147,9 @@ test("registerUser rejects duplicate username", async () => {
             generateSecureToken: () => "verify-token",
         },
         {
+            ...baseRegisterInput,
             username: "existing.user",
-            email: "test@example.com",
-            password: "Password123",
-            confirmPassword: "Password123",
-            phoneWhatsapp: "+628123456789",
-            city: "Jakarta",
-            duelLinksGameId: "dl-123",
-            duelLinksIgn: "[DS] Test",
-            masterDuelGameId: "",
-            masterDuelIgn: "",
-            duelLinksScreenshotUploadId: "",
-            masterDuelScreenshotUploadId: "",
-            sourceInfo: "Discord",
-            socialMedia: ["discord"],
-            agreement: true,
-        }
+        },
     );
 
     assert.deepEqual(result, { ok: false, code: "USERNAME_EXISTS" });
@@ -181,23 +189,7 @@ test("registerUser rejects duplicate phone number", async () => {
             comparePassword: async () => false,
             generateSecureToken: () => "verify-token",
         },
-        {
-            username: "test.user",
-            email: "test@example.com",
-            password: "Password123",
-            confirmPassword: "Password123",
-            phoneWhatsapp: "+628123456789",
-            city: "Jakarta",
-            duelLinksGameId: "dl-123",
-            duelLinksIgn: "[DS] Test",
-            masterDuelGameId: "",
-            masterDuelIgn: "",
-            duelLinksScreenshotUploadId: "",
-            masterDuelScreenshotUploadId: "",
-            sourceInfo: "Discord",
-            socialMedia: ["discord"],
-            agreement: true,
-        }
+        baseRegisterInput,
     );
 
     assert.deepEqual(result, { ok: false, code: "PHONE_EXISTS" });

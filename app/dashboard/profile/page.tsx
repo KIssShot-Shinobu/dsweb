@@ -139,6 +139,9 @@ export default async function ProfilePage() {
                                     username={accountName}
                                     email={user.email}
                                     phoneWhatsapp={user.phoneWhatsapp || ""}
+                                    provinceCode={user.provinceCode || ""}
+                                    provinceName={user.provinceName || ""}
+                                    cityCode={user.cityCode || ""}
                                     city={user.city || ""}
                                     emailVerified={user.emailVerified}
                                 />
@@ -206,3 +209,5 @@ export default async function ProfilePage() {
         </DashboardPageShell>
     );
 }
+
+
