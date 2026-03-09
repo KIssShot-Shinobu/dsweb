@@ -5,10 +5,14 @@ import { authenticateUser, registerUser } from "@/lib/services/auth-service";
 type StoredUser = {
     id: string;
     email: string;
+    username: string;
     fullName: string;
     password: string;
     phoneWhatsapp: string;
-    city: string;
+    provinceCode?: string;
+    provinceName?: string;
+    cityCode?: string;
+    city?: string;
     status: string;
     role: string;
 };
@@ -25,11 +29,19 @@ test("auth flow integration: register then login against in-memory repository", 
 
     const prisma = {
         user: {
-            findUnique: async ({ where }: { where: { email?: string; phoneWhatsapp?: string } }) => {
+            findUnique: async ({ where }: { where: { username?: string; email?: string; phoneWhatsapp?: string } }) => {
                 if (!storedUser) return null;
+                if (where.username && where.username === storedUser.username) return storedUser;
                 if (where.email && where.email === storedUser.email) return storedUser;
                 if (where.phoneWhatsapp && where.phoneWhatsapp === storedUser.phoneWhatsapp) return storedUser;
                 return null;
+            },
+            findFirst: async ({ where }: { where: { OR?: Array<{ email?: string; username?: string }> } }) => {
+                if (!storedUser || !where.OR) return null;
+                const currentUser = storedUser;
+                return where.OR.some((entry) => entry.email === currentUser.email || entry.username === currentUser.username)
+                    ? storedUser
+                    : null;
             },
             create: async ({ data }: { data: Omit<StoredUser, "id"> }) => {
                 storedUser = { id: "user_int_1", ...data };
@@ -56,24 +68,25 @@ test("auth flow integration: register then login against in-memory repository", 
             generateSecureToken: () => "verify-token",
         },
         {
-            fullName: "Integration User",
+            username: "integration.user",
             email: "integration@example.com",
             password: "Password123",
             confirmPassword: "Password123",
             phoneWhatsapp: "+628123456789",
-            city: "Jakarta",
-            duelLinksGameId: "dl-123",
+            provinceCode: "31",
+            provinceName: "DKI Jakarta",
+            cityCode: "3171",
+            cityName: "Kota Jakarta Pusat",
+            duelLinksGameId: "123-456-789",
             duelLinksIgn: "[DS] Integrator",
             masterDuelGameId: "",
             masterDuelIgn: "",
             duelLinksScreenshotUploadId: "",
             masterDuelScreenshotUploadId: "",
             sourceInfo: "Discord",
-            prevGuild: "",
-            guildStatus: "NEW_PLAYER",
             socialMedia: ["discord"],
             agreement: true,
-        }
+        },
     );
 
     assert.equal(registerResult.ok, true);
@@ -86,9 +99,9 @@ test("auth flow integration: register then login against in-memory repository", 
             comparePassword: async (password, hash) => hash === `hashed:${password}`,
         },
         {
-            email: "integration@example.com",
+            identifier: "integration.user",
             password: "Password123",
-        }
+        },
     );
 
     assert.equal(authResult.ok, true);

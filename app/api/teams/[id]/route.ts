@@ -59,6 +59,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
             email: true,
             role: true,
             city: true,
+            avatarUrl: true,
             teamId: true,
             teamJoinedAt: true,
             lastActiveAt: true,

@@ -1,4 +1,4 @@
-﻿import { existsSync } from "fs";
+import { existsSync, promises as fs } from "fs";
 import path from "path";
 import { getPermanentUploadTargets } from "@/lib/runtime-config";
 
@@ -41,4 +41,30 @@ export function resolveUploadFile(segments: string[]) {
         filePath,
         mimeType: MIME_TYPES[extension] || "application/octet-stream",
     };
+}
+
+export function getUploadSegmentsFromUrl(url: string | null | undefined) {
+    if (!url || !url.startsWith("/uploads/")) {
+        return null;
+    }
+
+    return sanitizeUploadSegments(url.replace(/^\/uploads\//, "").split("/"));
+}
+
+export async function deleteUploadFileByUrl(url: string | null | undefined) {
+    const safeSegments = getUploadSegmentsFromUrl(url);
+    if (!safeSegments) {
+        return;
+    }
+
+    await Promise.allSettled(
+        getPermanentUploadTargets().map(async (targetDir) => {
+            const filePath = path.join(targetDir, ...safeSegments);
+            try {
+                await fs.unlink(filePath);
+            } catch {
+                // Ignore missing mirrored upload files.
+            }
+        })
+    );
 }

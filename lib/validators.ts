@@ -1,21 +1,34 @@
 import { z } from "zod";
+import { formatGameId, isFormattedGameId, normalizeGameIdDigits } from "@/lib/game-id";
 
 const IGN_REGEX = /^[A-Za-z0-9 _.\-\[\]()]{2,32}$/;
 const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
 const SAFE_TEXT_REGEX = /^[\p{L}\p{N}\s'.,()\-_/]+$/u;
 const LOCAL_UPLOAD_PATH_REGEX = /^\/uploads\/[A-Za-z0-9._/-]+$/;
 const TEAM_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const USERNAME_REGEX = /^[a-zA-Z0-9._-]{3,24}$/;
+
+const gameIdFieldSchema = z
+    .string()
+    .trim()
+    .transform((value) => formatGameId(value))
+    .refine((value) => value === "" || isFormattedGameId(value), "Game ID harus terdiri dari 9 angka dengan format XXX-XXX-XXX");
 
 export const USER_STATUS_VALUES = ["ACTIVE", "BANNED"] as const;
 export const USER_ROLE_VALUES = ["USER", "MEMBER", "OFFICER", "ADMIN", "FOUNDER"] as const;
-export const GUILD_STATUS_VALUES = ["SOLO_PLAYER", "LEFT_GUILD", "NEW_PLAYER"] as const;
 export const TOURNAMENT_STATUS_VALUES = ["OPEN", "ONGOING", "COMPLETED", "CANCELLED"] as const;
 export const TOURNAMENT_FORMAT_VALUES = ["BO1", "BO3", "BO5"] as const;
 export const GAME_TYPE_VALUES = ["DUEL_LINKS", "MASTER_DUEL"] as const;
 
 export const registerSchema = z
     .object({
-        fullName: z.string().trim().min(3, "Nama lengkap minimal 3 karakter").max(191, "Nama terlalu panjang"),
+        username: z
+            .string()
+            .trim()
+            .min(3, "Username minimal 3 karakter")
+            .max(24, "Username maksimal 24 karakter")
+            .regex(USERNAME_REGEX, "Username hanya boleh huruf, angka, titik, underscore, dan strip")
+            .transform((value) => value.toLowerCase()),
         email: z.string().trim().toLowerCase().email("Email tidak valid"),
         password: z
             .string()
@@ -24,16 +37,15 @@ export const registerSchema = z
             .regex(/[0-9]/, "Password harus mengandung angka"),
         confirmPassword: z.string(),
         phoneWhatsapp: z.string().trim().regex(PHONE_REGEX, "Nomor WhatsApp tidak valid (contoh: +628123456789)"),
-        city: z.string().trim().min(2, "Kota harus diisi").max(191, "Nama kota terlalu panjang"),
-        duelLinksGameId: z.string().optional(),
+        provinceCode: z.string().trim().min(2, "Provinsi harus dipilih").max(16, "Kode provinsi tidak valid"),
+        cityCode: z.string().trim().min(4, "Kabupaten / kota harus dipilih").max(16, "Kode kabupaten / kota tidak valid"),
+        duelLinksGameId: gameIdFieldSchema.optional(),
         duelLinksIgn: z.string().min(2, "IGN Duel Links minimal 2 karakter").regex(IGN_REGEX, "IGN Duel Links mengandung karakter yang tidak valid").optional().or(z.literal("")),
-        masterDuelGameId: z.string().optional(),
+        masterDuelGameId: gameIdFieldSchema.optional(),
         masterDuelIgn: z.string().min(2, "IGN Master Duel minimal 2 karakter").regex(IGN_REGEX, "IGN Master Duel mengandung karakter yang tidak valid").optional().or(z.literal("")),
         duelLinksScreenshotUploadId: z.string().cuid("Upload screenshot Duel Links tidak valid").optional().or(z.literal("")),
         masterDuelScreenshotUploadId: z.string().cuid("Upload screenshot Master Duel tidak valid").optional().or(z.literal("")),
         sourceInfo: z.string().trim().min(1, "Sumber informasi harus diisi").max(191, "Sumber informasi terlalu panjang"),
-        prevGuild: z.string().trim().max(191, "Nama guild terlalu panjang").optional(),
-        guildStatus: z.enum(GUILD_STATUS_VALUES, { message: "Pilih status guild" }),
         socialMedia: z.array(z.string()).min(1, "Pilih minimal 1 sosial media"),
         agreement: z.literal(true, { message: "Anda harus menyetujui pernyataan" }),
     })
@@ -55,7 +67,7 @@ export const registerSchema = z
     });
 
 export const loginSchema = z.object({
-    email: z.string().trim().toLowerCase().email("Email tidak valid"),
+    identifier: z.string().trim().min(3, "Masukkan username atau email yang valid"),
     password: z.string().min(1, "Password harus diisi"),
     rememberMe: z.boolean().optional(),
 });
@@ -144,10 +156,37 @@ export type TreasuryInput = z.infer<typeof treasurySchema>;
 export const updateGameProfileSchema = z.object({
     gameType: z.enum(GAME_TYPE_VALUES),
     ign: z.string().min(1, "IGN tidak boleh kosong"),
-    gameId: z.string().min(1, "Game ID / Friend ID tidak boleh kosong"),
+    gameId: z
+        .string()
+        .trim()
+        .min(1, "Game ID / DUELIST ID tidak boleh kosong")
+        .transform((value) => formatGameId(value))
+        .refine((value) => normalizeGameIdDigits(value).length === 9 && isFormattedGameId(value), "Game ID harus terdiri dari 9 angka dengan format XXX-XXX-XXX"),
 });
 
 export type UpdateGameProfileInput = z.infer<typeof updateGameProfileSchema>;
+
+export const profileAvatarSchema = z.object({
+    avatarUrl: z.union([z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload lokal"), z.null()]),
+});
+
+export type ProfileAvatarInput = z.infer<typeof profileAvatarSchema>;
+
+export const profileUpdateSchema = z.object({
+    username: z
+        .string()
+        .trim()
+        .min(3, "Username minimal 3 karakter")
+        .max(24, "Username maksimal 24 karakter")
+        .regex(USERNAME_REGEX, "Username hanya boleh huruf, angka, titik, underscore, dan strip")
+        .transform((value) => value.toLowerCase()),
+    email: z.string().trim().toLowerCase().email("Email tidak valid"),
+    phoneWhatsapp: z.string().trim().regex(PHONE_REGEX, "Nomor WhatsApp tidak valid (contoh: +628123456789)"),
+    provinceCode: z.string().trim().min(2, "Provinsi harus dipilih").max(16, "Kode provinsi tidak valid"),
+    cityCode: z.string().trim().min(4, "Kabupaten / kota harus dipilih").max(16, "Kode kabupaten / kota tidak valid"),
+});
+
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
 export const tournamentSchema = z.object({
     title: z.string().trim().min(3, "Judul turnamen minimal 3 karakter").max(191, "Judul turnamen terlalu panjang"),
@@ -164,4 +203,6 @@ export const tournamentSchema = z.object({
 export type TournamentInput = z.infer<typeof tournamentSchema>;
 export const tournamentUpdateSchema = tournamentSchema.partial();
 export type TournamentUpdateInput = z.infer<typeof tournamentUpdateSchema>;
+
+
 

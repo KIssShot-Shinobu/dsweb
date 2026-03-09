@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getTokenFromCookie, verifyToken } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { treasurySchema } from "@/lib/validators";
 import { normalizeTreasuryAmount } from "@/lib/services/treasury-service";
+import { getServerCurrentUser } from "@/lib/server-current-user";
 
 type Params = Promise<{ id: string }>;
 
@@ -34,9 +34,8 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
 
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
     try {
-        const token = await getTokenFromCookie();
-        const decoded = token ? await verifyToken(token) : null;
-        if (!decoded || !["ADMIN", "FOUNDER"].includes(decoded.role)) {
+        const currentUser = await getServerCurrentUser();
+        if (!currentUser || !["ADMIN", "FOUNDER"].includes(currentUser.role)) {
             return NextResponse.json({ error: "Akses Ditolak" }, { status: 403 });
         }
 
@@ -71,7 +70,7 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
         });
 
         await logAudit({
-            userId: decoded.userId,
+            userId: currentUser.id,
             action: "TREASURY_UPDATED",
             targetId: transaction.id,
             targetType: "Treasury",
@@ -104,9 +103,8 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
 
 export async function DELETE(request: NextRequest, { params }: { params: Params }) {
     try {
-        const token = await getTokenFromCookie();
-        const decoded = token ? await verifyToken(token) : null;
-        if (!decoded || !["ADMIN", "FOUNDER"].includes(decoded.role)) {
+        const currentUser = await getServerCurrentUser();
+        if (!currentUser || !["ADMIN", "FOUNDER"].includes(currentUser.role)) {
             return NextResponse.json({ error: "Akses Ditolak" }, { status: 403 });
         }
 
@@ -116,7 +114,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Params 
         });
 
         await logAudit({
-            userId: decoded.userId,
+            userId: currentUser.id,
             action: "TREASURY_DELETED",
             targetId: id,
             targetType: "Treasury",

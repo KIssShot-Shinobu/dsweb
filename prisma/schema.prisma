@@ -24,12 +24,6 @@ enum UserRole {
   FOUNDER
 }
 
-enum GuildStatus {
-  SOLO_PLAYER
-  LEFT_GUILD
-  NEW_PLAYER
-}
-
 enum GameType {
   DUEL_LINKS
   MASTER_DUEL
@@ -121,6 +115,7 @@ model Treasury {
 model User {
   id            String     @id @default(cuid())
   fullName      String     @db.VarChar(191)
+  username      String     @unique @db.VarChar(191)
   email         String     @unique @db.VarChar(191)
   password      String
   emailVerifiedAt DateTime?
@@ -132,6 +127,7 @@ model User {
   bio           String?    @db.VarChar(500)
   timezone      String?    @default("Asia/Jakarta") @db.VarChar(50)
   language      String?    @default("id") @db.VarChar(10)
+  googleId      String?    @unique @db.VarChar(191)
   discordId     String?    @unique @db.VarChar(191)
   instagramHandle String?  @db.VarChar(191)
   twitterHandle String?    @db.VarChar(191)
@@ -141,10 +137,14 @@ model User {
   phoneWhatsappHash String? @unique @db.VarChar(64)
   accountNumber String?    @db.VarChar(255)
   accountNumberHash String? @db.VarChar(64)
+  provinceCode  String?    @db.VarChar(16)
+  provinceName  String?    @db.VarChar(191)
+  cityCode      String?    @db.VarChar(16)
   city          String?    @db.VarChar(191)
   avatarUrl     String?
   status        UserStatus @default(ACTIVE)
   role          UserRole   @default(USER)
+  authVersion   Int        @default(0)
   teamId        String?
   teamJoinedAt  DateTime?
   lastLoginAt   DateTime?
@@ -159,7 +159,6 @@ model User {
   tournaments     TournamentParticipant[]
   emailVerificationToken EmailVerificationToken?
   passwordResetToken PasswordResetToken?
-  sessions        Session[]
   badges          UserBadge[]
   reputationLogs  ReputationLog[]
   treasuryEntries Treasury[]
@@ -226,19 +225,6 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshToken String   @unique @db.VarChar(191)
-  expiresAt    DateTime
-  ipAddress    String?
-  userAgent    String?
-  createdAt    DateTime @default(now())
-
-  @@index([userId])
-}
-
 model GameProfile {
   id            String   @id @default(cuid())
   userId        String
@@ -256,8 +242,6 @@ model RegistrationLog {
   userId      String      @unique @db.VarChar(191)
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   sourceInfo  String?
-  prevGuild   String?
-  guildStatus GuildStatus
   socialMedia String?
   agreement   Boolean     @default(true)
   createdAt   DateTime    @default(now())
@@ -307,6 +291,8 @@ model AuditLog {
   @@index([createdAt])
   @@index([responseStatus])
 }
+
+
 
 
 

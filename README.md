@@ -9,13 +9,13 @@ Project ini punya 2 area utama:
 - Public website (`/`) untuk branding komunitas + daftar tournament dari database.
 - Dashboard (`/dashboard/*`) untuk manajemen users, teams, tournament, treasury, audit, profile, dan ringkasan operasional. Proteksi dashboard kini ditangani oleh server layout/page guard, bukan file `proxy.ts`.
 
-Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
+Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, dengan role hierarchy internal:
 `USER < MEMBER < OFFICER < ADMIN < FOUNDER`.
 
 ## Fitur Utama
 
-- Registrasi akun publik + game profile (Duel Links / Master Duel). Role komunitas dan team diatur terpisah setelah akun dibuat. Pre-check conflict email/nomor/game ID dijalankan lebih awal agar error 409 muncul cepat, dan pengiriman email verifikasi tidak lagi menahan response sukses.
-- Login/logout + cek sesi user (`/api/auth/me`), termasuk payload role komunitas dan team aktif jika ada.
+- Registrasi akun publik + game profile (Duel Links / Master Duel). Role komunitas dan team diatur terpisah setelah akun dibuat. Form wilayah kini memakai combobox provinsi + kabupaten/kota Indonesia berbasis kode wilayah, dengan cache lokal agar request tidak boros dan input kota tidak ngawur. Pre-check conflict email/nomor/game ID dijalankan lebih awal agar error 409 muncul cepat, dan pengiriman email verifikasi tidak lagi menahan response sukses.
+- Login/logout + cek sesi user (`/api/auth/me`), termasuk payload role komunitas dan team aktif jika ada. Login Google dan login username/email+password kini sama-sama melewati Auth.js, lalu difinalisasi ke state internal aplikasi untuk audit, role, dan sinkronisasi profil.
 - Manajemen role dan status akun user.
 - CRUD tournament + register participant tournament.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
@@ -30,14 +30,20 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - Halaman `Users` (`/dashboard/users`) menjadi pusat tunggal untuk registrasi user, akun aktif, role komunitas, dan afiliasi team. Halaman `Teams` (`/dashboard/teams`) dipakai untuk mengelola roster Duel Standby secara terpisah dari role akun, termasuk detail page team untuk roster assignment yang lebih nyaman dengan search + filter role langsung di roster dan kandidat, plus modal konfirmasi saat melepas anggota dari team.
 - Treasury transaksi + analytics ringkas dengan filter server-side; halaman treasury sekarang default ke semua periode agar sinkron dengan total data dashboard.
 - Dashboard summary memakai endpoint terpusat `/api/dashboard/summary`, termasuk ringkasan guild members, assigned team, dan total team aktif.
-- Upload file gambar (screenshot/profile) via API.
+- Upload file gambar (screenshot/profile) via API. Dashboard kini hanya menampilkan avatar user aktif di header agar layout tidak boros.
 - Audit log aktivitas user/admin.
 - Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
 - Native form controls (`select`, `date`, `datetime-local`) sudah di-hardening agar teks dropdown tetap terbaca di light/dark.
 - Password reset flow berbasis token dengan expiry 15 menit.
-- Refresh token rotation berbasis tabel session untuk manajemen sesi yang lebih aman.
+- Session aplikasi kini sepenuhnya ditangani oleh Auth.js (JWT strategy) dengan invalidasi lintas-device berbasis `authVersion` pada tabel `User`.
 - Email verification status tampil di `Profile` dan `Settings`.
 - `Settings` menyediakan aksi kirim ulang link verifikasi email untuk user yang belum verifikasi.
+- Halaman `Profile` kini lebih minimal: data akun tampil lebih dulu, lalu ringkasan Duel Links dan Master Duel diletakkan tepat di bawahnya. Form edit/tambah profile game hanya muncul lewat modal saat dibutuhkan.
+- Card `Profile Game` di halaman `Profile` kini memakai judul dan copy yang lebih singkat agar nama game dan data inti lebih mudah dipindai.
+- Game ID untuk Duel Links dan Master Duel kini distandardkan ke format `XXX-XXX-XXX` dengan tepat 9 digit, baik di form registrasi maupun edit profile game.
+- Data akun utama di halaman `Profile` juga kini tampil sebagai ringkasan saja. Edit `username`, `email`, `WhatsApp`, `provinsi`, dan `kabupaten/kota` dilakukan lewat satu modal agar halaman tidak ramai card/form terbuka sekaligus.
+- Susunan halaman `Profile` kini lebih ringkas: data akun diikuti profile game dalam panel yang sama, sementara aktivitas terbaru ditampilkan sebagai daftar kecil yang lebih tenang agar tidak mengambil fokus utama.
+- Surface `Data Akun` dan `Profile Game` di halaman `Profile` kini disatukan dalam satu kelompok visual agar halaman terasa lebih tenang dan tidak penuh card yang saling bersaing.
 - Enhanced user profile fields (bio, timezone, language, discord/social handle, date of birth, gender).
 - Sistem badge dan reputasi user (`Badge`, `UserBadge`, `ReputationLog`).
 - Endpoint stats profil terhitung untuk progress user.
@@ -49,7 +55,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - Surface card public di dark mode kini memakai dark panel solid yang konsisten agar tidak muncul panel putih atau teks yang kehilangan kontras.
 - Navbar public kini memakai icon toggle light/dark dengan animasi transisi, dan social icons di footer kembali memakai hover glow/lift agar terasa hidup.
 - Landing page memakai reveal animation ringan berbasis `framer-motion` pada hero, heading section, dan card penting; dashboard sengaja tidak diberi animasi scroll agar tetap ringan dipakai admin.
-- Copywriting public dirapikan menjadi lebih singkat, elegan, dan konsisten dalam Bahasa Indonesia pada homepage, card tournament, footer, serta halaman tournament publik.
+- Copywriting public dirapikan menjadi lebih singkat, elegan, dan konsisten dalam Bahasa Indonesia pada homepage, card tournament, footer, serta halaman tournament publik.`r`n- Halaman auth publik kini memakai panel tunggal yang lebih minimal, tanpa hero samping atau kartu penjelasan tambahan agar fokus user tetap ke form login/registrasi. Tombol Google juga dipoles dengan tampilan yang lebih premium dan spacing mobile dibuat lebih rapat.
 - Navbar public:
   - Belum login: `Sign In` + `Sign Up`.
   - Sudah login admin/founder: profile menu -> `Dashboard`, `Logout`.
@@ -63,7 +69,7 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - Tailwind CSS 4
 - Prisma 7
 - MariaDB/MySQL driver adapter: `@prisma/adapter-mariadb` + `mariadb`
-- JWT (`jose`) + password hashing (`bcryptjs`)
+- Auth.js + password hashing (`bcryptjs`)
 - Zod untuk validasi request
 - OpenAPI spec manual di `docs/openapi.yaml`
 
@@ -74,12 +80,17 @@ Auth menggunakan JWT HttpOnly cookie (`ds_auth`) dengan role hierarchy:
 - `app/dashboard/*`: UI dashboard
 - `components/*`: komponen UI/section
 - `lib/prisma.ts`: inisialisasi Prisma client + adapter MariaDB
-- `lib/auth.ts`: JWT, cookie auth, role guard helper
+- `lib/auth.ts`: helper password, role guard, dan invalidasi session version
 - `lib/validators.ts`: schema validasi (register/login/tournament/dll)
 - `context/ThemeContext.tsx`: state tema global + sinkronisasi `localStorage` (`ds-theme`)
 - `prisma/schema.prisma`: skema database
 - `scripts/seed-admin.js`: seed admin utama
 - `scripts/seed.mjs`: clean break dataset dev lalu seed 4 teams, 20 users, 20 tournaments, 20 treasury, dan 12 audit logs demo
+
+## Workflow Next.js
+
+- Untuk versi Next.js yang terpasang saat ini, cek implementasi dan type surface di `node_modules/next/dist/` terlebih dahulu saat mengubah flow framework.
+- Jika bundled docs lokal belum tersedia di versi yang dipakai, gunakan dokumentasi resmi Next.js sebagai sumber kebenaran tambahan.
 
 ## Prasyarat
 
@@ -100,17 +111,33 @@ DATABASE_URL="mysql://USERNAME:PASSWORD@141.11.25.48:3306/DATABASE_NAME?connecti
 Variabel penting:
 
 - `DATABASE_URL`: koneksi utama Prisma ke MySQL.
-- `JWT_SECRET`: secret signing JWT. Wajib diisi; app tidak lagi memakai fallback default.
+- `AUTH_SECRET`: secret utama Auth.js untuk sesi aplikasi.
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`: kredensial Google OAuth untuk Auth.js.
 - `DATA_ENCRYPTION_KEY`: kunci enkripsi data sensitif at-rest (`phoneWhatsapp`, `accountNumber`, `twoFactorSecret`).
 - `NEXT_PUBLIC_APP_URL`: base URL app (dipakai URL hasil upload).
 - `UPLOAD_DIR`: lokasi simpan file upload permanen (default `./public/uploads`). `APP_ROOT` ditetapkan otomatis oleh `start.js` agar runtime build lokal dan standalone memakai root upload yang sama. Asset `/uploads/*` juga dilayani oleh route server agar gambar tetap tampil meski static copy berbeda antar runtime.
 - `MAX_FILE_SIZE`: batas upload byte (default 5MB).
+- `REGION_CACHE_DIR`: lokasi cache lokal dataset wilayah Indonesia (default `./data/regions-cache`).
+- `REGION_CACHE_TTL_HOURS`: TTL cache wilayah lokal dalam jam (default 720 / 30 hari).
+- `EMSIFA_API_BASE_URL`: base URL dataset wilayah Indonesia Emsifa.
 - `ALLOW_DEV_SEED_ENDPOINT`: aktifkan `/api/seed` hanya untuk dev lokal yang memang membutuhkan seed admin cepat.
 - `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD`: kredensial seed admin untuk script dan endpoint seed.
 - `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS`: kredensial SMTP provider email.
 - `EMAIL_FROM`: alamat pengirim email untuk verifikasi/reset password.
 - `RESETPASSCONSOLE` (atau `resetpassconsole`): mode pengiriman email (`true` = `console.info`, `false` = SMTP/provider email).
 
+## Auth.js Migration (Phase 4)
+
+- Auth.js kini menjadi satu-satunya jalur login utama: Google OAuth dan credentials (`username/email + password`).
+- Halaman login menampilkan helper copy singkat agar user paham role komunitas, team, dan akses dashboard tetap mengikuti akun internal Duel Standby.
+- Route `POST /api/auth/finalize` kini menyelesaikan finalisasi akun internal setelah login Auth.js sukses: update jejak login, sentuh `lastActiveAt`, dan tulis audit log.
+- Route `GET /api/auth/finalize` tidak lagi melakukan side effect. Route ini hanya mengalihkan browser ke halaman transisi `/oauth-finalize`, lalu finalisasi aktual dilakukan lewat `POST` dari client.
+- Pembacaan sesi server kini murni mengutamakan Auth.js melalui helper server-side yang memuat user internal berdasarkan `session.user.id` (fallback ke email sesi bila perlu).
+- Invalidasi sesi aplikasi kini memakai `authVersion` pada model `User`, sehingga reset/ganti password bisa memutus sesi Auth.js lama tanpa refresh token legacy.
+- Linking akun dilakukan berdasarkan email. Jika email sudah ada, akun lama akan di-link ke `googleId`. Jika belum ada, user publik baru dibuat dengan `role=USER` dan `status=ACTIVE`.
+- Jalur Google lama `/api/auth/oauth/finalize` tetap hidup sebagai alias kompatibilitas ke route transisi finalisasi yang baru.
+- Endpoint `POST /api/auth/login` dan `POST /api/auth/refresh` sudah dipensiunkan; UI login utama sepenuhnya memakai Auth.js Credentials provider.
+- Logout client kini membersihkan sesi Auth.js, dan route logout hanya melakukan audit + best-effort cleanup cookie legacy yang tersisa. Audit log dashboard juga sudah punya filter khusus untuk event OAuth Google.
 ## Instalasi & Menjalankan Lokal
 
 ```bash
@@ -142,7 +169,7 @@ node scripts/seed-admin.js
 ```
 
 Variabel `ADMIN_SEED_EMAIL` dan `ADMIN_SEED_PASSWORD` wajib diisi sebelum menjalankan script.
-Field tambahan opsional: `ADMIN_SEED_NAME`, `ADMIN_SEED_PHONE`, `ADMIN_SEED_CITY`.
+Field tambahan opsional: `ADMIN_SEED_NAME`, `ADMIN_SEED_USERNAME`, `ADMIN_SEED_PHONE`, `ADMIN_SEED_CITY`, `ADMIN_SEED_PROVINCE_CODE`, `ADMIN_SEED_PROVINCE_NAME`, `ADMIN_SEED_CITY_CODE`, `ADMIN_SEED_CITY_NAME`.
 
 ### 2) Seed data dev (reset + teams/users/tournament/treasury demo)
 
@@ -162,11 +189,11 @@ Isi:
 
 Auth:
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
+- `POST /api/auth/register` (wajib `provinceCode` + `cityCode`; nama wilayah diselesaikan server-side dari kode)
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
-- `POST /api/auth/refresh`
+- `GET/POST /api/auth/finalize` (`GET` hanya redirect aman ke halaman transisi, `POST` menyelesaikan finalisasi login Auth.js + audit)
+- `GET/POST /api/auth/oauth/finalize` (alias kompatibilitas ke finalisasi Auth.js)
 - `POST /api/auth/password/forgot`
 - `POST /api/auth/password/reset`
 - `POST /api/auth/password/change`
@@ -198,6 +225,8 @@ Lainnya:
 - `GET /api/upload/public/:id` (preview temp upload milik IP yang sama)
 - `GET /api/audit-logs`
 - `GET /api/audit-logs/export`
+- `GET /api/regions/provinces`
+- `GET /api/regions/regencies?provinceCode=...`
 - `GET /api/health`
 
 ## Role Akses (UI Dashboard)
@@ -217,21 +246,22 @@ Untuk endpoint penting (terutama operasi write `POST/PUT/DELETE`), audit log waj
 - Treasury: add/update/delete sudah tercatat (`TREASURY_ADDED`, `TREASURY_UPDATED`, `TREASURY_DELETED`).
 - Tournament: create/update/delete/register sudah tercatat.
 - Auth/Profile/Upload: event penting sudah tercatat.
-- Session/Auth integrity: password reset request/success, session refresh, dan perubahan field sensitif juga tercatat.
+- Session/Auth integrity: password reset request/success, invalidasi sesi Auth.js, dan perubahan field sensitif juga tercatat.
 
 Aturan ke depan:
 
 1. Setiap fitur penting baru harus menambahkan audit log.
-2. Gunakan userId dari token (ds_auth) untuk actor log, bukan header manual.
+2. Gunakan userId dari sesi server/Auth.js sebagai actor log; jangan mengandalkan header manual.
 3. Mutasi roster team juga wajib tercatat di audit log (TEAM_ASSIGNED, TEAM_UNASSIGNED).
 4. Simpan `before/after` ringkas untuk operasi update jika relevan.
 5. Jangan taruh data sensitif mentah di `details` audit.
 
 ## Security Notes
 
-- Access token disimpan di cookie `ds_auth` (httpOnly), umur pendek 15 menit.
-- Refresh token disimpan di cookie `ds_refresh` (httpOnly), umur 7 hari.
-- Refresh token disimpan di tabel `Session` dan selalu dirotasi saat `POST /api/auth/refresh`.
+- Sesi utama aplikasi dibaca dari Auth.js.
+- Logout dan invalidasi sesi kini mengandalkan Auth.js + `authVersion` di tabel `User`.
+- Cookie legacy `ds_auth` dan `ds_refresh` hanya dibersihkan secara best-effort untuk sisa browser state lama; keduanya bukan lagi bagian dari strategi auth aktif.
+- Finalisasi login Auth.js kini dilakukan lewat `POST` dari halaman transisi `/oauth-finalize`, bukan side effect di `GET /api/auth/finalize`.
 - Field sensitif `phoneWhatsapp`, `accountNumber`, dan `twoFactorSecret` dienkripsi sebelum disimpan ke database; lookup unik memakai hash field.
 - Prisma extension juga menyentuh `lastActiveAt` saat auth/session flow berjalan dan menulis audit log untuk perubahan field sensitif.
 - Saat password berhasil direset, semua session user direvoke (force logout di semua device).
@@ -293,11 +323,25 @@ cmd /c npm run dev
 
 ## Deploy Notes
 
-- Pastikan `DATABASE_URL`, `JWT_SECRET`, `DATA_ENCRYPTION_KEY`, `NEXT_PUBLIC_APP_URL`, `UPLOAD_DIR` terpasang di server.
+- Pastikan `DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `DATA_ENCRYPTION_KEY`, `NEXT_PUBLIC_APP_URL`, `UPLOAD_DIR` terpasang di server.
+- Untuk production, gunakan nilai `AUTH_SECRET` acak yang panjang dan jangan pernah reuse secret dari environment lain.
+- Di Google Cloud Console, daftarkan callback URL Auth.js yang tepat:
+  - Dev lokal: `http://localhost:3000/api/auth/callback/google`
+  - Production: `https://YOUR_DOMAIN/api/auth/callback/google`
+- Pastikan `NEXT_PUBLIC_APP_URL` memakai HTTPS domain production yang sama dengan callback Google dan link email.
 - Untuk Pterodactyl, isi `DATABASE_URL` di server variables. Jangan mengandalkan `prisma db push` tanpa env ini.
 - Jika password DB memakai karakter khusus, gunakan versi URL-encoded pada `DATABASE_URL`.
 - Pastikan folder upload persistent jika deploy container/panel.
 - Jalankan `npx prisma generate` dan `npx prisma db push` di environment target.
+
+### Checklist Deploy Auth.js Production
+
+1. Pastikan `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, dan `NEXT_PUBLIC_APP_URL` sudah terisi benar.
+2. Verifikasi callback Google production menunjuk ke `/api/auth/callback/google`.
+3. Pastikan login Google, login credentials, logout, forgot password, reset password, dan change password lolos smoke test.
+4. Pastikan akun `BANNED` tetap ditolak di credentials login maupun Google login.
+5. Pastikan email verifikasi dan reset password memakai domain production yang benar.
+6. Pastikan cookie/session diuji di HTTPS production, bukan hanya lokal.
 
 ## Testing
 
@@ -311,6 +355,8 @@ cmd /c npm run dev
 - Untuk update ini, gunakan:
   - `prisma/migrations_manual/20260307_sensitive_user_fields.sql`
   - `prisma/migrations_manual/20260307_sensitive_user_fields.rollback.sql`
+  - `prisma/migrations_manual/20260309_authjs_full_session_migration.sql`
+  - `prisma/migrations_manual/20260309_authjs_full_session_migration.rollback.sql`
 
 ## Aturan Update Dokumentasi
 
@@ -320,18 +366,6 @@ Mulai sekarang, setiap ada perubahan fitur/endpoint/role/alur setup:
 2. Jika perubahan menyentuh API, update bagian `API Ringkas`.
 3. Jika perubahan menyentuh auth/role/menu, update bagian `Role Akses`.
 4. Jika perubahan menyentuh setup/env/db, update bagian `Konfigurasi Environment` dan `Instalasi`.
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

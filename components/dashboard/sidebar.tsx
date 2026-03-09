@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/context/SidebarContext";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { clientLogout } from "@/lib/client-auth";
 import {
     HelpCircle,
     Home,
@@ -82,18 +83,11 @@ export function Sidebar() {
     const { user } = useCurrentUser();
 
     const userRole = user?.role ?? "USER";
-    const userName = user?.fullName ?? "";
-    const userStatus = user?.status ?? "ACTIVE";
 
     const canAccess = (minRole?: string) => {
         if (!minRole) return true;
         return (ROLE_LEVEL[userRole] ?? 0) >= (ROLE_LEVEL[minRole] ?? 99);
     };
-
-    const getInitials = (name: string) =>
-        name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2) || "DS";
-
-    const statusColor = userStatus === "ACTIVE" ? "bg-emerald-500" : "bg-red-500";
 
     const bestMatch = ALL_MENU.flatMap((section) => section.items)
         .filter((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
@@ -117,24 +111,6 @@ export function Sidebar() {
                         <X className="h-4 w-4" />
                     </button>
                 </div>
-
-                {userName && (
-                    <div className="border-b border-gray-200 px-3 py-3 dark:border-white/5">
-                        <div className="flex items-center gap-3 rounded-xl bg-gray-100 px-3 py-2 dark:bg-white/5">
-                            <div className="relative">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ds-amber text-xs font-bold text-black">
-                                    {getInitials(userName)}
-                                </div>
-                                <div className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-[#161616] ${statusColor}`} />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <div className="truncate text-xs font-semibold text-gray-900 dark:text-white">{userName}</div>
-                                <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-white/30">{userRole}</div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 <nav className="flex-1 overflow-y-auto px-3 py-4">
                     {ALL_MENU.map((section) => {
                         if (section.minRole && !canAccess(section.minRole)) return null;
@@ -170,8 +146,7 @@ export function Sidebar() {
                 <div className="flex-shrink-0 space-y-0.5 border-t border-gray-200 px-3 pt-3 pb-4 dark:border-white/5">
                     <button
                         onClick={async () => {
-                            await fetch("/api/auth/logout", { method: "POST" });
-                            window.location.href = "/login";
+                            await clientLogout("/login");
                         }}
                         className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 transition-all hover:bg-red-500/5 hover:text-red-500 dark:text-white/40 dark:hover:text-red-400"
                     >
@@ -187,3 +162,7 @@ export function Sidebar() {
         </>
     );
 }
+
+
+
+

@@ -1,8 +1,10 @@
-﻿import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { GameProfileForm } from "@/components/dashboard/game-profile-form";
-import { DashboardMetricCard, DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
+import { ProfileAccountSection } from "@/components/dashboard/profile-account-section";
+import { ProfileAvatarForm } from "@/components/dashboard/profile-avatar-form";
+import { ProfileGameSection } from "@/components/dashboard/profile-game-section";
+import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import type { GameProfile } from "@prisma/client";
 
 export default async function ProfilePage() {
@@ -24,41 +26,62 @@ export default async function ProfilePage() {
         }),
     ]);
 
-    const dlProfile = userWithProfiles?.gameProfiles.find((p: GameProfile) => p.gameType === "DUEL_LINKS");
-    const mdProfile = userWithProfiles?.gameProfiles.find((p: GameProfile) => p.gameType === "MASTER_DUEL");
+    const duelLinksProfile = userWithProfiles?.gameProfiles.find((profile: GameProfile) => profile.gameType === "DUEL_LINKS");
+    const masterDuelProfile = userWithProfiles?.gameProfiles.find((profile: GameProfile) => profile.gameType === "MASTER_DUEL");
 
     const roleColors: Record<string, string> = {
-        USER: "bg-slate-500/10 text-slate-500 border-slate-500/20",
-        MEMBER: "bg-blue-500/10 text-blue-400 border-blue-400/20",
-        OFFICER: "bg-purple-500/10 text-purple-400 border-purple-400/20",
-        ADMIN: "bg-ds-amber/10 text-ds-amber border-ds-amber/30",
-        FOUNDER: "bg-red-500/10 text-red-400 border-red-500/20",
+        USER: "border-slate-500/20 bg-slate-500/10 text-slate-500",
+        MEMBER: "border-blue-400/20 bg-blue-500/10 text-blue-400",
+        OFFICER: "border-purple-400/20 bg-purple-500/10 text-purple-400",
+        ADMIN: "border-ds-amber/30 bg-ds-amber/10 text-ds-amber",
+        FOUNDER: "border-red-500/20 bg-red-500/10 text-red-400",
     };
 
     const statusColors: Record<string, string> = {
-        ACTIVE: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-        BANNED: "bg-red-500/10 text-red-500 border-red-500/20",
+        ACTIVE: "border-emerald-500/20 bg-emerald-500/10 text-emerald-500",
+        BANNED: "border-red-500/20 bg-red-500/10 text-red-500",
     };
 
-    const getInitials = (name: string) =>
-        name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase()
-            .slice(0, 2);
-
-    const formatDate = (d: Date) => new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-    const formatDateTime = (d: Date) => new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const accountName = userWithProfiles?.username || user.username || user.fullName;
+    const teamName = userWithProfiles?.team?.name || (user.role === "USER" ? "Public User" : "Belum masuk team");
+    const teamJoinedAt = userWithProfiles?.teamJoinedAt
+        ? new Date(userWithProfiles.teamJoinedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+        : "-";
     const emailVerificationLabel = user.emailVerified ? "Terverifikasi" : "Belum Verifikasi";
     const emailVerificationClass = user.emailVerified
-        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-        : "bg-amber-500/10 text-amber-500 border-amber-500/20";
-    const verifiedProfiles = userWithProfiles?.gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).length || 0;
+        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+        : "border-amber-500/20 bg-amber-500/10 text-amber-500";
     const totalProfiles = userWithProfiles?.gameProfiles.length || 0;
+    const verifiedProfiles = userWithProfiles?.gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).length || 0;
     const reputationPoints = reputation._sum.points || 0;
-    const teamName = userWithProfiles?.team?.name || (user.role === "USER" ? "Public User" : "Belum masuk team");
-    const teamMeta = userWithProfiles?.teamJoinedAt ? formatDate(userWithProfiles.teamJoinedAt) : "-";
+
+    const stats = [
+        { label: "Turnamen", value: tournamentsJoined, color: "text-ds-amber" },
+        { label: "Profil Game", value: totalProfiles, color: "text-slate-950 dark:text-white" },
+        { label: "Terverifikasi", value: verifiedProfiles, color: "text-emerald-500" },
+        { label: "Reputasi", value: reputationPoints, color: "text-red-400" },
+    ];
+
+    const accountMetaRows = [
+        {
+            label: "Terakhir Aktif",
+            value: new Date(user.lastActiveAt).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            }),
+        },
+        {
+            label: "Terdaftar",
+            value: new Date(user.createdAt).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+            }),
+        },
+    ];
 
     return (
         <DashboardPageShell>
@@ -66,83 +89,125 @@ export default async function ProfilePage() {
                 <DashboardPageHeader
                     kicker="Player Profile"
                     title="Profil Saya"
-                    description="Ringkasan akun, identitas komunitas, afiliasi team, statistik partisipasi, dan game profile Anda dalam satu halaman yang lebih rapi."
+                    description="Identitas akun, role komunitas, team aktif, dan profile game Anda dalam tampilan yang lebih ringkas."
                 />
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <DashboardMetricCard label="Turnamen Diikuti" value={tournamentsJoined} meta="Total partisipasi tournament" tone="accent" />
-                    <DashboardMetricCard label="Profil Game" value={totalProfiles} meta="Duel Links + Master Duel" />
-                    <DashboardMetricCard label="Terverifikasi" value={verifiedProfiles} meta="Profile dengan screenshot tersimpan" tone="success" />
-                    <DashboardMetricCard label="Reputasi" value={reputationPoints} meta="Akumulasi poin reputasi" tone="danger" />
-                </div>
+                <DashboardPanel
+                    title="Ringkasan Akun"
+                    description="Informasi utama akun, profile game, dan jejak aktivitas singkat disusun berurutan agar lebih mudah dipindai."
+                >
+                    <div className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
+                        <div className="rounded-[28px] border border-black/5 bg-slate-50/80 p-6 dark:border-white/6 dark:bg-white/[0.03]">
+                            <div className="flex items-center gap-4">
+                                <ProfileAvatarForm username={accountName} fullName={user.fullName} initialAvatarUrl={user.avatarUrl} />
+                                <div className="min-w-0">
+                                    <h2 className="truncate text-xl font-black tracking-tight text-slate-950 dark:text-white">@{accountName}</h2>
+                                    <p className="mt-1 truncate text-sm text-slate-500 dark:text-white/45">{user.email}</p>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <span className={`rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${roleColors[user.role] || roleColors.USER}`}>
+                                            {user.role}
+                                        </span>
+                                        <span className={`rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${statusColors[user.status] || statusColors.ACTIVE}`}>
+                                            {user.status}
+                                        </span>
+                                        <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${emailVerificationClass}`}>
+                                            {emailVerificationLabel}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
 
-                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.92fr_1.08fr]">
-                    <DashboardPanel title="Kartu Akun" description="Identitas dasar, role komunitas, status akun, dan kondisi verifikasi email Anda.">
-                        <div className="flex flex-col items-center rounded-[28px] border border-black/5 bg-slate-50/80 px-6 py-8 text-center dark:border-white/6 dark:bg-white/[0.03]">
-                            <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-ds-amber text-3xl font-black text-black">
-                                {getInitials(user.fullName)}
-                            </div>
-                            <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950 dark:text-white">{user.fullName}</h2>
-                            <p className="mt-1 text-sm text-slate-400 dark:text-white/40">{user.email}</p>
-                            <span className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${emailVerificationClass}`}>
-                                Email: {emailVerificationLabel}
-                            </span>
-                            <div className="mt-4 flex flex-wrap justify-center gap-2">
-                                <span className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] ${roleColors[user.role] || roleColors.USER}`}>{user.role}</span>
-                                <span className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] ${statusColors[user.status] || ""}`}>{user.status}</span>
-                            </div>
-                            <div className="mt-4 rounded-2xl border border-sky-500/15 bg-sky-500/8 px-4 py-3 text-center">
-                                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-500/80">Team</div>
+                            <div className="mt-5 rounded-2xl border border-sky-500/15 bg-sky-500/8 px-4 py-3">
+                                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-500/80">Team Aktif</div>
                                 <div className="mt-1 text-sm font-semibold text-slate-950 dark:text-white">{teamName}</div>
+                                <div className="mt-1 text-xs text-slate-500 dark:text-white/45">Bergabung sejak {teamJoinedAt}</div>
+                            </div>
+
+                            <div className="mt-5 grid grid-cols-2 gap-3">
+                                {stats.map((stat) => (
+                                    <div key={stat.label} className="rounded-2xl border border-black/5 bg-white/70 px-4 py-3 dark:border-white/8 dark:bg-white/[0.03]">
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-white/35">{stat.label}</div>
+                                        <div className={`mt-2 text-xl font-black ${stat.color}`}>{stat.value}</div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    </DashboardPanel>
 
-                    <DashboardPanel title="Informasi Akun" description="Data akun utama, kontak, afiliasi guild, dan histori singkat aktivitas Anda.">
-                        <div className="space-y-3 rounded-[28px] border border-black/5 bg-slate-50/80 p-5 dark:border-white/6 dark:bg-white/[0.03]">
-                            {[
-                                { label: "Nama Lengkap", value: user.fullName },
-                                { label: "Email", value: user.email },
-                                { label: "Verifikasi Email", value: emailVerificationLabel },
-                                { label: "WhatsApp", value: user.phoneWhatsapp || "-" },
-                                { label: "Kota", value: user.city || "-" },
-                                { label: "Role Komunitas", value: user.role },
-                                { label: "Team Saat Ini", value: teamName },
-                                { label: "Masuk Team Sejak", value: teamMeta },
-                                { label: "Terakhir Aktif", value: formatDateTime(user.lastActiveAt) },
-                                { label: "Terdaftar Sejak", value: formatDate(user.createdAt) },
-                            ].map(({ label, value }) => (
-                                <div key={label} className="flex flex-col gap-1 border-b border-black/5 py-2 last:border-0 dark:border-white/8 sm:flex-row sm:items-center sm:justify-between">
-                                    <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">{label}</span>
-                                    <span className="text-sm font-medium text-slate-950 dark:text-white">{value}</span>
+                        <div className="space-y-5 rounded-[28px] border border-black/5 bg-slate-50/80 p-5 dark:border-white/6 dark:bg-white/[0.03]">
+                            <div className="rounded-[24px] border border-black/5 bg-white/65 p-4 dark:border-white/8 dark:bg-white/[0.025]">
+                                <ProfileAccountSection
+                                    username={accountName}
+                                    email={user.email}
+                                    phoneWhatsapp={user.phoneWhatsapp || ""}
+                                    provinceCode={user.provinceCode || ""}
+                                    provinceName={user.provinceName || ""}
+                                    cityCode={user.cityCode || ""}
+                                    city={user.city || ""}
+                                    emailVerified={user.emailVerified}
+                                />
+
+                                <div className="mt-4 border-t border-black/5 pt-4 dark:border-white/8">
+                                    <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">
+                                        Profile Game
+                                    </div>
+                                    <ProfileGameSection
+                                        duelLinksProfile={
+                                            duelLinksProfile
+                                                ? { gameType: "DUEL_LINKS", ign: duelLinksProfile.ign, gameId: duelLinksProfile.gameId }
+                                                : undefined
+                                        }
+                                        masterDuelProfile={
+                                            masterDuelProfile
+                                                ? { gameType: "MASTER_DUEL", ign: masterDuelProfile.ign, gameId: masterDuelProfile.gameId }
+                                                : undefined
+                                        }
+                                    />
                                 </div>
-                            ))}
-                        </div>
-                    </DashboardPanel>
-                </div>
+                            </div>
 
-                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                    <GameProfileForm gameType="DUEL_LINKS" initialData={dlProfile ? { gameType: "DUEL_LINKS", ign: dlProfile.ign, gameId: dlProfile.gameId } : undefined} />
-                    <GameProfileForm gameType="MASTER_DUEL" initialData={mdProfile ? { gameType: "MASTER_DUEL", ign: mdProfile.ign, gameId: mdProfile.gameId } : undefined} />
-                </div>
+                            <div className="space-y-3 border-t border-black/5 pt-4 dark:border-white/8">
+                                {accountMetaRows.map((row) => (
+                                    <div key={row.label} className="flex flex-col gap-1 border-b border-black/5 pb-3 last:border-0 last:pb-0 dark:border-white/8 sm:flex-row sm:items-center sm:justify-between">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">{row.label}</span>
+                                        <span className="text-sm font-medium text-slate-950 dark:text-white">{row.value}</span>
+                                    </div>
+                                ))}
+                            </div>
 
-                <DashboardPanel title="Aktivitas Terbaru" description="Tiga aktivitas audit terakhir yang tercatat atas akun Anda.">
-                    {recentAuditLogs.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-black/5 bg-slate-50/80 px-6 py-10 text-center text-sm text-slate-500 dark:border-white/8 dark:bg-white/[0.03] dark:text-white/45">
-                            Belum ada aktivitas tercatat.
+                            <div className="border-t border-black/5 pt-4 dark:border-white/8">
+                                <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Aktivitas Terbaru</div>
+                                {recentAuditLogs.length === 0 ? (
+                                    <div className="rounded-2xl border border-dashed border-black/5 bg-white/70 px-4 py-3 text-sm text-slate-500 dark:border-white/8 dark:bg-white/[0.03] dark:text-white/45">
+                                        Belum ada aktivitas tercatat.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {recentAuditLogs.map((log) => (
+                                            <div
+                                                key={`${log.action}-${log.createdAt.toISOString()}`}
+                                                className="flex flex-col gap-1 rounded-xl border border-black/5 bg-white/70 px-3 py-2.5 dark:border-white/8 dark:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between"
+                                            >
+                                                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 dark:text-white/78">{log.action}</span>
+                                                <span className="text-xs text-slate-400 dark:text-white/40">
+                                                    {new Date(log.createdAt).toLocaleDateString("id-ID", {
+                                                        day: "numeric",
+                                                        month: "short",
+                                                        year: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {recentAuditLogs.map((log) => (
-                                <div key={`${log.action}-${log.createdAt.toISOString()}`} className="flex flex-col gap-2 rounded-2xl border border-black/5 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between">
-                                    <span className="text-sm font-semibold text-slate-950 dark:text-white">{log.action}</span>
-                                    <span className="text-xs text-slate-400 dark:text-white/40">{formatDateTime(log.createdAt)}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    </div>
                 </DashboardPanel>
             </div>
         </DashboardPageShell>
     );
 }
+
+

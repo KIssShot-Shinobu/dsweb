@@ -6,6 +6,7 @@ import type { CurrentUser } from "@/hooks/use-current-user";
 type DashboardUserContextValue = {
     user: CurrentUser | null;
     loading: boolean;
+    refreshUser: () => Promise<void>;
 };
 
 const DashboardUserContext = createContext<DashboardUserContextValue | undefined>(undefined);
@@ -14,11 +15,21 @@ export function DashboardUserProvider({ children }: { children: React.ReactNode 
     const [user, setUser] = useState<CurrentUser | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const refreshUser = async () => {
+        const response = await fetch("/api/auth/me");
+        const data = await response.json();
+        setUser(data.success ? data.user ?? null : null);
+    };
+
     useEffect(() => {
         let active = true;
 
-        fetch("/api/auth/me")
-            .then((response) => response.json())
+        const loadUser = async () => {
+            const response = await fetch("/api/auth/me");
+            return response.json();
+        };
+
+        loadUser()
             .then((data) => {
                 if (!active) return;
                 setUser(data.success ? data.user ?? null : null);
@@ -32,13 +43,28 @@ export function DashboardUserProvider({ children }: { children: React.ReactNode 
                 setLoading(false);
             });
 
+        const handleRefresh = () => {
+            loadUser()
+                .then((data) => {
+                    if (!active) return;
+                    setUser(data.success ? data.user ?? null : null);
+                })
+                .catch(() => {
+                    if (!active) return;
+                    setUser(null);
+                });
+        };
+
+        window.addEventListener("ds:user-updated", handleRefresh);
+
         return () => {
             active = false;
+            window.removeEventListener("ds:user-updated", handleRefresh);
         };
     }, []);
 
     return (
-        <DashboardUserContext.Provider value={{ user, loading }}>
+        <DashboardUserContext.Provider value={{ user, loading, refreshUser }}>
             {children}
         </DashboardUserContext.Provider>
     );

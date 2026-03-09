@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { clearAuthCookies, comparePassword, getCurrentUser, hashPassword, revokeAllUserSessions } from "@/lib/auth";
+import { comparePassword, getCurrentUser, hashPassword, invalidateUserSessions } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { passwordChangeSchema } from "@/lib/validators";
 
@@ -48,8 +48,7 @@ export async function POST(req: NextRequest) {
             data: { password: hashedPassword },
         });
 
-        await revokeAllUserSessions(currentUser.id);
-        await clearAuthCookies();
+        await invalidateUserSessions(currentUser.id);
 
         await logAudit({
             action: "PASSWORD_RESET_SUCCESS",
@@ -62,6 +61,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             success: true,
             message: "Password berhasil diubah. Silakan login ulang.",
+            logoutRequired: true,
         });
     } catch (error) {
         console.error("[Change Password API]", error);

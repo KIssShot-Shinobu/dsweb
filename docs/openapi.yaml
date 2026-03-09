@@ -7,10 +7,10 @@ servers:
   - url: https://example.com
 components:
   securitySchemes:
-    dsAuthCookie:
+    authjsSessionCookie:
       type: apiKey
       in: cookie
-      name: ds_auth
+      name: authjs.session-token
   schemas:
     UserStatus:
       type: string
@@ -49,18 +49,18 @@ paths:
             schema:
               type: object
               required:
-                - fullName
+                - username
                 - email
                 - password
                 - confirmPassword
                 - phoneWhatsapp
-                - city
+                - provinceCode
+                - cityCode
                 - sourceInfo
-                - guildStatus
                 - socialMedia
                 - agreement
               properties:
-                fullName:
+                username:
                   type: string
                 email:
                   type: string
@@ -71,40 +71,122 @@ paths:
                   type: string
                 phoneWhatsapp:
                   type: string
-                city:
+                provinceCode:
+                  type: string
+                cityCode:
+                  type: string
+                duelLinksGameId:
+                  type: string
+                  description: Formatted as XXX-XXX-XXX
+                duelLinksIgn:
                   type: string
                 duelLinksScreenshotUploadId:
                   type: string
+                masterDuelGameId:
+                  type: string
+                  description: Formatted as XXX-XXX-XXX
+                masterDuelIgn:
+                  type: string
                 masterDuelScreenshotUploadId:
                   type: string
+                sourceInfo:
+                  type: string
+                socialMedia:
+                  type: array
+                  items:
+                    type: string
+                agreement:
+                  type: boolean
       responses:
         "201":
           description: Registration created
-  /api/auth/login:
+  /api/auth/finalize:
+    get:
+      summary: Redirect browser to the safe Auth.js finalization page
+      responses:
+        "302":
+          description: Redirect to `/oauth-finalize` without performing login side effects
     post:
-      summary: Login and issue auth cookies
+      summary: Finalize Auth.js session for client-side login state and audit
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum:
+                    - credentials
+                    - google
+                redirect:
+                  type: string
       responses:
         "200":
-          description: Login success
+          description: Redirect target returned after Auth.js finalization
         "401":
-          description: Invalid credentials
+          description: Auth.js session missing or invalid
   /api/auth/me:
     get:
       summary: Get authenticated user session or guest payload
       responses:
         "200":
           description: Session payload
-  /api/auth/refresh:
-    post:
-      summary: Rotate refresh token and refresh access cookie
+  /api/profile:
+    put:
+      summary: Update account identity and region fields for the current user
+      security:
+        - authjsSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - phoneWhatsapp
+                - provinceCode
+                - cityCode
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                phoneWhatsapp:
+                  type: string
+                provinceCode:
+                  type: string
+                cityCode:
+                  type: string
       responses:
         "200":
-          description: Token refreshed
+          description: Profile updated
+        "400":
+          description: Validation failed
+        "401":
+          description: Unauthorized
+        "409":
+          description: Username, email, or phone conflict
+  /api/auth/oauth/finalize:
+    get:
+      summary: Compatibility alias to the Auth.js finalization redirect route
+      responses:
+        "302":
+          description: Redirect to `/oauth-finalize` without performing login side effects
+    post:
+      summary: Compatibility alias to Auth.js finalize route
+      responses:
+        "200":
+          description: Redirect target returned after finalization
   /api/auth/password/change:
     post:
       summary: Change password for authenticated user
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       requestBody:
         required: true
         content:
@@ -163,11 +245,31 @@ paths:
           description: Image preview
         "404":
           description: Upload not found or expired
+  /api/regions/provinces:
+    get:
+      summary: List provinces for Indonesia region combobox
+      responses:
+        "200":
+          description: Province list payload
+  /api/regions/regencies:
+    get:
+      summary: List regencies or cities by province code
+      parameters:
+        - in: query
+          name: provinceCode
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Regency list payload
+        "400":
+          description: provinceCode is required
   /api/dashboard/summary:
     get:
       summary: Fetch dashboard summary cards and lists
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       responses:
         "200":
           description: Summary payload for the unified operations dashboard
@@ -177,7 +279,7 @@ paths:
     get:
       summary: List users for dashboard management
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: query
           name: status
@@ -221,7 +323,7 @@ paths:
     get:
       summary: Get a single managed user detail
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -237,7 +339,7 @@ paths:
     put:
       summary: Update status, role, or team assignment for a managed user
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -276,7 +378,7 @@ paths:
     get:
       summary: List guild teams for dashboard management
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: query
           name: search
@@ -294,7 +396,7 @@ paths:
     post:
       summary: Create a new guild team
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       requestBody:
         required: true
         content:
@@ -328,7 +430,7 @@ paths:
     get:
       summary: Get a guild team with roster summary
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -345,7 +447,7 @@ paths:
     put:
       summary: Update a guild team
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -386,7 +488,7 @@ paths:
     delete:
       summary: Delete an empty guild team
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -406,7 +508,7 @@ paths:
     post:
       summary: Assign an eligible member to a team roster
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -438,7 +540,7 @@ paths:
     delete:
       summary: Remove a member from a team roster
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -469,7 +571,7 @@ paths:
     get:
       summary: Fetch treasury transactions with summary
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: query
           name: page
@@ -505,7 +607,7 @@ paths:
     post:
       summary: Create treasury transaction
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       requestBody:
         required: true
         content:
@@ -565,7 +667,7 @@ paths:
     post:
       summary: Create tournament
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       responses:
         "201":
           description: Tournament created
@@ -588,7 +690,7 @@ paths:
     put:
       summary: Update tournament
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       responses:
         "200":
           description: Tournament updated
@@ -597,7 +699,7 @@ paths:
     delete:
       summary: Delete tournament
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       responses:
         "200":
           description: Tournament deleted
@@ -607,7 +709,7 @@ paths:
     post:
       summary: Register authenticated active user to a tournament
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -623,3 +725,5 @@ paths:
           description: Unauthorized
         "404":
           description: Not found
+
+

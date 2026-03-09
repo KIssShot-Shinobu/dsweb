@@ -21,14 +21,14 @@ export function TournamentRegisterButton({
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || "Gagal mendaftar turnamen.");
+                throw new Error(result.message || "Pendaftaran turnamen belum dapat diproses.");
             }
 
-            setMessage({ type: "success", text: result.message || "Berhasil mendaftar turnamen." });
+            setMessage({ type: "success", text: result.message || "Pendaftaran Anda berhasil dikonfirmasi." });
         } catch (error) {
             setMessage({
                 type: "error",
-                text: error instanceof Error ? error.message : "Gagal mendaftar turnamen.",
+                text: error instanceof Error ? error.message : "Pendaftaran turnamen belum dapat diproses.",
             });
         } finally {
             setSubmitting(false);
@@ -47,7 +47,7 @@ export function TournamentRegisterButton({
                         : "bg-[#FFC916] text-[#111111] hover:bg-[#ffd84c] dark:shadow-[0_12px_30px_rgba(255,201,22,0.18)]"
                 }`}
             >
-                {submitting ? "Memproses..." : disabled ? "Pendaftaran Ditutup" : "Ikut Tournament"}
+                {submitting ? "Memproses pendaftaran..." : disabled ? "Pendaftaran belum tersedia" : "Daftar Turnamen"}
             </button>
             {message ? (
                 <div

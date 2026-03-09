@@ -5,24 +5,33 @@ import { registerSchema } from "@/lib/validators";
 import { generateSecureToken, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { sendEmail } from "@/lib/email";
+import { buildActionEmail } from "@/lib/email-templates";
 import { findRegisterConflict, registerUser } from "@/lib/services/auth-service";
 import { getAppUrl } from "@/lib/runtime-config";
 import { extractRequestIp } from "@/lib/request-ip";
 import { assertClaimableRegisterUploads, claimRegisterUploads } from "@/lib/upload-security";
+import { resolveIndonesiaRegionSelection } from "@/lib/indonesia-regions";
 import type { RegisterInput } from "@/lib/validators";
 
 function buildRegisterConflictResponse(code: string) {
+    if (code === "USERNAME_EXISTS") {
+        return NextResponse.json(
+            { success: false, message: "Username sudah terdaftar", errors: { username: ["Username sudah digunakan"] } },
+            { status: 409 },
+        );
+    }
+
     if (code === "EMAIL_EXISTS") {
         return NextResponse.json(
             { success: false, message: "Email sudah terdaftar", errors: { email: ["Email sudah digunakan"] } },
-            { status: 409 }
+            { status: 409 },
         );
     }
 
     if (code === "PHONE_EXISTS") {
         return NextResponse.json(
             { success: false, message: "Nomor WhatsApp sudah terdaftar", errors: { phoneWhatsapp: ["Nomor sudah digunakan"] } },
-            { status: 409 }
+            { status: 409 },
         );
     }
 
@@ -36,7 +45,7 @@ function buildRegisterConflictResponse(code: string) {
                     masterDuelGameId: ["Periksa kembali Game ID yang Anda masukkan"],
                 },
             },
-            { status: 409 }
+            { status: 409 },
         );
     }
 
@@ -50,11 +59,22 @@ function getRegisterUploadMap(data: RegisterInput) {
     } as const;
 }
 
-function queueRegisterEmail(fullName: string, email: string, verifyUrl: string) {
+function queueRegisterEmail(username: string, email: string, verifyUrl: string) {
+    const emailContent = buildActionEmail({
+        recipientName: username,
+        preheader: "Email Verification",
+        title: "Verifikasi email akun Anda",
+        body: "Terima kasih sudah bergabung. Konfirmasi email Anda untuk mengamankan akun dan memastikan notifikasi penting bisa kami kirim dengan benar.",
+        actionLabel: "Verifikasi Email",
+        actionUrl: verifyUrl,
+        expiryLabel: "Link verifikasi berlaku selama 24 jam.",
+    });
+
     void sendEmail({
         to: email,
-        subject: "Verifikasi Email DuelStandby",
-        text: `Halo ${fullName},\n\nVerifikasi email akun Anda di link berikut:\n${verifyUrl}\n\nJika Anda tidak merasa mendaftar, abaikan email ini.`,
+        subject: "Verifikasi Email Duel Standby",
+        text: emailContent.text,
+        html: emailContent.html,
         debugTag: "Auth][VerifyEmail",
     }).catch((emailError) => {
         console.error("[Register API][Email]", emailError);
@@ -86,6 +106,10 @@ function buildPrismaConflictResponse(error: Prisma.PrismaClientKnownRequestError
         return buildRegisterConflictResponse("EMAIL_EXISTS");
     }
 
+    if (targets.includes("username")) {
+        return buildRegisterConflictResponse("USERNAME_EXISTS");
+    }
+
     if (targets.includes("phoneWhatsappHash") || targets.includes("phoneWhatsapp")) {
         return buildRegisterConflictResponse("PHONE_EXISTS");
     }
@@ -105,7 +129,7 @@ export async function POST(req: NextRequest) {
         if (!parsed.success) {
             return NextResponse.json(
                 { success: false, message: "Validasi gagal", errors: parsed.error.flatten().fieldErrors },
-                { status: 400 }
+                { status: 400 },
             );
         }
 
@@ -114,6 +138,7 @@ export async function POST(req: NextRequest) {
             return buildRegisterConflictResponse(conflictCode);
         }
 
+        const resolvedRegion = await resolveIndonesiaRegionSelection(parsed.data.provinceCode, parsed.data.cityCode);
         const ipAddress = extractRequestIp(req.headers);
         const uploadIds = Object.values(getRegisterUploadMap(parsed.data)).filter((value): value is string => Boolean(value));
 
@@ -130,8 +155,8 @@ export async function POST(req: NextRequest) {
                 comparePassword: async () => false,
                 generateSecureToken,
             },
-            parsed.data,
-            { skipConflictCheck: true }
+            { ...parsed.data, ...resolvedRegion },
+            { skipConflictCheck: true },
         );
 
         if (!result.ok) return buildRegisterConflictResponse(result.code);
@@ -142,7 +167,7 @@ export async function POST(req: NextRequest) {
         const appUrl = getAppUrl();
         const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`;
 
-        queueRegisterEmail(user.fullName, user.email, verifyUrl);
+        queueRegisterEmail(user.username, user.email, verifyUrl);
         await logAudit({ action: "USER_REGISTERED", userId: user.id });
 
         return NextResponse.json(
@@ -152,7 +177,7 @@ export async function POST(req: NextRequest) {
                 userId: user.id,
                 ...(process.env.NODE_ENV !== "production" ? { debugVerifyUrl: verifyUrl } : {}),
             },
-            { status: 201 }
+            { status: 201 },
         );
     } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {

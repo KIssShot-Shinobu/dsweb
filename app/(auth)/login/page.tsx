@@ -1,8 +1,10 @@
-﻿"use client";
+"use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Chrome } from "lucide-react";
+import { signIn, signOut } from "next-auth/react";
 import {
     AuthShell,
     authAlertCls,
@@ -11,15 +13,43 @@ import {
     authPrimaryBtnCls,
 } from "@/components/auth/auth-shell";
 
+const ERROR_MESSAGES: Record<string, string> = {
+    banned: "Akses akun Anda sedang dibatasi. Silakan hubungi tim admin Duel Standby.",
+    oauth_failed: "Masuk dengan Google belum berhasil. Silakan coba kembali.",
+    invalid_credentials: "Username, email, atau kata sandi yang Anda masukkan belum sesuai.",
+    access_denied: "Akun ini belum memiliki izin untuk melanjutkan login.",
+};
+
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const redirect = searchParams.get("redirect") || "/dashboard";
     const errorParam = searchParams.get("error");
 
-    const [form, setForm] = useState({ email: "", password: "", rememberMe: false });
+    const [form, setForm] = useState({ identifier: "", password: "" });
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(errorParam === "banned" ? "Akun Anda diblokir. Silakan hubungi admin." : null);
+    const [googleLoading, setGoogleLoading] = useState(false);
+    const [googleEnabled, setGoogleEnabled] = useState(false);
+    const [error, setError] = useState<string | null>(errorParam ? ERROR_MESSAGES[errorParam] ?? "Terjadi kendala saat memproses login Anda." : null);
+
+    useEffect(() => {
+        let active = true;
+
+        fetch("/api/auth/providers")
+            .then((response) => (response.ok ? response.json() : null))
+            .then((providers) => {
+                if (!active) return;
+                setGoogleEnabled(Boolean(providers?.google));
+            })
+            .catch(() => {
+                if (!active) return;
+                setGoogleEnabled(false);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,64 +57,132 @@ function LoginForm() {
         setError(null);
 
         try {
-            const res = await fetch("/api/auth/login", {
+            await signOut({ redirect: false });
+            const result = await signIn("credentials", {
+                identifier: form.identifier,
+                password: form.password,
+                redirect: false,
+            });
+
+            if (!result?.ok) {
+                setError(ERROR_MESSAGES[result?.code || ""] ?? "Login belum berhasil. Silakan coba lagi.");
+                return;
+            }
+
+            const finalizeResponse = await fetch("/api/auth/finalize", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+                body: JSON.stringify({ provider: "credentials", redirect }),
             });
-            const data = await res.json();
+            const finalizeData = await finalizeResponse.json();
 
-            if (data.success) {
-                router.push(redirect);
-                router.refresh();
-            } else {
-                setError(data.message || "Login gagal.");
+            if (!finalizeResponse.ok || !finalizeData.success) {
+                setError(finalizeData.message || "Sesi akun belum dapat disiapkan.");
+                await signOut({ redirect: false });
+                return;
             }
+
+            router.push(finalizeData.redirectTo || redirect);
+            router.refresh();
         } catch {
-            setError("Network error. Periksa koneksi Anda.");
+            setError("Koneksi sedang bermasalah. Periksa jaringan Anda lalu coba lagi.");
         } finally {
             setLoading(false);
         }
     };
 
+    const handleGoogleLogin = async () => {
+        setGoogleLoading(true);
+        setError(null);
+        try {
+            await signOut({ redirect: false });
+            await signIn("google", {
+                callbackUrl: `/oauth-finalize?provider=google&redirect=${encodeURIComponent(redirect)}`,
+            });
+        } catch {
+            setError("Masuk dengan Google belum berhasil. Silakan coba kembali.");
+            setGoogleLoading(false);
+        }
+    };
+
     return (
         <AuthShell
-            eyebrow="Account Access"
+            eyebrow="Akses Akun"
             title="Masuk ke Duel Standby"
-            description="Gunakan akun aktif Anda untuk membuka profile, tournament publik, atau dashboard operasional sesuai role komunitas Anda."
+            description="Akses akun Anda untuk mengikuti turnamen, mengelola profil game, dan tetap terhubung dengan komunitas."
             footer={
                 <>
                     Belum punya akun?{" "}
                     <Link href="/register" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
-                        Daftar sekarang
+                        Buat akun
                     </Link>
                 </>
             }
         >
-            {error ? <div className={`${authAlertCls} mb-5 border-red-500/20 bg-red-500/10 text-red-400`}>{error}</div> : null}
+            {error ? (
+                <div className={`${authAlertCls} mb-4 border-red-500/20 bg-red-500/10 text-red-400`}>
+                    {error}
+                </div>
+            ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label className={authLabelCls}>Email</label>
-                    <input type="email" className={authInputCls} placeholder="your@email.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required autoComplete="email" />
+                    <label className={authLabelCls}>Username atau Email</label>
+                    <input
+                        type="text"
+                        className={authInputCls}
+                        placeholder="username atau email@domain.com"
+                        value={form.identifier}
+                        onChange={(e) => setForm({ ...form, identifier: e.target.value })}
+                        required
+                        autoComplete="username"
+                    />
                 </div>
+
                 <div>
-                    <label className={authLabelCls}>Password</label>
-                    <input type="password" className={authInputCls} placeholder="********" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required autoComplete="current-password" />
+                    <div className="mb-1.5 flex items-center justify-between gap-3">
+                        <label className={authLabelCls}>Kata Sandi</label>
+                        <Link href="/forgot-password" className="text-[11px] font-medium text-white/62 transition-colors hover:text-ds-amber">
+                            Lupa kata sandi?
+                        </Link>
+                    </div>
+                    <input
+                        type="password"
+                        className={authInputCls}
+                        placeholder="********"
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        required
+                        autoComplete="current-password"
+                    />
                 </div>
 
-                <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
-                    <label htmlFor="rememberMe" className="flex cursor-pointer items-center gap-3 text-sm text-white/60">
-                        <input type="checkbox" id="rememberMe" checked={form.rememberMe} onChange={(e) => setForm({ ...form, rememberMe: e.target.checked })} className="h-4 w-4 rounded accent-ds-amber" />
-                        Ingat saya
-                    </label>
-                    <span className="text-xs text-white/35">JWT cookie aman</span>
-                </div>
-
-                <button type="submit" disabled={loading} className={authPrimaryBtnCls}>
-                    {loading ? "Masuk..." : "Masuk"}
+                <button type="submit" disabled={loading || googleLoading} className={authPrimaryBtnCls}>
+                    {loading ? "Memproses masuk..." : "Masuk ke Akun"}
                 </button>
             </form>
+
+            {googleEnabled ? (
+                <div className="mt-5">
+                    <div className="flex items-center gap-3 text-xs text-white/30">
+                        <div className="h-px flex-1 bg-white/10" />
+                        <span>atau</span>
+                        <div className="h-px flex-1 bg-white/10" />
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleGoogleLogin}
+                        disabled={loading || googleLoading}
+                        className="mt-5 inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.09)_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.11)_100%)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-900 shadow-sm">
+                            <Chrome className="h-4 w-4" />
+                        </span>
+                        <span>{googleLoading ? "Mengalihkan ke Google..." : "Lanjut dengan Google"}</span>
+                    </button>
+                </div>
+            ) : null}
         </AuthShell>
     );
 }

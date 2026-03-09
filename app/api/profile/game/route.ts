@@ -1,24 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken, getTokenFromCookie } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { updateGameProfileSchema } from "@/lib/validators";
+import { getServerCurrentUser } from "@/lib/server-current-user";
+import { normalizeGameIdDigits } from "@/lib/game-id";
 
 // POST /api/profile/game - Create or Update Game Profile
 export async function POST(request: NextRequest) {
     try {
         // SECURITY: Verify token strictly
-        const token = await getTokenFromCookie();
-        if (!token) {
+        const currentUser = await getServerCurrentUser();
+        if (!currentUser) {
             return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
         }
 
-        const decoded = await verifyToken(token);
-        if (!decoded || !decoded.userId) {
-            return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-        }
-
-        const userId = decoded.userId;
+        const userId = currentUser.id;
         const body = await request.json();
         const validBody = updateGameProfileSchema.safeParse(body);
 
@@ -35,6 +31,20 @@ export async function POST(request: NextRequest) {
                 gameType,
             }
         });
+
+        const gameIdCandidates = Array.from(new Set([gameId, normalizeGameIdDigits(gameId)].filter(Boolean)));
+
+        const duplicateGameId = await prisma.gameProfile.findFirst({
+            where: {
+                gameId: { in: gameIdCandidates },
+                NOT: existingProfile ? { id: existingProfile.id } : undefined,
+            },
+            select: { id: true },
+        });
+
+        if (duplicateGameId) {
+            return NextResponse.json({ success: false, message: "Game ID sudah dipakai akun lain" }, { status: 409 });
+        }
 
         let profile;
         if (existingProfile) {
@@ -71,3 +81,5 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });
     }
 }
+
+

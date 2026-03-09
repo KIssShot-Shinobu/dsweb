@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { btnOutline, btnPrimary, filterBarCls, searchInputCls } from "@/components/dashboard/form-styles";
+import { normalizeAssetUrl } from "@/lib/asset-url";
+import { btnDanger, btnOutline, btnPrimary, filterBarCls, searchInputCls } from "@/components/dashboard/form-styles";
 import { FormSelect } from "@/components/dashboard/form-select";
 import {
     DashboardEmptyState,
-    DashboardMetricCard,
     DashboardPageHeader,
     DashboardPageShell,
     DashboardPanel,
@@ -32,6 +32,7 @@ type AvailableMember = {
     email: string;
     role: string;
     city: string | null;
+    avatarUrl: string | null;
     teamId: string | null;
     teamJoinedAt: string | null;
     lastActiveAt: string | null;
@@ -217,6 +218,8 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
         });
     }, [team, rosterRole, rosterSearch]);
 
+    const hasRosterFilters = Boolean(rosterSearch.trim()) || rosterRole !== "ALL";
+
     const assignableMembers = useMemo(() => {
         if (!team) return [];
         const query = candidateSearch.trim().toLowerCase();
@@ -234,6 +237,15 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
             return isAssignablePool && !isAlreadyInRoster && matchesRole && matchesQuery;
         });
     }, [team, candidateRole, candidateSearch]);
+
+    const hasCandidateFilters = Boolean(candidateSearch.trim()) || candidateRole !== "ALL";
+    const totalAssignableMembers = useMemo(() => {
+        if (!team) return 0;
+        return Math.max(
+            team.availableMembers.filter((member) => !member.teamId || member.teamId === team.id).length - team.members.length,
+            0
+        );
+    }, [team]);
 
     return (
         <DashboardPageShell>
@@ -268,32 +280,6 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                         {error}
                     </div>
                 ) : null}
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-                    <DashboardMetricCard
-                        label="Roster Aktif"
-                        value={loading ? "..." : team?.memberCount ?? 0}
-                        meta="Jumlah member Duel Standby yang sedang terhubung ke team ini"
-                        tone="accent"
-                    />
-                    <DashboardMetricCard
-                        label="Kandidat Bebas"
-                        value={loading ? "..." : assignableMembers.length}
-                        meta="Member aktif tanpa team yang siap dimasukkan ke roster"
-                        tone="success"
-                    />
-                    <DashboardMetricCard
-                        label="Status Team"
-                        value={loading ? "..." : team?.isActive ? "Aktif" : "Nonaktif"}
-                        meta={team ? `Slug /${team.slug}` : "Memuat slug team"}
-                        tone={team?.isActive ? "success" : "danger"}
-                    />
-                    <DashboardMetricCard
-                        label="Diperbarui"
-                        value={loading ? "..." : formatDate(team?.updatedAt)}
-                        meta="Gunakan halaman ini untuk review roster dan mutasi anggota"
-                    />
-                </div>
 
                 <DashboardPanel
                     title="Ringkasan Team"
@@ -337,14 +323,30 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                                <div className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/[0.03]">
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Dibuat</div>
-                                    <div className="mt-2 text-base font-bold text-slate-950 dark:text-white">{formatDate(team.createdAt)}</div>
-                                </div>
-                                <div className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/[0.03]">
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Terakhir Update</div>
-                                    <div className="mt-2 text-base font-bold text-slate-950 dark:text-white">{formatDate(team.updatedAt)}</div>
+                            <div className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/[0.03]">
+                                <div className="space-y-3">
+                                    <div className="flex flex-col gap-1 border-b border-black/5 pb-3 dark:border-white/8">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Status</span>
+                                        <span className="text-base font-bold text-slate-950 dark:text-white">
+                                            {team.isActive ? "Aktif" : "Nonaktif"}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 border-b border-black/5 pb-3 dark:border-white/8">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Roster Aktif</span>
+                                        <span className="text-base font-bold text-slate-950 dark:text-white">{team.memberCount} anggota</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 border-b border-black/5 pb-3 dark:border-white/8">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Kandidat Bebas</span>
+                                        <span className="text-base font-bold text-slate-950 dark:text-white">{totalAssignableMembers} kandidat</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 border-b border-black/5 pb-3 dark:border-white/8">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Dibuat</span>
+                                        <span className="text-base font-bold text-slate-950 dark:text-white">{formatDate(team.createdAt)}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Terakhir Update</span>
+                                        <span className="text-base font-bold text-slate-950 dark:text-white">{formatDate(team.updatedAt)}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -371,13 +373,32 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                 className="w-full"
                             />
                         </div>
+                        {hasRosterFilters ? (
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 dark:text-white/35">
+                                <span>Menampilkan {filteredRoster.length} anggota roster sesuai filter aktif.</span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setRosterSearch("");
+                                        setRosterRole("ALL");
+                                    }}
+                                    className="font-medium text-ds-amber transition-colors hover:text-ds-gold"
+                                >
+                                    Reset Filter
+                                </button>
+                            </div>
+                        ) : null}
                     </div>
 
                     {!team ? null : filteredRoster.length === 0 ? (
                         <div className="mt-4">
                             <DashboardEmptyState
-                                title="Roster masih kosong"
-                                description="Belum ada anggota yang terhubung ke team ini. Tambahkan dari panel kandidat di bawah."
+                                title={hasRosterFilters ? "Tidak ada anggota yang cocok" : "Roster masih kosong"}
+                                description={
+                                    hasRosterFilters
+                                        ? "Coba longgarkan kata kunci atau ubah role filter untuk melihat roster yang lain."
+                                        : "Belum ada anggota yang terhubung ke team ini. Tambahkan dari panel kandidat di bawah."
+                                }
                             />
                         </div>
                     ) : (
@@ -385,7 +406,19 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                             {filteredRoster.map((member) => (
                                 <article key={member.id} className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/[0.03]">
                                     <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0 flex-1">
+                                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                                            {normalizeAssetUrl(member.avatarUrl) ? (
+                                                <img
+                                                    src={normalizeAssetUrl(member.avatarUrl) || undefined}
+                                                    alt={member.fullName}
+                                                    className="h-12 w-12 flex-shrink-0 rounded-2xl border border-black/5 object-cover dark:border-white/10"
+                                                />
+                                            ) : (
+                                                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
+                                                    {getInitials(member.fullName)}
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <h3 className="truncate text-base font-bold text-slate-950 dark:text-white">{member.fullName}</h3>
                                                 <span className="rounded-full border border-ds-amber/20 bg-ds-amber/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ds-amber">
@@ -399,6 +432,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                                 <div>Terakhir aktif: {formatDate(member.lastActiveAt)}</div>
                                                 <div>Bergabung akun: {formatDate(member.createdAt)}</div>
                                             </div>
+                                        </div>
                                         </div>
                                         {isAdmin ? (
                                             <button
@@ -441,13 +475,36 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                 className="w-full"
                             />
                         </div>
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 dark:text-white/35">
+                            <span>
+                                {team?.isActive
+                                    ? `Tersedia ${assignableMembers.length} kandidat untuk filter saat ini.`
+                                    : "Team nonaktif. Anda tetap bisa review kandidat, tetapi assignment dinonaktifkan."}
+                            </span>
+                            {hasCandidateFilters ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCandidateSearch("");
+                                        setCandidateRole("ALL");
+                                    }}
+                                    className="font-medium text-ds-amber transition-colors hover:text-ds-gold"
+                                >
+                                    Reset Filter
+                                </button>
+                            ) : null}
+                        </div>
                     </div>
 
                     {!team ? null : assignableMembers.length === 0 ? (
                         <div className="mt-4">
                             <DashboardEmptyState
-                                title="Tidak ada kandidat bebas"
-                                description="Semua member aktif sudah masuk ke team lain atau belum ada member aktif tanpa team."
+                                title={hasCandidateFilters ? "Tidak ada kandidat yang cocok" : "Tidak ada kandidat bebas"}
+                                description={
+                                    hasCandidateFilters
+                                        ? "Coba longgarkan kata kunci atau ubah role filter untuk melihat kandidat lain."
+                                        : "Semua member aktif sudah masuk ke team lain atau belum ada member aktif tanpa team."
+                                }
                             />
                         </div>
                     ) : (
@@ -455,7 +512,19 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                             {assignableMembers.map((member) => (
                                 <article key={member.id} className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/[0.03]">
                                     <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0 flex-1">
+                                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                                            {normalizeAssetUrl(member.avatarUrl) ? (
+                                                <img
+                                                    src={normalizeAssetUrl(member.avatarUrl) || undefined}
+                                                    alt={member.fullName}
+                                                    className="h-12 w-12 flex-shrink-0 rounded-2xl border border-black/5 object-cover dark:border-white/10"
+                                                />
+                                            ) : (
+                                                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
+                                                    {getInitials(member.fullName)}
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <h3 className="truncate text-base font-bold text-slate-950 dark:text-white">{member.fullName}</h3>
                                                 <span className="rounded-full border border-black/8 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:border-white/10 dark:text-white/45">
@@ -467,6 +536,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                                 <div>Kota: {member.city || "Belum diisi"}</div>
                                                 <div>Terakhir aktif: {formatDate(member.lastActiveAt)}</div>
                                             </div>
+                                        </div>
                                         </div>
                                         {isAdmin ? (
                                             <button
@@ -510,14 +580,29 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                         </div>
 
                         <div className="mt-5 rounded-2xl border border-black/5 bg-slate-50/80 p-4 text-sm dark:border-white/6 dark:bg-white/[0.03]">
-                            <div className="font-semibold text-slate-950 dark:text-white">{memberToUnassign.fullName}</div>
-                            <div className="mt-1 text-slate-500 dark:text-white/45">{memberToUnassign.email}</div>
-                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-white/35">
-                                <span>{memberToUnassign.role}</span>
-                                <span>|</span>
-                                <span>{memberToUnassign.city || "Kota belum diisi"}</span>
-                                <span>|</span>
-                                <span>Masuk team: {formatDate(memberToUnassign.teamJoinedAt)}</span>
+                            <div className="flex items-start gap-3">
+                                {normalizeAssetUrl(memberToUnassign.avatarUrl) ? (
+                                    <img
+                                        src={normalizeAssetUrl(memberToUnassign.avatarUrl) || undefined}
+                                        alt={memberToUnassign.fullName}
+                                        className="h-12 w-12 flex-shrink-0 rounded-2xl border border-black/5 object-cover dark:border-white/10"
+                                    />
+                                ) : (
+                                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
+                                        {getInitials(memberToUnassign.fullName)}
+                                    </div>
+                                )}
+                                <div className="min-w-0">
+                                    <div className="font-semibold text-slate-950 dark:text-white">{memberToUnassign.fullName}</div>
+                                    <div className="mt-1 text-slate-500 dark:text-white/45">{memberToUnassign.email}</div>
+                                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-white/35">
+                                        <span>{memberToUnassign.role}</span>
+                                        <span>|</span>
+                                        <span>{memberToUnassign.city || "Kota belum diisi"}</span>
+                                        <span>|</span>
+                                        <span>Masuk team: {formatDate(memberToUnassign.teamJoinedAt)}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -533,7 +618,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                             <button
                                 type="button"
                                 onClick={() => handleUnassign(memberToUnassign.id)}
-                                className={btnPrimary}
+                                className={btnDanger}
                                 disabled={pendingUserId === memberToUnassign.id}
                             >
                                 {pendingUserId === memberToUnassign.id ? "Melepas..." : "Ya, Lepas dari Team"}

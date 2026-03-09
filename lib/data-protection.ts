@@ -11,9 +11,9 @@ type SensitiveField = (typeof SENSITIVE_FIELDS)[number];
 type UserRecordLike = Record<string, unknown> | null | undefined;
 
 function getEncryptionKey() {
-    const rawKey = process.env.DATA_ENCRYPTION_KEY || process.env.JWT_SECRET;
+    const rawKey = process.env.DATA_ENCRYPTION_KEY;
     if (!rawKey) {
-        throw new Error("DATA_ENCRYPTION_KEY or JWT_SECRET must be set for sensitive field protection.");
+        throw new Error("DATA_ENCRYPTION_KEY must be set for sensitive field protection.");
     }
 
     return crypto.createHash("sha256").update(rawKey).digest();

@@ -10,10 +10,10 @@ interface AboutProps {
 
 export function About({ activeUserCount, tournamentCount }: AboutProps) {
     const cards = [
-        { title: "Komunitas Aktif", icon: Users, description: `${activeUserCount} duelist aktif berbagi deck, insight, dan replay setiap hari.`, color: "bg-amber-100 text-amber-600 dark:bg-[#FFC916]/10 dark:text-[#FFC916]" },
-        { title: "Turnamen Rutin", icon: Trophy, description: `${tournamentCount} turnamen untuk Duel Links dan Master Duel dengan ritme yang konsisten.`, color: "bg-orange-100 text-orange-600 dark:bg-[#FFC000]/10 dark:text-[#FFC000]" },
-        { title: "Meta Insight", icon: BookOpen, description: "Panduan singkat, tier list, dan referensi yang mudah diikuti.", color: "bg-sky-100 text-sky-600 dark:bg-[#1b2430] dark:text-[#E6E6E6]" },
-        { title: "Guild Battle", icon: ShieldCheck, description: "Bertanding bersama guild dalam duel yang terukur dan kompetitif.", color: "bg-amber-100 text-amber-600 dark:bg-[#FFC916]/10 dark:text-[#FFC916]" },
+        { title: "Komunitas Aktif", icon: Users, description: `${activeUserCount} duelist aktif berdiskusi strategi, berbagi replay, dan menjaga ritme komunitas setiap hari.`, color: "bg-amber-100 text-amber-600 dark:bg-[#FFC916]/10 dark:text-[#FFC916]" },
+        { title: "Turnamen Terkelola", icon: Trophy, description: `${tournamentCount} turnamen dan event komunitas dengan alur pendaftaran, jadwal, dan informasi yang jelas.`, color: "bg-orange-100 text-orange-600 dark:bg-[#FFC000]/10 dark:text-[#FFC000]" },
+        { title: "Insight Meta", icon: BookOpen, description: "Referensi deck, pembacaan meta, dan diskusi matchup yang relevan dengan scene kompetitif.", color: "bg-sky-100 text-sky-600 dark:bg-[#1b2430] dark:text-[#E6E6E6]" },
+        { title: "Main Sebagai Tim", icon: ShieldCheck, description: "Bangun chemistry bersama guild atau tim untuk duel yang lebih solid, terarah, dan kompetitif.", color: "bg-amber-100 text-amber-600 dark:bg-[#FFC916]/10 dark:text-[#FFC916]" },
     ];
 
     return (
@@ -23,18 +23,18 @@ export function About({ activeUserCount, tournamentCount }: AboutProps) {
                 <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-12 flex justify-center gap-6 sm:mb-16 sm:gap-12">
                     <div className="text-center">
                         <div className="text-3xl font-extrabold text-amber-500 sm:text-4xl dark:text-[#FFC916]">{activeUserCount}</div>
-                        <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:text-sm dark:text-[#E6E6E6]/50">User Aktif</div>
+                        <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:text-sm dark:text-[#E6E6E6]/50">Duelist Aktif</div>
                     </div>
                     <div className="w-px bg-slate-200 dark:bg-[#3A3A3A]" />
                     <div className="text-center">
                         <div className="text-3xl font-extrabold text-amber-500 sm:text-4xl dark:text-[#FFC916]">{tournamentCount}</div>
-                        <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:text-sm dark:text-[#E6E6E6]/50">Tournament</div>
+                        <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:text-sm dark:text-[#E6E6E6]/50">Turnamen Terselenggara</div>
                     </div>
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-12 text-center sm:mb-16">
-                    <h2 className="mb-4 bg-gradient-to-r from-amber-500 via-amber-400 to-slate-700 bg-clip-text text-3xl font-bold text-transparent md:text-5xl dark:from-[#FFC916] dark:via-[#ffe17a] dark:to-white">Tempat Duelist Bertemu</h2>
-                    <p className="mx-auto max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-white/60">DuelStandby merangkum turnamen, diskusi, dan komunitas dalam satu ruang yang sederhana, hangat, dan siap dipakai bertanding.</p>
+                    <h2 className="mb-4 bg-gradient-to-r from-amber-500 via-amber-400 to-slate-700 bg-clip-text text-3xl font-bold text-transparent md:text-5xl dark:from-[#FFC916] dark:via-[#ffe17a] dark:to-white">Tempat duelists berkembang bersama</h2>
+                    <p className="mx-auto max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-white/60">Duel Standby menghadirkan pengalaman komunitas yang lebih profesional: turnamen tertata, komunikasi yang aktif, dan ruang belajar yang membantu setiap pemain naik level.</p>
                 </motion.div>
 
                 <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">

@@ -27,6 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const target = await prisma.user.findUnique({
         where: { id },
         select: {
+            status: true,
             role: true,
             fullName: true,
             teamId: true,
@@ -90,8 +91,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     });
 
     let auditAction: AuditActionType | null = null;
-    if (status === "ACTIVE") auditAction = AUDIT_ACTIONS.USER_APPROVED;
-    else if (status === "BANNED") auditAction = AUDIT_ACTIONS.USER_BANNED;
+    if (target.status !== status) {
+        if (status === "BANNED") auditAction = AUDIT_ACTIONS.USER_BANNED;
+        else if (status === "ACTIVE" && target.status === "BANNED") auditAction = AUDIT_ACTIONS.USER_UNBANNED;
+        else if (status === "ACTIVE") auditAction = AUDIT_ACTIONS.USER_APPROVED;
+    }
 
     if (auditAction) {
         await logAudit({
@@ -100,7 +104,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             targetId: id,
             targetType: "USER",
             reason: normalizedReason,
-            details: { newStatus: status, newRole: role ?? target.role, teamId: nextTeamId },
+            details: {
+                oldStatus: target.status,
+                newStatus: status,
+                newRole: role ?? target.role,
+                teamId: nextTeamId,
+            },
         });
     }
 
@@ -137,5 +146,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         BANNED: `${target.fullName} telah diblokir.`,
     };
 
-    return NextResponse.json({ success: true, message: messages[status] ?? "Status diperbarui", data: updated });
+    const statusMessage =
+        status === "ACTIVE" && target.status === "BANNED"
+            ? `${target.fullName} telah diaktifkan kembali.`
+            : messages[status] ?? "Status diperbarui";
+
+    return NextResponse.json({ success: true, message: statusMessage, data: updated });
 }

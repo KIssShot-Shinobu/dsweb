@@ -1,22 +1,35 @@
 import type { RegisterInput, LoginInput } from "@/lib/validators";
-import type { GameType, GuildStatus } from "@prisma/client";
+import type { GameType } from "@prisma/client";
+import { normalizeGameIdDigits } from "@/lib/game-id";
 
 type GameProfileLookup = { id: string } | null;
 type VerificationTokenRecord = { id: string } | null;
 type AuthUserRecord = {
     id: string;
     email: string;
+    username: string;
     fullName: string;
     password?: string;
     status: string;
     role: string;
+    teamId?: string | null;
+    emailVerifiedAt?: Date | null;
+    authVersion?: number;
 };
 
-type RegisterConflictCode = "EMAIL_EXISTS" | "PHONE_EXISTS" | "GAME_ID_EXISTS";
+type RegisterConflictCode = "USERNAME_EXISTS" | "EMAIL_EXISTS" | "PHONE_EXISTS" | "GAME_ID_EXISTS";
+
+type ResolvedRegionInput = {
+    provinceCode?: string;
+    provinceName?: string;
+    cityCode?: string;
+    cityName?: string;
+};
 
 type AuthPrismaLike = {
     user: {
         findUnique: (args: { where: Record<string, unknown>; select?: Record<string, boolean> }) => Promise<AuthUserRecord | null>;
+        findFirst?: (args: { where: Record<string, unknown>; select?: Record<string, boolean> }) => Promise<AuthUserRecord | null>;
         create?: (args: { data: Record<string, unknown> }) => Promise<AuthUserRecord>;
         update?: (args: { where: Record<string, unknown>; data: Record<string, unknown> }) => Promise<AuthUserRecord | null>;
     };
@@ -49,8 +62,17 @@ async function findExistingGameProfile(prisma: AuthPrismaLike, data: RegisterInp
         return null;
     }
 
+    const candidates = Array.from(
+        new Set(
+            gameIdsToCheck.flatMap((gameId) => {
+                const normalizedDigits = normalizeGameIdDigits(gameId);
+                return normalizedDigits ? [gameId, normalizedDigits] : [gameId];
+            }),
+        ),
+    );
+
     return prisma.gameProfile.findFirst({
-        where: { gameId: { in: gameIdsToCheck } },
+        where: { gameId: { in: candidates } },
     });
 }
 
@@ -58,13 +80,18 @@ export async function findRegisterConflict(
     deps: Pick<AuthDeps, "prisma">,
     data: RegisterInput
 ): Promise<RegisterConflictCode | null> {
-    const [emailExists, phoneExists, existingGameProfile] = await Promise.all([
+    const [usernameExists, emailExists, phoneExists, existingGameProfile] = await Promise.all([
+        deps.prisma.user.findUnique({ where: { username: data.username } }),
         deps.prisma.user.findUnique({ where: { email: data.email } }),
         data.phoneWhatsapp
             ? deps.prisma.user.findUnique({ where: { phoneWhatsapp: data.phoneWhatsapp } })
             : Promise.resolve(null),
         findExistingGameProfile(deps.prisma, data),
     ]);
+
+    if (usernameExists) {
+        return "USERNAME_EXISTS";
+    }
 
     if (emailExists) {
         return "EMAIL_EXISTS";
@@ -83,12 +110,21 @@ export async function findRegisterConflict(
 
 export async function authenticateUser(
     deps: Pick<AuthDeps, "prisma" | "comparePassword">,
-    input: Pick<LoginInput, "email" | "password">
+    input: Pick<LoginInput, "identifier" | "password">
 ) {
-    const user = await deps.prisma.user.findUnique({
-        where: { email: input.email },
-        select: { id: true, email: true, fullName: true, password: true, status: true, role: true },
-    });
+    const identifier = input.identifier.trim().toLowerCase();
+    const findUser = deps.prisma.user.findFirst;
+    const user = findUser
+        ? await findUser({
+              where: {
+                  OR: [{ email: identifier }, { username: identifier }],
+              },
+              select: { id: true, email: true, username: true, fullName: true, password: true, status: true, role: true, teamId: true, emailVerifiedAt: true, authVersion: true },
+          })
+        : await deps.prisma.user.findUnique({
+              where: { email: identifier },
+              select: { id: true, email: true, username: true, fullName: true, password: true, status: true, role: true, teamId: true, emailVerifiedAt: true, authVersion: true },
+          });
 
     if (!user) {
         return { ok: false as const, code: "INVALID_CREDENTIALS" };
@@ -113,7 +149,7 @@ export async function authenticateUser(
 
 export async function registerUser(
     deps: AuthDeps,
-    data: RegisterInput,
+    data: RegisterInput & ResolvedRegionInput,
     options: RegisterUserOptions = {}
 ) {
     if (!options.skipConflictCheck) {
@@ -132,11 +168,15 @@ export async function registerUser(
 
     const user = await createUser({
         data: {
-            fullName: data.fullName,
+            username: data.username,
+            fullName: data.username,
             email: data.email,
             password: hashedPassword,
             phoneWhatsapp: data.phoneWhatsapp,
-            city: data.city,
+            provinceCode: data.provinceCode || null,
+            provinceName: data.provinceName || null,
+            cityCode: data.cityCode || null,
+            city: data.cityName || null,
             status: "ACTIVE",
             role: "USER",
             gameProfiles: {
@@ -162,8 +202,6 @@ export async function registerUser(
             registrationLog: {
                 create: {
                     sourceInfo: data.sourceInfo,
-                    prevGuild: data.prevGuild || null,
-                    guildStatus: data.guildStatus as GuildStatus,
                     socialMedia: JSON.stringify(data.socialMedia),
                     agreement: data.agreement,
                 },
@@ -190,3 +228,5 @@ export async function registerUser(
 
     return { ok: true as const, user, verifyToken };
 }
+
+

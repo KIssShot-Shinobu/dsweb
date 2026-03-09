@@ -4,6 +4,7 @@ import { useDashboardUserContext } from "@/context/dashboard-user-context";
 
 export interface CurrentUser {
     id: string;
+    username: string;
     fullName: string;
     email: string;
     role: string;

@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+function toUsername(value: string) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]+/g, ".")
+        .replace(/\.{2,}/g, ".")
+        .replace(/^\.|\.$/g, "")
+        .slice(0, 24) || "duelstandby.admin";
+}
+
 function getSeedConfig() {
     if (process.env.NODE_ENV === "production") {
         return { error: "Not allowed in production", status: 403 as const };
@@ -22,6 +32,7 @@ function getSeedConfig() {
         email,
         password,
         fullName: process.env.ADMIN_SEED_NAME || "Admin Duel Standby",
+        username: toUsername(process.env.ADMIN_SEED_NAME || email.split("@")[0] || "duelstandby.admin"),
         phoneWhatsapp: process.env.ADMIN_SEED_PHONE || "+628000000001",
         city: process.env.ADMIN_SEED_CITY || "Jakarta",
     };
@@ -40,6 +51,7 @@ export async function GET() {
             update: {},
             create: {
                 fullName: seedConfig.fullName,
+                username: seedConfig.username,
                 email: seedConfig.email,
                 password: hash,
                 phoneWhatsapp: seedConfig.phoneWhatsapp,
