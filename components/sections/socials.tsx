@@ -9,16 +9,16 @@ const DiscordIcon = ({ className }: { className?: string }) => (
 
 export function Socials() {
     const socials = [
-        { name: "Discord", icon: DiscordIcon, link: "https://discord.gg/duelstandby", color: "from-[#5865F2] to-[#7b84ff]", description: "Chat, voice, dan lobby turnamen" },
-        { name: "YouTube", icon: Youtube, link: "https://youtube.com/@duelstandby", color: "from-[#FF0000] to-[#ff6a6a]", description: "Replay, highlight, dan cuplikan event" },
-        { name: "Twitter", icon: Twitter, link: "https://twitter.com/duelstandby", color: "from-[#1DA1F2] to-[#7fd2ff]", description: "Update singkat dan pengumuman" },
+        { name: "Discord", icon: DiscordIcon, link: "https://discord.gg/duelstandby", color: "from-[#5865F2] to-[#7b84ff]", description: "Hub komunitas, scrim, voice room, dan koordinasi turnamen" },
+        { name: "YouTube", icon: Youtube, link: "https://youtube.com/@duelstandby", color: "from-[#FF0000] to-[#ff6a6a]", description: "Replay unggulan, highlight event, dan konten edukatif" },
+        { name: "Twitter", icon: Twitter, link: "https://twitter.com/duelstandby", color: "from-[#1DA1F2] to-[#7fd2ff]", description: "Pengumuman cepat, jadwal event, dan kabar komunitas" },
     ];
 
     return (
         <section id="socials" className="relative bg-[linear-gradient(180deg,_#f8fafc_0%,_#fffdf8_100%)] py-20 sm:py-24 dark:bg-[linear-gradient(180deg,_#111217_0%,_#09090b_100%)]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,201,22,0.12),transparent_24%)] dark:bg-[radial-gradient(circle_at_top,rgba(255,201,22,0.1),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.08),transparent_24%)]" />
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <motion.h2 initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-12 text-center text-3xl font-bold tracking-tight text-slate-950 sm:mb-16 md:text-5xl dark:text-white">Tetap Terhubung</motion.h2>
+                <motion.h2 initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-12 text-center text-3xl font-bold tracking-tight text-slate-950 sm:mb-16 md:text-5xl dark:text-white">Ikuti semua update Duel Standby</motion.h2>
                 <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-3 md:gap-8">
                     {socials.map((social) => (
                         <motion.a key={social.name} href={social.link} target="_blank" rel="noopener noreferrer" initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.38 }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition-all dark:border-white/10 dark:bg-[#11161d] dark:shadow-[0_18px_55px_rgba(0,0,0,0.24)] sm:p-8">

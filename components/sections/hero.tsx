@@ -16,7 +16,7 @@ export function Hero() {
             <div className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 text-center sm:px-6 sm:pb-16 sm:pt-28 lg:px-8">
                 <motion.div initial="hidden" animate="show" transition={{ staggerChildren: 0.08, delayChildren: 0.08 }} className="flex flex-col items-center">
                     <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }} transition={{ duration: 0.45 }} className="mb-4 rounded-full border border-amber-300/80 bg-white/85 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.28em] text-amber-700 shadow-[0_12px_32px_rgba(255,201,22,0.12)] dark:border-[#FFC916]/20 dark:bg-white/5 dark:text-[#ffd75a] dark:shadow-none">
-                        Komunitas Duel Links & Master Duel
+                        Komunitas Yu-Gi-Oh! Duel Links & Master Duel
                     </motion.div>
 
                     <motion.div variants={{ hidden: { opacity: 0, y: 18, scale: 0.92 }, show: { opacity: 1, y: 0, scale: 1 } }} transition={{ duration: 0.5 }} className="mb-5 flex h-16 w-16 items-center justify-center rounded-[24px] border border-amber-200 bg-white/80 shadow-[0_18px_50px_rgba(255,201,22,0.18)] sm:mb-6 sm:h-20 sm:w-20 sm:rounded-[28px] dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_0_25px_rgba(255,201,22,0.18)]">
@@ -29,17 +29,17 @@ export function Hero() {
                     </motion.h1>
 
                     <motion.p variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} transition={{ duration: 0.55 }} className="mb-8 max-w-2xl text-base leading-relaxed text-slate-600 sm:mb-10 sm:text-lg md:text-xl dark:text-white/68">
-                        Ruang bermain untuk duel yang lebih rapi, kompetitif, dan tetap terasa akrab. Ikut turnamen, temukan lawan, dan berkembang bersama komunitas.
+                        Komunitas gaming yang menyatukan duelists serius dalam ekosistem yang tertata, kompetitif, dan suportif. Ikuti turnamen terkurasi, bangun relasi, dan tingkatkan permainan Anda bersama Duel Standby.
                     </motion.p>
 
                     <motion.div variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} transition={{ duration: 0.5 }} className="flex w-full max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4">
                         <Link href="https://discord.gg/duelstandby" target="_blank" className="group flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFC916] to-[#FFC000] px-6 py-3.5 font-semibold text-[#2E2E2E] shadow-[0_0_20px_rgba(255,201,22,0.28)] transition-all hover:from-[#FFD54F] hover:to-[#FFC916] hover:shadow-[0_0_30px_rgba(255,201,22,0.42)] active:scale-[0.98] sm:px-8 sm:py-4">
-                            Masuk Discord
+                            Gabung ke Discord
                             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                         </Link>
 
                         <Link href="#tournaments" className="rounded-full border border-slate-200 bg-white/85 px-6 py-3.5 font-semibold text-slate-900 transition-all hover:border-amber-300 hover:bg-white active:scale-[0.98] sm:px-8 sm:py-4 dark:border-white/12 dark:bg-white/[0.06] dark:text-white dark:hover:border-[#FFC916]/30 dark:hover:bg-white/[0.1]">
-                            Lihat Tournament
+                            Jelajahi Turnamen
                         </Link>
                     </motion.div>
                 </motion.div>

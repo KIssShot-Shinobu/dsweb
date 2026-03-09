@@ -35,7 +35,7 @@ function ResetPasswordForm() {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (tokenMissing) {
-            setError("Token reset tidak ditemukan. Gunakan link terbaru dari email Anda.");
+            setError("Token reset tidak ditemukan. Gunakan tautan terbaru dari email Anda.");
             return;
         }
 
@@ -59,17 +59,17 @@ function ResetPasswordForm() {
 
             if (!response.ok || !data.success) {
                 setSuccessMessage(null);
-                setError(data.message || "Reset password gagal diproses.");
+                setError(data.message || "Pengaturan ulang kata sandi belum berhasil diproses.");
                 return;
             }
 
-            setSuccessMessage(data.message || "Password berhasil direset.");
+            setSuccessMessage(data.message || "Kata sandi berhasil diperbarui.");
             setTimeout(() => {
                 router.push("/login");
             }, 1200);
         } catch {
             setSuccessMessage(null);
-            setError("Network error. Periksa koneksi Anda lalu coba lagi.");
+            setError("Koneksi sedang bermasalah. Periksa jaringan Anda lalu coba lagi.");
         } finally {
             setLoading(false);
         }
@@ -77,21 +77,21 @@ function ResetPasswordForm() {
 
     return (
         <AuthShell
-            eyebrow="Password Reset"
-            title="Atur password baru"
-            description="Gunakan password baru yang kuat. Setelah berhasil, Anda bisa langsung login kembali dengan username atau email."
+            eyebrow="Reset Kata Sandi"
+            title="Buat kata sandi baru"
+            description="Gunakan kata sandi yang kuat agar akun Anda tetap aman. Setelah berhasil, Anda bisa langsung login kembali."
             footer={
                 <>
-                    Butuh link baru?{" "}
+                    Butuh tautan baru?{" "}
                     <Link href="/forgot-password" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
-                        Minta reset password lagi
+                        Minta reset ulang
                     </Link>
                 </>
             }
         >
             {tokenMissing ? (
                 <div className={`${authAlertCls} mb-5 border-amber-500/20 bg-amber-500/10 text-amber-300`}>
-                    Token reset tidak ditemukan. Buka kembali link dari email atau minta link reset yang baru.
+                    Token reset tidak ditemukan. Buka kembali tautan dari email atau minta tautan reset yang baru.
                 </div>
             ) : null}
 
@@ -104,14 +104,14 @@ function ResetPasswordForm() {
             {successMessage ? (
                 <div className={`${authAlertCls} mb-5 border-emerald-500/20 bg-emerald-500/10 text-emerald-300`}>
                     <div className="font-medium">{successMessage}</div>
-                    <p className="mt-2 text-sm text-emerald-200/80">Anda akan diarahkan ke halaman login.</p>
+                    <p className="mt-2 text-sm text-emerald-200/80">Anda akan diarahkan ke halaman login dalam beberapa detik.</p>
                 </div>
             ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label htmlFor="password" className={authLabelCls}>
-                        Password Baru
+                        Kata Sandi Baru
                     </label>
                     <input
                         id="password"
@@ -127,13 +127,13 @@ function ResetPasswordForm() {
 
                 <div>
                     <label htmlFor="confirmPassword" className={authLabelCls}>
-                        Konfirmasi Password Baru
+                        Konfirmasi Kata Sandi Baru
                     </label>
                     <input
                         id="confirmPassword"
                         type="password"
                         className={authInputCls}
-                        placeholder="Ulangi password baru"
+                        placeholder="Ulangi kata sandi baru"
                         value={form.confirmPassword}
                         onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
                         autoComplete="new-password"
@@ -142,12 +142,12 @@ function ResetPasswordForm() {
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm leading-6 text-white/55">
-                    Password harus mengandung minimal 8 karakter, huruf, dan angka.
+                    Kata sandi harus terdiri dari minimal 8 karakter serta mengandung huruf dan angka.
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
                     <button type="submit" disabled={loading || tokenMissing} className={authPrimaryBtnCls}>
-                        {loading ? "Menyimpan..." : "Simpan Password Baru"}
+                        {loading ? "Menyimpan..." : "Simpan Kata Sandi Baru"}
                     </button>
                     <Link href="/login" className={authSecondaryBtnCls}>
                         Kembali ke Login

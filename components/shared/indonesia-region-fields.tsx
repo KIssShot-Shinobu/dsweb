@@ -54,7 +54,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
             .then(async (response) => {
                 const data = (await response.json()) as RegionApiResponse<{ provinces: Array<{ code: string; name: string }> }>;
                 if (!response.ok || !data.success) {
-                    throw new Error(data.message || "Gagal memuat data provinsi");
+                    throw new Error(data.message || "Gagal memuat daftar provinsi");
                 }
                 if (!isMounted) return;
                 setProvinces(data.provinces.map((item) => ({ value: item.code, label: item.name })));
@@ -86,7 +86,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
             .then(async (response) => {
                 const data = (await response.json()) as RegionApiResponse<{ regencies: Array<{ code: string; name: string }> }>;
                 if (!response.ok || !data.success) {
-                    throw new Error(data.message || "Gagal memuat data kabupaten / kota");
+                    throw new Error(data.message || "Gagal memuat daftar kabupaten atau kota");
                 }
                 if (!isMounted) return;
                 setRegencies(data.regencies.map((item) => ({ value: item.code, label: item.name })));
@@ -139,7 +139,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
                         })
                     }
                     options={provinces}
-                    placeholder={loadingProvinces ? "Memuat provinsi..." : "Pilih provinsi"}
+                    placeholder={loadingProvinces ? "Memuat daftar provinsi..." : "Pilih provinsi"}
                     searchPlaceholder="Cari provinsi"
                     emptyMessage="Provinsi tidak ditemukan"
                     disabled={loadingProvinces}
@@ -165,9 +165,9 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
                         })
                     }
                     options={regencies}
-                    placeholder={value.provinceCode ? (loadingRegencies ? "Memuat kabupaten / kota..." : "Pilih kabupaten / kota") : "Pilih provinsi dulu"}
-                    searchPlaceholder="Cari kabupaten / kota"
-                    emptyMessage="Kabupaten / kota tidak ditemukan"
+                    placeholder={value.provinceCode ? (loadingRegencies ? "Memuat daftar kabupaten atau kota..." : "Pilih kabupaten atau kota") : "Pilih provinsi terlebih dahulu"}
+                    searchPlaceholder="Cari kabupaten atau kota"
+                    emptyMessage="Kabupaten atau kota tidak ditemukan"
                     disabled={!value.provinceCode || loadingRegencies}
                     triggerClassName={triggerClass}
                     menuClassName={menuClass}

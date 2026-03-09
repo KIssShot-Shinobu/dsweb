@@ -11,14 +11,13 @@ import {
     authInputCls,
     authLabelCls,
     authPrimaryBtnCls,
-    authSecondaryBtnCls,
 } from "@/components/auth/auth-shell";
 
 const ERROR_MESSAGES: Record<string, string> = {
-    banned: "Akun Anda diblokir. Silakan hubungi admin.",
-    oauth_failed: "Login Google tidak berhasil. Coba lagi atau gunakan login biasa.",
-    invalid_credentials: "Username/email atau password salah.",
-    access_denied: "Akses login ditolak untuk akun ini.",
+    banned: "Akses akun Anda sedang dibatasi. Silakan hubungi tim admin Duel Standby.",
+    oauth_failed: "Masuk dengan Google belum berhasil. Silakan coba kembali.",
+    invalid_credentials: "Username, email, atau kata sandi yang Anda masukkan belum sesuai.",
+    access_denied: "Akun ini belum memiliki izin untuk melanjutkan login.",
 };
 
 function LoginForm() {
@@ -27,11 +26,11 @@ function LoginForm() {
     const redirect = searchParams.get("redirect") || "/dashboard";
     const errorParam = searchParams.get("error");
 
-    const [form, setForm] = useState({ identifier: "", password: "", rememberMe: false });
+    const [form, setForm] = useState({ identifier: "", password: "" });
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
     const [googleEnabled, setGoogleEnabled] = useState(false);
-    const [error, setError] = useState<string | null>(errorParam ? ERROR_MESSAGES[errorParam] ?? "Terjadi gangguan saat login." : null);
+    const [error, setError] = useState<string | null>(errorParam ? ERROR_MESSAGES[errorParam] ?? "Terjadi kendala saat memproses login Anda." : null);
 
     useEffect(() => {
         let active = true;
@@ -66,7 +65,7 @@ function LoginForm() {
             });
 
             if (!result?.ok) {
-                setError(ERROR_MESSAGES[result?.code || ""] ?? "Login gagal. Coba lagi.");
+                setError(ERROR_MESSAGES[result?.code || ""] ?? "Login belum berhasil. Silakan coba lagi.");
                 return;
             }
 
@@ -78,7 +77,7 @@ function LoginForm() {
             const finalizeData = await finalizeResponse.json();
 
             if (!finalizeResponse.ok || !finalizeData.success) {
-                setError(finalizeData.message || "Sesi login tidak berhasil dibuat.");
+                setError(finalizeData.message || "Sesi akun belum dapat disiapkan.");
                 await signOut({ redirect: false });
                 return;
             }
@@ -86,7 +85,7 @@ function LoginForm() {
             router.push(finalizeData.redirectTo || redirect);
             router.refresh();
         } catch {
-            setError("Network error. Periksa koneksi Anda.");
+            setError("Koneksi sedang bermasalah. Periksa jaringan Anda lalu coba lagi.");
         } finally {
             setLoading(false);
         }
@@ -101,70 +100,89 @@ function LoginForm() {
                 callbackUrl: `/oauth-finalize?provider=google&redirect=${encodeURIComponent(redirect)}`,
             });
         } catch {
-            setError("Login Google tidak berhasil. Coba lagi.");
+            setError("Masuk dengan Google belum berhasil. Silakan coba kembali.");
             setGoogleLoading(false);
         }
     };
 
     return (
         <AuthShell
-            eyebrow="Account Access"
+            eyebrow="Akses Akun"
             title="Masuk ke Duel Standby"
-            description="Gunakan username, email, atau Google untuk membuka profile, tournament publik, dan dashboard sesuai role komunitas Anda."
+            description="Akses akun Anda untuk mengikuti turnamen, mengelola profil game, dan tetap terhubung dengan komunitas."
             footer={
                 <>
                     Belum punya akun?{" "}
                     <Link href="/register" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
-                        Daftar sekarang
+                        Buat akun
                     </Link>
                 </>
             }
         >
-            {error ? <div className={`${authAlertCls} mb-5 border-red-500/20 bg-red-500/10 text-red-400`}><div>{error}</div>{errorParam === "oauth_failed" ? <div className="mt-2 text-xs text-red-200/80">Pastikan popup Google tidak diblok, lalu coba lagi. Jika tetap gagal, masuk dengan username atau email seperti biasa.</div> : null}</div> : null}
+            {error ? (
+                <div className={`${authAlertCls} mb-4 border-red-500/20 bg-red-500/10 text-red-400`}>
+                    {error}
+                </div>
+            ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className={authLabelCls}>Username atau Email</label>
-                    <input type="text" className={authInputCls} placeholder="username atau your@email.com" value={form.identifier} onChange={(e) => setForm({ ...form, identifier: e.target.value })} required autoComplete="username" />
+                    <input
+                        type="text"
+                        className={authInputCls}
+                        placeholder="username atau email@domain.com"
+                        value={form.identifier}
+                        onChange={(e) => setForm({ ...form, identifier: e.target.value })}
+                        required
+                        autoComplete="username"
+                    />
                 </div>
+
                 <div>
-                    <label className={authLabelCls}>Password</label>
-                    <input type="password" className={authInputCls} placeholder="********" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required autoComplete="current-password" />
+                    <div className="mb-1.5 flex items-center justify-between gap-3">
+                        <label className={authLabelCls}>Kata Sandi</label>
+                        <Link href="/forgot-password" className="text-[11px] font-medium text-white/62 transition-colors hover:text-ds-amber">
+                            Lupa kata sandi?
+                        </Link>
+                    </div>
+                    <input
+                        type="password"
+                        className={authInputCls}
+                        placeholder="********"
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        required
+                        autoComplete="current-password"
+                    />
                 </div>
 
-                <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
-                    <label htmlFor="rememberMe" className="flex cursor-pointer items-center gap-3 text-sm text-white/60">
-                        <input type="checkbox" id="rememberMe" checked={form.rememberMe} onChange={(e) => setForm({ ...form, rememberMe: e.target.checked })} className="h-4 w-4 rounded accent-ds-amber" />
-                        Ingat saya
-                    </label>
-                    <Link href="/forgot-password" className="text-xs font-medium text-ds-amber/90 transition-colors hover:text-ds-gold">
-                        Lupa password?
-                    </Link>
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <button type="submit" disabled={loading || googleLoading} className={authPrimaryBtnCls}>
-                        {loading ? "Masuk..." : "Masuk"}
-                    </button>
-                    {googleEnabled ? (
-                        <button
-                            type="button"
-                            onClick={handleGoogleLogin}
-                            disabled={loading || googleLoading}
-                            className={`${authSecondaryBtnCls} gap-2`}
-                        >
-                            <Chrome className="h-4 w-4" />
-                            <span>{googleLoading ? "Mengalihkan..." : "Masuk dengan Google"}</span>
-                        </button>
-                    ) : null}
-                </div>
-
-                {googleEnabled ? (
-                    <p className="text-xs leading-6 text-white/45">
-                        Login Google dipakai untuk akses cepat. Role komunitas, team, dan izin dashboard tetap mengikuti akun Duel Standby Anda.
-                    </p>
-                ) : null}
+                <button type="submit" disabled={loading || googleLoading} className={authPrimaryBtnCls}>
+                    {loading ? "Memproses masuk..." : "Masuk ke Akun"}
+                </button>
             </form>
+
+            {googleEnabled ? (
+                <div className="mt-5">
+                    <div className="flex items-center gap-3 text-xs text-white/30">
+                        <div className="h-px flex-1 bg-white/10" />
+                        <span>atau</span>
+                        <div className="h-px flex-1 bg-white/10" />
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleGoogleLogin}
+                        disabled={loading || googleLoading}
+                        className="mt-5 inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.09)_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.11)_100%)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-900 shadow-sm">
+                            <Chrome className="h-4 w-4" />
+                        </span>
+                        <span>{googleLoading ? "Mengalihkan ke Google..." : "Lanjut dengan Google"}</span>
+                    </button>
+                </div>
+            ) : null}
         </AuthShell>
     );
 }
@@ -176,5 +194,3 @@ export default function LoginPage() {
         </Suspense>
     );
 }
-
-

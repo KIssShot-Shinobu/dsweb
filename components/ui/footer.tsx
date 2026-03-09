@@ -8,10 +8,10 @@ const DiscordIcon = ({ className }: { className?: string }) => (
 );
 
 const footerLinks = {
-    community: [{ name: "Server Discord", href: "https://discord.gg/duelstandby" }, { name: "Channel YouTube", href: "https://youtube.com/@duelstandby" }, { name: "Twitter / X", href: "https://twitter.com/duelstandby" }],
-    resources: [{ name: "Tier List", href: "#" }, { name: "Deck Builder", href: "#" }, { name: "Card Database", href: "#" }],
-    tournaments: [{ name: "Upcoming Events", href: "#tournaments" }, { name: "Past Results", href: "#" }, { name: "Leaderboard", href: "#" }],
-    legal: [{ name: "Kebijakan Privasi", href: "#" }, { name: "Syarat Layanan", href: "#" }, { name: "Kontak", href: "#" }],
+    community: [{ name: "Discord Community", href: "https://discord.gg/duelstandby" }, { name: "YouTube Highlights", href: "https://youtube.com/@duelstandby" }, { name: "X / Twitter Updates", href: "https://twitter.com/duelstandby" }],
+    resources: [{ name: "Panduan Komunitas", href: "#" }, { name: "FAQ Pendaftaran", href: "#" }, { name: "Dukungan Anggota", href: "#" }],
+    tournaments: [{ name: "Event Mendatang", href: "#tournaments" }, { name: "Direktori Turnamen", href: "/tournaments" }, { name: "Cara Bergabung", href: "/register" }],
+    legal: [{ name: "Privasi", href: "#" }, { name: "Ketentuan", href: "#" }, { name: "Hubungi Kami", href: "#" }],
 };
 
 export function Footer() {
@@ -20,8 +20,8 @@ export function Footer() {
             <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
                 <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-5 lg:gap-12">
                     <div className="lg:col-span-2">
-                        <div className="mb-4 flex items-center gap-2"><Swords className="h-8 w-8 text-[#FFC916]" /><span className="text-2xl font-bold text-slate-950 dark:text-white">DuelStandby</span></div>
-                        <p className="mb-6 max-w-sm leading-relaxed text-slate-600 dark:text-white/52">Komunitas duel yang merangkum turnamen, diskusi, dan ruang bermain dalam satu tempat yang ringkas dan nyaman diikuti.</p>
+                        <div className="mb-4 flex items-center gap-2"><Swords className="h-8 w-8 text-[#FFC916]" /><span className="text-2xl font-bold text-slate-950 dark:text-white">Duel Standby</span></div>
+                        <p className="mb-6 max-w-sm leading-relaxed text-slate-600 dark:text-white/52">Duel Standby adalah komunitas gaming untuk duelists yang mengutamakan kompetisi sehat, informasi yang jelas, dan pengalaman bermain yang lebih profesional.</p>
                         <div className="flex flex-wrap gap-3 sm:gap-4">
                             <a href="https://discord.gg/duelstandby" target="_blank" rel="noopener noreferrer" className="group relative rounded-xl border border-slate-200 bg-slate-100 p-2.5 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-1 hover:border-[#5865F2]/40 hover:bg-[#5865F2] hover:shadow-[0_18px_40px_rgba(88,101,242,0.32)] active:scale-[0.97] dark:border-white/10 dark:bg-white/[0.05] dark:hover:bg-[#5865F2] dark:hover:shadow-[0_18px_40px_rgba(88,101,242,0.28)]"><DiscordIcon className="h-5 w-5 text-slate-500 transition-all duration-300 group-hover:scale-110 group-hover:text-white dark:text-white/52" /></a>
                             <a href="https://youtube.com/@duelstandby" target="_blank" rel="noopener noreferrer" className="group relative rounded-xl border border-slate-200 bg-slate-100 p-2.5 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-1 hover:border-[#FF0000]/40 hover:bg-[#FF0000] hover:shadow-[0_18px_40px_rgba(255,0,0,0.28)] active:scale-[0.97] dark:border-white/10 dark:bg-white/[0.05] dark:hover:bg-[#FF0000] dark:hover:shadow-[0_18px_40px_rgba(255,0,0,0.22)]"><Youtube className="h-5 w-5 text-slate-500 transition-all duration-300 group-hover:scale-110 group-hover:text-white dark:text-white/52" /></a>
@@ -30,13 +30,13 @@ export function Footer() {
                         </div>
                     </div>
                     <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Komunitas</h4><ul className="space-y-3">{footerLinks.community.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-white/52">{link.name}</Link></li>)}</ul></div>
-                    <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Tournament</h4><ul className="space-y-3">{footerLinks.tournaments.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-white/52">{link.name}</Link></li>)}</ul></div>
-                    <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Referensi</h4><ul className="space-y-3">{footerLinks.resources.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-white/52">{link.name}</Link></li>)}</ul></div>
+                    <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Turnamen</h4><ul className="space-y-3">{footerLinks.tournaments.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-white/52">{link.name}</Link></li>)}</ul></div>
+                    <div><h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">Informasi</h4><ul className="space-y-3">{footerLinks.resources.map((link) => <li key={link.name}><Link href={link.href} className="text-sm text-slate-600 transition-colors hover:text-[#FFC916] dark:text-white/52">{link.name}</Link></li>)}</ul></div>
                 </div>
             </div>
             <div className="border-t border-slate-200 dark:border-white/10">
                 <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-center sm:px-6 md:flex-row md:text-left lg:px-8">
-                    <p className="text-sm text-slate-500 dark:text-white/38">&copy; {new Date().getFullYear()} DuelStandby. All rights reserved.</p>
+                    <p className="text-sm text-slate-500 dark:text-white/38">&copy; {new Date().getFullYear()} Duel Standby. Seluruh hak cipta dilindungi.</p>
                     <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:justify-end">{footerLinks.legal.map((link) => <Link key={link.name} href={link.href} className="text-sm text-slate-500 transition-colors hover:text-[#FFC916] dark:text-white/38">{link.name}</Link>)}</div>
                 </div>
             </div>

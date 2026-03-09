@@ -30,7 +30,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Halaman `Users` (`/dashboard/users`) menjadi pusat tunggal untuk registrasi user, akun aktif, role komunitas, dan afiliasi team. Halaman `Teams` (`/dashboard/teams`) dipakai untuk mengelola roster Duel Standby secara terpisah dari role akun, termasuk detail page team untuk roster assignment yang lebih nyaman dengan search + filter role langsung di roster dan kandidat, plus modal konfirmasi saat melepas anggota dari team.
 - Treasury transaksi + analytics ringkas dengan filter server-side; halaman treasury sekarang default ke semua periode agar sinkron dengan total data dashboard.
 - Dashboard summary memakai endpoint terpusat `/api/dashboard/summary`, termasuk ringkasan guild members, assigned team, dan total team aktif.
-- Upload file gambar (screenshot/profile) via API.
+- Upload file gambar (screenshot/profile) via API. Dashboard kini hanya menampilkan avatar user aktif di header agar layout tidak boros.
 - Audit log aktivitas user/admin.
 - Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
 - Native form controls (`select`, `date`, `datetime-local`) sudah di-hardening agar teks dropdown tetap terbaca di light/dark.
@@ -55,7 +55,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Surface card public di dark mode kini memakai dark panel solid yang konsisten agar tidak muncul panel putih atau teks yang kehilangan kontras.
 - Navbar public kini memakai icon toggle light/dark dengan animasi transisi, dan social icons di footer kembali memakai hover glow/lift agar terasa hidup.
 - Landing page memakai reveal animation ringan berbasis `framer-motion` pada hero, heading section, dan card penting; dashboard sengaja tidak diberi animasi scroll agar tetap ringan dipakai admin.
-- Copywriting public dirapikan menjadi lebih singkat, elegan, dan konsisten dalam Bahasa Indonesia pada homepage, card tournament, footer, serta halaman tournament publik.`r`n- Halaman auth publik kini memakai layout hero kiri + glass panel form yang lebih bersih, tanpa kartu penjelasan tambahan agar fokus user tetap ke aksi login/registrasi.
+- Copywriting public dirapikan menjadi lebih singkat, elegan, dan konsisten dalam Bahasa Indonesia pada homepage, card tournament, footer, serta halaman tournament publik.`r`n- Halaman auth publik kini memakai panel tunggal yang lebih minimal, tanpa hero samping atau kartu penjelasan tambahan agar fokus user tetap ke form login/registrasi. Tombol Google juga dipoles dengan tampilan yang lebih premium dan spacing mobile dibuat lebih rapat.
 - Navbar public:
   - Belum login: `Sign In` + `Sign Up`.
   - Sudah login admin/founder: profile menu -> `Dashboard`, `Logout`.
@@ -366,6 +366,8 @@ Mulai sekarang, setiap ada perubahan fitur/endpoint/role/alur setup:
 2. Jika perubahan menyentuh API, update bagian `API Ringkas`.
 3. Jika perubahan menyentuh auth/role/menu, update bagian `Role Akses`.
 4. Jika perubahan menyentuh setup/env/db, update bagian `Konfigurasi Environment` dan `Instalasi`.
+
+
 
 
 

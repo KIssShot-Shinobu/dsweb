@@ -43,16 +43,16 @@ export default function ForgotPasswordPage() {
             if (!response.ok || !data.success) {
                 setSuccessMessage(null);
                 setDebugResetUrl(null);
-                setError(data.message || "Permintaan reset password gagal diproses.");
+                setError(data.message || "Permintaan pengaturan ulang kata sandi belum dapat diproses.");
                 return;
             }
 
-            setSuccessMessage(data.message || "Jika email terdaftar, link reset sudah dikirim.");
+            setSuccessMessage(data.message || "Jika email Anda terdaftar, tautan pengaturan ulang sudah dikirim.");
             setDebugResetUrl(data.debugResetUrl || null);
         } catch {
             setSuccessMessage(null);
             setDebugResetUrl(null);
-            setError("Network error. Periksa koneksi Anda lalu coba lagi.");
+            setError("Koneksi sedang bermasalah. Periksa jaringan Anda lalu coba lagi.");
         } finally {
             setLoading(false);
         }
@@ -60,12 +60,12 @@ export default function ForgotPasswordPage() {
 
     return (
         <AuthShell
-            eyebrow="Password Recovery"
-            title="Lupa password?"
-            description="Masukkan email akun Anda. Jika terdaftar, kami akan mengirimkan link reset password yang berlaku selama 15 menit."
+            eyebrow="Pemulihan Akun"
+            title="Atur ulang kata sandi"
+            description="Masukkan email akun Anda. Jika terdaftar, kami akan mengirimkan tautan reset yang berlaku selama 15 menit."
             footer={
                 <>
-                    Sudah ingat password?{" "}
+                    Sudah ingat kata sandi?{" "}
                     <Link href="/login" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
                         Kembali ke login
                     </Link>
@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
                 <div className={`${authAlertCls} mb-5 border-emerald-500/20 bg-emerald-500/10 text-emerald-300`}>
                     <div className="font-medium">{successMessage}</div>
                     <p className="mt-2 text-sm text-emerald-200/80">
-                        Cek inbox, folder spam, atau promotions jika email belum terlihat.
+                        Periksa inbox, folder spam, atau tab promosi jika email belum terlihat.
                     </p>
                     {debugResetUrl ? (
                         <div className="mt-3 rounded-2xl border border-emerald-400/15 bg-black/15 p-3 text-xs text-emerald-100/80">
@@ -115,12 +115,12 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm leading-6 text-white/55">
-                    Demi keamanan, kami selalu menampilkan respons yang sama, baik email terdaftar maupun tidak.
+                    Demi keamanan, kami selalu menampilkan respons yang sama, baik email tersebut terdaftar maupun tidak.
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
                     <button type="submit" disabled={loading} className={authPrimaryBtnCls}>
-                        {loading ? "Mengirim..." : "Kirim Link Reset"}
+                        {loading ? "Mengirim tautan..." : "Kirim Tautan Reset"}
                     </button>
                     <Link href="/login" className={authSecondaryBtnCls}>
                         Batal

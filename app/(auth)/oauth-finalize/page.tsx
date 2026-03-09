@@ -34,7 +34,7 @@ function OAuthFinalizeContent() {
     const provider = searchParams.get("provider") === "credentials" ? "credentials" : "google";
 
     const [state, setState] = useState<FinalizeState>("loading");
-    const [message, setMessage] = useState("Menyelesaikan sesi login Anda...");
+    const [message, setMessage] = useState("Kami sedang menyiapkan sesi akun Anda...");
 
     useEffect(() => {
         let cancelled = false;
@@ -54,7 +54,7 @@ function OAuthFinalizeContent() {
 
                 if (!response.ok || !data?.success) {
                     setState("error");
-                    setMessage(data?.message || "Sesi login tidak valid. Silakan coba masuk lagi.");
+                    setMessage(data?.message || "Sesi login tidak valid. Silakan ulangi proses masuk.");
                     return;
                 }
 
@@ -66,7 +66,7 @@ function OAuthFinalizeContent() {
                 }
 
                 setState("error");
-                setMessage("Terjadi gangguan jaringan saat menyelesaikan login.");
+                setMessage("Terjadi kendala jaringan saat menyelesaikan login.");
             }
         }
 
@@ -79,12 +79,12 @@ function OAuthFinalizeContent() {
 
     return (
         <AuthShell
-            eyebrow="Account Access"
-            title="Menyiapkan Sesi Login"
-            description="Kami sedang menautkan sesi Auth.js ke akun internal Duel Standby agar role, team, dan izin dashboard Anda langsung sinkron."
+            eyebrow="Sinkronisasi Akses"
+            title="Menyiapkan sesi akun"
+            description="Kami sedang menautkan sesi login Anda ke sistem internal Duel Standby agar role, tim, dan izin dashboard langsung sinkron."
             footer={
                 <Link href="/" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
-                    Kembali ke homepage
+                    Kembali ke beranda
                 </Link>
             }
         >
@@ -94,10 +94,10 @@ function OAuthFinalizeContent() {
                         <div className="relative mx-auto h-20 w-20">
                             <div className="absolute inset-0 animate-ping rounded-3xl bg-ds-amber/10" />
                             <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-ds-amber/20 bg-ds-amber/12 text-sm font-black uppercase tracking-[0.22em] text-ds-amber">
-                                Sync
+                                Sink
                             </div>
                         </div>
-                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">Menyinkronkan Akses</h3>
+                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">Menyinkronkan akses</h3>
                         <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-white/55">{message}</p>
                     </>
                 ) : null}
@@ -107,7 +107,7 @@ function OAuthFinalizeContent() {
                         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-red-500/15 text-3xl font-black text-red-400">
                             !
                         </div>
-                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">Login Belum Selesai</h3>
+                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">Login belum selesai</h3>
                         <div className={`${authAlertCls} mx-auto mt-4 max-w-lg border-red-500/20 bg-red-500/10 text-red-400`}>
                             {message}
                         </div>
@@ -116,7 +116,7 @@ function OAuthFinalizeContent() {
                                 Kembali ke Login
                             </Link>
                             <Link href="/" className={authSecondaryBtnCls}>
-                                Ke Homepage
+                                Ke beranda
                             </Link>
                         </div>
                     </>
