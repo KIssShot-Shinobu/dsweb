@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getTokenFromCookie, verifyToken } from "@/lib/auth";
 
 const currentUserSelect = {
     id: true,
@@ -12,6 +11,7 @@ const currentUserSelect = {
     avatarUrl: true,
     city: true,
     phoneWhatsapp: true,
+    authVersion: true,
     teamId: true,
     teamJoinedAt: true,
     team: {
@@ -68,22 +68,24 @@ async function findCurrentUserById(id: string) {
 
 export async function getServerCurrentUser() {
     const session = await auth();
+    const sessionAuthVersion =
+        session?.user && "authVersion" in session.user && typeof session.user.authVersion === "number"
+            ? session.user.authVersion
+            : null;
 
-    if (session?.user?.email) {
-        const sessionUser = await findCurrentUserByEmail(session.user.email);
-        if (sessionUser) {
+    if (session?.user?.id) {
+        const sessionUser = await findCurrentUserById(session.user.id);
+        if (sessionUser && sessionAuthVersion === sessionUser.authVersion) {
             return mapCurrentUser(sessionUser);
         }
     }
 
-    const token = await getTokenFromCookie();
-    if (!token) return null;
+    if (session?.user?.email) {
+        const sessionUser = await findCurrentUserByEmail(session.user.email);
+        if (sessionUser && sessionAuthVersion === sessionUser.authVersion) {
+            return mapCurrentUser(sessionUser);
+        }
+    }
 
-    const payload = await verifyToken(token);
-    if (!payload?.userId) return null;
-
-    const legacyUser = await findCurrentUserById(payload.userId);
-    if (!legacyUser) return null;
-
-    return mapCurrentUser(legacyUser);
+    return null;
 }

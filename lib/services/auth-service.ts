@@ -1,5 +1,6 @@
 import type { RegisterInput, LoginInput } from "@/lib/validators";
 import type { GameType } from "@prisma/client";
+import { normalizeGameIdDigits } from "@/lib/game-id";
 
 type GameProfileLookup = { id: string } | null;
 type VerificationTokenRecord = { id: string } | null;
@@ -13,6 +14,7 @@ type AuthUserRecord = {
     role: string;
     teamId?: string | null;
     emailVerifiedAt?: Date | null;
+    authVersion?: number;
 };
 
 type RegisterConflictCode = "USERNAME_EXISTS" | "EMAIL_EXISTS" | "PHONE_EXISTS" | "GAME_ID_EXISTS";
@@ -53,8 +55,17 @@ async function findExistingGameProfile(prisma: AuthPrismaLike, data: RegisterInp
         return null;
     }
 
+    const candidates = Array.from(
+        new Set(
+            gameIdsToCheck.flatMap((gameId) => {
+                const normalizedDigits = normalizeGameIdDigits(gameId);
+                return normalizedDigits ? [gameId, normalizedDigits] : [gameId];
+            }),
+        ),
+    );
+
     return prisma.gameProfile.findFirst({
-        where: { gameId: { in: gameIdsToCheck } },
+        where: { gameId: { in: candidates } },
     });
 }
 
@@ -101,11 +112,11 @@ export async function authenticateUser(
               where: {
                   OR: [{ email: identifier }, { username: identifier }],
               },
-              select: { id: true, email: true, username: true, fullName: true, password: true, status: true, role: true, teamId: true, emailVerifiedAt: true },
+              select: { id: true, email: true, username: true, fullName: true, password: true, status: true, role: true, teamId: true, emailVerifiedAt: true, authVersion: true },
           })
         : await deps.prisma.user.findUnique({
               where: { email: identifier },
-              select: { id: true, email: true, username: true, fullName: true, password: true, status: true, role: true, teamId: true, emailVerifiedAt: true },
+              select: { id: true, email: true, username: true, fullName: true, password: true, status: true, role: true, teamId: true, emailVerifiedAt: true, authVersion: true },
           });
 
     if (!user) {

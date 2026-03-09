@@ -1,0 +1,4 @@
+ALTER TABLE `User`
+  ADD COLUMN `authVersion` INT NOT NULL DEFAULT 0 AFTER `role`;
+
+DROP TABLE IF EXISTS `Session`;

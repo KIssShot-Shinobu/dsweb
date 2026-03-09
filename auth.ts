@@ -18,6 +18,7 @@ type AuthAppUser = {
     status: string;
     teamId: string | null;
     emailVerifiedAt: Date | null;
+    authVersion: number;
 };
 
 async function resolveAppUser(googleId?: string | null, email?: string | null) {
@@ -43,6 +44,7 @@ async function resolveAppUser(googleId?: string | null, email?: string | null) {
             status: true,
             teamId: true,
             emailVerifiedAt: true,
+            authVersion: true,
         },
     }) as Promise<AuthAppUser | null>;
 }
@@ -109,6 +111,7 @@ const providers: any[] = [
                 status: authResult.user.status,
                 teamId: authResult.user.teamId ?? null,
                 isEmailVerified: Boolean(authResult.user.emailVerifiedAt),
+                authVersion: authResult.user.authVersion ?? 0,
             };
         },
     }),
@@ -217,6 +220,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                 ? user.email
                                 : "User";
                 token.isEmailVerified = Boolean(user.isEmailVerified);
+                token.authVersion =
+                    "authVersion" in user && typeof user.authVersion === "number"
+                        ? user.authVersion
+                        : 0;
             }
 
             if (account?.provider === "google") {
@@ -233,6 +240,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     token.username = appUser.username;
                     token.fullName = appUser.fullName;
                     token.isEmailVerified = Boolean(appUser.emailVerifiedAt);
+                    token.authVersion = appUser.authVersion;
                 }
             }
 
@@ -246,6 +254,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     token.username = appUser.username;
                     token.fullName = appUser.fullName;
                     token.isEmailVerified = Boolean(appUser.emailVerifiedAt);
+                    token.authVersion = appUser.authVersion;
                 }
             }
 
@@ -268,7 +277,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             ? token.fullName
                             : session.user.name || session.user.email || "User",
                     isEmailVerified: Boolean(token.isEmailVerified),
-                };
+                    authVersion: typeof token.authVersion === "number" ? token.authVersion : 0,
+                } as typeof session.user;
             }
 
             return session;

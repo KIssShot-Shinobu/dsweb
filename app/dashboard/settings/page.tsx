@@ -83,7 +83,7 @@ export default function SettingsPage() {
             setSuccessMessage(data.message || "Password berhasil diubah. Silakan login ulang.");
             setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
             setTimeout(() => {
-                window.location.href = "/login";
+                void clientLogout("/login");
             }, 1200);
         } catch {
             setError("Terjadi gangguan jaringan.");

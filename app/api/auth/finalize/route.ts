@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { clearRefreshCookie, createSession, setAuthCookie, setRefreshCookie, signToken } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { prisma, touchUserLastActiveAt } from "@/lib/prisma";
 import { finalizeAuthenticatedSession } from "@/lib/services/auth-session-finalize-service";
@@ -36,11 +35,6 @@ async function runFinalize(request: NextRequest, redirectTarget: string, provide
                     update: (args) => prisma.user.update(args as never),
                 },
             },
-            signToken,
-            setAuthCookie,
-            clearRefreshCookie,
-            createSession,
-            setRefreshCookie,
             touchUserLastActiveAt,
             logAudit: (params) => logAudit(params as any),
         },
@@ -57,14 +51,10 @@ async function runFinalize(request: NextRequest, redirectTarget: string, provide
 export async function GET(request: NextRequest) {
     const redirectTarget = getSafeRedirect(request.nextUrl.searchParams.get("redirect"));
     const provider = getProvider(request.nextUrl.searchParams.get("provider"));
-    const result = await runFinalize(request, redirectTarget, provider);
-
-    if (!result.ok) {
-        const errorCode = result.code === "BANNED" ? "banned" : "oauth_failed";
-        return NextResponse.redirect(new URL(`/login?error=${errorCode}`, request.url));
-    }
-
-    return NextResponse.redirect(new URL(redirectTarget, request.url));
+    const targetUrl = new URL("/oauth-finalize", request.url);
+    targetUrl.searchParams.set("provider", provider);
+    targetUrl.searchParams.set("redirect", redirectTarget);
+    return NextResponse.redirect(targetUrl);
 }
 
 export async function POST(request: NextRequest) {

@@ -16,11 +16,6 @@ type FinalizeDeps = {
             update: (args: { where: { id: string }; data: Record<string, unknown> }) => Promise<unknown>;
         };
     };
-    signToken: (payload: { userId: string; email: string; role: string; status: string }) => Promise<string>;
-    setAuthCookie: (token: string) => Promise<void>;
-    clearRefreshCookie: () => Promise<void>;
-    createSession: (params: { userId: string; ipAddress?: string | null; userAgent?: string | null }) => Promise<{ refreshToken: string }>;
-    setRefreshCookie: (token: string) => Promise<void>;
     touchUserLastActiveAt: (userId: string) => Promise<void>;
     logAudit: (params: {
         action: string;
@@ -76,26 +71,6 @@ export async function finalizeAuthenticatedSession(deps: FinalizeDeps, input: Fi
         data: { lastLoginAt: deps.now?.() ?? new Date() },
     });
     await deps.touchUserLastActiveAt(user.id);
-
-    const accessToken = await deps.signToken({
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-    });
-
-    await deps.setAuthCookie(accessToken);
-
-    try {
-        const refreshSession = await deps.createSession({
-            userId: user.id,
-            ipAddress: input.ipAddress ?? null,
-            userAgent: input.userAgent ?? null,
-        });
-        await deps.setRefreshCookie(refreshSession.refreshToken);
-    } catch {
-        await deps.clearRefreshCookie();
-    }
 
     if (input.provider === "google") {
         await deps.logAudit({

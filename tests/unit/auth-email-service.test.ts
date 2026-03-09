@@ -44,7 +44,7 @@ test("requestPasswordReset upserts token, logs audit, and returns debug URL", as
             },
             generateSecureToken: () => "reset-token",
             hashPassword: async () => "hashed",
-            revokeAllUserSessions: async () => undefined,
+            invalidateUserSessions: async () => undefined,
             getAppUrl: () => "http://localhost:5116",
             passwordResetTokenTtlMs: 15 * 60 * 1000,
             includeDebugUrl: true,
@@ -90,7 +90,7 @@ test("requestPasswordReset keeps generic success for unknown email", async () =>
             },
             generateSecureToken: () => "reset-token",
             hashPassword: async () => "hashed",
-            revokeAllUserSessions: async () => undefined,
+            invalidateUserSessions: async () => undefined,
             getAppUrl: () => "http://localhost:5116",
             passwordResetTokenTtlMs: 15 * 60 * 1000,
         },
@@ -105,9 +105,9 @@ test("requestPasswordReset keeps generic success for unknown email", async () =>
     assert.equal(auditLogs[0]?.details?.userFound, false);
 });
 
-test("resetPasswordWithToken hashes password, revokes sessions, and logs audit", async () => {
+test("resetPasswordWithToken hashes password, invalidates auth sessions, and logs audit", async () => {
     const auditLogs: Array<{ action: string; userId?: string }> = [];
-    let sessionsRevokedFor: string | null = null;
+    let invalidatedUserId: string | null = null;
 
     const result = await resetPasswordWithToken(
         {
@@ -140,8 +140,8 @@ test("resetPasswordWithToken hashes password, revokes sessions, and logs audit",
             },
             generateSecureToken: () => "unused",
             hashPassword: async (password) => `hashed:${password}`,
-            revokeAllUserSessions: async (userId) => {
-                sessionsRevokedFor = userId;
+            invalidateUserSessions: async (userId) => {
+                invalidatedUserId = userId;
             },
             getAppUrl: () => "http://localhost:5116",
             passwordResetTokenTtlMs: 15 * 60 * 1000,
@@ -157,7 +157,7 @@ test("resetPasswordWithToken hashes password, revokes sessions, and logs audit",
         success: true,
         message: "Password berhasil direset. Silakan login ulang.",
     });
-    assert.equal(sessionsRevokedFor, "user_1");
+    assert.equal(invalidatedUserId, "user_1");
     assert.equal(auditLogs[0]?.action, "PASSWORD_RESET_SUCCESS");
 });
 

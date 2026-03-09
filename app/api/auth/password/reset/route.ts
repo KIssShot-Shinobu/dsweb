@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hashPassword, revokeAllUserSessions } from "@/lib/auth";
+import { hashPassword, invalidateUserSessions } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { resetPasswordWithToken } from "@/lib/services/auth-email-service";
 import { z } from "zod";
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
                 logAudit,
                 generateSecureToken: () => "",
                 hashPassword,
-                revokeAllUserSessions,
+                invalidateUserSessions,
                 getAppUrl: () => "",
                 passwordResetTokenTtlMs: 0,
             },

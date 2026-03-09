@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { finalizeAuthenticatedSession } from "@/lib/services/auth-session-finalize-service";
 
-test("finalizeAuthenticatedSession issues internal session for active user", async () => {
+test("finalizeAuthenticatedSession records successful login for active user", async () => {
     const calls: string[] = [];
 
     const result = await finalizeAuthenticatedSession(
@@ -22,23 +22,6 @@ test("finalizeAuthenticatedSession issues internal session for active user", asy
                         return null;
                     },
                 },
-            },
-            signToken: async () => {
-                calls.push("signToken");
-                return "signed-token";
-            },
-            setAuthCookie: async () => {
-                calls.push("setAuthCookie");
-            },
-            clearRefreshCookie: async () => {
-                calls.push("clearRefreshCookie");
-            },
-            createSession: async () => {
-                calls.push("createSession");
-                return { refreshToken: "refresh-token" };
-            },
-            setRefreshCookie: async () => {
-                calls.push("setRefreshCookie");
             },
             touchUserLastActiveAt: async () => {
                 calls.push("touchUserLastActiveAt");
@@ -64,10 +47,6 @@ test("finalizeAuthenticatedSession issues internal session for active user", asy
     assert.deepEqual(calls, [
         "update",
         "touchUserLastActiveAt",
-        "signToken",
-        "setAuthCookie",
-        "createSession",
-        "setRefreshCookie",
         "audit:LOGIN_SUCCESS",
     ]);
 });
@@ -90,11 +69,6 @@ test("finalizeAuthenticatedSession rejects banned user and logs failed login", a
                     update: async () => null,
                 },
             },
-            signToken: async () => "token",
-            setAuthCookie: async () => undefined,
-            clearRefreshCookie: async () => undefined,
-            createSession: async () => ({ refreshToken: "refresh-token" }),
-            setRefreshCookie: async () => undefined,
             touchUserLastActiveAt: async () => undefined,
             logAudit: async ({ action }) => {
                 actions.push(action);

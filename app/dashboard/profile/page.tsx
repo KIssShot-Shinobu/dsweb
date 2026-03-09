@@ -1,8 +1,9 @@
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { GameProfileForm } from "@/components/dashboard/game-profile-form";
+import { ProfileAccountSection } from "@/components/dashboard/profile-account-section";
 import { ProfileAvatarForm } from "@/components/dashboard/profile-avatar-form";
+import { ProfileGameSection } from "@/components/dashboard/profile-game-section";
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import type { GameProfile } from "@prisma/client";
 
@@ -61,11 +62,7 @@ export default async function ProfilePage() {
         { label: "Reputasi", value: reputationPoints, color: "text-red-400" },
     ];
 
-    const accountRows = [
-        { label: "Username", value: `@${accountName}` },
-        { label: "Email", value: user.email },
-        { label: "WhatsApp", value: user.phoneWhatsapp || "-" },
-        { label: "Kota", value: user.city || "-" },
+    const accountMetaRows = [
         {
             label: "Terakhir Aktif",
             value: new Date(user.lastActiveAt).toLocaleDateString("id-ID", {
@@ -97,7 +94,7 @@ export default async function ProfilePage() {
 
                 <DashboardPanel
                     title="Ringkasan Akun"
-                    description="Informasi utama akun, statistik partisipasi, dan aktivitas terbaru disatukan dalam satu area agar lebih mudah dipindai."
+                    description="Informasi utama akun, profile game, dan jejak aktivitas singkat disusun berurutan agar lebih mudah dipindai."
                 >
                     <div className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
                         <div className="rounded-[28px] border border-black/5 bg-slate-50/80 p-6 dark:border-white/6 dark:bg-white/[0.03]">
@@ -137,8 +134,36 @@ export default async function ProfilePage() {
                         </div>
 
                         <div className="space-y-5 rounded-[28px] border border-black/5 bg-slate-50/80 p-5 dark:border-white/6 dark:bg-white/[0.03]">
-                            <div className="space-y-3">
-                                {accountRows.map((row) => (
+                            <div className="rounded-[24px] border border-black/5 bg-white/65 p-4 dark:border-white/8 dark:bg-white/[0.025]">
+                                <ProfileAccountSection
+                                    username={accountName}
+                                    email={user.email}
+                                    phoneWhatsapp={user.phoneWhatsapp || ""}
+                                    city={user.city || ""}
+                                    emailVerified={user.emailVerified}
+                                />
+
+                                <div className="mt-4 border-t border-black/5 pt-4 dark:border-white/8">
+                                    <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">
+                                        Profile Game
+                                    </div>
+                                    <ProfileGameSection
+                                        duelLinksProfile={
+                                            duelLinksProfile
+                                                ? { gameType: "DUEL_LINKS", ign: duelLinksProfile.ign, gameId: duelLinksProfile.gameId }
+                                                : undefined
+                                        }
+                                        masterDuelProfile={
+                                            masterDuelProfile
+                                                ? { gameType: "MASTER_DUEL", ign: masterDuelProfile.ign, gameId: masterDuelProfile.gameId }
+                                                : undefined
+                                        }
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 border-t border-black/5 pt-4 dark:border-white/8">
+                                {accountMetaRows.map((row) => (
                                     <div key={row.label} className="flex flex-col gap-1 border-b border-black/5 pb-3 last:border-0 last:pb-0 dark:border-white/8 sm:flex-row sm:items-center sm:justify-between">
                                         <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">{row.label}</span>
                                         <span className="text-sm font-medium text-slate-950 dark:text-white">{row.value}</span>
@@ -149,17 +174,17 @@ export default async function ProfilePage() {
                             <div className="border-t border-black/5 pt-4 dark:border-white/8">
                                 <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Aktivitas Terbaru</div>
                                 {recentAuditLogs.length === 0 ? (
-                                    <div className="rounded-2xl border border-dashed border-black/5 bg-white/70 px-4 py-5 text-sm text-slate-500 dark:border-white/8 dark:bg-white/[0.03] dark:text-white/45">
+                                    <div className="rounded-2xl border border-dashed border-black/5 bg-white/70 px-4 py-3 text-sm text-slate-500 dark:border-white/8 dark:bg-white/[0.03] dark:text-white/45">
                                         Belum ada aktivitas tercatat.
                                     </div>
                                 ) : (
-                                    <div className="space-y-3">
+                                    <div className="space-y-2">
                                         {recentAuditLogs.map((log) => (
                                             <div
                                                 key={`${log.action}-${log.createdAt.toISOString()}`}
-                                                className="flex flex-col gap-1 rounded-2xl border border-black/5 bg-white/70 px-4 py-3 dark:border-white/8 dark:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between"
+                                                className="flex flex-col gap-1 rounded-xl border border-black/5 bg-white/70 px-3 py-2.5 dark:border-white/8 dark:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between"
                                             >
-                                                <span className="text-sm font-semibold text-slate-950 dark:text-white">{log.action}</span>
+                                                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 dark:text-white/78">{log.action}</span>
                                                 <span className="text-xs text-slate-400 dark:text-white/40">
                                                     {new Date(log.createdAt).toLocaleDateString("id-ID", {
                                                         day: "numeric",
@@ -175,30 +200,6 @@ export default async function ProfilePage() {
                                 )}
                             </div>
                         </div>
-                    </div>
-                </DashboardPanel>
-
-                <DashboardPanel
-                    title="Profile Game"
-                    description="Kelola Duel Links dan Master Duel dari satu area yang tetap ringkas."
-                >
-                    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                        <GameProfileForm
-                            gameType="DUEL_LINKS"
-                            initialData={
-                                duelLinksProfile
-                                    ? { gameType: "DUEL_LINKS", ign: duelLinksProfile.ign, gameId: duelLinksProfile.gameId }
-                                    : undefined
-                            }
-                        />
-                        <GameProfileForm
-                            gameType="MASTER_DUEL"
-                            initialData={
-                                masterDuelProfile
-                                    ? { gameType: "MASTER_DUEL", ign: masterDuelProfile.ign, gameId: masterDuelProfile.gameId }
-                                    : undefined
-                            }
-                        />
                     </div>
                 </DashboardPanel>
             </div>

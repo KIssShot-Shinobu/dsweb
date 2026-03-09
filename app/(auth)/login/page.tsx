@@ -98,7 +98,7 @@ function LoginForm() {
         try {
             await signOut({ redirect: false });
             await signIn("google", {
-                callbackUrl: `/api/auth/finalize?provider=google&redirect=${encodeURIComponent(redirect)}`,
+                callbackUrl: `/oauth-finalize?provider=google&redirect=${encodeURIComponent(redirect)}`,
             });
         } catch {
             setError("Login Google tidak berhasil. Coba lagi.");

@@ -7,10 +7,10 @@ servers:
   - url: https://example.com
 components:
   securitySchemes:
-    dsAuthCookie:
+    authjsSessionCookie:
       type: apiKey
       in: cookie
-      name: ds_auth
+      name: authjs.session-token
   schemas:
     UserStatus:
       type: string
@@ -87,39 +87,14 @@ paths:
       responses:
         "201":
           description: Registration created
-  /api/auth/login:
-    post:
-      summary: Legacy credentials login endpoint for compatibility
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - identifier
-                - password
-              properties:
-                identifier:
-                  type: string
-                  description: Username atau email
-                password:
-                  type: string
-                rememberMe:
-                  type: boolean
-      responses:
-        "200":
-          description: Login success
-        "401":
-          description: Invalid credentials
   /api/auth/finalize:
     get:
-      summary: Finalize Auth.js session into internal auth cookies and redirect
+      summary: Redirect browser to the safe Auth.js finalization page
       responses:
         "302":
-          description: Redirect to dashboard or requested internal path after issuing auth cookies
+          description: Redirect to `/oauth-finalize` without performing login side effects
     post:
-      summary: Finalize Auth.js session into internal auth cookies for client-side login
+      summary: Finalize Auth.js session for client-side login state and audit
       requestBody:
         required: false
         content:
@@ -136,7 +111,7 @@ paths:
                   type: string
       responses:
         "200":
-          description: Internal cookies issued and redirect target returned
+          description: Redirect target returned after Auth.js finalization
         "401":
           description: Auth.js session missing or invalid
   /api/auth/me:
@@ -147,26 +122,20 @@ paths:
           description: Session payload
   /api/auth/oauth/finalize:
     get:
-      summary: Compatibility alias to Auth.js finalize route
+      summary: Compatibility alias to the Auth.js finalization redirect route
       responses:
         "302":
-          description: Redirect to dashboard or requested internal path after issuing auth cookies
+          description: Redirect to `/oauth-finalize` without performing login side effects
     post:
       summary: Compatibility alias to Auth.js finalize route
       responses:
         "200":
-          description: Internal cookies issued and redirect target returned
-  /api/auth/refresh:
-    post:
-      summary: Rotate refresh token and refresh access cookie
-      responses:
-        "200":
-          description: Token refreshed
+          description: Redirect target returned after finalization
   /api/auth/password/change:
     post:
       summary: Change password for authenticated user
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       requestBody:
         required: true
         content:
@@ -229,7 +198,7 @@ paths:
     get:
       summary: Fetch dashboard summary cards and lists
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       responses:
         "200":
           description: Summary payload for the unified operations dashboard
@@ -239,7 +208,7 @@ paths:
     get:
       summary: List users for dashboard management
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: query
           name: status
@@ -283,7 +252,7 @@ paths:
     get:
       summary: Get a single managed user detail
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -299,7 +268,7 @@ paths:
     put:
       summary: Update status, role, or team assignment for a managed user
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -338,7 +307,7 @@ paths:
     get:
       summary: List guild teams for dashboard management
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: query
           name: search
@@ -356,7 +325,7 @@ paths:
     post:
       summary: Create a new guild team
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       requestBody:
         required: true
         content:
@@ -390,7 +359,7 @@ paths:
     get:
       summary: Get a guild team with roster summary
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -407,7 +376,7 @@ paths:
     put:
       summary: Update a guild team
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -448,7 +417,7 @@ paths:
     delete:
       summary: Delete an empty guild team
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -468,7 +437,7 @@ paths:
     post:
       summary: Assign an eligible member to a team roster
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -500,7 +469,7 @@ paths:
     delete:
       summary: Remove a member from a team roster
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -531,7 +500,7 @@ paths:
     get:
       summary: Fetch treasury transactions with summary
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: query
           name: page
@@ -567,7 +536,7 @@ paths:
     post:
       summary: Create treasury transaction
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       requestBody:
         required: true
         content:
@@ -627,7 +596,7 @@ paths:
     post:
       summary: Create tournament
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       responses:
         "201":
           description: Tournament created
@@ -650,7 +619,7 @@ paths:
     put:
       summary: Update tournament
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       responses:
         "200":
           description: Tournament updated
@@ -659,7 +628,7 @@ paths:
     delete:
       summary: Delete tournament
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       responses:
         "200":
           description: Tournament deleted
@@ -669,7 +638,7 @@ paths:
     post:
       summary: Register authenticated active user to a tournament
       security:
-        - dsAuthCookie: []
+        - authjsSessionCookie: []
       parameters:
         - in: path
           name: id

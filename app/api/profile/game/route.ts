@@ -31,6 +31,18 @@ export async function POST(request: NextRequest) {
             }
         });
 
+        const duplicateGameId = await prisma.gameProfile.findFirst({
+            where: {
+                gameId,
+                NOT: existingProfile ? { id: existingProfile.id } : undefined,
+            },
+            select: { id: true },
+        });
+
+        if (duplicateGameId) {
+            return NextResponse.json({ success: false, message: "Game ID sudah dipakai akun lain" }, { status: 409 });
+        }
+
         let profile;
         if (existingProfile) {
             // Update

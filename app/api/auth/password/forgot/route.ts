@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateSecureToken, PASSWORD_RESET_TOKEN_TTL_MS, hashPassword, revokeAllUserSessions } from "@/lib/auth";
+import { generateSecureToken, PASSWORD_RESET_TOKEN_TTL_MS, hashPassword, invalidateUserSessions } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { sendEmail } from "@/lib/email";
 import { getAppUrl } from "@/lib/runtime-config";
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
                 logAudit,
                 generateSecureToken,
                 hashPassword,
-                revokeAllUserSessions,
+                invalidateUserSessions,
                 getAppUrl,
                 passwordResetTokenTtlMs: PASSWORD_RESET_TOKEN_TTL_MS,
                 includeDebugUrl: process.env.NODE_ENV !== "production",

@@ -17,6 +17,7 @@ import {
     REGISTER_STEPS,
     SOCIAL_OPTIONS,
     SOURCE_OPTIONS,
+    formatRegisterGameId,
     type RegistrationFormData,
     type UploadField,
     type UploadPreview,
@@ -268,7 +269,7 @@ export default function RegisterPage() {
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div>
                                     <label className={authLabelCls}>Game ID</label>
-                                    <input type="text" className={authInputCls} placeholder="123456789" value={form.duelLinksGameId} onChange={(event) => setField("duelLinksGameId", event.target.value)} />
+                                    <input type="text" inputMode="numeric" className={authInputCls} placeholder="123-456-789" value={form.duelLinksGameId} onChange={(event) => setField("duelLinksGameId", formatRegisterGameId(event.target.value))} />
                                 </div>
                                 <div>
                                     <label className={authLabelCls}>IGN</label>
@@ -291,7 +292,7 @@ export default function RegisterPage() {
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div>
                                     <label className={authLabelCls}>Game ID</label>
-                                    <input type="text" className={authInputCls} placeholder="MD-123456789" value={form.masterDuelGameId} onChange={(event) => setField("masterDuelGameId", event.target.value)} />
+                                    <input type="text" inputMode="numeric" className={authInputCls} placeholder="123-456-789" value={form.masterDuelGameId} onChange={(event) => setField("masterDuelGameId", formatRegisterGameId(event.target.value))} />
                                 </div>
                                 <div>
                                     <label className={authLabelCls}>IGN</label>

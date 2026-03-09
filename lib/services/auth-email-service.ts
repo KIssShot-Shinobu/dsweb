@@ -77,7 +77,7 @@ type PasswordResetDeps = {
     logAudit: LogAuditFn;
     generateSecureToken(length: number): string;
     hashPassword(password: string): Promise<string>;
-    revokeAllUserSessions(userId: string): Promise<void>;
+    invalidateUserSessions(userId: string): Promise<void>;
     getAppUrl(): string;
     passwordResetTokenTtlMs: number;
     includeDebugUrl?: boolean;
@@ -235,7 +235,7 @@ export async function resetPasswordWithToken(
         }),
     ]);
 
-    await deps.revokeAllUserSessions(resetToken.userId);
+    await deps.invalidateUserSessions(resetToken.userId);
 
     await deps.logAudit({
         action: AUDIT_ACTIONS.PASSWORD_RESET_SUCCESS,

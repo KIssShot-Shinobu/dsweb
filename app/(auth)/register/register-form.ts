@@ -1,4 +1,6 @@
-﻿export type RegistrationFormData = {
+import { formatGameId, normalizeGameIdDigits } from "@/lib/game-id";
+
+export type RegistrationFormData = {
     username: string;
     email: string;
     password: string;
@@ -70,6 +72,8 @@ export function validateRegisterStep(form: RegistrationFormData, targetStep: num
         const hasMasterDuel = Boolean(form.masterDuelGameId && form.masterDuelIgn);
 
         if (!hasDuelLinks && !hasMasterDuel) nextErrors.duelLinksGameId = "Minimal satu game profile wajib diisi";
+        if (form.duelLinksGameId && normalizeGameIdDigits(form.duelLinksGameId).length !== 9) nextErrors.duelLinksGameId = "Game ID Duel Links harus 9 digit";
+        if (form.masterDuelGameId && normalizeGameIdDigits(form.masterDuelGameId).length !== 9) nextErrors.masterDuelGameId = "Game ID Master Duel harus 9 digit";
         if (form.duelLinksIgn && !IGN_REGEX.test(form.duelLinksIgn)) nextErrors.duelLinksIgn = "IGN Duel Links mengandung karakter yang tidak valid";
         if (form.masterDuelIgn && !IGN_REGEX.test(form.masterDuelIgn)) nextErrors.masterDuelIgn = "IGN Master Duel mengandung karakter yang tidak valid";
     }
@@ -82,4 +86,8 @@ export function validateRegisterStep(form: RegistrationFormData, targetStep: num
     if (targetStep === 4 && !form.agreement) nextErrors.agreement = "Anda harus menyetujui pernyataan";
 
     return nextErrors;
+}
+
+export function formatRegisterGameId(value: string) {
+    return formatGameId(value);
 }

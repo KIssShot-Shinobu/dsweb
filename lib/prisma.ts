@@ -22,7 +22,6 @@ type UserSensitiveSnapshot = {
     twoFactorSecret: string | null;
 };
 type UserResultWithId = { id: string };
-type SessionResult = { userId: string };
 
 function createBasePrismaClient() {
     const databaseUrl = process.env.DATABASE_URL;
@@ -155,18 +154,6 @@ const prismaExtension = Prisma.defineExtension((client) =>
                     }
 
                     return unprotectUserRecord(result);
-                },
-            },
-            session: {
-                async create({ args, query }: QueryParams) {
-                    const result = await query(args);
-
-                    await basePrisma.user.updateMany({
-                        where: { id: (result as SessionResult).userId },
-                        data: { lastActiveAt: new Date() },
-                    });
-
-                    return result;
                 },
             },
         },

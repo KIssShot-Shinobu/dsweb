@@ -141,6 +141,7 @@ model User {
   avatarUrl     String?
   status        UserStatus @default(ACTIVE)
   role          UserRole   @default(USER)
+  authVersion   Int        @default(0)
   teamId        String?
   teamJoinedAt  DateTime?
   lastLoginAt   DateTime?
@@ -155,7 +156,6 @@ model User {
   tournaments     TournamentParticipant[]
   emailVerificationToken EmailVerificationToken?
   passwordResetToken PasswordResetToken?
-  sessions        Session[]
   badges          UserBadge[]
   reputationLogs  ReputationLog[]
   treasuryEntries Treasury[]
@@ -220,19 +220,6 @@ model PasswordResetToken {
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshToken String   @unique @db.VarChar(191)
-  expiresAt    DateTime
-  ipAddress    String?
-  userAgent    String?
-  createdAt    DateTime @default(now())
-
-  @@index([userId])
 }
 
 model GameProfile {
