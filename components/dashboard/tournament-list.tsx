@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { DashboardEmptyState, DashboardPanel } from "@/components/dashboard/page-shell";
 
 interface Tournament {
@@ -15,13 +16,13 @@ interface Tournament {
 const getStatusBadge = (status: string) => {
     switch (status.toUpperCase()) {
         case "ONGOING":
-            return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+            return "badge-success";
         case "COMPLETED":
-            return "bg-slate-400/10 text-slate-400 border-slate-400/20";
+            return "badge-ghost";
         case "CANCELLED":
-            return "bg-red-500/10 text-red-400 border-red-500/20";
+            return "badge-error";
         default:
-            return "bg-blue-500/10 text-blue-400 border-blue-400/20";
+            return "badge-info";
     }
 };
 
@@ -53,19 +54,19 @@ export function TournamentList({
             title="Tournaments"
             description="Turnamen terbaru yang sedang dibuka, berjalan, atau baru selesai."
             action={
-                <a href="/dashboard/tournaments" className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70 dark:hover:bg-white/[0.06]">
+                <Link href="/dashboard/tournaments" className="btn btn-outline btn-sm rounded-box">
                     Manage
-                </a>
+                </Link>
             }
         >
             {loading ? (
                 <div className="space-y-3">
                     {[1, 2, 3].map((item) => (
-                        <div key={item} className="flex items-center gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-3 dark:border-white/6 dark:bg-white/[0.03]">
-                            <div className="h-10 w-10 animate-pulse rounded-2xl bg-slate-200 dark:bg-white/8" />
+                        <div key={item} className="flex items-center gap-3 rounded-box border border-base-300 bg-base-200/40 p-3">
+                            <div className="skeleton h-10 w-10 rounded-2xl" />
                             <div className="flex-1 space-y-2">
-                                <div className="h-3 w-3/5 animate-pulse rounded-full bg-slate-200 dark:bg-white/8" />
-                                <div className="h-2.5 w-2/5 animate-pulse rounded-full bg-slate-200 dark:bg-white/8" />
+                                <div className="skeleton h-3 w-3/5" />
+                                <div className="skeleton h-2.5 w-2/5" />
                             </div>
                         </div>
                     ))}
@@ -80,17 +81,17 @@ export function TournamentList({
             ) : (
                 <div className="space-y-3">
                     {tournaments.map((tournament) => (
-                        <div key={tournament.id} className="flex items-center gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-3 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] sm:p-4">
-                            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-bold ${tournament.gameType.toLowerCase().includes("master") ? "bg-purple-500/10 text-purple-400" : "bg-blue-500/10 text-blue-400"}`}>
+                        <div key={tournament.id} className="flex items-center gap-3 rounded-box border border-base-300 bg-base-200/40 p-3 transition-all hover:border-primary/20 hover:bg-base-100 sm:p-4">
+                            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-bold ${tournament.gameType.toLowerCase().includes("master") ? "bg-secondary/12 text-secondary" : "bg-info/12 text-info"}`}>
                                 {getGameIcon(tournament.gameType)}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{tournament.title}</div>
-                                <div className="text-xs text-slate-400 dark:text-white/40">
+                                <div className="truncate text-sm font-semibold text-base-content">{tournament.title}</div>
+                                <div className="text-xs text-base-content/50">
                                     {formatDate(tournament.startDate)} - {formatPrize(tournament.prizePool)} - {tournament._count?.participants || 0} peserta
                                 </div>
                             </div>
-                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getStatusBadge(tournament.status)}`}>
+                            <span className={`badge h-auto px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getStatusBadge(tournament.status)}`}>
                                 {tournament.status}
                             </span>
                         </div>

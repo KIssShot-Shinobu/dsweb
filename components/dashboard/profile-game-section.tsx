@@ -78,7 +78,7 @@ export function ProfileGameSection({
                             key={card.gameType}
                             type="button"
                             onClick={() => setActiveGameType(card.gameType)}
-                            className="group rounded-[24px] border border-black/5 bg-white/75 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-ds-amber/20 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-white/8 dark:bg-white/[0.035] dark:hover:border-ds-amber/20"
+                            className="group rounded-box border border-base-300 bg-base-100 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg"
                         >
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex min-w-0 items-center gap-3">
@@ -86,10 +86,10 @@ export function ProfileGameSection({
                                         {card.badge}
                                     </div>
                                     <div className="min-w-0">
-                                        <div className="truncate text-sm font-bold tracking-[0.04em] text-slate-950 dark:text-white">
+                                        <div className="truncate text-sm font-bold tracking-[0.04em] text-base-content">
                                             {card.title}
                                         </div>
-                                        <p className="mt-0.5 text-xs text-slate-500 dark:text-white/45">
+                                        <p className="mt-0.5 text-xs text-base-content/60">
                                             {card.subtitle}
                                         </p>
                                     </div>
@@ -101,28 +101,28 @@ export function ProfileGameSection({
                                 </span>
                             </div>
 
-                            <div className="mt-4 rounded-xl border border-black/5 bg-slate-50/80 px-4 py-4 dark:border-white/8 dark:bg-black/10">
+                            <div className="mt-4 rounded-box border border-base-300 bg-base-200/50 px-4 py-4">
                                 {hasProfile ? (
                                     <div className="space-y-3">
-                                        <div className="flex flex-col gap-1 border-b border-black/5 pb-3 dark:border-white/8 sm:flex-row sm:items-center sm:justify-between">
-                                            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">
+                                        <div className="flex flex-col gap-1 border-b border-base-300 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">
                                                 IGN
                                             </span>
-                                            <span className="text-sm font-semibold text-slate-950 dark:text-white">
+                                            <span className="text-sm font-semibold text-base-content">
                                                 {card.profile?.ign}
                                             </span>
                                         </div>
                                         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">
+                                            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">
                                                 {card.idLabel}
                                             </span>
-                                            <span className="font-mono text-sm text-ds-amber">
+                                            <span className="font-mono text-sm text-primary">
                                                 {formatGameId(card.profile?.gameId || "")}
                                             </span>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="text-sm leading-6 text-slate-500 dark:text-white/45">
+                                    <div className="text-sm leading-6 text-base-content/60">
                                         Belum ada data. Klik untuk menambahkan profile.
                                     </div>
                                 )}

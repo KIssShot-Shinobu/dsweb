@@ -2,9 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSidebar } from "@/context/SidebarContext";
-import { useCurrentUser } from "@/hooks/use-current-user";
-import { clientLogout } from "@/lib/client-auth";
 import {
     HelpCircle,
     Home,
@@ -19,6 +16,9 @@ import {
     Wallet,
     X,
 } from "lucide-react";
+import { useSidebar } from "@/context/SidebarContext";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { clientLogout } from "@/lib/client-auth";
 
 type MenuSection = {
     section: string;
@@ -94,75 +94,81 @@ export function Sidebar() {
         .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
     return (
-        <>
-            {isOpen && <div className="fixed inset-0 z-20 bg-black/50 md:hidden" onClick={close} />}
-
-            <aside className={`fixed top-0 left-0 z-30 flex h-full w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out dark:border-white/5 dark:bg-[#111] ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
-                <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 px-5 dark:border-white/5">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ds-amber text-sm font-bold text-black">DS</div>
-                        <span className="text-base font-semibold tracking-tight text-gray-900 dark:text-white">DuelStandby</span>
-                    </div>
-                    <button
-                        onClick={close}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white md:hidden"
-                        aria-label="Close"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
-                </div>
-                <nav className="flex-1 overflow-y-auto px-3 py-4">
-                    {ALL_MENU.map((section) => {
-                        if (section.minRole && !canAccess(section.minRole)) return null;
-                        const visibleItems = section.items.filter((item) => canAccess(item.minRole));
-                        if (visibleItems.length === 0) return null;
-
-                        return (
-                            <div key={section.section} className="mb-4">
-                                <div className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-white/30">
-                                    {section.section}
-                                </div>
-                                {visibleItems.map((item) => {
-                                    const isActive = item.href === bestMatch || (item.href === "/dashboard" && pathname === "/dashboard");
-                                    const ItemIcon = ICONS[item.icon];
-
-                                    return (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            onClick={close}
-                                            className={`mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 ${isActive ? "bg-ds-amber text-black" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"}`}
-                                        >
-                                            <ItemIcon className="h-4 w-4" />
-                                            <span>{item.name}</span>
-                                        </Link>
-                                    );
-                                })}
+        <div className={`drawer-side z-40 ${isOpen ? "" : "pointer-events-none lg:pointer-events-auto"}`}>
+            <label aria-label="close sidebar" className="drawer-overlay" onClick={close} />
+            <aside className={`min-h-full w-80 bg-base-100 text-base-content transition-transform duration-300 lg:w-72 ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+                <div className="flex h-full flex-col border-r border-base-300 bg-base-100/95 backdrop-blur-xl">
+                    <div className="flex h-16 items-center justify-between border-b border-base-300 px-5">
+                        <div className="flex items-center gap-3">
+                            <div className="badge badge-primary h-10 w-10 rounded-2xl border-0 text-base font-black text-primary-content">DS</div>
+                            <div>
+                                <div className="text-sm font-black tracking-wide">Duel Standby</div>
+                                <div className="text-xs text-base-content/50">Dashboard</div>
                             </div>
-                        );
-                    })}
-                </nav>
+                        </div>
+                        <button onClick={close} className="btn btn-ghost btn-sm btn-circle lg:hidden" aria-label="Close">
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
 
-                <div className="flex-shrink-0 space-y-0.5 border-t border-gray-200 px-3 pt-3 pb-4 dark:border-white/5">
-                    <button
-                        onClick={async () => {
-                            await clientLogout("/login");
-                        }}
-                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 transition-all hover:bg-red-500/5 hover:text-red-500 dark:text-white/40 dark:hover:text-red-400"
-                    >
-                        <LogOut className="h-4 w-4" />
-                        <span>Logout</span>
-                    </button>
-                    <Link href="/" onClick={close} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white">
-                        <Home className="h-4 w-4" />
-                        <span>Back to Home</span>
-                    </Link>
+                    <nav className="flex-1 overflow-y-auto px-3 py-4">
+                        {ALL_MENU.map((section) => {
+                            if (section.minRole && !canAccess(section.minRole)) return null;
+                            const visibleItems = section.items.filter((item) => canAccess(item.minRole));
+                            if (visibleItems.length === 0) return null;
+
+                            return (
+                                <div key={section.section} className="mb-5">
+                                    <div className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.28em] text-base-content/45">
+                                        {section.section}
+                                    </div>
+                                    <ul className="menu gap-1 rounded-box bg-base-200/40 p-2">
+                                        {visibleItems.map((item) => {
+                                            const isActive = item.href === bestMatch || (item.href === "/dashboard" && pathname === "/dashboard");
+                                            const ItemIcon = ICONS[item.icon];
+
+                                            return (
+                                                <li key={item.href}>
+                                                    <Link
+                                                        href={item.href}
+                                                        onClick={close}
+                                                        className={isActive ? "active !bg-primary !text-primary-content" : ""}
+                                                    >
+                                                        <ItemIcon className="h-4 w-4" />
+                                                        <span>{item.name}</span>
+                                                    </Link>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </div>
+                            );
+                        })}
+                    </nav>
+
+                    <div className="border-t border-base-300 px-3 py-4">
+                        <ul className="menu rounded-box bg-base-200/40 p-2">
+                            <li>
+                                <button
+                                    onClick={async () => {
+                                        await clientLogout("/login");
+                                    }}
+                                    className="text-error"
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                    <span>Logout</span>
+                                </button>
+                            </li>
+                            <li>
+                                <Link href="/" onClick={close}>
+                                    <Home className="h-4 w-4" />
+                                    <span>Back to Home</span>
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </aside>
-        </>
+        </div>
     );
 }
-
-
-
-

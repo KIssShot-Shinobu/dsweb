@@ -127,18 +127,18 @@ const ACTION_LABELS: Record<string, string> = Object.fromEntries(
 
 const getActionBadgeColor = (action: string) => {
     if (action.startsWith("OAUTH_GOOGLE")) {
-        return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+        return "border-success/20 bg-success/10 text-success";
     }
     if (action.includes("SUCCESS") || action.includes("APPROVED") || action.includes("REGISTERED")) {
-        return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+        return "border-success/20 bg-success/10 text-success";
     }
     if (action.includes("FAILED") || action.includes("BANNED")) {
-        return "bg-red-500/10 text-red-500 border-red-500/20";
+        return "border-error/20 bg-error/10 text-error";
     }
     if (action.includes("UPDATED") || action.includes("CHANGED")) {
-        return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+        return "border-info/20 bg-info/10 text-info";
     }
-    return "bg-ds-amber/10 text-ds-amber border-ds-amber/20";
+    return "border-warning/20 bg-warning/10 text-warning";
 };
 
 export default function AuditLogsPage() {
@@ -225,7 +225,7 @@ export default function AuditLogsPage() {
                 />
 
                 {exportMessage ? (
-                    <div className={`rounded-2xl border px-4 py-3 text-sm ${exportMessage.type === "success" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" : "border-red-500/20 bg-red-500/10 text-red-500"}`}>
+                    <div className={`rounded-box border px-4 py-3 text-sm ${exportMessage.type === "success" ? "border-success/20 bg-success/10 text-success" : "border-error/20 bg-error/10 text-error"}`}>
                         {exportMessage.text}
                     </div>
                 ) : null}
@@ -259,7 +259,7 @@ export default function AuditLogsPage() {
 
                 <DashboardPanel title="Daftar Audit Logs" description={`Menampilkan ${total} log yang sesuai dengan filter sekarang.`}>
                     {loading ? (
-                        <div className="rounded-2xl border border-black/5 bg-slate-50/80 px-5 py-12 text-center text-sm text-slate-500 dark:border-white/6 dark:bg-white/[0.03] dark:text-white/45">
+                        <div className="rounded-box border border-base-300 bg-base-200/40 px-5 py-12 text-center text-sm text-base-content/60">
                             Memuat data log...
                         </div>
                     ) : logs.length === 0 ? (
@@ -267,39 +267,39 @@ export default function AuditLogsPage() {
                     ) : (
                         <div className="space-y-3">
                             {logs.map((log) => (
-                                <div key={log.id} className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05]">
+                                <div key={log.id} className="rounded-box border border-base-300 bg-base-200/40 p-4 transition-all hover:border-primary/20 hover:bg-base-100">
                                     <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                                         <div className="space-y-3">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getActionBadgeColor(log.action)}`}>
                                                     {ACTION_LABELS[log.action] ?? log.action}
                                                 </span>
-                                                <span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500 dark:bg-white/5 dark:text-white/40" title={log.userId}>
+                                                <span className="rounded-full bg-base-100 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50" title={log.userId}>
                                                     {log.userId === "0" ? "SYSTEM" : log.userId.slice(-8)}
                                                 </span>
-                                                <span className="text-xs text-slate-400 dark:text-white/35">{formatDate(log.createdAt)}</span>
+                                                <span className="text-xs text-base-content/45">{formatDate(log.createdAt)}</span>
                                             </div>
                                             <div>
-                                                <div className="text-sm font-semibold text-slate-950 dark:text-white">{log.user?.fullName || "System Event"}</div>
-                                                <div className="text-xs text-slate-400 dark:text-white/35">{log.user?.email || log.ipAddress}</div>
+                                                <div className="text-sm font-semibold text-base-content">{log.user?.fullName || "System Event"}</div>
+                                                <div className="text-xs text-base-content/45">{log.user?.email || log.ipAddress}</div>
                                             </div>
                                         </div>
 
-                                        <div className="grid gap-3 text-sm text-slate-500 dark:text-white/45 sm:grid-cols-2 xl:min-w-[420px]">
+                                        <div className="grid gap-3 text-sm text-base-content/60 sm:grid-cols-2 xl:min-w-[420px]">
                                             <div>
-                                                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Request</div>
-                                                <div className="mt-2 font-mono text-xs text-slate-500 dark:text-white/45">
+                                                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Request</div>
+                                                <div className="mt-2 font-mono text-xs text-base-content/60">
                                                     {[log.requestMethod, log.requestPath, log.responseStatus].filter(Boolean).join(" - ") || "-"}
                                                 </div>
                                             </div>
                                             <div>
-                                                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Target</div>
-                                                <div className="mt-2 text-xs text-slate-500 dark:text-white/45">{log.targetType || "NONE"}</div>
-                                                {log.reason ? <div className="mt-1 text-xs text-red-500">Reason: {log.reason}</div> : null}
+                                                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Target</div>
+                                                <div className="mt-2 text-xs text-base-content/60">{log.targetType || "NONE"}</div>
+                                                {log.reason ? <div className="mt-1 text-xs text-error">Reason: {log.reason}</div> : null}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="mt-4 rounded-2xl border border-dashed border-black/5 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-600 dark:border-white/8 dark:bg-black/10 dark:text-white/60">
+                                    <div className="mt-4 rounded-box border border-dashed border-base-300 bg-base-100 px-4 py-3 text-sm leading-6 text-base-content/65">
                                         {formatDetails(log.details)}
                                     </div>
                                 </div>

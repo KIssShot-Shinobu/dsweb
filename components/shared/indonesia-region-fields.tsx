@@ -22,18 +22,10 @@ type RegionApiResponse<T> = {
     message?: string;
 } & T;
 
-const authLabelClass = "mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-white/55";
-const dashboardLabelClass = "mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-white/55";
-
-const authTriggerClass = "border-white/10 bg-white/5 text-white hover:border-white/20 dark:border-white/10 dark:bg-white/5";
-const authMenuClass = "border-white/10 bg-[#151515]";
-const authInputClass = "border-white/10 bg-white/5 text-white placeholder:text-white/30 dark:border-white/10 dark:bg-white/5";
-const authOptionClass = "";
-
-const dashboardTriggerClass = "border-black/5 bg-white/80 text-slate-950 hover:border-black/10 dark:border-white/10 dark:bg-[#11161d] dark:text-white";
-const dashboardMenuClass = "border-black/5 bg-white dark:border-white/10 dark:bg-[#11161d]";
-const dashboardInputClass = "border-black/5 bg-white text-slate-950 placeholder:text-slate-400 dark:border-white/10 dark:bg-[#11161d] dark:text-white dark:placeholder:text-white/35";
-const dashboardOptionClass = "";
+const labelClass = "label pb-2 pt-0 text-xs font-semibold uppercase tracking-[0.18em] text-base-content/55";
+const triggerClass = "bg-base-100";
+const menuClass = "bg-base-100";
+const inputClass = "bg-base-100";
 
 function getFieldErrorMessage(input?: string | string[]) {
     if (!input) return null;
@@ -43,12 +35,11 @@ function getFieldErrorMessage(input?: string | string[]) {
 export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth" }: IndonesiaRegionFieldsProps) {
     const [provinces, setProvinces] = useState<SearchableOption[]>([]);
     const [regencies, setRegencies] = useState<SearchableOption[]>([]);
-    const [loadingProvinces, setLoadingProvinces] = useState(false);
-    const [loadingRegencies, setLoadingRegencies] = useState(false);
+    const [loadingProvinces, setLoadingProvinces] = useState(true);
+    const [loadedProvinceCode, setLoadedProvinceCode] = useState("");
 
     useEffect(() => {
         let isMounted = true;
-        setLoadingProvinces(true);
 
         fetch("/api/regions/provinces")
             .then(async (response) => {
@@ -75,13 +66,11 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
         let isMounted = true;
 
         if (!value.provinceCode) {
-            setRegencies([]);
             return () => {
                 isMounted = false;
             };
         }
 
-        setLoadingRegencies(true);
         fetch(`/api/regions/regencies?provinceCode=${encodeURIComponent(value.provinceCode)}`)
             .then(async (response) => {
                 const data = (await response.json()) as RegionApiResponse<{ regencies: Array<{ code: string; name: string }> }>;
@@ -90,12 +79,13 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
                 }
                 if (!isMounted) return;
                 setRegencies(data.regencies.map((item) => ({ value: item.code, label: item.name })));
+                setLoadedProvinceCode(value.provinceCode);
             })
             .catch(() => {
-                if (isMounted) setRegencies([]);
-            })
-            .finally(() => {
-                if (isMounted) setLoadingRegencies(false);
+                if (isMounted) {
+                    setRegencies([]);
+                    setLoadedProvinceCode(value.provinceCode);
+                }
             });
 
         return () => {
@@ -105,6 +95,10 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
 
     const provinceError = getFieldErrorMessage(errors?.provinceCode);
     const cityError = getFieldErrorMessage(errors?.cityCode);
+    const availableRegencies = useMemo(
+        () => (loadedProvinceCode === value.provinceCode ? regencies : []),
+        [loadedProvinceCode, regencies, value.provinceCode],
+    );
 
     const selectedProvinceOption = useMemo(
         () => provinces.find((item) => item.value === value.provinceCode),
@@ -112,16 +106,11 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
     );
 
     const selectedCityOption = useMemo(
-        () => regencies.find((item) => item.value === value.cityCode),
-        [regencies, value.cityCode],
+        () => availableRegencies.find((item) => item.value === value.cityCode),
+        [availableRegencies, value.cityCode],
     );
 
-    const labelClass = variant === "auth" ? authLabelClass : dashboardLabelClass;
-    const triggerClass = variant === "auth" ? authTriggerClass : dashboardTriggerClass;
-    const menuClass = variant === "auth" ? authMenuClass : dashboardMenuClass;
-    const inputClass = variant === "auth" ? authInputClass : dashboardInputClass;
-    const optionClass = variant === "auth" ? authOptionClass : dashboardOptionClass;
-    const hintClass = variant === "auth" ? "mt-1 text-xs text-white/30" : "mt-1 text-xs text-slate-500 dark:text-white/40";
+    const hintClass = variant === "auth" ? "mt-1 text-xs text-base-content/45" : "mt-1 text-xs text-base-content/45";
     const errorClass = "mt-1 text-xs text-red-400";
 
     return (
@@ -146,7 +135,6 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
                     triggerClassName={triggerClass}
                     menuClassName={menuClass}
                     inputClassName={inputClass}
-                    optionClassName={optionClass}
                 />
                 {provinceError ? <div className={errorClass}>{provinceError}</div> : null}
                 {!provinceError && selectedProvinceOption ? <div className={hintClass}>{selectedProvinceOption.label}</div> : null}
@@ -164,15 +152,14 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
                             cityName: option.label,
                         })
                     }
-                    options={regencies}
-                    placeholder={value.provinceCode ? (loadingRegencies ? "Memuat daftar kabupaten atau kota..." : "Pilih kabupaten atau kota") : "Pilih provinsi terlebih dahulu"}
+                    options={availableRegencies}
+                    placeholder={value.provinceCode ? "Pilih kabupaten atau kota" : "Pilih provinsi terlebih dahulu"}
                     searchPlaceholder="Cari kabupaten atau kota"
                     emptyMessage="Kabupaten atau kota tidak ditemukan"
-                    disabled={!value.provinceCode || loadingRegencies}
+                    disabled={!value.provinceCode}
                     triggerClassName={triggerClass}
                     menuClassName={menuClass}
                     inputClassName={inputClass}
-                    optionClassName={optionClass}
                 />
                 {cityError ? <div className={errorClass}>{cityError}</div> : null}
                 {!cityError && selectedCityOption ? <div className={hintClass}>{selectedCityOption.label}</div> : null}

@@ -107,10 +107,10 @@ export default function SettingsPage() {
                 >
                     {verifyMessage ? (
                         <div
-                            className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+                            className={`mb-4 rounded-box border px-4 py-3 text-sm ${
                                 verifyMessage.type === "success"
-                                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
-                                    : "border-red-500/20 bg-red-500/10 text-red-500"
+                                    ? "border-success/20 bg-success/10 text-success"
+                                    : "border-error/20 bg-error/10 text-error"
                             }`}
                         >
                             {verifyMessage.text}
@@ -118,30 +118,30 @@ export default function SettingsPage() {
                     ) : null}
 
                     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[0.92fr_1.08fr]">
-                        <div className="rounded-[28px] border border-black/5 bg-slate-50/80 p-5 dark:border-white/6 dark:bg-white/[0.03]">
+                        <div className="rounded-box border border-base-300 bg-base-200/40 p-5 shadow-sm">
                             <div className="space-y-3">
-                                <div className="border-b border-black/5 pb-3 dark:border-white/8">
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Username</div>
-                                    <div className="mt-2 text-sm font-semibold text-slate-950 dark:text-white">
+                                <div className="border-b border-base-300 pb-3">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Username</div>
+                                    <div className="mt-2 text-sm font-semibold text-base-content">
                                         {meLoading ? "Memuat..." : me ? `@${me.username}` : "Tidak tersedia"}
                                     </div>
                                 </div>
 
-                                <div className="border-b border-black/5 pb-3 dark:border-white/8">
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Email</div>
-                                    <div className="mt-2 text-sm font-medium text-slate-950 dark:text-white">
+                                <div className="border-b border-base-300 pb-3">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Email</div>
+                                    <div className="mt-2 text-sm font-medium text-base-content">
                                         {meLoading ? "Memuat..." : me?.email || "Tidak bisa memuat email"}
                                     </div>
                                 </div>
 
                                 <div>
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Status Verifikasi</div>
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Status Verifikasi</div>
                                     <div className="mt-2 flex flex-wrap items-center gap-3">
                                         <span
                                             className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${
                                                 me?.emailVerified
-                                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
-                                                    : "border-amber-500/30 bg-amber-500/10 text-amber-500"
+                                                    ? "border-success/25 bg-success/10 text-success"
+                                                    : "border-warning/25 bg-warning/10 text-warning"
                                             }`}
                                         >
                                             {meLoading ? "Memuat..." : me?.emailVerified ? "Terverifikasi" : "Belum Verifikasi"}
@@ -156,27 +156,27 @@ export default function SettingsPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-[28px] border border-black/5 bg-slate-50/80 p-5 dark:border-white/6 dark:bg-white/[0.03]">
+                        <div className="rounded-box border border-base-300 bg-base-200/40 p-5 shadow-sm">
                             <div className="mb-4">
-                                <div className="text-sm font-semibold text-slate-950 dark:text-white">Ubah Password</div>
-                                <p className="mt-1 text-sm text-slate-500 dark:text-white/45">
+                                <div className="text-sm font-semibold text-base-content">Ubah Password</div>
+                                <p className="mt-1 text-sm text-base-content/60">
                                     Setelah password diubah, sesi login saat ini akan ditutup dan Anda perlu masuk kembali.
                                 </p>
                             </div>
 
                             {meLoading ? (
-                                <p className="text-sm text-slate-500 dark:text-white/45">Memuat data akun...</p>
+                                <p className="text-sm text-base-content/60">Memuat data akun...</p>
                             ) : !me ? (
-                                <p className="text-sm text-red-500">Tidak bisa memuat data akun.</p>
+                                <p className="text-sm text-error">Tidak bisa memuat data akun.</p>
                             ) : (
                                 <>
                                     {error ? (
-                                        <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500">
+                                        <div className="mb-4 rounded-box border border-error/20 bg-error/10 px-4 py-3 text-sm text-error">
                                             {error}
                                         </div>
                                     ) : null}
                                     {successMessage ? (
-                                        <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-500">
+                                        <div className="mb-4 rounded-box border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
                                             {successMessage}
                                         </div>
                                     ) : null}

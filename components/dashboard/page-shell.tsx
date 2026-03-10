@@ -1,5 +1,6 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import {
     btnOutline,
     heroDescriptionCls,
@@ -17,7 +18,7 @@ import {
 } from "@/components/dashboard/form-styles";
 
 export function DashboardPageShell({ children }: { children: ReactNode }) {
-    return <div className={shellCls}>{children}</div>;
+    return <div className={cn(shellCls, "p-4 sm:p-5 lg:p-6")}>{children}</div>;
 }
 
 export function DashboardPageHeader({
@@ -33,12 +34,14 @@ export function DashboardPageHeader({
 }) {
     return (
         <section className={pageHeaderCls}>
-            <div className="min-w-0 space-y-2">
-                {kicker ? <div className={heroKickerCls}>{kicker}</div> : null}
-                <div className={heroTitleCls}>{title}</div>
-                <p className={heroDescriptionCls}>{description}</p>
+            <div className="card-body gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="min-w-0 space-y-2">
+                    {kicker ? <div className={heroKickerCls}>{kicker}</div> : null}
+                    <div className={heroTitleCls}>{title}</div>
+                    <p className={heroDescriptionCls}>{description}</p>
+                </div>
+                {actions ? <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">{actions}</div> : null}
             </div>
-            {actions ? <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">{actions}</div> : null}
         </section>
     );
 }
@@ -57,15 +60,15 @@ export function DashboardPanel({
     bodyClassName?: string;
 }) {
     return (
-        <section className={`${panelCls} overflow-visible`}>
+        <section className={cn(panelCls, "overflow-visible")}>
             <div className={panelHeaderCls}>
                 <div className="space-y-1">
-                    <h2 className="text-base font-bold text-slate-950 dark:text-white sm:text-lg">{title}</h2>
-                    {description ? <p className="text-sm text-slate-500 dark:text-white/45">{description}</p> : null}
+                    <h2 className="text-base font-bold text-base-content sm:text-lg">{title}</h2>
+                    {description ? <p className="text-sm text-base-content/60">{description}</p> : null}
                 </div>
                 {action ? <div className="flex flex-wrap gap-2">{action}</div> : null}
             </div>
-            <div className={`${panelBodyCls} overflow-visible ${bodyClassName}`.trim()}>{children}</div>
+            <div className={cn(panelBodyCls, "overflow-visible", bodyClassName)}>{children}</div>
         </section>
     );
 }
@@ -83,18 +86,20 @@ export function DashboardMetricCard({
 }) {
     const toneClass =
         tone === "accent"
-            ? "border-ds-amber/30 bg-ds-amber/[0.14] dark:bg-ds-amber/10"
+            ? "border-primary/30 bg-primary/10"
             : tone === "success"
-              ? "border-emerald-500/20 bg-emerald-500/[0.08] dark:bg-emerald-500/[0.10]"
+              ? "border-success/30 bg-success/10"
               : tone === "danger"
-                ? "border-red-500/20 bg-red-500/[0.07] dark:bg-red-500/[0.10]"
+                ? "border-error/30 bg-error/10"
                 : "";
 
     return (
-        <div className={`${metricCardCls} ${toneClass}`.trim()}>
-            <div className={subtleMetricCls}>{label}</div>
-            <div className={metricValueCls}>{value}</div>
-            {meta ? <div className={metricMetaCls}>{meta}</div> : null}
+        <div className={cn(metricCardCls, toneClass)}>
+            <div className="card-body p-4 sm:p-5">
+                <div className={subtleMetricCls}>{label}</div>
+                <div className={metricValueCls}>{value}</div>
+                {meta ? <div className={metricMetaCls}>{meta}</div> : null}
+            </div>
         </div>
     );
 }
@@ -111,9 +116,9 @@ export function DashboardEmptyState({
     actionLabel?: string;
 }) {
     return (
-        <div className="rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/80 px-6 py-12 text-center dark:border-white/10 dark:bg-white/[0.03]">
-            <div className="text-base font-semibold text-slate-950 dark:text-white">{title}</div>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-white/45">{description}</p>
+        <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 px-6 py-12 text-center">
+            <div className="text-base font-semibold text-base-content">{title}</div>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-base-content/60">{description}</p>
             {actionHref && actionLabel ? (
                 <div className="mt-5">
                     <Link href={actionHref} className={btnOutline}>

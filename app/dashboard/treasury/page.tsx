@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pagination } from "@/components/dashboard/pagination";
 import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
@@ -47,7 +47,6 @@ const filterOptions = [
 ];
 
 export default function TreasuryPage() {
-    const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -85,7 +84,7 @@ export default function TreasuryPage() {
 
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
 
-    const fetchTreasury = () => {
+    const fetchTreasury = useCallback(() => {
         setLoading(true);
         const params = new URLSearchParams({
             month,
@@ -114,9 +113,9 @@ export default function TreasuryPage() {
                 setTotal(0);
             })
             .finally(() => setLoading(false));
-    };
+    }, [filter, month, page, year]);
 
-    const fetchUsers = () => {
+    const fetchUsers = useCallback(() => {
         setUsersLoading(true);
         fetch("/api/users?status=ACTIVE&role=ALL&perPage=100")
             .then((res) => res.json())
@@ -125,15 +124,15 @@ export default function TreasuryPage() {
             })
             .catch(() => setUsers([]))
             .finally(() => setUsersLoading(false));
-    };
-
-    useEffect(() => {
-        fetchUsers();
     }, []);
 
     useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
+
+    useEffect(() => {
         fetchTreasury();
-    }, [month, year, page, filter]);
+    }, [fetchTreasury]);
 
     useEffect(
         () => () => {
@@ -293,7 +292,7 @@ export default function TreasuryPage() {
                     {loading ? (
                         <div className="space-y-3">
                             {[1, 2, 3, 4, 5].map((item) => (
-                                <div key={item} className="h-20 animate-pulse rounded-2xl border border-black/5 bg-slate-100/90 dark:border-white/6 dark:bg-white/[0.04]" />
+                                <div key={item} className="h-20 animate-pulse rounded-box border border-base-300 bg-base-200/50" />
                             ))}
                         </div>
                     ) : transactions.length === 0 ? (
@@ -302,17 +301,17 @@ export default function TreasuryPage() {
                         <>
                             <div className="space-y-3">
                                 {transactions.map((transaction) => (
-                                    <div key={transaction.id} className="flex flex-col gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-4 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] lg:flex-row lg:items-center">
-                                        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-sm font-bold ${transaction.amount >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
+                                    <div key={transaction.id} className="flex flex-col gap-3 rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100 lg:flex-row lg:items-center">
+                                        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-sm font-bold ${transaction.amount >= 0 ? "bg-success/10 text-success" : "bg-error/10 text-error"}`}>
                                             {transaction.amount >= 0 ? "+" : "-"}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{transaction.description}</div>
-                                            <div className="truncate text-xs text-slate-400 dark:text-white/40">
+                                            <div className="truncate text-sm font-semibold text-base-content">{transaction.description}</div>
+                                            <div className="truncate text-xs text-base-content/45">
                                                 {formatDate(transaction.createdAt)} - {transaction.user?.fullName || "Kas umum"}
                                             </div>
                                         </div>
-                                        <div className={`text-sm font-bold ${transaction.amount >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                                        <div className={`text-sm font-bold ${transaction.amount >= 0 ? "text-success" : "text-error"}`}>
                                             {transaction.amount >= 0 ? "+" : "-"}
                                             {formatCurrency(Math.abs(transaction.amount))}
                                         </div>

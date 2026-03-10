@@ -113,14 +113,14 @@ function LoginForm() {
             footer={
                 <>
                     Belum punya akun?{" "}
-                    <Link href="/register" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
+                    <Link href="/register" className="link link-hover font-semibold text-primary">
                         Buat akun
                     </Link>
                 </>
             }
         >
             {error ? (
-                <div className={`${authAlertCls} mb-4 border-red-500/20 bg-red-500/10 text-red-400`}>
+                <div className={`${authAlertCls} alert-error mb-4`}>
                     {error}
                 </div>
             ) : null}
@@ -142,7 +142,7 @@ function LoginForm() {
                 <div>
                     <div className="mb-1.5 flex items-center justify-between gap-3">
                         <label className={authLabelCls}>Kata Sandi</label>
-                        <Link href="/forgot-password" className="text-[11px] font-medium text-white/62 transition-colors hover:text-ds-amber">
+                        <Link href="/forgot-password" className="text-[11px] font-medium text-base-content/60 transition-colors hover:text-primary">
                             Lupa kata sandi?
                         </Link>
                     </div>
@@ -164,19 +164,19 @@ function LoginForm() {
 
             {googleEnabled ? (
                 <div className="mt-5">
-                    <div className="flex items-center gap-3 text-xs text-white/30">
-                        <div className="h-px flex-1 bg-white/10" />
+                    <div className="flex items-center gap-3 text-xs text-base-content/35">
+                        <div className="h-px flex-1 bg-base-300" />
                         <span>atau</span>
-                        <div className="h-px flex-1 bg-white/10" />
+                        <div className="h-px flex-1 bg-base-300" />
                     </div>
 
                     <button
                         type="button"
                         onClick={handleGoogleLogin}
                         disabled={loading || googleLoading}
-                        className="mt-5 inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.09)_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.11)_100%)] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="btn btn-outline mt-5 w-full rounded-box"
                     >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-900 shadow-sm">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-base-100 text-base-content shadow-sm">
                             <Chrome className="h-4 w-4" />
                         </span>
                         <span>{googleLoading ? "Mengalihkan ke Google..." : "Lanjut dengan Google"}</span>

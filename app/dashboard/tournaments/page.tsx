@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pagination } from "@/components/dashboard/pagination";
 import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
@@ -133,7 +133,7 @@ export default function AdminTournamentsPage() {
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     };
 
-    const fetchTournaments = () => {
+    const fetchTournaments = useCallback(() => {
         setLoading(true);
         const params = new URLSearchParams({
             page: String(page),
@@ -156,11 +156,11 @@ export default function AdminTournamentsPage() {
                 setSummary(EMPTY_SUMMARY);
             })
             .finally(() => setLoading(false));
-    };
+    }, [gameTypeFilter, page, search, statusFilter]);
 
     useEffect(() => {
         fetchTournaments();
-    }, [page, statusFilter, gameTypeFilter, search]);
+    }, [fetchTournaments]);
 
     useEffect(
         () => () => {
@@ -397,7 +397,7 @@ export default function AdminTournamentsPage() {
                     {loading ? (
                         <div className="space-y-3">
                             {[1, 2, 3, 4, 5].map((item) => (
-                                <div key={item} className="h-24 animate-pulse rounded-2xl border border-black/5 bg-slate-100/90 dark:border-white/6 dark:bg-white/[0.04]" />
+                                <div key={item} className="h-24 animate-pulse rounded-box border border-base-300 bg-base-200/50" />
                             ))}
                         </div>
                     ) : tournaments.length === 0 ? (
@@ -407,16 +407,16 @@ export default function AdminTournamentsPage() {
                             <div className="space-y-3">
                                 {tournaments.map((tournament) => {
                                     const statusTone = tournament.status === "OPEN"
-                                        ? "border-blue-500/20 bg-blue-500/10 text-blue-400"
+                                        ? "border-info/20 bg-info/10 text-info"
                                         : tournament.status === "ONGOING"
-                                          ? "border-amber-500/20 bg-amber-500/10 text-amber-400"
+                                          ? "border-warning/20 bg-warning/10 text-warning"
                                           : tournament.status === "COMPLETED"
-                                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                                            : "border-red-500/20 bg-red-500/10 text-red-400";
+                                            ? "border-success/20 bg-success/10 text-success"
+                                            : "border-error/20 bg-error/10 text-error";
 
                                     return (
-                                        <div key={tournament.id} className="flex flex-col gap-3 rounded-2xl border border-black/5 bg-slate-50/80 p-4 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] lg:flex-row lg:items-center">
-                                            <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 text-xs font-bold text-slate-400 dark:bg-white/5">
+                                        <div key={tournament.id} className="flex flex-col gap-3 rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100 lg:flex-row lg:items-center">
+                                            <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-base-100 text-xs font-bold text-base-content/45">
                                                 {tournament.image ? (
                                                     // eslint-disable-next-line @next/next/no-img-element
                                                     <img src={normalizeAssetUrl(tournament.image) || ""} alt={tournament.title} className="h-full w-full object-cover" />
@@ -424,14 +424,14 @@ export default function AdminTournamentsPage() {
                                             </div>
 
                                             <div className="min-w-0 flex-1">
-                                                <div className="truncate text-sm font-semibold text-slate-950 dark:text-white">{tournament.title}</div>
-                                                <div className="mt-1 truncate text-xs text-slate-400 dark:text-white/40">
+                                                <div className="truncate text-sm font-semibold text-base-content">{tournament.title}</div>
+                                                <div className="mt-1 truncate text-xs text-base-content/45">
                                                     {tournament.gameType} - {tournament.format} - {formatDate(tournament.startDate)}
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-                                                    <span className="rounded-full border border-black/5 px-2.5 py-1 text-slate-500 dark:border-white/10 dark:text-white/45">Hadiah {formatCurrency(tournament.prizePool)}</span>
-                                                    <span className="rounded-full border border-black/5 px-2.5 py-1 text-slate-500 dark:border-white/10 dark:text-white/45">Entry {tournament.entryFee === 0 ? "FREE" : formatCurrency(tournament.entryFee)}</span>
-                                                    <span className="rounded-full border border-black/5 px-2.5 py-1 text-slate-500 dark:border-white/10 dark:text-white/45">{tournament._count?.participants || 0} peserta</span>
+                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">Hadiah {formatCurrency(tournament.prizePool)}</span>
+                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">Entry {tournament.entryFee === 0 ? "FREE" : formatCurrency(tournament.entryFee)}</span>
+                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">{tournament._count?.participants || 0} peserta</span>
                                                 </div>
                                             </div>
 
@@ -584,7 +584,7 @@ function TournamentForm({
                 <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp"
-                    className={`${inputCls} file:mr-3 file:rounded-xl file:border-0 file:bg-ds-amber/20 file:px-3 file:py-1.5 file:font-semibold file:text-ds-amber`}
+                    className={`${inputCls} file:mr-3 file:rounded-xl file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:font-semibold file:text-primary`}
                     onChange={async (e) => {
                         const inputEl = e.currentTarget;
                         const file = e.target.files?.[0];
@@ -594,18 +594,18 @@ function TournamentForm({
                     }}
                     disabled={uploadingImage}
                 />
-                {uploadingImage ? <p className="mt-2 text-xs text-slate-400 dark:text-white/40">Mengupload gambar...</p> : null}
+                {uploadingImage ? <p className="mt-2 text-xs text-base-content/45">Mengupload gambar...</p> : null}
             </div>
             <div>
                 <label className={labelCls}>Path Gambar Lokal</label>
                 <input type="text" className={inputCls} placeholder="/uploads/namafile.jpg" value={formData.image} onChange={(e) => setFormData((prev) => ({ ...prev, image: e.target.value }))} />
-                <p className="mt-2 text-xs text-slate-400 dark:text-white/40">Gunakan upload internal. URL eksternal tidak didukung lagi.</p>
+                <p className="mt-2 text-xs text-base-content/45">Gunakan upload internal. URL eksternal tidak didukung lagi.</p>
             </div>
             {formData.image ? (
-                <div className="rounded-2xl border border-black/5 p-2 dark:border-white/10">
+                <div className="rounded-box border border-base-300 bg-base-200/40 p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={normalizeAssetUrl(formData.image) || ""} alt="Preview tournament" className="h-44 w-full rounded-xl object-cover" />
-                    <button type="button" onClick={() => setFormData((prev) => ({ ...prev, image: "" }))} className="mt-3 text-xs font-medium text-red-500 hover:text-red-600">
+                    <button type="button" onClick={() => setFormData((prev) => ({ ...prev, image: "" }))} className="mt-3 text-xs font-medium text-error hover:text-error/80">
                         Hapus gambar
                     </button>
                 </div>

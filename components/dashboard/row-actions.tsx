@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { btnDanger, btnOutline } from "@/components/dashboard/form-styles";
 
 type RowActionsProps = {
@@ -32,4 +32,3 @@ export function RowActions({
         </div>
     );
 }
-

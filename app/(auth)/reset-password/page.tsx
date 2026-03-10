@@ -83,28 +83,28 @@ function ResetPasswordForm() {
             footer={
                 <>
                     Butuh tautan baru?{" "}
-                    <Link href="/forgot-password" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
+                    <Link href="/forgot-password" className="link link-hover font-semibold text-primary">
                         Minta reset ulang
                     </Link>
                 </>
             }
         >
             {tokenMissing ? (
-                <div className={`${authAlertCls} mb-5 border-amber-500/20 bg-amber-500/10 text-amber-300`}>
+                <div className={`${authAlertCls} alert-warning mb-5`}>
                     Token reset tidak ditemukan. Buka kembali tautan dari email atau minta tautan reset yang baru.
                 </div>
             ) : null}
 
             {error ? (
-                <div className={`${authAlertCls} mb-5 border-red-500/20 bg-red-500/10 text-red-400`}>
+                <div className={`${authAlertCls} alert-error mb-5`}>
                     {error}
                 </div>
             ) : null}
 
             {successMessage ? (
-                <div className={`${authAlertCls} mb-5 border-emerald-500/20 bg-emerald-500/10 text-emerald-300`}>
+                <div className={`${authAlertCls} alert-success mb-5`}>
                     <div className="font-medium">{successMessage}</div>
-                    <p className="mt-2 text-sm text-emerald-200/80">Anda akan diarahkan ke halaman login dalam beberapa detik.</p>
+                    <p className="mt-2 text-sm">Anda akan diarahkan ke halaman login dalam beberapa detik.</p>
                 </div>
             ) : null}
 
@@ -141,7 +141,7 @@ function ResetPasswordForm() {
                     />
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm leading-6 text-white/55">
+                <div className="rounded-box border border-base-300 bg-base-200/50 px-4 py-3 text-sm leading-6 text-base-content/60">
                     Kata sandi harus terdiri dari minimal 8 karakter serta mengandung huruf dan angka.
                 </div>
 

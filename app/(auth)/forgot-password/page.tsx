@@ -66,30 +66,30 @@ export default function ForgotPasswordPage() {
             footer={
                 <>
                     Sudah ingat kata sandi?{" "}
-                    <Link href="/login" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
+                    <Link href="/login" className="link link-hover font-semibold text-primary">
                         Kembali ke login
                     </Link>
                 </>
             }
         >
             {error ? (
-                <div className={`${authAlertCls} mb-5 border-red-500/20 bg-red-500/10 text-red-400`}>
+                <div className={`${authAlertCls} alert-error mb-5`}>
                     {error}
                 </div>
             ) : null}
 
             {successMessage ? (
-                <div className={`${authAlertCls} mb-5 border-emerald-500/20 bg-emerald-500/10 text-emerald-300`}>
+                <div className={`${authAlertCls} alert-success mb-5`}>
                     <div className="font-medium">{successMessage}</div>
-                    <p className="mt-2 text-sm text-emerald-200/80">
+                    <p className="mt-2 text-sm">
                         Periksa inbox, folder spam, atau tab promosi jika email belum terlihat.
                     </p>
                     {debugResetUrl ? (
-                        <div className="mt-3 rounded-2xl border border-emerald-400/15 bg-black/15 p-3 text-xs text-emerald-100/80">
-                            <div className="mb-1 font-semibold uppercase tracking-[0.18em] text-emerald-200/70">
+                        <div className="mt-3 rounded-box border border-success/30 bg-base-100/50 p-3 text-xs">
+                            <div className="mb-1 font-semibold uppercase tracking-[0.18em]">
                                 Debug URL (Dev)
                             </div>
-                            <Link href={debugResetUrl} className="break-all underline underline-offset-4 hover:text-white">
+                            <Link href={debugResetUrl} className="link break-all">
                                 {debugResetUrl}
                             </Link>
                         </div>
@@ -114,7 +114,7 @@ export default function ForgotPasswordPage() {
                     />
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm leading-6 text-white/55">
+                <div className="rounded-box border border-base-300 bg-base-200/50 px-4 py-3 text-sm leading-6 text-base-content/60">
                     Demi keamanan, kami selalu menampilkan respons yang sama, baik email tersebut terdaftar maupun tidak.
                 </div>
 

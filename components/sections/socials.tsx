@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { motion } from "framer-motion";
 import { Twitter, Youtube } from "lucide-react";
@@ -9,25 +9,28 @@ const DiscordIcon = ({ className }: { className?: string }) => (
 
 export function Socials() {
     const socials = [
-        { name: "Discord", icon: DiscordIcon, link: "https://discord.gg/duelstandby", color: "from-[#5865F2] to-[#7b84ff]", description: "Hub komunitas, scrim, voice room, dan koordinasi turnamen" },
-        { name: "YouTube", icon: Youtube, link: "https://youtube.com/@duelstandby", color: "from-[#FF0000] to-[#ff6a6a]", description: "Replay unggulan, highlight event, dan konten edukatif" },
-        { name: "Twitter", icon: Twitter, link: "https://twitter.com/duelstandby", color: "from-[#1DA1F2] to-[#7fd2ff]", description: "Pengumuman cepat, jadwal event, dan kabar komunitas" },
+        { name: "Discord", icon: DiscordIcon, link: "https://discord.gg/duelstandby", tone: "from-[#5865F2] to-[#7b84ff]", description: "Hub komunitas, scrim, voice room, dan koordinasi turnamen" },
+        { name: "YouTube", icon: Youtube, link: "https://youtube.com/@duelstandby", tone: "from-[#FF0000] to-[#ff6a6a]", description: "Replay unggulan, highlight event, dan konten edukatif" },
+        { name: "Twitter", icon: Twitter, link: "https://twitter.com/duelstandby", tone: "from-[#1DA1F2] to-[#7fd2ff]", description: "Pengumuman cepat, jadwal event, dan kabar komunitas" },
     ];
 
     return (
-        <section id="socials" className="relative bg-[linear-gradient(180deg,_#f8fafc_0%,_#fffdf8_100%)] py-20 sm:py-24 dark:bg-[linear-gradient(180deg,_#111217_0%,_#09090b_100%)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,201,22,0.12),transparent_24%)] dark:bg-[radial-gradient(circle_at_top,rgba(255,201,22,0.1),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.08),transparent_24%)]" />
+        <section id="socials" className="relative py-20 sm:py-24">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,201,22,0.12),transparent_24%)]" />
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <motion.h2 initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-12 text-center text-3xl font-bold tracking-tight text-slate-950 sm:mb-16 md:text-5xl dark:text-white">Ikuti semua update Duel Standby</motion.h2>
+                <motion.h2 initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-12 text-center text-3xl font-bold tracking-tight text-base-content sm:mb-16 md:text-5xl">
+                    Ikuti semua update Duel Standby
+                </motion.h2>
                 <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-3 md:gap-8">
                     {socials.map((social) => (
-                        <motion.a key={social.name} href={social.link} target="_blank" rel="noopener noreferrer" initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.38 }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition-all dark:border-white/10 dark:bg-[#11161d] dark:shadow-[0_18px_55px_rgba(0,0,0,0.24)] sm:p-8">
-                            <div className={`absolute inset-x-0 top-0 h-2 bg-gradient-to-r ${social.color}`} />
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.5),transparent_45%)] opacity-70 transition-opacity duration-300 group-hover:opacity-100 dark:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_42%)]" />
-                            <div className="relative z-10 text-slate-900 dark:text-white">
-                                <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[20px] bg-gradient-to-br ${social.color} text-white shadow-lg sm:h-20 sm:w-20 sm:rounded-[24px]`}><social.icon className="h-8 w-8 sm:h-10 sm:w-10" strokeWidth={1.5} /></div>
+                        <motion.a key={social.name} href={social.link} target="_blank" rel="noopener noreferrer" initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.38 }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} className="card border border-base-300 bg-base-100 text-center shadow-xl">
+                            <div className={`h-2 rounded-t-box bg-gradient-to-r ${social.tone}`} />
+                            <div className="card-body text-base-content">
+                                <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[20px] bg-gradient-to-br ${social.tone} text-white shadow-lg sm:h-20 sm:w-20 sm:rounded-[24px]`}>
+                                    <social.icon className="h-8 w-8 sm:h-10 sm:w-10" strokeWidth={1.5} />
+                                </div>
                                 <h3 className="mb-2 text-xl font-bold sm:text-2xl">{social.name}</h3>
-                                <p className="text-sm font-medium text-slate-500 sm:text-base dark:text-white/72">{social.description}</p>
+                                <p className="text-sm font-medium text-base-content/70 sm:text-base">{social.description}</p>
                             </div>
                         </motion.a>
                     ))}

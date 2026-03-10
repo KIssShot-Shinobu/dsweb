@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { normalizeAssetUrl } from "@/lib/asset-url";
@@ -128,13 +129,20 @@ export function ProfileAvatarForm({
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading || saving}
-                        className="group relative h-20 w-20 overflow-hidden rounded-[24px] border border-black/5 bg-ds-amber transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70 dark:border-white/8"
+                        className="group relative h-20 w-20 overflow-hidden rounded-box border border-base-300 bg-primary/15 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70"
                         title="Klik untuk mengganti avatar"
                     >
                         {previewUrl ? (
-                            <img src={previewUrl} alt={displayName} className="h-full w-full object-cover" />
+                            <Image
+                                unoptimized
+                                src={previewUrl}
+                                alt={displayName}
+                                width={80}
+                                height={80}
+                                className="h-full w-full object-cover"
+                            />
                         ) : (
-                            <div className="flex h-full w-full items-center justify-center text-2xl font-black text-black">
+                            <div className="flex h-full w-full items-center justify-center text-2xl font-black text-primary">
                                 {getInitials(displayName)}
                             </div>
                         )}
@@ -148,7 +156,7 @@ export function ProfileAvatarForm({
                             type="button"
                             onClick={() => setShowRemoveConfirm(true)}
                             disabled={uploading || saving}
-                            className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-red-500 text-white shadow-lg transition-all hover:scale-105 hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#101014]"
+                            className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border border-base-100 bg-error text-error-content shadow-lg transition-all hover:scale-105 hover:bg-error/85 disabled:cursor-not-allowed disabled:opacity-70"
                             title="Hapus avatar"
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -163,10 +171,10 @@ export function ProfileAvatarForm({
                 </div>
 
                 <div className="space-y-1">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">
                         Foto Profil
                     </div>
-                    <p className="max-w-sm text-sm leading-6 text-slate-500 dark:text-white/45">
+                    <p className="max-w-sm text-sm leading-6 text-base-content/60">
                         Klik avatar untuk mengganti. Format PNG, JPG, atau WEBP dengan ukuran maksimal 5MB.
                     </p>
                 </div>

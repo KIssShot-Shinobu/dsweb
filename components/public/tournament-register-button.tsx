@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 
@@ -37,26 +37,11 @@ export function TournamentRegisterButton({
 
     return (
         <div className="space-y-3">
-            <button
-                type="button"
-                onClick={handleRegister}
-                disabled={disabled || submitting}
-                className={`w-full rounded-2xl px-5 py-3 text-sm font-black transition-all ${
-                    disabled
-                        ? "cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-white/8 dark:text-white/35"
-                        : "bg-[#FFC916] text-[#111111] hover:bg-[#ffd84c] dark:shadow-[0_12px_30px_rgba(255,201,22,0.18)]"
-                }`}
-            >
+            <button type="button" onClick={handleRegister} disabled={disabled || submitting} className={`btn w-full rounded-box ${disabled ? "btn-disabled" : "btn-primary"}`}>
                 {submitting ? "Memproses pendaftaran..." : disabled ? "Pendaftaran belum tersedia" : "Daftar Turnamen"}
             </button>
             {message ? (
-                <div
-                    className={`rounded-2xl border px-4 py-3 text-sm ${
-                        message.type === "success"
-                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                            : "border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300"
-                    }`}
-                >
+                <div className={`alert rounded-box text-sm ${message.type === "success" ? "alert-success" : "alert-error"}`}>
                     {message.text}
                 </div>
             ) : null}

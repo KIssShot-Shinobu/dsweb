@@ -60,7 +60,7 @@ export function GameProfileForm({
 
     const containerCls = embedded
         ? "space-y-4"
-        : "rounded-2xl border border-gray-100 bg-white p-5 dark:border-white/5 dark:bg-[#1a1a1a]";
+        : "rounded-box border border-base-300 bg-base-100 p-5 shadow-sm";
 
     return (
         <form onSubmit={handleSubmit} className={containerCls}>
@@ -69,8 +69,8 @@ export function GameProfileForm({
                     {isMasterDuel ? "MD" : "DL"}
                 </div>
                 <div>
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">{title}</h3>
-                    <p className="text-xs text-gray-400 dark:text-white/35">Atur profil game Anda untuk turnamen dan identitas akun.</p>
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-base-content">{title}</h3>
+                    <p className="text-xs text-base-content/45">Atur profil game Anda untuk turnamen dan identitas akun.</p>
                 </div>
             </div>
 

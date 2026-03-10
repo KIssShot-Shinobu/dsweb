@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { createContext, useState, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
@@ -15,26 +15,20 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
 }) => {
-    const [theme, setTheme] = useState<Theme>("dark");
-    const [isInitialized, setIsInitialized] = useState(false);
-
-    useEffect(() => {
-        const savedTheme = localStorage.getItem("ds-theme") as Theme | null;
-        const initialTheme = savedTheme || "dark";
-        setTheme(initialTheme);
-        setIsInitialized(true);
-    }, []);
-
-    useEffect(() => {
-        if (isInitialized) {
-            localStorage.setItem("ds-theme", theme);
-            if (theme === "dark") {
-                document.documentElement.classList.add("dark");
-            } else {
-                document.documentElement.classList.remove("dark");
-            }
+    const [theme, setTheme] = useState<Theme>(() => {
+        if (typeof window === "undefined") {
+            return "dark";
         }
-    }, [theme, isInitialized]);
+
+        const savedTheme = localStorage.getItem("ds-theme");
+        return savedTheme === "light" || savedTheme === "dark" ? savedTheme : "dark";
+    });
+
+    useEffect(() => {
+        localStorage.setItem("ds-theme", theme);
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.classList.toggle("dark", theme === "dark");
+    }, [theme]);
 
     const toggleTheme = () => {
         setTheme((prev) => (prev === "light" ? "dark" : "light"));

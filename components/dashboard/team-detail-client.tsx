@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { btnDanger, btnOutline, btnPrimary, filterBarCls, searchInputCls } from "@/components/dashboard/form-styles";
@@ -102,7 +103,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
 
     const isAdmin = ["ADMIN", "FOUNDER"].includes(user?.role || "");
 
-    const loadTeam = async () => {
+    const loadTeam = useCallback(async () => {
         setLoading(true);
         setError(null);
 
@@ -123,11 +124,11 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [teamId]);
 
     useEffect(() => {
         loadTeam();
-    }, [teamId]);
+    }, [loadTeam]);
 
     const handleAssign = async (userId: string) => {
         setPendingUserId(userId);
@@ -270,13 +271,13 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                 />
 
                 {message ? (
-                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 px-4 py-3 text-sm text-emerald-500">
+                    <div className="rounded-box border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
                         {message}
                     </div>
                 ) : null}
 
                 {error ? (
-                    <div className="rounded-2xl border border-red-500/20 bg-red-500/8 px-4 py-3 text-sm text-red-500">
+                    <div className="rounded-box border border-error/20 bg-error/10 px-4 py-3 text-sm text-error">
                         {error}
                     </div>
                 ) : null}
@@ -286,7 +287,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                     description="Role komunitas dan afiliasi team tetap dipisah. User publik tidak akan tampil sebagai kandidat roster."
                 >
                     {loading ? (
-                        <div className="h-40 animate-pulse rounded-2xl border border-black/5 bg-slate-100/90 dark:border-white/6 dark:bg-white/[0.04]" />
+                        <div className="h-40 animate-pulse rounded-box border border-base-300 bg-base-200/50" />
                     ) : !team ? (
                         <DashboardEmptyState
                             title="Team tidak ditemukan"
@@ -296,56 +297,59 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                         />
                     ) : (
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-                            <div className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/[0.03]">
+                            <div className="rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm">
                                 <div className="flex items-start gap-4">
-                                    {team.logoUrl ? (
-                                        <img
-                                            src={team.logoUrl}
+                                    {normalizeAssetUrl(team.logoUrl) ? (
+                                        <Image
+                                            unoptimized
+                                            src={normalizeAssetUrl(team.logoUrl) || ""}
                                             alt={team.name}
-                                            className="h-16 w-16 rounded-2xl border border-black/5 object-cover dark:border-white/10"
+                                            width={64}
+                                            height={64}
+                                            className="h-16 w-16 rounded-2xl border border-base-300 object-cover"
                                         />
                                     ) : (
-                                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-ds-amber/15 text-lg font-black text-ds-amber">
+                                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15 text-lg font-black text-primary">
                                             {getInitials(team.name)}
                                         </div>
                                     )}
                                     <div className="min-w-0 space-y-2">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{team.name}</h2>
-                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${team.isActive ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" : "border-slate-200/80 text-slate-500 dark:border-white/10 dark:text-white/45"}`}>
+                                            <h2 className="text-xl font-black tracking-tight text-base-content">{team.name}</h2>
+                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${team.isActive ? "border-success/20 bg-success/10 text-success" : "border-base-300 bg-base-100 text-base-content/55"}`}>
                                                 {team.isActive ? "Aktif" : "Nonaktif"}
                                             </span>
                                         </div>
-                                        <div className="text-[11px] uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">/{team.slug}</div>
-                                        <p className="text-sm leading-6 text-slate-500 dark:text-white/45">
+                                        <div className="text-[11px] uppercase tracking-[0.22em] text-base-content/45">/{team.slug}</div>
+                                        <p className="text-sm leading-6 text-base-content/60">
                                             {team.description || "Belum ada deskripsi team. Tambahkan identitas singkat supaya officer lain cepat membaca konteks roster ini."}
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/[0.03]">
+                            <div className="rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm">
                                 <div className="space-y-3">
-                                    <div className="flex flex-col gap-1 border-b border-black/5 pb-3 dark:border-white/8">
-                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Status</span>
-                                        <span className="text-base font-bold text-slate-950 dark:text-white">
+                                    <div className="flex flex-col gap-1 border-b border-base-300 pb-3">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Status</span>
+                                        <span className="text-base font-bold text-base-content">
                                             {team.isActive ? "Aktif" : "Nonaktif"}
                                         </span>
                                     </div>
-                                    <div className="flex flex-col gap-1 border-b border-black/5 pb-3 dark:border-white/8">
-                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Roster Aktif</span>
-                                        <span className="text-base font-bold text-slate-950 dark:text-white">{team.memberCount} anggota</span>
+                                    <div className="flex flex-col gap-1 border-b border-base-300 pb-3">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Roster Aktif</span>
+                                        <span className="text-base font-bold text-base-content">{team.memberCount} anggota</span>
                                     </div>
-                                    <div className="flex flex-col gap-1 border-b border-black/5 pb-3 dark:border-white/8">
-                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Kandidat Bebas</span>
-                                        <span className="text-base font-bold text-slate-950 dark:text-white">{totalAssignableMembers} kandidat</span>
+                                    <div className="flex flex-col gap-1 border-b border-base-300 pb-3">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Kandidat Bebas</span>
+                                        <span className="text-base font-bold text-base-content">{totalAssignableMembers} kandidat</span>
                                     </div>
-                                    <div className="flex flex-col gap-1 border-b border-black/5 pb-3 dark:border-white/8">
-                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Dibuat</span>
-                                        <span className="text-base font-bold text-slate-950 dark:text-white">{formatDate(team.createdAt)}</span>
+                                    <div className="flex flex-col gap-1 border-b border-base-300 pb-3">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Dibuat</span>
+                                        <span className="text-base font-bold text-base-content">{formatDate(team.createdAt)}</span>
                                     </div>
                                     <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">Terakhir Update</span>
-                                        <span className="text-base font-bold text-slate-950 dark:text-white">{formatDate(team.updatedAt)}</span>
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Terakhir Update</span>
+                                        <span className="text-base font-bold text-base-content">{formatDate(team.updatedAt)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -374,7 +378,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                             />
                         </div>
                         {hasRosterFilters ? (
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 dark:text-white/35">
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/45">
                                 <span>Menampilkan {filteredRoster.length} anggota roster sesuai filter aktif.</span>
                                 <button
                                     type="button"
@@ -382,7 +386,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                         setRosterSearch("");
                                         setRosterRole("ALL");
                                     }}
-                                    className="font-medium text-ds-amber transition-colors hover:text-ds-gold"
+                                    className="font-medium text-primary transition-colors hover:text-primary/80"
                                 >
                                     Reset Filter
                                 </button>
@@ -404,35 +408,38 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                     ) : (
                         <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
                             {filteredRoster.map((member) => (
-                                <article key={member.id} className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/[0.03]">
+                                <article key={member.id} className="rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex min-w-0 flex-1 items-start gap-3">
                                             {normalizeAssetUrl(member.avatarUrl) ? (
-                                                <img
+                                                <Image
+                                                    unoptimized
                                                     src={normalizeAssetUrl(member.avatarUrl) || undefined}
                                                     alt={member.fullName}
-                                                    className="h-12 w-12 flex-shrink-0 rounded-2xl border border-black/5 object-cover dark:border-white/10"
+                                                    width={48}
+                                                    height={48}
+                                                    className="h-12 w-12 flex-shrink-0 rounded-2xl border border-base-300 object-cover"
                                                 />
                                             ) : (
-                                                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
+                                                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-sm font-bold text-primary">
                                                     {getInitials(member.fullName)}
                                                 </div>
                                             )}
                                             <div className="min-w-0 flex-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <h3 className="truncate text-base font-bold text-slate-950 dark:text-white">{member.fullName}</h3>
-                                                <span className="rounded-full border border-ds-amber/20 bg-ds-amber/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ds-amber">
-                                                    {member.role}
-                                                </span>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <h3 className="truncate text-base font-bold text-base-content">{member.fullName}</h3>
+                                                    <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                                                        {member.role}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-1 text-sm text-base-content/60">{member.email}</div>
+                                                <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-base-content/45 sm:grid-cols-2">
+                                                    <div>Kota: {member.city || "Belum diisi"}</div>
+                                                    <div>Masuk team: {formatDate(member.teamJoinedAt)}</div>
+                                                    <div>Terakhir aktif: {formatDate(member.lastActiveAt)}</div>
+                                                    <div>Bergabung akun: {formatDate(member.createdAt)}</div>
+                                                </div>
                                             </div>
-                                            <div className="mt-1 text-sm text-slate-500 dark:text-white/45">{member.email}</div>
-                                            <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-400 dark:text-white/35 sm:grid-cols-2">
-                                                <div>Kota: {member.city || "Belum diisi"}</div>
-                                                <div>Masuk team: {formatDate(member.teamJoinedAt)}</div>
-                                                <div>Terakhir aktif: {formatDate(member.lastActiveAt)}</div>
-                                                <div>Bergabung akun: {formatDate(member.createdAt)}</div>
-                                            </div>
-                                        </div>
                                         </div>
                                         {isAdmin ? (
                                             <button
@@ -475,7 +482,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                 className="w-full"
                             />
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 dark:text-white/35">
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/45">
                             <span>
                                 {team?.isActive
                                     ? `Tersedia ${assignableMembers.length} kandidat untuk filter saat ini.`
@@ -488,7 +495,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                         setCandidateSearch("");
                                         setCandidateRole("ALL");
                                     }}
-                                    className="font-medium text-ds-amber transition-colors hover:text-ds-gold"
+                                    className="font-medium text-primary transition-colors hover:text-primary/80"
                                 >
                                     Reset Filter
                                 </button>
@@ -510,33 +517,36 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                     ) : (
                         <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
                             {assignableMembers.map((member) => (
-                                <article key={member.id} className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/[0.03]">
+                                <article key={member.id} className="rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex min-w-0 flex-1 items-start gap-3">
                                             {normalizeAssetUrl(member.avatarUrl) ? (
-                                                <img
+                                                <Image
+                                                    unoptimized
                                                     src={normalizeAssetUrl(member.avatarUrl) || undefined}
                                                     alt={member.fullName}
-                                                    className="h-12 w-12 flex-shrink-0 rounded-2xl border border-black/5 object-cover dark:border-white/10"
+                                                    width={48}
+                                                    height={48}
+                                                    className="h-12 w-12 flex-shrink-0 rounded-2xl border border-base-300 object-cover"
                                                 />
                                             ) : (
-                                                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
+                                                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-sm font-bold text-primary">
                                                     {getInitials(member.fullName)}
                                                 </div>
                                             )}
                                             <div className="min-w-0 flex-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <h3 className="truncate text-base font-bold text-slate-950 dark:text-white">{member.fullName}</h3>
-                                                <span className="rounded-full border border-black/8 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:border-white/10 dark:text-white/45">
-                                                    {member.role}
-                                                </span>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <h3 className="truncate text-base font-bold text-base-content">{member.fullName}</h3>
+                                                    <span className="rounded-full border border-base-300 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-base-content/55">
+                                                        {member.role}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-1 text-sm text-base-content/60">{member.email}</div>
+                                                <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-base-content/45 sm:grid-cols-2">
+                                                    <div>Kota: {member.city || "Belum diisi"}</div>
+                                                    <div>Terakhir aktif: {formatDate(member.lastActiveAt)}</div>
+                                                </div>
                                             </div>
-                                            <div className="mt-1 text-sm text-slate-500 dark:text-white/45">{member.email}</div>
-                                            <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-400 dark:text-white/35 sm:grid-cols-2">
-                                                <div>Kota: {member.city || "Belum diisi"}</div>
-                                                <div>Terakhir aktif: {formatDate(member.lastActiveAt)}</div>
-                                            </div>
-                                        </div>
                                         </div>
                                         {isAdmin ? (
                                             <button
@@ -562,40 +572,43 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         onClick={() => (pendingUserId ? null : setMemberToUnassign(null))}
                     />
-                    <div className="relative w-full max-w-lg rounded-3xl border border-black/5 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-[#1a1a1a]">
+                    <div className="relative w-full max-w-lg rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
                         <div className="space-y-2">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-ds-amber/90">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-primary">
                                 Konfirmasi Roster
                             </div>
-                            <h3 className="text-xl font-bold text-slate-950 dark:text-white">
+                            <h3 className="text-xl font-bold text-base-content">
                                 Lepas anggota dari team?
                             </h3>
-                            <p className="text-sm leading-6 text-slate-500 dark:text-white/45">
+                            <p className="text-sm leading-6 text-base-content/60">
                                 {memberToUnassign.fullName} akan dilepas dari roster{" "}
-                                <span className="font-semibold text-slate-950 dark:text-white">
+                                <span className="font-semibold text-base-content">
                                     {team?.name || "team ini"}
                                 </span>
                                 . Akun komunitasnya tetap aktif, tetapi afiliasi team akan dikosongkan.
                             </p>
                         </div>
 
-                        <div className="mt-5 rounded-2xl border border-black/5 bg-slate-50/80 p-4 text-sm dark:border-white/6 dark:bg-white/[0.03]">
+                        <div className="mt-5 rounded-box border border-base-300 bg-base-200/40 p-4 text-sm">
                             <div className="flex items-start gap-3">
                                 {normalizeAssetUrl(memberToUnassign.avatarUrl) ? (
-                                    <img
+                                    <Image
+                                        unoptimized
                                         src={normalizeAssetUrl(memberToUnassign.avatarUrl) || undefined}
                                         alt={memberToUnassign.fullName}
-                                        className="h-12 w-12 flex-shrink-0 rounded-2xl border border-black/5 object-cover dark:border-white/10"
+                                        width={48}
+                                        height={48}
+                                        className="h-12 w-12 flex-shrink-0 rounded-2xl border border-base-300 object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ds-amber text-sm font-bold text-black">
+                                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-sm font-bold text-primary">
                                         {getInitials(memberToUnassign.fullName)}
                                     </div>
                                 )}
                                 <div className="min-w-0">
-                                    <div className="font-semibold text-slate-950 dark:text-white">{memberToUnassign.fullName}</div>
-                                    <div className="mt-1 text-slate-500 dark:text-white/45">{memberToUnassign.email}</div>
-                                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-white/35">
+                                    <div className="font-semibold text-base-content">{memberToUnassign.fullName}</div>
+                                    <div className="mt-1 text-base-content/60">{memberToUnassign.email}</div>
+                                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-base-content/45">
                                         <span>{memberToUnassign.role}</span>
                                         <span>|</span>
                                         <span>{memberToUnassign.city || "Kota belum diisi"}</span>

@@ -41,13 +41,13 @@ function SummaryRow({
     value: string;
 }) {
     return (
-        <div className="flex items-start gap-3 rounded-xl border border-black/5 bg-white/75 px-4 py-3 dark:border-white/8 dark:bg-white/[0.035]">
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-white/55">
+        <div className="flex items-start gap-3 rounded-box border border-base-300 bg-base-100 px-4 py-3 shadow-sm">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-base-200 text-base-content/55">
                 {icon}
             </div>
             <div className="min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">{label}</div>
-                <div className="mt-1 break-words text-sm font-medium text-slate-950 dark:text-white">{value}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-base-content/45">{label}</div>
+                <div className="mt-1 break-words text-sm font-medium text-base-content">{value}</div>
             </div>
         </div>
     );
@@ -149,10 +149,10 @@ export function ProfileAccountSection({
             >
                 <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">
                             Data Akun
                         </div>
-                        <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-white/45">
+                        <p className="mt-1 text-sm leading-6 text-base-content/60">
                             Klik ringkasan ini untuk mengubah username, email, WhatsApp, dan wilayah domisili.
                         </p>
                     </div>
@@ -174,7 +174,7 @@ export function ProfileAccountSection({
                 </div>
 
                 {!emailVerified ? (
-                    <p className="mt-4 text-xs leading-5 text-amber-500">
+                    <p className="mt-4 text-xs leading-5 text-warning">
                         Email belum terverifikasi. Jika email diubah, verifikasi akan direset dan perlu dikirim ulang dari settings.
                     </p>
                 ) : null}
@@ -228,7 +228,7 @@ export function ProfileAccountSection({
                         errors={{ provinceCode: errors.provinceCode, cityCode: errors.cityCode }}
                     />
 
-                    <div className="rounded-2xl border border-black/5 bg-slate-50/80 px-4 py-3 text-sm leading-6 text-slate-500 dark:border-white/8 dark:bg-white/[0.03] dark:text-white/45">
+                    <div className="rounded-box border border-base-300 bg-base-200/50 px-4 py-3 text-sm leading-6 text-base-content/60">
                         Jika email diubah, status verifikasi email akan direset. Anda bisa mengirim ulang link verifikasi dari halaman settings.
                     </div>
 

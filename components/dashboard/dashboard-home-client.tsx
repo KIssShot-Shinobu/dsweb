@@ -107,7 +107,6 @@ export default function DashboardPage() {
         if (!user || !ADMIN_ROLES.includes(user.role)) return;
 
         let active = true;
-        setLoading(true);
 
         fetch("/api/dashboard/summary")
             .then((response) => response.json())

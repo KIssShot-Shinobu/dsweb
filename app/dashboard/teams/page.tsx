@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
     btnDanger,
@@ -63,7 +63,7 @@ export default function TeamsPage() {
 
     const isAdmin = ["ADMIN", "FOUNDER"].includes(user?.role || "");
 
-    const fetchTeams = () => {
+    const fetchTeams = useCallback(() => {
         setLoading(true);
         const params = new URLSearchParams({ search, status });
         fetch(`/api/teams?${params.toString()}`)
@@ -73,11 +73,12 @@ export default function TeamsPage() {
             })
             .catch(() => setError("Gagal memuat daftar team"))
             .finally(() => setLoading(false));
-    };
+    }, [search, status]);
 
     useEffect(() => {
-        fetchTeams();
-    }, [search, status]);
+        const timer = setTimeout(fetchTeams, 0);
+        return () => clearTimeout(timer);
+    }, [fetchTeams]);
 
     const resetModal = () => {
         setModalOpen(false);
@@ -186,13 +187,13 @@ export default function TeamsPage() {
                 </div>
 
                 {message ? (
-                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 px-4 py-3 text-sm text-emerald-500">
+                    <div className="rounded-box border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
                         {message}
                     </div>
                 ) : null}
 
                 {error ? (
-                    <div className="rounded-2xl border border-red-500/20 bg-red-500/8 px-4 py-3 text-sm text-red-500">
+                    <div className="rounded-box border border-error/20 bg-error/10 px-4 py-3 text-sm text-error">
                         {error}
                     </div>
                 ) : null}
@@ -210,7 +211,7 @@ export default function TeamsPage() {
                             <FormSelect value={status} onChange={setStatus} options={STATUS_OPTIONS} className="w-full" />
                         </div>
                         {isFiltering ? (
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 dark:text-white/35">
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/45">
                                 <span>
                                     Menampilkan {teams.length} team untuk filter yang sedang aktif.
                                 </span>
@@ -220,7 +221,7 @@ export default function TeamsPage() {
                                         setSearch("");
                                         setStatus("ALL");
                                     }}
-                                    className="font-medium text-ds-amber transition-colors hover:text-ds-gold"
+                                    className="font-medium text-primary transition-colors hover:text-primary/80"
                                 >
                                     Reset Filter
                                 </button>
@@ -233,7 +234,7 @@ export default function TeamsPage() {
                     {loading ? (
                         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                             {[1, 2, 3, 4].map((item) => (
-                                <div key={item} className="h-44 animate-pulse rounded-2xl border border-black/5 bg-slate-100/90 dark:border-white/6 dark:bg-white/[0.04]" />
+                                <div key={item} className="h-44 animate-pulse rounded-box border border-base-300 bg-base-200/50" />
                             ))}
                         </div>
                     ) : teams.length === 0 ? (
@@ -250,27 +251,27 @@ export default function TeamsPage() {
                     ) : (
                         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                             {teams.map((team) => (
-                                <article key={team.id} className="rounded-2xl border border-black/5 bg-slate-50/80 p-4 transition-all hover:bg-white dark:border-white/6 dark:bg-white/[0.03] dark:hover:bg-white/[0.05]">
+                                <article key={team.id} className="rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0 space-y-2">
                                             <div className="flex flex-wrap items-center gap-2">
-                                                <h3 className="truncate text-lg font-bold text-slate-950 dark:text-white">{team.name}</h3>
-                                                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${team.isActive ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" : "border-slate-200/80 text-slate-500 dark:border-white/10 dark:text-white/45"}`}>
+                                                <h3 className="truncate text-lg font-bold text-base-content">{team.name}</h3>
+                                                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${team.isActive ? "border-success/20 bg-success/10 text-success" : "border-base-300 bg-base-100 text-base-content/55"}`}>
                                                     {team.isActive ? "Aktif" : "Nonaktif"}
                                                 </span>
                                             </div>
-                                            <div className="text-[11px] uppercase tracking-[0.22em] text-slate-400 dark:text-white/35">/{team.slug}</div>
-                                            <p className="text-sm leading-6 text-slate-500 dark:text-white/45">
+                                            <div className="text-[11px] uppercase tracking-[0.22em] text-base-content/45">/{team.slug}</div>
+                                            <p className="text-sm leading-6 text-base-content/60">
                                                 {team.description || "Belum ada deskripsi team. Tambahkan deskripsi singkat agar admin lain cepat mengenali roster ini."}
                                             </p>
                                         </div>
-                                        <div className="rounded-2xl border border-ds-amber/20 bg-ds-amber/10 px-3 py-2 text-right">
-                                            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ds-amber/80">Roster</div>
-                                            <div className="mt-1 text-2xl font-black text-ds-amber">{team.memberCount}</div>
+                                        <div className="rounded-box border border-primary/20 bg-primary/10 px-3 py-2 text-right">
+                                            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Roster</div>
+                                            <div className="mt-1 text-2xl font-black text-primary">{team.memberCount}</div>
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-white/35">
+                                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-base-content/45">
                                         <span>Dibuat {new Date(team.createdAt).toLocaleDateString("id-ID")}</span>
                                         <span>|</span>
                                         <span>Diperbarui {new Date(team.updatedAt).toLocaleDateString("id-ID")}</span>
@@ -289,7 +290,7 @@ export default function TeamsPage() {
                                             </button>
                                         ) : null}
                                         {team.memberCount > 0 ? (
-                                            <span className="self-center text-[11px] text-slate-400 dark:text-white/35">Kosongkan roster dari detail team sebelum hapus.</span>
+                                            <span className="self-center text-[11px] text-base-content/45">Kosongkan roster dari detail team sebelum hapus.</span>
                                         ) : null}
                                     </div>
                                 </article>
@@ -302,12 +303,12 @@ export default function TeamsPage() {
             {modalOpen ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={resetModal} />
-                    <div className="relative w-full max-w-2xl rounded-3xl border border-black/5 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-[#1a1a1a]">
+                    <div className="relative w-full max-w-2xl rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-bold text-slate-950 dark:text-white">
+                            <h2 className="text-xl font-bold text-base-content">
                                 {editingTeam ? "Edit Team" : "Buat Team Baru"}
                             </h2>
-                            <p className="text-sm text-slate-500 dark:text-white/45">
+                            <p className="text-sm text-base-content/60">
                                 Team hanya memetakan roster Duel Standby. Role komunitas MEMBER tidak otomatis berarti sudah punya team.
                             </p>
                         </div>
@@ -382,22 +383,22 @@ export default function TeamsPage() {
             {teamToDelete ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setTeamToDelete(null)} />
-                    <div className="relative w-full max-w-lg rounded-3xl border border-black/5 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-[#1a1a1a]">
+                    <div className="relative w-full max-w-lg rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
                         <div className="space-y-2">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-red-500">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-error">
                                 Konfirmasi Hapus
                             </div>
-                            <h2 className="text-xl font-bold text-slate-950 dark:text-white">Hapus team ini?</h2>
-                            <p className="text-sm leading-6 text-slate-500 dark:text-white/45">
-                                Team <span className="font-semibold text-slate-950 dark:text-white">{teamToDelete.name}</span> akan dihapus permanen.
+                            <h2 className="text-xl font-bold text-base-content">Hapus team ini?</h2>
+                            <p className="text-sm leading-6 text-base-content/60">
+                                Team <span className="font-semibold text-base-content">{teamToDelete.name}</span> akan dihapus permanen.
                                 Pastikan roster team ini sudah kosong sebelum melanjutkan.
                             </p>
                         </div>
 
-                        <div className="mt-5 rounded-2xl border border-black/5 bg-slate-50/80 p-4 text-sm dark:border-white/6 dark:bg-white/[0.03]">
-                            <div className="font-semibold text-slate-950 dark:text-white">{teamToDelete.name}</div>
-                            <div className="mt-1 text-slate-500 dark:text-white/45">/{teamToDelete.slug}</div>
-                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-white/35">
+                        <div className="mt-5 rounded-box border border-base-300 bg-base-200/40 p-4 text-sm">
+                            <div className="font-semibold text-base-content">{teamToDelete.name}</div>
+                            <div className="mt-1 text-base-content/60">/{teamToDelete.slug}</div>
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-base-content/45">
                                 <span>{teamToDelete.isActive ? "Team aktif" : "Team nonaktif"}</span>
                                 <span>|</span>
                                 <span>Roster saat ini: {teamToDelete.memberCount}</span>

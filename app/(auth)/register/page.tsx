@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RegisterUploadField } from "@/components/auth/register-upload-field";
@@ -50,52 +50,19 @@ function CustomSelect({ value, onChange, options, placeholder, error }: {
     placeholder?: string;
     error?: string;
 }) {
-    const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const handleOutsideClick = (event: MouseEvent) => {
-            if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
-        };
-        document.addEventListener("mousedown", handleOutsideClick);
-        return () => document.removeEventListener("mousedown", handleOutsideClick);
-    }, []);
-
     return (
-        <div ref={ref} className="relative">
-            <button
-                type="button"
-                onClick={() => setOpen((current) => !current)}
-                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition-all ${
-                    open ? "border-ds-amber bg-white/5 ring-4 ring-ds-amber/15" : error ? "border-red-500/40 bg-white/5" : "border-white/10 bg-white/5 hover:border-white/20"
-                }`}
-            >
-                <span className={value ? "text-white" : "text-white/30"}>{value || placeholder || "-- Pilih --"}</span>
-                <svg className={`h-4 w-4 text-white/40 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
-            {open ? (
-                <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1c1c1c] shadow-2xl">
-                    {options.map((option) => (
-                        <button
-                            key={option}
-                            type="button"
-                            onClick={() => {
-                                onChange(option);
-                                setOpen(false);
-                            }}
-                            className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-all ${
-                                value === option ? "bg-ds-amber/15 font-medium text-ds-amber" : "text-white/70 hover:bg-white/5 hover:text-white"
-                            }`}
-                        >
-                            {value === option ? <span className="text-xs">Dipilih</span> : null}
-                            {option}
-                        </button>
-                    ))}
-                </div>
-            ) : null}
-        </div>
+        <select
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className={`select select-bordered w-full bg-base-100 ${error ? "select-error" : ""}`.trim()}
+        >
+            <option value="">{placeholder || "-- Pilih --"}</option>
+            {options.map((option) => (
+                <option key={option} value={option}>
+                    {option}
+                </option>
+            ))}
+        </select>
     );
 }
 
@@ -195,7 +162,7 @@ export default function RegisterPage() {
             footer={
                 <>
                     Sudah punya akun?{" "}
-                    <Link href="/login" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
+                    <Link href="/login" className="link link-hover font-semibold text-primary">
                         Masuk
                     </Link>
                 </>
@@ -205,22 +172,22 @@ export default function RegisterPage() {
                 <div className="-mx-1 mb-3 flex items-start justify-between gap-1 overflow-x-auto px-1 pb-1 sm:mx-0 sm:gap-2 sm:overflow-visible sm:px-0 sm:pb-0">
                     {REGISTER_STEPS.map((item, index) => (
                         <div key={item.title} className="flex min-w-[72px] flex-1 flex-col items-center gap-2 sm:min-w-0">
-                            <div className={`flex h-9 w-9 items-center justify-center rounded-2xl text-sm font-bold transition-all sm:h-10 sm:w-10 ${step === index + 1 ? "scale-105 bg-ds-amber text-black" : step > index + 1 ? "border border-emerald-500/30 bg-emerald-500/20 text-emerald-400" : "border border-white/10 bg-white/5 text-white/30"}`}>
+                            <div className={`flex h-9 w-9 items-center justify-center rounded-2xl text-sm font-bold transition-all sm:h-10 sm:w-10 ${step === index + 1 ? "scale-105 bg-primary text-primary-content" : step > index + 1 ? "bg-success/15 text-success" : "border border-base-300 bg-base-200 text-base-content/35"}`}>
                                 {step > index + 1 ? "OK" : item.icon}
                             </div>
-                            <span className={`text-center text-[10px] font-medium ${step === index + 1 ? "text-ds-amber" : "text-white/30"}`}>{item.title}</span>
+                            <span className={`text-center text-[10px] font-medium ${step === index + 1 ? "text-primary" : "text-base-content/35"}`}>{item.title}</span>
                         </div>
                     ))}
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-ds-amber transition-all duration-500" style={{ width: `${progressPct + 33 / REGISTER_STEPS.length}%` }} />
+                <div className="h-1.5 overflow-hidden rounded-full bg-base-300">
+                    <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${progressPct + 33 / REGISTER_STEPS.length}%` }} />
                 </div>
-                <div className="mt-3 text-center text-[11px] text-white/40 sm:text-xs">Langkah {step} dari {REGISTER_STEPS.length} - {REGISTER_STEPS[step - 1].desc}</div>
+                <div className="mt-3 text-center text-[11px] text-base-content/45 sm:text-xs">Langkah {step} dari {REGISTER_STEPS.length} - {REGISTER_STEPS[step - 1].desc}</div>
             </div>
 
-            {serverError ? <div className={`${authAlertCls} mb-5 border-red-500/20 bg-red-500/10 text-red-400`}>{serverError}</div> : null}
+            {serverError ? <div className={`${authAlertCls} alert-error mb-5`}>{serverError}</div> : null}
 
-            <div className="rounded-[26px] border border-white/10 bg-black/10 p-3.5 sm:rounded-[28px] sm:p-5">
+            <div className="rounded-[26px] border border-base-300 bg-base-200/50 p-3.5 sm:rounded-[28px] sm:p-5">
                 {step === 1 ? (
                     <div className="space-y-3.5 sm:space-y-4">
                         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-4">
@@ -228,7 +195,7 @@ export default function RegisterPage() {
                                 <label className={authLabelCls}>Username *</label>
                                 <input type="text" className={authInputCls} placeholder="contoh: duelstandby.id" value={form.username} onChange={(event) => setField("username", event.target.value.toLowerCase())} />
                                 <Err field="username" />
-                                <p className="mt-1 text-xs text-white/30">Username akan digunakan untuk login bersama email. Gunakan 3-24 karakter tanpa spasi.</p>
+                                <p className="mt-1 text-xs text-base-content/45">Username akan digunakan untuk login bersama email. Gunakan 3-24 karakter tanpa spasi.</p>
                             </div>
                             <div className="sm:col-span-2">
                                 <label className={authLabelCls}>Email *</label>
@@ -249,7 +216,7 @@ export default function RegisterPage() {
                                 <label className={authLabelCls}>WhatsApp *</label>
                                 <input type="tel" className={authInputCls} placeholder="+628123456789" value={form.phoneWhatsapp} onChange={(event) => setField("phoneWhatsapp", event.target.value)} />
                                 <Err field="phoneWhatsapp" />
-                                <p className="mt-1 text-xs text-white/30">Gunakan format +62... atau 08...</p>
+                                <p className="mt-1 text-xs text-base-content/45">Gunakan format +62... atau 08...</p>
                             </div>
                             <div className="sm:col-span-2">
                                 <IndonesiaRegionFields
@@ -275,11 +242,11 @@ export default function RegisterPage() {
 
                 {step === 2 ? (
                     <div className="space-y-4 sm:space-y-6">
-                        <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs leading-5 text-white/45">
+                        <p className="rounded-box border border-base-300 bg-base-100/70 px-4 py-3 text-xs leading-5 text-base-content/55">
                             Lengkapi minimal satu profil game. Screenshot bersifat opsional dan hanya membantu proses verifikasi data game bila diperlukan.
                         </p>
-                        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3.5 sm:p-4">
-                            <h3 className="text-sm font-bold text-white">Duel Links</h3>
+                        <div className="space-y-3 rounded-box border border-base-300 bg-base-100/60 p-3.5 sm:p-4">
+                            <h3 className="text-sm font-bold text-base-content">Duel Links</h3>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div>
                                     <label className={authLabelCls}>Game ID</label>
@@ -301,8 +268,8 @@ export default function RegisterPage() {
                                 onClear={() => clearUpload("duelLinks", "duelLinksScreenshotUploadId")}
                             />
                         </div>
-                        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3.5 sm:p-4">
-                            <h3 className="text-sm font-bold text-white">Master Duel</h3>
+                        <div className="space-y-3 rounded-box border border-base-300 bg-base-100/60 p-3.5 sm:p-4">
+                            <h3 className="text-sm font-bold text-base-content">Master Duel</h3>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div>
                                     <label className={authLabelCls}>Game ID</label>
@@ -337,10 +304,10 @@ export default function RegisterPage() {
                         </div>
                         <div>
                             <label className={authLabelCls}>Kanal komunitas apa yang paling aktif Anda gunakan? *</label>
-                            <p className="mb-2 text-xs text-white/35">Pilih minimal satu kanal yang paling sering Anda gunakan untuk berkomunikasi.</p>
+                            <p className="mb-2 text-xs text-base-content/45">Pilih minimal satu kanal yang paling sering Anda gunakan untuk berkomunikasi.</p>
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                                 {SOCIAL_OPTIONS.map((option) => (
-                                    <div key={option} onClick={() => setField("socialMedia", form.socialMedia.includes(option) ? form.socialMedia.filter((item) => item !== option) : [...form.socialMedia, option])} className={`cursor-pointer rounded-2xl border px-3 py-2 text-xs font-medium transition-all ${form.socialMedia.includes(option) ? "border-ds-amber bg-ds-amber/10 text-ds-amber" : "border-white/10 text-white/40 hover:border-white/20"}`}>
+                                    <div key={option} onClick={() => setField("socialMedia", form.socialMedia.includes(option) ? form.socialMedia.filter((item) => item !== option) : [...form.socialMedia, option])} className={`cursor-pointer rounded-box border px-3 py-2 text-center text-xs font-medium transition-all ${form.socialMedia.includes(option) ? "border-primary bg-primary/10 text-primary" : "border-base-300 text-base-content/45 hover:border-primary/30"}`}>
                                         {option}
                                     </div>
                                 ))}
@@ -352,46 +319,46 @@ export default function RegisterPage() {
 
                 {step === 4 ? (
                     <div className="space-y-4">
-                        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
-                            <p className="font-semibold text-white">Konfirmasi Pendaftaran</p>
+                        <div className="space-y-3 rounded-box border border-base-300 bg-base-100/60 p-4 text-sm text-base-content/70">
+                            <p className="font-semibold text-base-content">Konfirmasi Pendaftaran</p>
                             <p>Pastikan seluruh data di bawah sudah benar sebelum akun Anda dibuat.</p>
-                            <div className="grid grid-cols-1 gap-2 text-xs text-white/45 sm:grid-cols-3">
-                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                            <div className="grid grid-cols-1 gap-2 text-xs text-base-content/50 sm:grid-cols-3">
+                                <div className="rounded-box border border-base-300 bg-base-100/60 px-3 py-2">
                                     Data akun sudah benar
                                 </div>
-                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                                <div className="rounded-box border border-base-300 bg-base-100/60 px-3 py-2">
                                     Profil game adalah milik Anda
                                 </div>
-                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                                <div className="rounded-box border border-base-300 bg-base-100/60 px-3 py-2">
                                     Siap mengikuti aturan komunitas
                                 </div>
                             </div>
                         </div>
                         <div>
-                            <p className="mb-2 text-sm text-white/50">Ringkasan pendaftaran:</p>
-                            <div className="space-y-1 rounded-2xl bg-white/5 p-4 text-xs">
-                                <div className="flex justify-between gap-4"><span className="text-white/40">Username</span><span className="font-medium text-white">@{form.username}</span></div>
-                                <div className="flex justify-between gap-4"><span className="text-white/40">Email</span><span className="text-white">{form.email}</span></div>
-                                <div className="flex justify-between gap-4"><span className="text-white/40">Provinsi</span><span className="text-white">{form.provinceName || "-"}</span></div>
-                                <div className="flex justify-between gap-4"><span className="text-white/40">Kab/Kota</span><span className="text-white">{form.cityName || "-"}</span></div>
-                                <div className="flex justify-between gap-4"><span className="text-white/40">Sumber info</span><span className="text-white">{form.sourceInfo}</span></div>
-                                <div className="flex justify-between gap-4"><span className="text-white/40">Sosial media aktif</span><span className="text-right text-white">{form.socialMedia.join(", ")}</span></div>
-                                {form.duelLinksIgn ? <div className="flex justify-between gap-4"><span className="text-white/40">DL IGN</span><span className="font-mono text-ds-amber">{form.duelLinksIgn}</span></div> : null}
-                                {form.masterDuelIgn ? <div className="flex justify-between gap-4"><span className="text-white/40">MD IGN</span><span className="font-mono text-ds-amber">{form.masterDuelIgn}</span></div> : null}
+                            <p className="mb-2 text-sm text-base-content/55">Ringkasan pendaftaran:</p>
+                            <div className="space-y-1 rounded-box bg-base-100/70 p-4 text-xs">
+                                <div className="flex justify-between gap-4"><span className="text-base-content/45">Username</span><span className="font-medium text-base-content">@{form.username}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-base-content/45">Email</span><span className="text-base-content">{form.email}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-base-content/45">Provinsi</span><span className="text-base-content">{form.provinceName || "-"}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-base-content/45">Kab/Kota</span><span className="text-base-content">{form.cityName || "-"}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-base-content/45">Sumber info</span><span className="text-base-content">{form.sourceInfo}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-base-content/45">Sosial media aktif</span><span className="text-right text-base-content">{form.socialMedia.join(", ")}</span></div>
+                                {form.duelLinksIgn ? <div className="flex justify-between gap-4"><span className="text-base-content/45">DL IGN</span><span className="font-mono text-primary">{form.duelLinksIgn}</span></div> : null}
+                                {form.masterDuelIgn ? <div className="flex justify-between gap-4"><span className="text-base-content/45">MD IGN</span><span className="font-mono text-primary">{form.masterDuelIgn}</span></div> : null}
                             </div>
                         </div>
-                        <div onClick={() => setField("agreement", !form.agreement)} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition-all ${form.agreement ? "border-ds-amber bg-ds-amber/10" : "border-white/10 hover:border-white/20"}`}>
-                            <div className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2 transition-all ${form.agreement ? "border-ds-amber bg-ds-amber text-black" : "border-white/30"}`}>
+                        <div onClick={() => setField("agreement", !form.agreement)} className={`flex cursor-pointer items-start gap-3 rounded-box border p-3 transition-all ${form.agreement ? "border-primary bg-primary/10" : "border-base-300 hover:border-primary/30"}`}>
+                            <div className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2 transition-all ${form.agreement ? "border-primary bg-primary text-primary-content" : "border-base-content/30"}`}>
                                 {form.agreement ? <span className="text-xs font-bold">Ya</span> : null}
                             </div>
-                            <p className="text-sm text-white/70">Saya menyatakan data yang saya kirim sudah benar, profil game tersebut milik saya, dan saya siap mengikuti aturan Duel Standby serta event yang saya ikuti.</p>
+                            <p className="text-sm text-base-content/70">Saya menyatakan data yang saya kirim sudah benar, profil game tersebut milik saya, dan saya siap mengikuti aturan Duel Standby serta event yang saya ikuti.</p>
                         </div>
                         <Err field="agreement" />
                     </div>
                 ) : null}
             </div>
 
-            <div className="sticky bottom-3 z-10 mt-5 rounded-[24px] border border-white/10 bg-[#121212]/90 p-3 backdrop-blur sm:static sm:mt-5 sm:border-0 sm:bg-transparent sm:p-0">
+            <div className="sticky bottom-3 z-10 mt-5 rounded-[24px] border border-base-300 bg-base-100/90 p-3 backdrop-blur sm:static sm:mt-5 sm:border-0 sm:bg-transparent sm:p-0">
                 <div className="flex flex-col gap-3 sm:flex-row">
                 {step > 1 ? <button type="button" onClick={() => setStep((current) => current - 1)} className={authSecondaryBtnCls}>Kembali</button> : null}
                 {step < 4 ? (
