@@ -62,6 +62,12 @@ Rules:
 
 Avoid placing business logic directly in React components.
 
+For frontend and UI work in this repository:
+
+* use DaisyUI components and variants as the default design system
+* prefer DaisyUI classes over hand-crafted Tailwind-only controls
+* only fall back to custom styling when a feature cannot be expressed cleanly with DaisyUI
+
 ---
 
 # 3. Server vs Client Components

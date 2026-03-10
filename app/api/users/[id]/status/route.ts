@@ -4,6 +4,7 @@ import { getCurrentUser, hasRole } from "@/lib/auth";
 import { approveSchema } from "@/lib/validators";
 import { logAudit } from "@/lib/audit-logger";
 import { AUDIT_ACTIONS, type AuditActionType } from "@/lib/audit-actions";
+import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -21,7 +22,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         );
     }
 
-    const { status, reason, role, teamId } = parsed.data;
+    const { status, reason, role } = parsed.data;
     const normalizedReason = reason || undefined;
 
     const target = await prisma.user.findUnique({
@@ -30,9 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             status: true,
             role: true,
             fullName: true,
-            teamId: true,
-            teamJoinedAt: true,
-            team: { select: { id: true, name: true } },
+            ...activeTeamMembershipSelect,
         },
     });
 
@@ -44,51 +43,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         return NextResponse.json({ success: false, message: "Tidak bisa memodifikasi Founder" }, { status: 403 });
     }
 
-    const nextRole = role ?? target.role;
-    let nextTeamId = typeof teamId !== "undefined" ? teamId : target.teamId;
-
-    if (nextRole === "USER") {
-        nextTeamId = null;
-    }
-
-    let nextTeam: { id: string; name: string } | null = null;
-    if (nextTeamId) {
-        const foundTeam = await prisma.team.findUnique({
-            where: { id: nextTeamId },
-            select: { id: true, name: true, isActive: true },
-        });
-
-        if (!foundTeam || !foundTeam.isActive) {
-            return NextResponse.json({ success: false, message: "Team tidak ditemukan atau tidak aktif" }, { status: 400 });
-        }
-
-        nextTeam = { id: foundTeam.id, name: foundTeam.name };
-    }
-
-    const nextTeamJoinedAt = nextTeamId
-        ? target.teamId === nextTeamId
-            ? target.teamJoinedAt ?? new Date()
-            : new Date()
-        : null;
-
     const updated = await prisma.user.update({
         where: { id },
         data: {
             status,
             ...(role ? { role } : {}),
-            teamId: nextTeamId,
-            teamJoinedAt: nextTeamJoinedAt,
         },
         select: {
             id: true,
             fullName: true,
             status: true,
             role: true,
-            teamId: true,
-            teamJoinedAt: true,
-            team: { select: { id: true, name: true, slug: true } },
+            ...activeTeamMembershipSelect,
         },
     });
+
+    const updatedTeam = getActiveTeamSnapshot(updated);
 
     let auditAction: AuditActionType | null = null;
     if (target.status !== status) {
@@ -108,7 +78,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                 oldStatus: target.status,
                 newStatus: status,
                 newRole: role ?? target.role,
-                teamId: nextTeamId,
             },
         });
     }
@@ -124,23 +93,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         });
     }
 
-    if (target.teamId !== nextTeamId) {
-        const teamAction = nextTeamId ? AUDIT_ACTIONS.TEAM_ASSIGNED : AUDIT_ACTIONS.TEAM_UNASSIGNED;
-        await logAudit({
-            userId: currentUser.id,
-            action: teamAction,
-            targetId: id,
-            targetType: "USER",
-            reason: normalizedReason,
-            details: {
-                oldTeamId: target.teamId,
-                oldTeamName: target.team?.name ?? null,
-                newTeamId: nextTeamId,
-                newTeamName: nextTeam?.name ?? null,
-            },
-        });
-    }
-
     const messages: Record<string, string> = {
         ACTIVE: `${target.fullName} telah diaktifkan.`,
         BANNED: `${target.fullName} telah diblokir.`,
@@ -151,5 +103,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             ? `${target.fullName} telah diaktifkan kembali.`
             : messages[status] ?? "Status diperbarui";
 
-    return NextResponse.json({ success: true, message: statusMessage, data: updated });
+    return NextResponse.json({
+        success: true,
+        message: statusMessage,
+        data: {
+            ...updated,
+            teamId: updatedTeam.teamId,
+            teamJoinedAt: updatedTeam.teamJoinedAt,
+            team: updatedTeam.team,
+        },
+    });
 }

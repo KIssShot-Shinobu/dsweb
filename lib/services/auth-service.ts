@@ -1,6 +1,7 @@
 import type { RegisterInput, LoginInput } from "@/lib/validators";
 import type { GameType } from "@prisma/client";
 import { normalizeGameIdDigits } from "@/lib/game-id";
+import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 
 type GameProfileLookup = { id: string } | null;
 type VerificationTokenRecord = { id: string } | null;
@@ -13,6 +14,16 @@ type AuthUserRecord = {
     status: string;
     role: string;
     teamId?: string | null;
+    teamMemberships?: Array<{
+        joinedAt: Date;
+        role: string;
+        team: {
+            id: string;
+            name: string;
+            slug: string;
+            isActive: boolean;
+        };
+    }>;
     emailVerifiedAt?: Date | null;
     authVersion?: number;
 };
@@ -28,8 +39,8 @@ type ResolvedRegionInput = {
 
 type AuthPrismaLike = {
     user: {
-        findUnique: (args: { where: Record<string, unknown>; select?: Record<string, boolean> }) => Promise<AuthUserRecord | null>;
-        findFirst?: (args: { where: Record<string, unknown>; select?: Record<string, boolean> }) => Promise<AuthUserRecord | null>;
+        findUnique: (args: { where: Record<string, unknown>; select?: Record<string, unknown> }) => Promise<AuthUserRecord | null>;
+        findFirst?: (args: { where: Record<string, unknown>; select?: Record<string, unknown> }) => Promise<AuthUserRecord | null>;
         create?: (args: { data: Record<string, unknown> }) => Promise<AuthUserRecord>;
         update?: (args: { where: Record<string, unknown>; data: Record<string, unknown> }) => Promise<AuthUserRecord | null>;
     };
@@ -119,11 +130,33 @@ export async function authenticateUser(
               where: {
                   OR: [{ email: identifier }, { username: identifier }],
               },
-              select: { id: true, email: true, username: true, fullName: true, password: true, status: true, role: true, teamId: true, emailVerifiedAt: true, authVersion: true },
+              select: {
+                  id: true,
+                  email: true,
+                  username: true,
+                  fullName: true,
+                  password: true,
+                  status: true,
+                  role: true,
+                  emailVerifiedAt: true,
+                  authVersion: true,
+                  ...activeTeamMembershipSelect,
+              },
           })
         : await deps.prisma.user.findUnique({
               where: { email: identifier },
-              select: { id: true, email: true, username: true, fullName: true, password: true, status: true, role: true, teamId: true, emailVerifiedAt: true, authVersion: true },
+              select: {
+                  id: true,
+                  email: true,
+                  username: true,
+                  fullName: true,
+                  password: true,
+                  status: true,
+                  role: true,
+                  emailVerifiedAt: true,
+                  authVersion: true,
+                  ...activeTeamMembershipSelect,
+              },
           });
 
     if (!user) {
@@ -144,7 +177,15 @@ export async function authenticateUser(
         return { ok: false as const, code: user.status, userId: user.id };
     }
 
-    return { ok: true as const, user };
+    const { teamId } = getActiveTeamSnapshot(user);
+
+    return {
+        ok: true as const,
+        user: {
+            ...user,
+            teamId,
+        },
+    };
 }
 
 export async function registerUser(

@@ -1,0 +1,80 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 2746 >>
+stream
+BT
+/F2 16 Tf
+1 0 0 1 36 756 Tm (DSWeb \(DuelStandby Web\) - One Page Summary) Tj
+/F2 11.5 Tf
+1 0 0 1 36 728 Tm (What it is) Tj
+/F1 10 Tf
+1 0 0 1 36 712 Tm (DSWeb is a Next.js web app for the DuelStandby community that combines a public site with) Tj
+1 0 0 1 36 700 Tm (tournament listings and an internal operations dashboard. The repo documents a Prisma +) Tj
+1 0 0 1 36 688 Tm (MySQL/MariaDB backend with Auth.js based authentication.) Tj
+/F2 11.5 Tf
+1 0 0 1 36 672 Tm (Who it is for) Tj
+/F1 10 Tf
+1 0 0 1 36 656 Tm (Community players who register and join tournaments, plus internal staff roles \(officer, admin,) Tj
+1 0 0 1 36 644 Tm (founder\) who manage users, teams, tournaments, treasury, and audit logs.) Tj
+/F2 11.5 Tf
+1 0 0 1 36 628 Tm (What it does) Tj
+/F1 10 Tf
+1 0 0 1 36 612 Tm (- Public website with community branding and tournament list/detail synced from the) Tj
+1 0 0 1 36 600 Tm (  database.) Tj
+1 0 0 1 36 588 Tm (- Auth.js login \(Google and credentials\), registration, session checks, and role hierarchy.) Tj
+1 0 0 1 36 576 Tm (- Admin dashboard for users, teams, tournaments, treasury, audit logs, and operational) Tj
+1 0 0 1 36 564 Tm (  summary.) Tj
+1 0 0 1 36 552 Tm (- Team self-management: invites, join requests, roster management, and role badges.) Tj
+1 0 0 1 36 540 Tm (- Tournament CRUD plus participant registration and image upload via internal API.) Tj
+1 0 0 1 36 528 Tm (- In-app notifications with realtime SSE stream and unread counts.) Tj
+/F2 11.5 Tf
+1 0 0 1 36 512 Tm (How it works) Tj
+/F1 10 Tf
+1 0 0 1 36 496 Tm (- Next.js App Router pages and layouts live in app/ with UI pieces in components/.) Tj
+1 0 0 1 36 484 Tm (- Server endpoints are Next.js API routes in app/api/*, with input validation via) Tj
+1 0 0 1 36 472 Tm (  lib/validators.ts.) Tj
+1 0 0 1 36 460 Tm (- Business logic and utilities sit in lib/ \(auth helpers, audit logging, uploads,) Tj
+1 0 0 1 36 448 Tm (  notifications, regions\), plus lib/services and lib/repositories.) Tj
+1 0 0 1 36 436 Tm (- Data layer uses Prisma \(lib/prisma.ts\) against MySQL/MariaDB with schema in) Tj
+1 0 0 1 36 424 Tm (  prisma/schema.prisma; Auth.js config is in auth.ts and session helpers in lib/auth.ts.) Tj
+/F2 11.5 Tf
+1 0 0 1 36 408 Tm (How to run) Tj
+/F1 10 Tf
+1 0 0 1 36 392 Tm (- Install prerequisites: Node.js 20+ and a running MySQL/MariaDB server.) Tj
+1 0 0 1 36 380 Tm (- Copy .env.example to .env and set at least DATABASE_URL, AUTH_SECRET, and) Tj
+1 0 0 1 36 368 Tm (  NEXT_PUBLIC_APP_URL.) Tj
+1 0 0 1 36 356 Tm (- Install dependencies: npm install.) Tj
+1 0 0 1 36 344 Tm (- Initialize Prisma: npx prisma generate then npx prisma db push.) Tj
+1 0 0 1 36 332 Tm (- Start the dev server: npm run dev and open http://localhost:3000.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000003048 00000 n 
+0000003118 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+3193
+%%EOF

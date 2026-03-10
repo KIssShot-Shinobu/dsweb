@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma, type UserRole, type UserStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
+import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 import { usersQuerySchema } from "@/lib/validators";
 
 export async function GET(req: NextRequest) {
@@ -39,14 +40,33 @@ export async function GET(req: NextRequest) {
     const where: Prisma.UserWhereInput = {
         ...(normalizedStatus ? { status: normalizedStatus } : {}),
         ...(normalizedRole ? { role: normalizedRole } : {}),
-        ...(teamId === "NO_TEAM" ? { teamId: null } : teamId !== "ALL" ? { teamId } : {}),
+        ...(teamId === "NO_TEAM"
+            ? {
+                  teamMemberships: {
+                      none: { leftAt: null },
+                  },
+              }
+            : teamId !== "ALL"
+                ? {
+                      teamMemberships: {
+                          some: { teamId, leftAt: null },
+                      },
+                  }
+                : {}),
         ...(search
             ? {
                   OR: [
                       { fullName: { contains: search } },
                       { email: { contains: search } },
                       { city: { contains: search } },
-                      { team: { name: { contains: search } } },
+                      {
+                          teamMemberships: {
+                              some: {
+                                  leftAt: null,
+                                  team: { name: { contains: search } },
+                              },
+                          },
+                      },
                   ],
               }
             : {}),
@@ -64,19 +84,10 @@ export async function GET(req: NextRequest) {
                 city: true,
                 status: true,
                 role: true,
-                teamId: true,
-                teamJoinedAt: true,
                 createdAt: true,
                 lastLoginAt: true,
                 gameProfiles: { select: { gameType: true, ign: true, gameId: true } },
-                team: {
-                    select: {
-                        id: true,
-                        name: true,
-                        slug: true,
-                        isActive: true,
-                    },
-                },
+                ...activeTeamMembershipSelect,
             },
             orderBy: [{ role: "desc" }, { createdAt: "desc" }],
             skip: (page - 1) * perPage,
@@ -91,16 +102,30 @@ export async function GET(req: NextRequest) {
                 slug: true,
                 isActive: true,
                 _count: {
-                    select: { members: true },
+                    select: {
+                        memberships: {
+                            where: { leftAt: null },
+                        },
+                    },
                 },
             },
             orderBy: { name: "asc" },
         }),
     ]);
 
+    const mappedUsers = users.map((user) => {
+        const activeTeam = getActiveTeamSnapshot(user);
+        return {
+            ...user,
+            teamId: activeTeam.teamId,
+            teamJoinedAt: activeTeam.teamJoinedAt,
+            team: activeTeam.team,
+        };
+    });
+
     return NextResponse.json({
         success: true,
-        data: users,
+        data: mappedUsers,
         total,
         page,
         perPage,
@@ -110,7 +135,7 @@ export async function GET(req: NextRequest) {
                 name: team.name,
                 slug: team.slug,
                 isActive: team.isActive,
-                memberCount: team._count.members,
+                memberCount: team._count.memberships,
             })),
         },
     });

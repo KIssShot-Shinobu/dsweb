@@ -5,6 +5,7 @@ import { ProfileAccountSection } from "@/components/dashboard/profile-account-se
 import { ProfileAvatarForm } from "@/components/dashboard/profile-avatar-form";
 import { ProfileGameSection } from "@/components/dashboard/profile-game-section";
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
+import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 import type { GameProfile } from "@prisma/client";
 
 export default async function ProfilePage() {
@@ -14,7 +15,12 @@ export default async function ProfilePage() {
     const [userWithProfiles, tournamentsJoined, reputation, recentAuditLogs] = await Promise.all([
         prisma.user.findUnique({
             where: { id: user.id },
-            include: { gameProfiles: true, team: true },
+            select: {
+                id: true,
+                username: true,
+                gameProfiles: true,
+                ...activeTeamMembershipSelect,
+            },
         }),
         prisma.tournamentParticipant.count({ where: { userId: user.id } }),
         prisma.reputationLog.aggregate({ where: { userId: user.id }, _sum: { points: true } }),
@@ -28,6 +34,7 @@ export default async function ProfilePage() {
 
     const duelLinksProfile = userWithProfiles?.gameProfiles.find((profile: GameProfile) => profile.gameType === "DUEL_LINKS");
     const masterDuelProfile = userWithProfiles?.gameProfiles.find((profile: GameProfile) => profile.gameType === "MASTER_DUEL");
+    const activeTeam = userWithProfiles ? getActiveTeamSnapshot(userWithProfiles) : { team: null, teamJoinedAt: null };
 
     const roleColors: Record<string, string> = {
         USER: "border-base-300 bg-base-200 text-base-content/70",
@@ -43,9 +50,9 @@ export default async function ProfilePage() {
     };
 
     const accountName = userWithProfiles?.username || user.username || user.fullName;
-    const teamName = userWithProfiles?.team?.name || (user.role === "USER" ? "Public User" : "Belum masuk team");
-    const teamJoinedAt = userWithProfiles?.teamJoinedAt
-        ? new Date(userWithProfiles.teamJoinedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+    const teamName = activeTeam.team?.name || (user.role === "USER" ? "Public User" : "Belum masuk team");
+    const teamJoinedAt = activeTeam.teamJoinedAt
+        ? new Date(activeTeam.teamJoinedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
         : "-";
     const emailVerificationLabel = user.emailVerified ? "Terverifikasi" : "Belum Verifikasi";
     const emailVerificationClass = user.emailVerified

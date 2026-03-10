@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit-logger";
 import { comparePassword, generateSecureToken, hashPassword } from "@/lib/auth";
 import { authenticateUser } from "@/lib/services/auth-service";
 import { syncGoogleUser } from "@/lib/services/auth-oauth-service";
+import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 
 type AuthAppUser = {
     id: string;
@@ -17,6 +18,16 @@ type AuthAppUser = {
     role: string;
     status: string;
     teamId: string | null;
+    teamMemberships?: Array<{
+        joinedAt: Date;
+        role: string;
+        team: {
+            id: string;
+            name: string;
+            slug: string;
+            isActive: boolean;
+        };
+    }>;
     emailVerifiedAt: Date | null;
     authVersion: number;
 };
@@ -31,7 +42,7 @@ async function resolveAppUser(googleId?: string | null, email?: string | null) {
         ...(email ? [{ email: email.toLowerCase() }] : []),
     ];
 
-    return prisma.user.findFirst({
+    const user = await prisma.user.findFirst({
         where: {
             OR: whereClauses,
         } as never,
@@ -42,11 +53,21 @@ async function resolveAppUser(googleId?: string | null, email?: string | null) {
             fullName: true,
             role: true,
             status: true,
-            teamId: true,
             emailVerifiedAt: true,
             authVersion: true,
+            ...activeTeamMembershipSelect,
         },
-    }) as Promise<AuthAppUser | null>;
+    }) as AuthAppUser | null;
+
+    if (!user) {
+        return null;
+    }
+
+    const { teamId } = getActiveTeamSnapshot(user);
+    return {
+        ...user,
+        teamId,
+    };
 }
 
 const googleClientId = process.env.AUTH_GOOGLE_ID;
@@ -64,7 +85,7 @@ class AccessDeniedCredentialsAuthError extends CredentialsSignin {
     code = "access_denied";
 }
 
-const providers: any[] = [
+const providers: Array<ReturnType<typeof Credentials> | ReturnType<typeof Google>> = [
     Credentials({
         name: "Credentials",
         credentials: {

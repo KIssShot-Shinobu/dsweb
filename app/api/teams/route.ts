@@ -46,7 +46,13 @@ export async function GET(req: NextRequest) {
             isActive: true,
             createdAt: true,
             updatedAt: true,
-            _count: { select: { members: true } },
+            _count: {
+                select: {
+                    memberships: {
+                        where: { leftAt: null },
+                    },
+                },
+            },
         },
         orderBy: [{ isActive: "desc" }, { name: "asc" }],
     });
@@ -55,7 +61,7 @@ export async function GET(req: NextRequest) {
         success: true,
         data: teams.map((team) => ({
             ...team,
-            memberCount: team._count.members,
+            memberCount: team._count.memberships,
         })),
     });
 }

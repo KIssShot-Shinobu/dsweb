@@ -59,6 +59,37 @@ enum PendingUploadStatus {
   EXPIRED
 }
 
+enum TeamRole {
+  CAPTAIN
+  VICE_CAPTAIN
+  PLAYER
+  COACH
+  MANAGER
+}
+
+enum TeamInviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum TeamJoinRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum NotificationType {
+  TEAM_INVITE
+  TEAM_JOIN_REQUEST
+  TEAM_ROLE_CHANGED
+  TEAM_MEMBER_REMOVED
+  TOURNAMENT_INVITE
+  MATCH_SCHEDULED
+  MATCH_RESULT
+  SYSTEM_ALERT
+}
+
 model Team {
   id          String   @id @default(cuid())
   name        String   @db.VarChar(191)
@@ -69,7 +100,9 @@ model Team {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  members     User[]
+  memberships TeamMember[]
+  invites     TeamInvite[]
+  joinRequests TeamJoinRequest[]
 }
 
 model Tournament {
@@ -145,14 +178,17 @@ model User {
   status        UserStatus @default(ACTIVE)
   role          UserRole   @default(USER)
   authVersion   Int        @default(0)
-  teamId        String?
-  teamJoinedAt  DateTime?
   lastLoginAt   DateTime?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   deletedAt     DateTime?
 
-  team            Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  teamMemberships TeamMember[]
+  receivedTeamInvites TeamInvite[] @relation("TeamInviteTargetUser")
+  sentTeamInvites TeamInvite[] @relation("TeamInviteSender")
+  teamJoinRequests TeamJoinRequest[]
+  notifications Notification[]
+  notificationPreference NotificationPreference?
   gameProfiles    GameProfile[]
   registrationLog RegistrationLog?
   auditLogs       AuditLog[]
@@ -164,8 +200,86 @@ model User {
   treasuryEntries Treasury[]
   claimedUploads  PendingUpload[]
 
-  @@index([teamId])
   @@index([accountNumberHash])
+}
+
+model Notification {
+  id        String            @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String            @db.VarChar(191)
+  message   String            @db.VarChar(500)
+  link      String?
+  isRead    Boolean           @default(false)
+  createdAt DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
+
+model NotificationPreference {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  email     Boolean @default(true)
+  inApp     Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  userId    String
+  teamId    String
+  role      TeamRole @default(PLAYER)
+  joinedAt  DateTime @default(now())
+  leftAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@index([teamId, leftAt])
+  @@index([userId, leftAt])
+  @@index([teamId, role, leftAt])
+}
+
+model TeamInvite {
+  id          String           @id @default(cuid())
+  teamId       String
+  userId       String
+  invitedById  String
+  status       TeamInviteStatus @default(PENDING)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation("TeamInviteTargetUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User @relation("TeamInviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([teamId, status])
+  @@index([userId, status])
+  @@unique([teamId, userId, status])
+}
+
+model TeamJoinRequest {
+  id        String                 @id @default(cuid())
+  teamId     String
+  userId     String
+  status     TeamJoinRequestStatus @default(PENDING)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([teamId, status])
+  @@index([userId, status])
+  @@unique([teamId, userId, status])
 }
 
 model Badge {

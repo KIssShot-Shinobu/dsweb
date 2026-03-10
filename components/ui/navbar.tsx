@@ -9,11 +9,13 @@ import { useTheme } from "@/context/ThemeContext";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { clientLogout } from "@/lib/client-auth";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const navLinks = [
     { name: "Beranda", href: "/" },
     { name: "Tentang", href: "/#about" },
     { name: "Turnamen", href: "/tournaments" },
+    { name: "Team", href: "/teams" },
     { name: "Komunitas", href: "/#socials" },
 ];
 
@@ -134,6 +136,7 @@ export function Navbar() {
                         ))}
                     </ul>
                     {themeButton}
+                    {me ? <NotificationBell isLoggedIn /> : null}
                     {!me ? (
                         <>
                             <Link href="/login" className="btn btn-outline rounded-box">

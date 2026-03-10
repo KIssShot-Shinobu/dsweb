@@ -27,11 +27,16 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Form di dashboard `tournament`, `users`, dan `treasury` menggunakan custom dropdown konsisten (tidak lagi native select browser).
 - Style form/button dashboard dipusatkan di `components/dashboard/form-styles.ts` agar konsisten lintas halaman.
 - Aksi row list (`Edit/Hapus`) dipusatkan di `components/dashboard/row-actions.tsx` agar pola tabel konsisten.
-- Halaman `Users` (`/dashboard/users`) menjadi pusat tunggal untuk registrasi user, akun aktif, role komunitas, dan afiliasi team. Halaman `Teams` (`/dashboard/teams`) dipakai untuk mengelola roster Duel Standby secara terpisah dari role akun, termasuk detail page team untuk roster assignment yang lebih nyaman dengan search + filter role langsung di roster dan kandidat, plus modal konfirmasi saat melepas anggota dari team.
+- Team management kini memakai model membership relasional (`TeamMember`, `TeamInvite`, `TeamJoinRequest`) dan dikelola mandiri oleh pemain melalui `/teams`, `/teams/[slug]`, dan `/teams/[slug]/manage`.
+- UI publik team (`/teams` dan `/teams/[slug]`) kini memakai layout DaisyUI yang lebih konsisten, ada search direktori, stats ringkas, badge role, empty state yang jelas, serta card responsif untuk mobile.
+- Team Manager (`/teams/[slug]/manage`) dipoles ulang: section terstruktur, modal invite, konfirmasi remove, highlight role dengan badge, dan tabel roster responsif (stack ke card di mobile).
+- Captain bisa menghapus team dari halaman manage ketika roster sudah kosong (hanya captain tersisa).
+- Halaman `Users` (`/dashboard/users`) tetap fokus ke moderasi global akun, role komunitas, dan status user. Admin tidak lagi assign/unassign roster team dari dashboard users.
 - Treasury transaksi + analytics ringkas dengan filter server-side; halaman treasury sekarang default ke semua periode agar sinkron dengan total data dashboard.
 - Dashboard summary memakai endpoint terpusat `/api/dashboard/summary`, termasuk ringkasan guild members, assigned team, dan total team aktif.
 - Upload file gambar (screenshot/profile) via API. Dashboard kini hanya menampilkan avatar user aktif di header agar layout tidak boros.
 - Audit log aktivitas user/admin.
+- Notification system in-app dengan realtime SSE untuk invite, join request, dan alert penting.
 - Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
 - Native form controls (`select`, `date`, `datetime-local`) sudah di-hardening agar teks dropdown tetap terbaca di light/dark.
 - Password reset flow berbasis token dengan expiry 15 menit.
@@ -149,14 +154,66 @@ npm run dev
 
 App berjalan di `http://localhost:3000`.
 
+## Migrasi Team Membership
+
+Sistem team baru menghapus kolom `User.teamId` dan `User.teamJoinedAt`, lalu menggantinya dengan:
+
+- `TeamMember`
+- `TeamInvite`
+- `TeamJoinRequest`
+- enum `TeamRole`, `TeamInviteStatus`, `TeamJoinRequestStatus`
+
+Langkah migrasi lokal:
+
+```bash
+npx prisma generate
+```
+
+Lalu jalankan SQL manual:
+
+1. `prisma/migrations_manual/20260310_team_membership_system.sql`
+2. Jika perlu rollback: `prisma/migrations_manual/20260310_team_membership_system.rollback.sql`
+
+Catatan:
+
+- Data team lama di `User.teamId` akan dibackfill ke `TeamMember` dengan role default `PLAYER`.
+- Constraint "hanya satu captain per team" saat ini ditegakkan di service layer, bukan partial unique index database.
+- Aplikasi juga menegakkan satu active team membership per user pada flow service.
+
+## Migrasi Notification System
+
+Model notifikasi in-app menambah tabel berikut:
+
+- `Notification`
+- `NotificationPreference`
+- enum `NotificationType`
+
+Langkah migrasi lokal:
+
+```bash
+npx prisma generate
+```
+
+Lalu jalankan SQL manual:
+
+1. `prisma/migrations_manual/20260310_notifications.sql`
+2. Jika perlu rollback: `prisma/migrations_manual/20260310_notifications.rollback.sql`
+
 
 ## Domain Users & Teams
 
 - `USER`: akun publik. Boleh ikut tournament publik, tetapi belum menjadi bagian dari Duel Standby. Registrasi baru default ke role ini.
 - `MEMBER`: anggota resmi Duel Standby.
 - `OFFICER`, `ADMIN`, `FOUNDER`: anggota internal dengan hak akses dashboard lebih tinggi.
-- Keanggotaan team dipisah dari role. Seorang `MEMBER` bisa masuk team, atau tetap tanpa team. Registrasi publik tidak lagi mewajibkan prefix `[DS]` pada IGN.
-- User dengan role `USER` tidak bisa dihubungkan ke team. Jika role diturunkan menjadi `USER`, relasi team akan dilepas otomatis.
+- Keanggotaan team kini berbasis membership aktif. Seorang user hanya boleh punya satu active membership pada satu waktu, tetapi histori keanggotaan tetap tersimpan melalui `leftAt`.
+- Role komunitas (`USER`, `MEMBER`, `OFFICER`, `ADMIN`, `FOUNDER`) tetap terpisah dari role team (`CAPTAIN`, `VICE_CAPTAIN`, `PLAYER`, `COACH`, `MANAGER`).
+- Team dikelola pemain sendiri:
+  - `CAPTAIN`: full management
+  - `VICE_CAPTAIN`: invite, remove non-captain, edit team
+  - `MANAGER`: invite, edit team
+  - `COACH`: lihat roster, manage lineup
+  - `PLAYER`: lihat team, leave team
+- Admin hanya melakukan moderasi global user dan tidak lagi memindahkan roster team dari dashboard admin.
 
 ## Seeding Data
 
@@ -215,8 +272,25 @@ Lainnya:
 
 - `GET /api/users` (`status`, `role`, `teamId`, `search`, `page`, `perPage`)
 - `GET /api/users/:id`
-- `PUT /api/users/:id/status` (status, role, assign/unassign team)
+- `PUT /api/users/:id/status` (status, role)
 - `GET /api/teams`, `POST /api/teams`, `GET/PUT/DELETE /api/teams/:id`, `POST/DELETE /api/teams/:id/roster`
+- `GET /api/notifications`
+- `GET /api/notifications/unread-count`
+- `POST /api/notifications/read`
+- `POST /api/notifications/read-all`
+- `DELETE /api/notifications/:id`
+- `GET /api/notifications/stream` (SSE realtime)
+- `POST /api/team/create`
+- `POST /api/team/invite`
+- `POST /api/team/invite/accept`
+- `POST /api/team/invite/decline`
+- `POST /api/team/request-join`
+- `POST /api/team/member/remove`
+- `POST /api/team/member/promote`
+- `POST /api/team/member/transfer-captain`
+- `POST /api/team/delete`
+- `POST /api/team/leave`
+- `PATCH /api/team/update`
 - `GET/POST /api/treasury`, `GET/PUT/DELETE /api/treasury/:id`
 - `GET /api/admin/users` dan `PUT /api/admin/users/:id/status` tetap tersedia sebagai alias kompatibilitas
 - `GET /api/treasury` mendukung `page`, `limit`, `month`, `year`, `type`, `userId`
@@ -242,7 +316,8 @@ Catatan tambahan: pendaftaran tournament publik memakai status akun `ACTIVE`; ro
 
 Untuk endpoint penting (terutama operasi write `POST/PUT/DELETE`), audit log wajib ditulis.
 
-- Perubahan status user, role, dan assignment team sudah tercatat (`USER_APPROVED`, `USER_BANNED`, `ROLE_CHANGED`, `TEAM_ASSIGNED`, `TEAM_UNASSIGNED`).
+- Perubahan status user dan role tetap tercatat (`USER_APPROVED`, `USER_BANNED`, `ROLE_CHANGED`).
+- Flow team self-managed juga tercatat (`TEAM_CREATED`, `TEAM_UPDATED`, `TEAM_INVITED`, `TEAM_INVITE_ACCEPTED`, `TEAM_INVITE_DECLINED`, `TEAM_JOIN_REQUESTED`, `TEAM_MEMBER_REMOVED`, `TEAM_ROLE_CHANGED`, `TEAM_CAPTAIN_TRANSFERRED`, `TEAM_LEFT`).
 - Treasury: add/update/delete sudah tercatat (`TREASURY_ADDED`, `TREASURY_UPDATED`, `TREASURY_DELETED`).
 - Tournament: create/update/delete/register sudah tercatat.
 - Auth/Profile/Upload: event penting sudah tercatat.
@@ -252,7 +327,7 @@ Aturan ke depan:
 
 1. Setiap fitur penting baru harus menambahkan audit log.
 2. Gunakan userId dari sesi server/Auth.js sebagai actor log; jangan mengandalkan header manual.
-3. Mutasi roster team juga wajib tercatat di audit log (TEAM_ASSIGNED, TEAM_UNASSIGNED).
+3. Mutasi team self-managed juga wajib tercatat di audit log.
 4. Simpan `before/after` ringkas untuk operasi update jika relevan.
 5. Jangan taruh data sensitif mentah di `details` audit.
 

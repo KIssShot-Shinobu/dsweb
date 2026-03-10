@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 
 const currentUserSelect = {
     id: true,
@@ -15,16 +17,7 @@ const currentUserSelect = {
     city: true,
     phoneWhatsapp: true,
     authVersion: true,
-    teamId: true,
-    teamJoinedAt: true,
-    team: {
-        select: {
-            id: true,
-            name: true,
-            slug: true,
-            isActive: true,
-        },
-    },
+    ...activeTeamMembershipSelect,
     createdAt: true,
     lastActiveAt: true,
     updatedAt: true,
@@ -35,7 +28,11 @@ const currentUserSelect = {
     },
 };
 
-function mapCurrentUser(user: any) {
+type CurrentUserRecord = Prisma.UserGetPayload<{ select: typeof currentUserSelect }>;
+
+function mapCurrentUser(user: CurrentUserRecord) {
+    const activeTeam = getActiveTeamSnapshot(user);
+
     return {
         id: user.id,
         username: user.username,
@@ -49,9 +46,9 @@ function mapCurrentUser(user: any) {
         cityCode: user.cityCode,
         city: user.city,
         phoneWhatsapp: user.phoneWhatsapp,
-        teamId: user.teamId,
-        teamJoinedAt: user.teamJoinedAt,
-        team: user.team,
+        teamId: activeTeam.teamId,
+        teamJoinedAt: activeTeam.teamJoinedAt,
+        team: activeTeam.team,
         createdAt: user.createdAt,
         lastActiveAt: user.lastActiveAt ?? user.updatedAt,
         emailVerified: !user.emailVerificationToken,

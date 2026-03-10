@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
+import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -19,20 +20,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             city: true,
             status: true,
             role: true,
-            teamId: true,
-            teamJoinedAt: true,
             createdAt: true,
             lastLoginAt: true,
             gameProfiles: true,
             registrationLog: true,
-            team: {
-                select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                    isActive: true,
-                },
-            },
+            ...activeTeamMembershipSelect,
             auditLogs: {
                 select: {
                     action: true,
@@ -47,5 +39,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     });
 
     if (!user) return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
-    return NextResponse.json({ success: true, data: user });
+    const activeTeam = getActiveTeamSnapshot(user);
+
+    return NextResponse.json({
+        success: true,
+        data: {
+            ...user,
+            teamId: activeTeam.teamId,
+            teamJoinedAt: activeTeam.teamJoinedAt,
+            team: activeTeam.team,
+        },
+    });
 }

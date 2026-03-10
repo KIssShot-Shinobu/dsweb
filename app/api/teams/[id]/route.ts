@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
+import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 import { teamSchema } from "@/lib/validators";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -23,21 +24,27 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
             isActive: true,
             createdAt: true,
             updatedAt: true,
-            members: {
-                where: { deletedAt: null },
+            memberships: {
+                where: { leftAt: null },
                 select: {
                     id: true,
-                    fullName: true,
-                    email: true,
                     role: true,
-                    status: true,
-                    city: true,
-                    avatarUrl: true,
-                    createdAt: true,
-                    lastActiveAt: true,
-                    teamJoinedAt: true,
+                    joinedAt: true,
+                    user: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            email: true,
+                            role: true,
+                            status: true,
+                            city: true,
+                            avatarUrl: true,
+                            createdAt: true,
+                            lastActiveAt: true,
+                        },
+                    },
                 },
-                orderBy: [{ role: "desc" }, { fullName: "asc" }],
+                orderBy: [{ role: "desc" }, { joinedAt: "asc" }],
             },
         },
     });
@@ -51,7 +58,6 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
             deletedAt: null,
             status: "ACTIVE",
             role: { in: ["MEMBER", "OFFICER", "ADMIN", "FOUNDER"] },
-            OR: [{ teamId: null }, { teamId: id }],
         },
         select: {
             id: true,
@@ -60,19 +66,43 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
             role: true,
             city: true,
             avatarUrl: true,
-            teamId: true,
-            teamJoinedAt: true,
             lastActiveAt: true,
+            ...activeTeamMembershipSelect,
         },
         orderBy: [{ role: "desc" }, { fullName: "asc" }],
+    });
+
+    const members = team.memberships.map((membership) => ({
+        id: membership.user.id,
+        membershipId: membership.id,
+        fullName: membership.user.fullName,
+        email: membership.user.email,
+        role: membership.role,
+        status: membership.user.status,
+        city: membership.user.city,
+        avatarUrl: membership.user.avatarUrl,
+        createdAt: membership.user.createdAt,
+        lastActiveAt: membership.user.lastActiveAt,
+        teamJoinedAt: membership.joinedAt,
+        communityRole: membership.user.role,
+    }));
+
+    const mappedAvailableMembers = availableMembers.map((member) => {
+        const activeTeam = getActiveTeamSnapshot(member);
+        return {
+            ...member,
+            teamId: activeTeam.teamId,
+            teamJoinedAt: activeTeam.teamJoinedAt,
+        };
     });
 
     return NextResponse.json({
         success: true,
         data: {
             ...team,
-            memberCount: team.members.length,
-            availableMembers,
+            members,
+            memberCount: members.length,
+            availableMembers: mappedAvailableMembers,
         },
     });
 }
@@ -149,7 +179,10 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
         select: {
             id: true,
             name: true,
-            members: { select: { id: true } },
+            memberships: {
+                where: { leftAt: null },
+                select: { id: true },
+            },
         },
     });
 
@@ -157,7 +190,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
         return NextResponse.json({ success: false, message: "Team tidak ditemukan" }, { status: 404 });
     }
 
-    if (team.members.length > 0) {
+    if (team.memberships.length > 0) {
         return NextResponse.json({ success: false, message: "Kosongkan roster team sebelum menghapus team" }, { status: 400 });
     }
 

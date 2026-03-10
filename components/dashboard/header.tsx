@@ -1,10 +1,11 @@
 "use client";
 
-import { Bell, Menu, Search } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { useSidebar } from "@/context/SidebarContext";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { normalizeAssetUrl } from "@/lib/asset-url";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 function getInitials(name: string) {
     return (
@@ -39,9 +40,9 @@ export function Header() {
 
                 <div className="flex items-center gap-2">
                     <ThemeToggle />
-                    <button className="btn btn-ghost btn-circle hidden border border-base-300 bg-base-100/80 sm:inline-flex" title="Notifications">
-                        <Bell className="h-4 w-4" />
-                    </button>
+                    <div className="hidden sm:inline-flex">
+                        <NotificationBell isLoggedIn={Boolean(user)} />
+                    </div>
 
                     <div className="flex items-center gap-3 rounded-box border border-base-300 bg-base-100/90 px-2 py-1.5 shadow-sm">
                         {avatarUrl ? (

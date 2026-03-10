@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import { getCurrentUser, hasRole } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 
 function buildWeeklyChart(transactions: { amount: number; createdAt: Date }[]) {
     const days = [];
@@ -75,7 +76,9 @@ export async function GET() {
             prisma.user.count({
                 where: {
                     role: { in: ["MEMBER", "OFFICER", "ADMIN", "FOUNDER"] },
-                    teamId: { not: null },
+                    teamMemberships: {
+                        some: { leftAt: null },
+                    },
                 },
             }),
             prisma.team.count(),
@@ -90,13 +93,7 @@ export async function GET() {
                     fullName: true,
                     avatarUrl: true,
                     role: true,
-                    team: {
-                        select: {
-                            id: true,
-                            name: true,
-                            slug: true,
-                        },
-                    },
+                    ...activeTeamMembershipSelect,
                     gameProfiles: {
                         select: { gameId: true, ign: true, gameType: true },
                         orderBy: { createdAt: "asc" },
@@ -162,7 +159,10 @@ export async function GET() {
                     teams: totalTeams,
                     activeTeams,
                 },
-                recentActiveUsers,
+                recentActiveUsers: recentActiveUsers.map((user) => ({
+                    ...user,
+                    team: getActiveTeamSnapshot(user).team,
+                })),
                 recentTournaments: recentTournaments
                     .sort((left, right) => {
                         const statusOrder = getTournamentPriority(left.status) - getTournamentPriority(right.status);
