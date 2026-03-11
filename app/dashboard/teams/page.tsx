@@ -9,6 +9,7 @@ import {
     btnDanger,
     btnOutline,
     btnPrimary,
+    dashboardStackCls,
     filterBarCls,
     inputCls,
     labelCls,
@@ -281,7 +282,7 @@ export default function TeamsPage() {
 
     return (
         <DashboardPageShell>
-            <div className="space-y-5 lg:space-y-6">
+            <div className={dashboardStackCls}>
                 <DashboardPageHeader
                     kicker="Guild Teams"
                     title="Teams"
@@ -290,7 +291,8 @@ export default function TeamsPage() {
                 />
 
                 {isAdmin ? (
-                    <DashboardPanel title="Team Requests" description="Review request pembuatan team dari user, setujui atau tolak dengan cepat.">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                        <DashboardPanel title="Team Requests" description="Review request pembuatan team dari user, setujui atau tolak dengan cepat.">
                         <div className={filterBarCls}>
                             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
                                 <div className="text-sm text-base-content/60">
@@ -369,7 +371,7 @@ export default function TeamsPage() {
                                                     {request.description || "Tanpa deskripsi."}
                                                 </div>
                                                 <div className="mt-2 text-xs text-base-content/50">
-                                                    Oleh {request.requester.fullName} (@{request.requester.username}) · {request.requester.email}
+                                                    Oleh {request.requester.fullName} (@{request.requester.username}) - {request.requester.email}
                                                 </div>
                                                 <div className="mt-2 text-[11px] text-base-content/45">
                                                     Dikirim {new Date(request.createdAt).toLocaleDateString("id-ID")}
@@ -409,8 +411,15 @@ export default function TeamsPage() {
                             </div>
                         )}
                     </DashboardPanel>
-                ) : null}
 
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <DashboardMetricCard label="Total Teams" value={loading ? "..." : teams.length} meta="Seluruh team terdaftar" tone="accent" />
+                        <DashboardMetricCard label="Teams Aktif" value={loading ? "..." : activeTeams} meta="Roster aktif saat ini" tone="success" />
+                        <DashboardMetricCard label="Avg. Roster" value={loading ? "..." : avgRoster} meta="Rata-rata anggota per team" tone="default" />
+                        <DashboardMetricCard label="Teams Nonaktif" value={loading ? "..." : inactiveTeams} meta="Belum aktif dipakai" tone="danger" />
+                    </div>
+                </div>
+            ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <DashboardMetricCard label="Total Teams" value={loading ? "..." : teams.length} meta="Seluruh team yang tersedia di Duel Standby" tone="accent" />
                     <DashboardMetricCard label="Teams Aktif" value={loading ? "..." : activeTeams} meta="Team yang masih bisa dipakai untuk roster aktif" tone="success" />
@@ -421,40 +430,41 @@ export default function TeamsPage() {
                         tone="default"
                     />
                 </div>
+            )}
 
-                <DashboardPanel title="Filter Team" description="Cari team berdasarkan nama atau status aktif roster.">
-                    <div className={filterBarCls}>
-                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
+                <DashboardPanel
+                    title="Roster Team"
+                    description="Buka detail team untuk melihat roster lengkap dan mengatur assignment anggota dengan lebih nyaman."
+                    action={(
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <input
                                 type="text"
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
                                 placeholder="Cari nama team..."
-                                className={searchInputCls}
+                                className={`${searchInputCls} h-9 sm:w-48`}
                             />
-                            <FormSelect value={status} onChange={setStatus} options={STATUS_OPTIONS} className="w-full" />
+                            <FormSelect value={status} onChange={setStatus} options={STATUS_OPTIONS} className="w-full sm:w-44" />
                         </div>
-                        {isFiltering ? (
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/45">
-                                <span>
-                                    Menampilkan {teams.length} team untuk filter yang sedang aktif.
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSearch("");
-                                        setStatus("ALL");
-                                    }}
-                                    className="font-medium text-primary transition-colors hover:text-primary/80"
-                                >
-                                    Reset Filter
-                                </button>
-                            </div>
-                        ) : null}
-                    </div>
-                </DashboardPanel>
-
-                <DashboardPanel title="Roster Team" description="Buka detail team untuk melihat roster lengkap dan mengatur assignment anggota dengan lebih nyaman.">
+                    )}
+                >
+                    {isFiltering ? (
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/45">
+                            <span>
+                                Menampilkan {teams.length} team untuk filter yang sedang aktif.
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSearch("");
+                                    setStatus("ALL");
+                                }}
+                                className="font-medium text-primary transition-colors hover:text-primary/80"
+                            >
+                                Reset Filter
+                            </button>
+                        </div>
+                    ) : null}
                     {loading ? (
                         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                             {[1, 2, 3, 4].map((item) => (
@@ -533,12 +543,11 @@ export default function TeamsPage() {
                                                 </button>
                                             ) : null}
                                             {isAdmin ? (
-                                                <button onClick={() => setTeamToDelete(team)} className={btnDanger} disabled={team.memberCount > 0}>
-                                                    Hapus
-                                                </button>
-                                            ) : null}
-                                            {team.memberCount > 0 ? (
-                                                <span className="text-[11px] text-base-content/45">Kosongkan roster sebelum hapus.</span>
+                                                <div className={team.memberCount > 0 ? "tooltip tooltip-top" : ""} data-tip="Kosongkan roster sebelum hapus.">
+                                                    <button onClick={() => setTeamToDelete(team)} className={btnDanger} disabled={team.memberCount > 0}>
+                                                        Hapus
+                                                    </button>
+                                                </div>
                                             ) : null}
                                         </div>
                                     </div>

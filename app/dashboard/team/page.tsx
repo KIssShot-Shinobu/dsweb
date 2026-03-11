@@ -8,6 +8,7 @@ import {
     DashboardPageShell,
     DashboardPanel,
 } from "@/components/dashboard/page-shell";
+import { dashboardStackCls } from "@/components/dashboard/form-styles";
 import { requireDashboardUser } from "@/lib/dashboard-auth";
 import { prisma } from "@/lib/prisma";
 import { createTeamService } from "@/lib/services/team.service";
@@ -31,14 +32,16 @@ export default async function MyTeamPage() {
     if (!activeMembership?.team?.slug) {
         return (
             <DashboardPageShell>
-                <DashboardPageHeader
-                    kicker="Team"
-                    title="Team Saya"
-                    description="Kelola roster dan info team langsung dari dashboard."
-                />
-                <DashboardPanel title="Belum Terhubung Team" description="Anda belum punya team aktif saat ini.">
-                    <TeamRequestPanel />
-                </DashboardPanel>
+                <div className={dashboardStackCls}>
+                    <DashboardPageHeader
+                        kicker="Team"
+                        title="Team Saya"
+                        description="Kelola roster dan info team langsung dari dashboard."
+                    />
+                    <DashboardPanel title="Belum Terhubung Team" description="Anda belum punya team aktif saat ini.">
+                        <TeamRequestPanel />
+                    </DashboardPanel>
+                </div>
             </DashboardPageShell>
         );
     }
@@ -59,17 +62,19 @@ export default async function MyTeamPage() {
     if (!canManage) {
         return (
             <DashboardPageShell>
-                <DashboardPageHeader
-                    kicker="Team"
-                    title="Team Saya"
-                    description="Hanya captain dan pengurus team yang ditunjuk bisa mengelola roster."
-                />
-                <DashboardPanel title="Akses Terbatas" description="Role Anda belum punya izin manajemen team.">
-                    <DashboardEmptyState
-                        title="Tidak punya akses"
-                        description="Minta captain memberikan role pengurus agar bisa mengelola roster."
+                <div className={dashboardStackCls}>
+                    <DashboardPageHeader
+                        kicker="Team"
+                        title="Team Saya"
+                        description="Hanya captain dan pengurus team yang ditunjuk bisa mengelola roster."
                     />
-                </DashboardPanel>
+                    <DashboardPanel title="Akses Terbatas" description="Role Anda belum punya izin manajemen team.">
+                        <DashboardEmptyState
+                            title="Tidak punya akses"
+                            description="Minta captain memberikan role pengurus agar bisa mengelola roster."
+                        />
+                    </DashboardPanel>
+                </div>
             </DashboardPageShell>
         );
     }

@@ -122,10 +122,14 @@ model Tournament {
   prizePool   Int              @default(0)
   startDate   DateTime
   image       String?
+  createdById String
+  createdBy   User             @relation("TournamentCreator", fields: [createdById], references: [id], onDelete: Cascade)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
   participants TournamentParticipant[]
+
+  @@index([createdById])
 }
 
 model TournamentParticipant {
@@ -143,6 +147,7 @@ model TournamentParticipant {
 model Treasury {
   id          String   @id @default(cuid())
   amount      Int
+  currency    String   @default("IDR") @db.VarChar(10)
   description String
   createdAt   DateTime @default(now())
   userId      String?
@@ -201,6 +206,7 @@ model User {
   registrationLog RegistrationLog?
   auditLogs       AuditLog[]
   tournaments     TournamentParticipant[]
+  createdTournaments Tournament[] @relation("TournamentCreator")
   emailVerificationToken EmailVerificationToken?
   passwordResetToken PasswordResetToken?
   badges          UserBadge[]
@@ -224,6 +230,7 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
+  @@index([userId, createdAt])
 }
 
 model NotificationPreference {
@@ -271,7 +278,7 @@ model TeamInvite {
 
   @@index([teamId, status])
   @@index([userId, status])
-  @@unique([teamId, userId, status])
+  @@unique([teamId, userId])
 }
 
 model TeamJoinRequest {
@@ -372,11 +379,13 @@ model GameProfile {
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   gameType      GameType
-  gameId        String   @unique @db.VarChar(191)
+  gameId        String   @db.VarChar(191)
   ign           String
   screenshotUrl String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@unique([gameType, gameId])
 }
 
 model RegistrationLog {

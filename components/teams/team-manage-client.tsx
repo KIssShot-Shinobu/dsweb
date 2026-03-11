@@ -9,7 +9,7 @@ import { useToast } from "@/components/dashboard/toast";
 import { TeamAvatar } from "@/components/teams/team-avatar";
 import type { TeamView } from "@/components/teams/types";
 import { normalizeAssetUrl } from "@/lib/asset-url";
-import { heroKickerCls, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import { dashboardStackCls, heroKickerCls, inputCls, labelCls } from "@/components/dashboard/form-styles";
 
 const ROLE_OPTIONS = [
     { value: "VICE_CAPTAIN", label: "Vice Captain" },
@@ -356,7 +356,7 @@ export function TeamManageClient({
     };
 
     return (
-        <div className="space-y-10">
+        <div className={dashboardStackCls}>
             <section className="card border border-base-300 bg-base-100 shadow-sm">
                 <div className="card-body">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

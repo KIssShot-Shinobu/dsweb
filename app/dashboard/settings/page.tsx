@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { btnDanger, btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import { btnDanger, btnOutline, btnPrimary, dashboardStackCls, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { clientLogout } from "@/lib/client-auth";
 
@@ -94,7 +94,7 @@ export default function SettingsPage() {
 
     return (
         <DashboardPageShell>
-            <div className="space-y-5 lg:space-y-6">
+            <div className={dashboardStackCls}>
                 <DashboardPageHeader
                     kicker="Account Center"
                     title="Pengaturan"

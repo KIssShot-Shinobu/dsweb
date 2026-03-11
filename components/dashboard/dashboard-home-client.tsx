@@ -9,7 +9,7 @@ import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { AnalyticsChart } from "@/components/dashboard/analytics-chart";
 import { OperationsOverview } from "@/components/dashboard/operations-overview";
 import { DashboardPageHeader, DashboardPageShell } from "@/components/dashboard/page-shell";
-import { btnOutline, btnPrimary } from "@/components/dashboard/form-styles";
+import { btnOutline, btnPrimary, dashboardStackCls } from "@/components/dashboard/form-styles";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
 const ADMIN_ROLES = ["ADMIN", "FOUNDER"];
@@ -144,7 +144,7 @@ export default function DashboardPage() {
 
     return (
         <DashboardPageShell>
-            <div className="space-y-5 lg:space-y-6">
+            <div className={dashboardStackCls}>
                 <DashboardPageHeader
                     kicker="Operations Center"
                     title="Dashboard"

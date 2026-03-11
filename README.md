@@ -436,6 +436,9 @@ cmd /c npm run dev
 ## Migration Notes
 
 - Setiap perubahan schema wajib disertai migration script dan rollback plan.
+- Prisma migrate (core constraints + creator tracking) gunakan migration berikut:
+  - `prisma/migrations/00000000000000_baseline` (baseline untuk DB yang sudah ada)
+  - `prisma/migrations/20260311120000_add-core-constraints` (creator tournament, currency treasury, unique/index updates)
 - Untuk update ini, gunakan:
   - `prisma/migrations_manual/20260307_sensitive_user_fields.sql`
   - `prisma/migrations_manual/20260307_sensitive_user_fields.rollback.sql`

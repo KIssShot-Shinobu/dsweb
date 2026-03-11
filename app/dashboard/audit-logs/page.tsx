@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { Pagination } from "@/components/dashboard/pagination";
-import { btnOutline, btnPrimary, filterBarCls, searchInputCls } from "@/components/dashboard/form-styles";
+import { btnOutline, btnPrimary, dashboardStackCls, filterBarCls, searchInputCls } from "@/components/dashboard/form-styles";
 import {
     DashboardEmptyState,
     DashboardMetricCard,
@@ -212,7 +212,7 @@ export default function AuditLogsPage() {
 
     return (
         <DashboardPageShell>
-            <div className="space-y-5 lg:space-y-6">
+            <div className={dashboardStackCls}>
                 <DashboardPageHeader
                     kicker="Audit Trail"
                     title="Audit Logs"

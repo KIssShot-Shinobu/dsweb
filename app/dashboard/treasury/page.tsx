@@ -8,7 +8,7 @@ import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { RowActions } from "@/components/dashboard/row-actions";
-import { btnOutline, btnPrimary, filterBarCls, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import { btnOutline, btnPrimary, dashboardStackCls, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import {
     DashboardEmptyState,
     DashboardMetricCard,
@@ -260,7 +260,7 @@ export default function TreasuryPage() {
 
     return (
         <DashboardPageShell>
-            <div className="space-y-5 lg:space-y-6">
+            <div className={dashboardStackCls}>
                 <DashboardPageHeader
                     kicker="Finance Desk"
                     title="Treasury"
@@ -275,20 +275,20 @@ export default function TreasuryPage() {
                     <DashboardMetricCard label="Jumlah Transaksi" value={loading ? "..." : total} meta="Total record pada periode aktif" />
                 </div>
 
-                <DashboardPanel title="Filter Periode" description="Pilih bulan, tahun, dan tipe transaksi untuk mempersempit daftar kas guild.">
-                    <div className={filterBarCls}>
-                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_140px_180px_auto]">
-                            <FormSelect value={month} onChange={(value) => { setMonth(value); setPage(1); }} options={monthOptions} />
-                            <FormSelect value={year} onChange={(value) => { setYear(value); setPage(1); }} options={yearOptions} />
-                            <FormSelect value={filter} onChange={(value) => { setFilter(value as "ALL" | "MASUK" | "KELUAR"); setPage(1); }} options={filterOptions} />
-                            <button className={btnOutline} onClick={() => { setMonth("ALL"); setYear("ALL"); setFilter("ALL"); setPage(1); }}>
-                                Reset Filter
+                <DashboardPanel
+                    title="Daftar Transaksi"
+                    description={`Menampilkan ${total} transaksi pada periode yang dipilih.`}
+                    action={(
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+                            <FormSelect value={month} onChange={(value) => { setMonth(value); setPage(1); }} options={monthOptions} className="w-full sm:w-36" />
+                            <FormSelect value={year} onChange={(value) => { setYear(value); setPage(1); }} options={yearOptions} className="w-full sm:w-28" />
+                            <FormSelect value={filter} onChange={(value) => { setFilter(value as "ALL" | "MASUK" | "KELUAR"); setPage(1); }} options={filterOptions} className="w-full sm:w-36" />
+                            <button className={`${btnOutline} btn-sm`} onClick={() => { setMonth("ALL"); setYear("ALL"); setFilter("ALL"); setPage(1); }}>
+                                Reset
                             </button>
                         </div>
-                    </div>
-                </DashboardPanel>
-
-                <DashboardPanel title="Daftar Transaksi" description={`Menampilkan ${total} transaksi pada periode yang dipilih.`}>
+                    )}
+                >
                     {loading ? (
                         <div className="space-y-3">
                             {[1, 2, 3, 4, 5].map((item) => (

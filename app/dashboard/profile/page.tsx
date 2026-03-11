@@ -5,6 +5,7 @@ import { ProfileAccountSection } from "@/components/dashboard/profile-account-se
 import { ProfileAvatarForm } from "@/components/dashboard/profile-avatar-form";
 import { ProfileGameSection } from "@/components/dashboard/profile-game-section";
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
+import { dashboardStackCls } from "@/components/dashboard/form-styles";
 import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 import type { GameProfile } from "@prisma/client";
 
@@ -92,7 +93,7 @@ export default async function ProfilePage() {
 
     return (
         <DashboardPageShell>
-            <div className="space-y-5 lg:space-y-6">
+            <div className={dashboardStackCls}>
                 <DashboardPageHeader
                     kicker="Player Profile"
                     title="Profil Saya"

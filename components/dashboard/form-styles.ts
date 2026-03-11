@@ -21,6 +21,9 @@ export const heroTitleCls =
 export const heroDescriptionCls =
     "max-w-2xl text-sm leading-6 text-base-content/65";
 
+export const dashboardStackCls =
+    "space-y-6";
+
 export const metricCardCls =
     "card border border-base-300/70 bg-base-100 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md";
 

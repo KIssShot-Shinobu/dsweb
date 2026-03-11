@@ -8,7 +8,7 @@ import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { RowActions } from "@/components/dashboard/row-actions";
-import { btnOutline, btnPrimary, filterBarCls, inputCls, labelCls, searchInputCls } from "@/components/dashboard/form-styles";
+import { btnOutline, btnPrimary, dashboardStackCls, inputCls, labelCls, searchInputCls } from "@/components/dashboard/form-styles";
 import {
     DashboardEmptyState,
     DashboardMetricCard,
@@ -354,7 +354,7 @@ export default function AdminTournamentsPage() {
 
     return (
         <DashboardPageShell>
-            <div className="space-y-5 lg:space-y-6">
+            <div className={dashboardStackCls}>
                 <DashboardPageHeader
                     kicker="Event Control"
                     title="Tournaments"
@@ -369,9 +369,11 @@ export default function AdminTournamentsPage() {
                     <DashboardMetricCard label="Published Total" value={loading ? "..." : publishedSummary} meta="Open + ongoing yang tampil ke user" />
                 </div>
 
-                <DashboardPanel title="Filter Tournament" description="Cari judul event, sempitkan berdasarkan status, dan pisahkan Duel Links atau Master Duel.">
-                    <div className={filterBarCls}>
-                        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_190px_190px]">
+                <DashboardPanel
+                    title="Daftar Tournament"
+                    description={`Menampilkan ${total} turnamen yang sesuai dengan filter aktif.`}
+                    action={(
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                             <input
                                 type="text"
                                 value={searchInput}
@@ -384,16 +386,14 @@ export default function AdminTournamentsPage() {
                                         setSearch(nextValue);
                                     }, 250);
                                 }}
-                                placeholder="Cari judul atau deskripsi turnamen..."
-                                className={searchInputCls}
+                                placeholder="Cari turnamen..."
+                                className={`${searchInputCls} h-9 sm:w-52`}
                             />
-                            <FormSelect value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={selectOptions.filterStatus} />
-                            <FormSelect value={gameTypeFilter} onChange={(value) => { setGameTypeFilter(value); setPage(1); }} options={selectOptions.filterGameType} />
+                            <FormSelect value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={selectOptions.filterStatus} className="w-full sm:w-36" />
+                            <FormSelect value={gameTypeFilter} onChange={(value) => { setGameTypeFilter(value); setPage(1); }} options={selectOptions.filterGameType} className="w-full sm:w-36" />
                         </div>
-                    </div>
-                </DashboardPanel>
-
-                <DashboardPanel title="Daftar Tournament" description={`Menampilkan ${total} turnamen yang sesuai dengan filter aktif.`}>
+                    )}
+                >
                     {loading ? (
                         <div className="space-y-3">
                             {[1, 2, 3, 4, 5].map((item) => (

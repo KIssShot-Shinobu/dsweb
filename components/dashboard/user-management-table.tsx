@@ -11,7 +11,7 @@ import {
     btnDanger,
     btnOutline,
     btnPrimary,
-    filterBarCls,
+    dashboardStackCls,
     inputCls,
     searchInputCls,
 } from "@/components/dashboard/form-styles";
@@ -348,7 +348,7 @@ function UserManagementTableInner({
 
     return (
         <DashboardPageShell>
-            <div className="space-y-5 lg:space-y-6">
+            <div className={dashboardStackCls}>
                 <DashboardPageHeader kicker="Guild Directory" title={title} description={description} />
 
                 {feedback ? (
@@ -363,40 +363,42 @@ function UserManagementTableInner({
                     </div>
                 ) : null}
 
-                <DashboardPanel title="Filter & Search" description="Cari akun publik, member Duel Standby, atau roster team aktif dari satu tempat.">
-                    <div className={filterBarCls}>
-                        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_180px_180px_220px]">
+                <DashboardPanel
+                    title="Daftar Users"
+                    description={`Menampilkan ${total} akun yang sesuai dengan filter role komunitas, status, dan afiliasi team aktif.`}
+                    action={(
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                             <input
                                 type="text"
                                 value={searchInput}
                                 onChange={(event) => setSearchInput(event.target.value)}
                                 placeholder="Cari nama, email, kota, atau team..."
-                                className={searchInputCls}
+                                className={`${searchInputCls} h-9 sm:w-56`}
                             />
                             {!lockStatus ? (
-                                <FormSelect value={statusFilter} onChange={(value) => setParam("status", value)} options={STATUS_FILTER_OPTIONS} className="w-full" />
+                                <FormSelect value={statusFilter} onChange={(value) => setParam("status", value)} options={STATUS_FILTER_OPTIONS} className="w-full sm:w-32" />
                             ) : null}
                             {!lockRole ? (
-                                <FormSelect value={roleFilter} onChange={(value) => setParam("role", value)} options={ROLE_FILTER_OPTIONS} className="w-full" />
+                                <FormSelect value={roleFilter} onChange={(value) => setParam("role", value)} options={ROLE_FILTER_OPTIONS} className="w-full sm:w-32" />
                             ) : null}
-                            <FormSelect value={teamFilter} onChange={(value) => setParam("teamId", value)} options={teamFilterOptions} className="w-full" />
-                        </div>
-                        {hasActiveFilters ? (
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/45">
-                                <span>Menampilkan {total} akun yang sesuai dengan filter aktif.</span>
+                            <FormSelect value={teamFilter} onChange={(value) => setParam("teamId", value)} options={teamFilterOptions} className="w-full sm:w-44" />
+                            {hasActiveFilters ? (
                                 <button
                                     type="button"
                                     onClick={resetFilters}
-                                    className="font-medium text-primary transition-colors hover:text-primary/80"
+                                    className={`${btnOutline} btn-sm`}
                                 >
-                                    Reset Filter
+                                    Reset
                                 </button>
-                            </div>
-                        ) : null}
-                    </div>
-                </DashboardPanel>
-
-                <DashboardPanel title="Daftar Users" description={`Menampilkan ${total} akun yang sesuai dengan filter role komunitas, status, dan afiliasi team aktif.`}>
+                            ) : null}
+                        </div>
+                    )}
+                >
+                    {hasActiveFilters ? (
+                        <div className="mb-3 text-xs text-base-content/45">
+                            Menampilkan {total} akun yang sesuai dengan filter aktif.
+                        </div>
+                    ) : null}
                     <div className="mb-4 flex flex-wrap gap-2">
                         <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
                             Visible: {loading ? "..." : users.length}

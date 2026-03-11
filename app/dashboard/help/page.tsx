@@ -1,8 +1,10 @@
+import { dashboardStackCls } from "@/components/dashboard/form-styles";
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 
 export default function DashboardHelpPage() {
     return (
         <DashboardPageShell>
+            <div className={dashboardStackCls}>
             <DashboardPageHeader
                 kicker="Bantuan"
                 title="Pusat Bantuan"
@@ -46,6 +48,7 @@ export default function DashboardHelpPage() {
                         </div>
                     </div>
                 </DashboardPanel>
+            </div>
             </div>
         </DashboardPageShell>
     );
