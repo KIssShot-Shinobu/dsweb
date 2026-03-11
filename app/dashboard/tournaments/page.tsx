@@ -446,7 +446,7 @@ export default function AdminTournamentsPage() {
                                                         <button
                                                             onClick={() => updateStatus(tournament)}
                                                             disabled={tournament.status === "COMPLETED" || tournament.status === "CANCELLED"}
-                                                            className={`${btnOutline} disabled:opacity-40`}
+                                                            className={`${btnOutline} btn-sm disabled:opacity-40`}
                                                         >
                                                             Next Status
                                                         </button>

@@ -106,7 +106,7 @@ export default async function ProfilePage() {
                 >
                     <div className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
                         <div className="rounded-box border border-base-300 bg-base-200/40 p-6 shadow-sm">
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                                 <ProfileAvatarForm username={accountName} fullName={user.fullName} initialAvatarUrl={user.avatarUrl} />
                                 <div className="min-w-0">
                                     <h2 className="truncate text-xl font-black tracking-tight text-base-content">@{accountName}</h2>
@@ -131,7 +131,7 @@ export default async function ProfilePage() {
                                 <div className="mt-1 text-xs text-base-content/60">Bergabung sejak {teamJoinedAt}</div>
                             </div>
 
-                            <div className="mt-5 grid grid-cols-2 gap-3">
+                            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {stats.map((stat) => (
                                     <div key={stat.label} className="rounded-box border border-base-300 bg-base-100 px-4 py-3 shadow-sm">
                                         <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-base-content/45">{stat.label}</div>

@@ -25,12 +25,12 @@ export function Hero() {
                         <Swords className="h-8 w-8 sm:h-10 sm:w-10" />
                     </motion.div>
 
-                    <motion.h1 variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} transition={{ duration: 0.55 }} className="mb-5 text-4xl font-extrabold tracking-tight sm:mb-6 sm:text-5xl md:text-7xl">
+                    <motion.h1 variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} transition={{ duration: 0.55 }} className="mb-5 text-3xl font-extrabold tracking-tight sm:mb-6 sm:text-5xl md:text-7xl">
                         <span className="text-base-content">Duel </span>
                         <span className="bg-gradient-to-r from-primary to-warning bg-clip-text text-transparent">Standby</span>
                     </motion.h1>
 
-                    <motion.p variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} transition={{ duration: 0.55 }} className="mb-8 max-w-2xl text-base leading-relaxed text-base-content/70 sm:mb-10 sm:text-lg md:text-xl">
+                    <motion.p variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} transition={{ duration: 0.55 }} className="mb-8 max-w-2xl text-sm leading-relaxed text-base-content/70 sm:mb-10 sm:text-lg md:text-xl">
                         Komunitas gaming yang menyatukan duelists serius dalam ekosistem yang tertata, kompetitif, dan suportif. Ikuti turnamen terkurasi, bangun relasi, dan tingkatkan permainan Anda bersama Duel Standby.
                     </motion.p>
 

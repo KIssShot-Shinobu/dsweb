@@ -31,11 +31,10 @@ export default async function TeamsPage() {
             <Navbar />
             <section className="border-b border-base-300 pt-28">
                 <div className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
-                    <span className="badge badge-secondary badge-outline">Direktori Team</span>
-                    <h1 className="mt-4 text-4xl font-black tracking-tight text-base-content md:text-5xl">
+                    <h1 className="text-3xl font-black tracking-tight text-base-content sm:text-4xl md:text-5xl">
                         Cari team aktif dan ajukan bergabung.
                     </h1>
-                    <p className="mt-4 max-w-3xl text-base text-base-content/75">
+                    <p className="mt-4 max-w-3xl text-sm text-base-content/75 sm:text-base">
                         Semua pengelolaan roster dilakukan di dashboard. Di sini fokus untuk melihat profil team dan mengajukan
                         request join.
                     </p>

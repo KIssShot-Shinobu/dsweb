@@ -95,9 +95,17 @@ export function Sidebar() {
         .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
     return (
-        <div className={`drawer-side z-40 ${isOpen ? "" : "pointer-events-none lg:pointer-events-auto"}`}>
-            <label aria-label="close sidebar" className="drawer-overlay" onClick={close} />
-            <aside className={`min-h-full w-80 bg-base-100 text-base-content transition-transform duration-300 lg:w-72 ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+        <div
+            className={`drawer-side fixed inset-0 z-[70] lg:static lg:inset-auto ${isOpen ? "" : "pointer-events-none lg:pointer-events-auto"}`}
+        >
+            <label
+                aria-label="close sidebar"
+                className={`drawer-overlay bg-black/40 transition-opacity duration-200 lg:hidden ${isOpen ? "opacity-100" : "opacity-0"}`}
+                onClick={close}
+            />
+            <aside
+                className={`min-h-full w-80 bg-base-100 text-base-content shadow-2xl transition-transform duration-300 lg:w-72 lg:shadow-none ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+            >
                 <div className="flex h-full flex-col border-r border-base-300 bg-base-100/95 backdrop-blur-xl">
                     <div className="flex h-16 items-center justify-between border-b border-base-300 px-5">
                         <div className="flex items-center gap-3">

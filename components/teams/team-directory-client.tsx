@@ -67,12 +67,12 @@ export function TeamDirectoryClient({
     };
 
     return (
-        <div className="space-y-6">
-            <section className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-5 sm:space-y-6">
+            <section className="space-y-3 sm:space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
                     <div className="text-sm font-semibold uppercase tracking-[0.2em] text-base-content/50">Teams</div>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
                     <input
                         type="text"
                         className="input input-bordered w-full sm:max-w-md"
@@ -86,7 +86,7 @@ export function TeamDirectoryClient({
                         Tidak ada team yang cocok dengan pencarian.
                     </div>
                 ) : (
-                    <div className="grid gap-4 xl:grid-cols-2">
+                    <div className="grid gap-4 sm:gap-5 xl:grid-cols-2">
                         {filteredTeams.map((team) => {
                             const isLocallyPending = pendingTeamIds.includes(team.id);
                             const hasPendingJoin = team.viewerHasPendingJoin || isLocallyPending;
@@ -95,12 +95,12 @@ export function TeamDirectoryClient({
 
                             return (
                                 <article key={team.id} className="card border border-base-300 bg-base-100 shadow-sm">
-                                    <div className="card-body gap-4">
-                                        <div className="flex items-start gap-4">
+                                    <div className="card-body gap-3 p-4 sm:gap-4 sm:p-5">
+                                        <div className="flex items-start gap-3 sm:gap-4">
                                             <TeamAvatar name={team.name} avatarUrl={team.logoUrl} size="lg" />
                                             <div className="space-y-2">
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <h3 className="text-xl font-semibold">{team.name}</h3>
+                                                    <h3 className="text-lg font-semibold sm:text-xl">{team.name}</h3>
                                                     <span className={`badge ${team.isActive ? "badge-success" : "badge-ghost"}`}>
                                                         {team.isActive ? "Aktif" : "Nonaktif"}
                                                     </span>
@@ -110,7 +110,7 @@ export function TeamDirectoryClient({
                                                         <span className="badge badge-warning badge-outline">Menunggu</span>
                                                     ) : null}
                                                 </div>
-                                                <p className="text-sm text-base-content/70">
+                                                <p className="text-xs text-base-content/70 sm:text-sm">
                                                     {team.description || "Belum ada deskripsi team."}
                                                 </p>
                                                 <div className="flex flex-wrap gap-2 text-xs text-base-content/70">
@@ -120,7 +120,7 @@ export function TeamDirectoryClient({
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                                        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
                                             <div className="rounded-box bg-base-200/70 p-3">
                                                 <div className="text-xs text-base-content/60">Vice Captain</div>
                                                 <div className="text-lg font-semibold">{team.viceCaptains.length}</div>
@@ -139,7 +139,7 @@ export function TeamDirectoryClient({
                                             </div>
                                         </div>
 
-                                        <div className="card-actions justify-between">
+                                        <div className="card-actions flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                             <Link href={`/teams/${team.slug}`} className="btn btn-outline btn-sm">
                                                 Lihat Detail
                                             </Link>

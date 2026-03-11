@@ -21,11 +21,11 @@ export function RowActions({
     className = "",
 }: RowActionsProps) {
     return (
-        <div className={`inline-flex items-center gap-2 ${className}`}>
-            <button onClick={onEdit} className={btnOutline}>
+        <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+            <button onClick={onEdit} className={`${btnOutline} btn-sm`}>
                 {editLabel}
             </button>
-            <button onClick={onDelete} className={btnDanger}>
+            <button onClick={onDelete} className={`${btnDanger} btn-sm`}>
                 {deleteLabel}
             </button>
             {extra}

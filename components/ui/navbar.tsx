@@ -16,6 +16,7 @@ const navLinks = [
     { name: "Tentang", href: "/#about" },
     { name: "Turnamen", href: "/tournaments" },
     { name: "Team", href: "/teams" },
+    { name: "Treasury", href: "/treasury" },
     { name: "Komunitas", href: "/#socials" },
 ];
 

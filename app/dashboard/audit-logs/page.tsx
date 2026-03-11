@@ -281,25 +281,25 @@ export default function AuditLogsPage() {
                                             </div>
                                             <div>
                                                 <div className="text-sm font-semibold text-base-content">{log.user?.fullName || "System Event"}</div>
-                                                <div className="text-xs text-base-content/45">{log.user?.email || log.ipAddress}</div>
+                                                <div className="text-xs text-base-content/45 break-words">{log.user?.email || log.ipAddress}</div>
                                             </div>
                                         </div>
 
                                         <div className="grid gap-3 text-sm text-base-content/60 sm:grid-cols-2 xl:min-w-[420px]">
                                             <div>
                                                 <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Request</div>
-                                                <div className="mt-2 font-mono text-xs text-base-content/60">
+                                                <div className="mt-2 break-all font-mono text-xs text-base-content/60">
                                                     {[log.requestMethod, log.requestPath, log.responseStatus].filter(Boolean).join(" - ") || "-"}
                                                 </div>
                                             </div>
                                             <div>
                                                 <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Target</div>
-                                                <div className="mt-2 text-xs text-base-content/60">{log.targetType || "NONE"}</div>
+                                                <div className="mt-2 break-words text-xs text-base-content/60">{log.targetType || "NONE"}</div>
                                                 {log.reason ? <div className="mt-1 text-xs text-error">Reason: {log.reason}</div> : null}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="mt-4 rounded-box border border-dashed border-base-300 bg-base-100 px-4 py-3 text-sm leading-6 text-base-content/65">
+                                    <div className="mt-4 rounded-box border border-dashed border-base-300 bg-base-100 px-4 py-3 text-sm leading-6 text-base-content/65 break-words">
                                         {formatDetails(log.details)}
                                     </div>
                                 </div>

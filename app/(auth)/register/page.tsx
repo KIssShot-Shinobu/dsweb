@@ -359,17 +359,27 @@ export default function RegisterPage() {
             </div>
 
             <div className="sticky bottom-3 z-10 mt-5 rounded-[24px] border border-base-300 bg-base-100/90 p-3 backdrop-blur sm:static sm:mt-5 sm:border-0 sm:bg-transparent sm:p-0">
-                <div className="flex flex-col gap-3 sm:flex-row">
-                {step > 1 ? <button type="button" onClick={() => setStep((current) => current - 1)} className={authSecondaryBtnCls}>Kembali</button> : null}
-                {step < 4 ? (
-                    <button type="button" onClick={() => { if (validate(step)) setStep((current) => current + 1); }} className={authPrimaryBtnCls}>
-                        Lanjutkan
-                    </button>
-                ) : (
-                    <button type="button" onClick={handleSubmit} disabled={submitting} className={authPrimaryBtnCls}>
-                        {submitting ? "Mengirim pendaftaran..." : "Kirim Pendaftaran"}
-                    </button>
-                )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                    {step > 1 ? (
+                        <button type="button" onClick={() => setStep((current) => current - 1)} className={authSecondaryBtnCls}>
+                            Kembali
+                        </button>
+                    ) : null}
+                    {step < 4 ? (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (validate(step)) setStep((current) => current + 1);
+                            }}
+                            className={authPrimaryBtnCls}
+                        >
+                            Lanjutkan
+                        </button>
+                    ) : (
+                        <button type="button" onClick={handleSubmit} disabled={submitting} className={authPrimaryBtnCls}>
+                            {submitting ? "Mengirim pendaftaran..." : "Kirim Pendaftaran"}
+                        </button>
+                    )}
                 </div>
             </div>
         </AuthShell>

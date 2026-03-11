@@ -14,7 +14,6 @@ const prisma = new PrismaClient({
 
 const DEV_EMAIL_SUFFIX = "@duelstandby.local";
 const DEV_PASSWORD = process.env.DEV_SEED_PASSWORD || "DevSeed123!";
-const SYSTEM_USER_ID = "0";
 
 function toUsername(value) {
     return value
@@ -127,35 +126,57 @@ function getFixtureDate(dayOffset, hour = 19) {
 async function cleanupDevData() {
     console.log("Cleaning old dev data...");
 
-    const keepUsers = await prisma.user.findMany({
-        where: { role: { in: ["ADMIN", "FOUNDER"] } },
-        select: { id: true },
-    });
-
-    const keepUserIds = keepUsers.map((user) => user.id);
-
-    await prisma.auditLog.deleteMany({
-        where: {
-            OR: [
-                { userId: SYSTEM_USER_ID },
-                keepUserIds.length > 0 ? { userId: { notIn: keepUserIds } } : { userId: { not: SYSTEM_USER_ID } },
-            ],
-        },
-    });
-
+    await prisma.auditLog.deleteMany();
+    await prisma.notification.deleteMany();
+    await prisma.notificationPreference.deleteMany();
     await prisma.pendingUpload.deleteMany();
     await prisma.tournamentParticipant.deleteMany();
     await prisma.treasury.deleteMany();
     await prisma.tournament.deleteMany();
-    await prisma.session.deleteMany({ where: keepUserIds.length > 0 ? { userId: { notIn: keepUserIds } } : undefined });
-    await prisma.passwordResetToken.deleteMany({ where: keepUserIds.length > 0 ? { userId: { notIn: keepUserIds } } : undefined });
-    await prisma.emailVerificationToken.deleteMany({ where: keepUserIds.length > 0 ? { userId: { notIn: keepUserIds } } : undefined });
-    await prisma.userBadge.deleteMany({ where: keepUserIds.length > 0 ? { userId: { notIn: keepUserIds } } : undefined });
-    await prisma.reputationLog.deleteMany({ where: keepUserIds.length > 0 ? { userId: { notIn: keepUserIds } } : undefined });
-    await prisma.gameProfile.deleteMany({ where: keepUserIds.length > 0 ? { userId: { notIn: keepUserIds } } : undefined });
-    await prisma.registrationLog.deleteMany({ where: keepUserIds.length > 0 ? { userId: { notIn: keepUserIds } } : undefined });
-    await prisma.user.deleteMany({ where: keepUserIds.length > 0 ? { id: { notIn: keepUserIds } } : undefined });
+    await prisma.teamMember.deleteMany();
+    await prisma.teamInvite.deleteMany();
+    await prisma.teamJoinRequest.deleteMany();
+    await prisma.teamCreationRequest.deleteMany();
+    await prisma.passwordResetToken.deleteMany();
+    await prisma.emailVerificationToken.deleteMany();
+    await prisma.userBadge.deleteMany();
+    await prisma.reputationLog.deleteMany();
+    await prisma.gameProfile.deleteMany();
+    await prisma.registrationLog.deleteMany();
     await prisma.team.deleteMany();
+    await prisma.user.deleteMany();
+}
+
+async function ensureAdminUser() {
+    const adminEmail = process.env.ADMIN_SEED_EMAIL || "admin@duelstandby.local";
+    const adminName = process.env.ADMIN_SEED_NAME || "Admin Duel Standby";
+    const adminUsername = process.env.ADMIN_SEED_USERNAME || toUsername(adminName || adminEmail.split("@")[0] || "admin.duelstandby");
+    const adminPassword = process.env.ADMIN_SEED_PASSWORD || DEV_PASSWORD;
+    const adminHash = await bcrypt.hash(adminPassword, 12);
+
+    return prisma.user.upsert({
+        where: { email: adminEmail },
+        update: {
+            fullName: adminName,
+            username: adminUsername,
+            password: adminHash,
+            role: "ADMIN",
+            status: "ACTIVE",
+        },
+        create: {
+            fullName: adminName,
+            username: adminUsername,
+            email: adminEmail,
+            password: adminHash,
+            phoneWhatsapp: process.env.ADMIN_SEED_PHONE || "+628000000001",
+            provinceCode: process.env.ADMIN_SEED_PROVINCE_CODE || null,
+            provinceName: process.env.ADMIN_SEED_PROVINCE_NAME || null,
+            cityCode: process.env.ADMIN_SEED_CITY_CODE || null,
+            city: process.env.ADMIN_SEED_CITY_NAME || process.env.ADMIN_SEED_CITY || "Jakarta",
+            status: "ACTIVE",
+            role: "ADMIN",
+        },
+    });
 }
 
 async function seedTeams() {
@@ -182,6 +203,7 @@ async function seedUsers(teamMap) {
 
     const passwordHash = await bcrypt.hash(DEV_PASSWORD, 10);
     const createdUsers = [];
+    const teamRosterCounts = new Map();
 
     for (let index = 0; index < userFixtures.length; index += 1) {
         const fixture = userFixtures[index];
@@ -201,8 +223,6 @@ async function seedUsers(teamMap) {
                 city: fixture.cityName,
                 status: fixture.status,
                 role: fixture.role,
-                teamId,
-                teamJoinedAt: teamId ? createdAt : null,
                 timezone: "Asia/Jakarta",
                 language: "id",
                 emailVerifiedAt: isActive ? getFixtureDate(index - 24, 9) : null,
@@ -231,6 +251,22 @@ async function seedUsers(teamMap) {
             },
         });
 
+        if (teamId) {
+            const currentCount = teamRosterCounts.get(teamId) || 0;
+            const role = currentCount === 0 ? "CAPTAIN" : currentCount === 1 ? "VICE_CAPTAIN" : "PLAYER";
+            await prisma.teamMember.create({
+                data: {
+                    userId: user.id,
+                    teamId,
+                    role,
+                    joinedAt: createdAt,
+                    createdAt,
+                    updatedAt: createdAt,
+                },
+            });
+            teamRosterCounts.set(teamId, currentCount + 1);
+        }
+
         createdUsers.push(user);
         process.stdout.write(`\r  -> ${index + 1}/20`);
     }
@@ -239,7 +275,7 @@ async function seedUsers(teamMap) {
     return createdUsers;
 }
 
-async function seedTournaments(createdUsers) {
+async function seedTournaments(createdUsers, creatorId) {
     console.log("Seeding 20 dev tournaments...");
 
     const activeUsers = createdUsers.filter((user) => user.status === "ACTIVE");
@@ -257,6 +293,7 @@ async function seedTournaments(createdUsers) {
                 prizePool: fixture.prizePool,
                 startDate: getFixtureDate(fixture.startOffsetDays, 19),
                 image: null,
+                createdById: creatorId,
             },
         });
 
@@ -292,6 +329,7 @@ async function seedTreasury(createdUsers) {
         await prisma.treasury.create({
             data: {
                 amount: fixture.amount,
+                currency: "IDR",
                 description: fixture.description,
                 createdAt: getFixtureDate(fixture.dayOffset, 14),
                 userId: fixture.userIndex === null ? null : createdUsers[fixture.userIndex]?.id ?? null,
@@ -340,14 +378,16 @@ async function seedAuditLogs(createdUsers) {
 
 async function main() {
     await cleanupDevData();
+    const adminUser = await ensureAdminUser();
     const teamMap = await seedTeams();
     const createdUsers = await seedUsers(teamMap);
-    await seedTournaments(createdUsers);
+    await seedTournaments(createdUsers, adminUser.id);
     await seedTreasury(createdUsers);
     await seedAuditLogs(createdUsers);
 
     console.log("Dev seed complete: 4 teams, 20 users, 20 tournaments, 20 treasury transactions, 12 audit logs.");
     console.log(`Dev seed user password: ${DEV_PASSWORD}`);
+    console.log(`Dev admin email: ${adminUser.email}`);
 }
 
 main()

@@ -15,9 +15,9 @@ export function Tournaments({ tournaments }: TournamentsProps) {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-10 flex flex-col gap-5 sm:mb-12 sm:gap-6 md:flex-row md:items-end md:justify-between">
                     <div className="max-w-2xl">
-                        <p className="mb-3 text-sm font-bold uppercase tracking-[0.32em] text-primary">Turnamen Unggulan</p>
-                        <h2 className="mb-3 text-3xl font-black text-base-content sm:text-4xl">Pilih event berikutnya dan masuk ke bracket dengan percaya diri.</h2>
-                        <p className="text-base-content/70">Setiap event ditampilkan dengan detail yang jelas agar Anda bisa menilai format, hadiah, dan jadwal sebelum mendaftar.</p>
+                        <p className="mb-3 text-xs font-bold uppercase tracking-[0.32em] text-primary sm:text-sm">Turnamen Unggulan</p>
+                        <h2 className="mb-3 text-2xl font-black text-base-content sm:text-4xl">Pilih event berikutnya dan masuk ke bracket dengan percaya diri.</h2>
+                        <p className="text-sm text-base-content/70 sm:text-base">Setiap event ditampilkan dengan detail yang jelas agar Anda bisa menilai format, hadiah, dan jadwal sebelum mendaftar.</p>
                     </div>
                     <Link href="/tournaments" className="btn btn-outline w-full rounded-box sm:w-auto">Lihat Semua Turnamen</Link>
                 </motion.div>
@@ -25,7 +25,7 @@ export function Tournaments({ tournaments }: TournamentsProps) {
                     <div className="card border border-base-300 bg-base-100 shadow-xl">
                         <div className="card-body items-center px-6 py-14 text-center sm:py-16">
                             <Trophy className="mb-4 h-12 w-12 text-primary" />
-                            <p className="text-base text-base-content/65 sm:text-lg">Belum ada turnamen aktif saat ini. Begitu jadwal baru dibuka, seluruh detail event akan tampil di sini.</p>
+                            <p className="text-sm text-base-content/65 sm:text-lg">Belum ada turnamen aktif saat ini. Begitu jadwal baru dibuka, seluruh detail event akan tampil di sini.</p>
                         </div>
                     </div>
                 ) : (

@@ -23,7 +23,7 @@ export function Socials() {
         <section id="socials" className="relative py-20 sm:py-24">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,201,22,0.12),transparent_24%)]" />
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <motion.h2 initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-12 text-center text-3xl font-bold tracking-tight text-base-content sm:mb-16 md:text-5xl">
+                <motion.h2 initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-10 text-center text-2xl font-bold tracking-tight text-base-content sm:mb-16 sm:text-3xl md:text-5xl">
                     Ikuti semua update Duel Standby
                 </motion.h2>
                 <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-3 md:gap-8">
@@ -34,8 +34,8 @@ export function Socials() {
                                 <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[20px] bg-gradient-to-br ${social.tone} text-white shadow-lg sm:h-20 sm:w-20 sm:rounded-[24px]`}>
                                     <social.icon className="h-8 w-8 sm:h-10 sm:w-10" strokeWidth={1.5} />
                                 </div>
-                                <h3 className="mb-2 text-xl font-bold sm:text-2xl">{social.name}</h3>
-                                <p className="text-sm font-medium text-base-content/70 sm:text-base">{social.description}</p>
+                                <h3 className="mb-2 text-lg font-bold sm:text-2xl">{social.name}</h3>
+                                <p className="text-xs font-medium text-base-content/70 sm:text-base">{social.description}</p>
                             </div>
                         </motion.a>
                     ))}

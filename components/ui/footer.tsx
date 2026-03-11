@@ -14,7 +14,12 @@ const footerLinks = {
         { name: "YouTube Highlights", href: SOCIAL_LINKS.youtube },
         { name: "Instagram Updates", href: SOCIAL_LINKS.instagram },
     ].filter((link) => Boolean(link.href)),
-    resources: [{ name: "Panduan Komunitas", href: "#" }, { name: "FAQ Pendaftaran", href: "#" }, { name: "Dukungan Anggota", href: "#" }],
+    resources: [
+        { name: "Panduan Komunitas", href: "#" },
+        { name: "FAQ Pendaftaran", href: "#" },
+        { name: "Transparansi Treasury", href: "/treasury" },
+        { name: "Dukungan Anggota", href: "#" },
+    ],
     tournaments: [{ name: "Event Mendatang", href: "#tournaments" }, { name: "Direktori Turnamen", href: "/tournaments" }, { name: "Cara Bergabung", href: "/register" }],
     legal: [{ name: "Privasi", href: "#" }, { name: "Ketentuan", href: "#" }, { name: "Hubungi Kami", href: "#" }],
 };

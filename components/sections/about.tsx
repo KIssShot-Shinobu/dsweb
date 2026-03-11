@@ -20,21 +20,27 @@ export function About({ activeUserCount, tournamentCount }: AboutProps) {
         <section id="about" className="relative overflow-hidden py-20 sm:py-24">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,201,22,0.12),transparent_24%)]" />
             <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-12 flex justify-center gap-6 sm:mb-16 sm:gap-12">
-                    <div className="stat w-auto">
-                        <div className="stat-value text-primary">{activeUserCount}</div>
-                        <div className="stat-title text-center">Duelist Aktif</div>
-                    </div>
-                    <div className="w-px bg-base-300" />
-                    <div className="stat w-auto">
-                        <div className="stat-value text-primary">{tournamentCount}</div>
-                        <div className="stat-title text-center">Turnamen Terselenggara</div>
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="mb-12 flex items-center justify-center sm:mb-16"
+                >
+                    <div className="stats stats-vertical w-full max-w-md border border-base-300 bg-base-100 shadow-lg sm:stats-horizontal">
+                        <div className="stat text-center">
+                            <div className="stat-value text-primary">{activeUserCount}</div>
+                            <div className="stat-title">Duelist Aktif</div>
+                        </div>
+                        <div className="stat text-center">
+                            <div className="stat-value text-primary">{tournamentCount}</div>
+                            <div className="stat-title">Turnamen Terselenggara</div>
+                        </div>
                     </div>
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-12 text-center sm:mb-16">
-                    <h2 className="mb-4 bg-gradient-to-r from-primary via-warning to-base-content bg-clip-text text-3xl font-bold text-transparent md:text-5xl">Tempat duelists berkembang bersama</h2>
-                    <p className="mx-auto max-w-2xl text-base leading-relaxed text-base-content/70 sm:text-lg">Duel Standby menghadirkan pengalaman komunitas yang lebih profesional: turnamen tertata, komunikasi yang aktif, dan ruang belajar yang membantu setiap pemain naik level.</p>
+                    <h2 className="mb-4 bg-gradient-to-r from-primary via-warning to-base-content bg-clip-text text-2xl font-bold text-transparent sm:text-3xl md:text-5xl">Tempat duelists berkembang bersama</h2>
+                    <p className="mx-auto max-w-2xl text-sm leading-relaxed text-base-content/70 sm:text-base lg:text-lg">Duel Standby menghadirkan pengalaman komunitas yang lebih profesional: turnamen tertata, komunikasi yang aktif, dan ruang belajar yang membantu setiap pemain naik level.</p>
                 </motion.div>
 
                 <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">

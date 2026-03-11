@@ -80,7 +80,7 @@ export function ProfileGameSection({
                             onClick={() => setActiveGameType(card.gameType)}
                             className="group rounded-box border border-base-300 bg-base-100 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg"
                         >
-                            <div className="flex items-start justify-between gap-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex min-w-0 items-center gap-3">
                                     <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${card.accent} text-sm font-black text-white shadow-lg`}>
                                         {card.badge}
@@ -89,13 +89,13 @@ export function ProfileGameSection({
                                         <div className="truncate text-sm font-bold tracking-[0.04em] text-base-content">
                                             {card.title}
                                         </div>
-                                        <p className="mt-0.5 text-xs text-base-content/60">
+                                        <p className="mt-0.5 text-xs leading-5 text-base-content/60">
                                             {card.subtitle}
                                         </p>
                                     </div>
                                 </div>
 
-                                <span className={`${btnOutline} shrink-0 gap-2 px-3 py-2 text-xs font-semibold`}>
+                                <span className={`${btnOutline} btn-sm w-full justify-center gap-2 px-3 py-2 text-xs font-semibold sm:w-auto`}>
                                     {hasProfile ? <Edit3 className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
                                     {hasProfile ? "Edit" : "Tambah"}
                                 </span>
