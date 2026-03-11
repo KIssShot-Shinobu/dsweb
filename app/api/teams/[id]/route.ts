@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
-import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 import { teamSchema } from "@/lib/validators";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -53,25 +52,6 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
         return NextResponse.json({ success: false, message: "Team tidak ditemukan" }, { status: 404 });
     }
 
-    const availableMembers = await prisma.user.findMany({
-        where: {
-            deletedAt: null,
-            status: "ACTIVE",
-            role: { in: ["MEMBER", "OFFICER", "ADMIN", "FOUNDER"] },
-        },
-        select: {
-            id: true,
-            fullName: true,
-            email: true,
-            role: true,
-            city: true,
-            avatarUrl: true,
-            lastActiveAt: true,
-            ...activeTeamMembershipSelect,
-        },
-        orderBy: [{ role: "desc" }, { fullName: "asc" }],
-    });
-
     const members = team.memberships.map((membership) => ({
         id: membership.user.id,
         membershipId: membership.id,
@@ -87,22 +67,12 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
         communityRole: membership.user.role,
     }));
 
-    const mappedAvailableMembers = availableMembers.map((member) => {
-        const activeTeam = getActiveTeamSnapshot(member);
-        return {
-            ...member,
-            teamId: activeTeam.teamId,
-            teamJoinedAt: activeTeam.teamJoinedAt,
-        };
-    });
-
     return NextResponse.json({
         success: true,
         data: {
             ...team,
             members,
             memberCount: members.length,
-            availableMembers: mappedAvailableMembers,
         },
     });
 }
@@ -128,22 +98,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         return NextResponse.json({ success: false, message: "Team tidak ditemukan" }, { status: 404 });
     }
 
-    const slugOwner = await prisma.team.findFirst({
-        where: {
-            slug: parsed.data.slug,
-            NOT: { id },
-        },
-        select: { id: true },
-    });
-    if (slugOwner) {
-        return NextResponse.json({ success: false, message: "Slug team sudah dipakai" }, { status: 409 });
-    }
-
     const team = await prisma.team.update({
         where: { id },
         data: {
             name: parsed.data.name,
-            slug: parsed.data.slug,
             description: parsed.data.description || null,
             logoUrl: parsed.data.logoUrl || null,
             isActive: parsed.data.isActive ?? true,
@@ -158,8 +116,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         details: {
             oldName: existing.name,
             newName: team.name,
-            oldSlug: existing.slug,
-            newSlug: team.slug,
             isActive: team.isActive,
         },
     });

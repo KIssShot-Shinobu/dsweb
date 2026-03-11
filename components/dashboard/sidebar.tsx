@@ -53,6 +53,7 @@ const ALL_MENU: MenuSection[] = [
         section: "SAYA",
         items: [
             { name: "Profil", href: "/dashboard/profile", icon: "profile" },
+            { name: "Team Saya", href: "/dashboard/team", icon: "teams", minRole: "MEMBER" },
             { name: "Settings", href: "/dashboard/settings", icon: "settings" },
             { name: "Bantuan", href: "/dashboard/help", icon: "help" },
         ],

@@ -48,9 +48,14 @@ export async function logAudit(data: AuditLogData): Promise<void> {
             console.warn('[AuditLogger] Sensitive data filtered from log');
         }
 
+        if (!data.userId) {
+            console.warn('[AuditLogger] Missing userId; audit log skipped.');
+            return;
+        }
+
         prisma.auditLog.create({
             data: {
-                userId: data.userId || "0",
+                userId: data.userId,
                 action: data.action,
                 targetId: data.targetId,
                 targetType: data.targetType,

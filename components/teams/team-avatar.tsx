@@ -17,12 +17,13 @@ export function TeamAvatar({
 }: {
     name: string;
     avatarUrl?: string | null;
-    size?: "sm" | "md" | "lg";
+    size?: "sm" | "md" | "lg" | "xl";
 }) {
     const sizeClasses = {
         sm: "h-10 w-10 text-sm",
         md: "h-12 w-12 text-sm",
         lg: "h-16 w-16 text-lg",
+        xl: "h-20 w-20 text-xl",
     } as const;
 
     const normalizedAvatarUrl = normalizeAssetUrl(avatarUrl);
@@ -30,7 +31,7 @@ export function TeamAvatar({
     if (normalizedAvatarUrl) {
         return (
             <div className="avatar">
-                <div className={`relative rounded-2xl border border-base-300 bg-base-200 ${sizeClasses[size]}`}>
+                <div className={`relative overflow-hidden rounded-2xl border border-base-300 bg-base-200 ${sizeClasses[size]}`}>
                     <Image src={normalizedAvatarUrl} alt={name} fill unoptimized className="object-cover" />
                 </div>
             </div>
@@ -39,7 +40,7 @@ export function TeamAvatar({
 
     return (
         <div className="avatar placeholder">
-            <div className={`rounded-2xl bg-primary text-primary-content ${sizeClasses[size]}`}>
+            <div className={`flex items-center justify-center rounded-2xl bg-primary text-center text-primary-content ${sizeClasses[size]}`}>
                 <span className="font-bold">{getInitials(name)}</span>
             </div>
         </div>

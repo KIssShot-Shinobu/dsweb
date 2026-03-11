@@ -110,58 +110,40 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ slu
         <main className="min-h-screen bg-transparent text-base-content">
             <Navbar />
             <section className="border-b border-base-300 pt-28">
-                <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-14 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
-                    <div className="flex items-start gap-4">
-                        <TeamAvatar name={team.name} avatarUrl={team.logoUrl} size="lg" />
-                        <div className="space-y-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-3xl font-black tracking-tight text-base-content">{team.name}</h1>
-                                <span className={`badge ${team.isActive ? "badge-success" : "badge-ghost"}`}>
-                                    {team.isActive ? "Aktif" : "Nonaktif"}
-                                </span>
-                                <span className="badge badge-outline">/{team.slug}</span>
-                                {team.viewerMembership ? <span className="badge badge-primary badge-outline">Anda Anggota</span> : null}
-                            </div>
-                            <p className="max-w-3xl text-base text-base-content/75">
-                                {team.description || "Belum ada deskripsi team."}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="badge badge-outline">{team.memberCount} member aktif</span>
-                                {team.captain ? <span className="badge badge-outline">Captain: {team.captain.user.fullName}</span> : null}
+                <div className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+                    <div className="flex flex-col gap-6">
+                        <div className="flex items-start gap-4">
+                            <TeamAvatar name={team.name} avatarUrl={team.logoUrl} size="lg" />
+                            <div className="space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h1 className="text-3xl font-black tracking-tight text-base-content">{team.name}</h1>
+                                    <span className={`badge ${team.isActive ? "badge-success" : "badge-ghost"}`}>
+                                        {team.isActive ? "Aktif" : "Nonaktif"}
+                                    </span>
+                                    {team.viewerMembership ? <span className="badge badge-primary badge-outline">Anda Anggota</span> : null}
+                                    {pendingInvite ? <span className="badge badge-secondary badge-outline">Ada Invite</span> : null}
+                                    {team.viewerHasPendingJoin ? (
+                                        <span className="badge badge-warning badge-outline">Menunggu Persetujuan</span>
+                                    ) : null}
+                                </div>
+                                <p className="max-w-3xl text-base text-base-content/75">
+                                    {team.description || "Belum ada deskripsi team."}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    <span className="badge badge-outline">{team.memberCount} member aktif</span>
+                                    {team.captain ? (
+                                        <span className="badge badge-outline">Captain: {team.captain.user.fullName}</span>
+                                    ) : null}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div className="card border border-base-300 bg-base-100/90 shadow-2xl">
-                        <div className="card-body gap-5">
-                            <div className="text-sm uppercase tracking-[0.28em] text-base-content/40">Team Snapshot</div>
-                            <div className="stats stats-vertical border border-base-300 bg-base-200/60 shadow-sm sm:stats-horizontal">
-                                <div className="stat">
-                                    <div className="stat-title">Vice</div>
-                                    <div className="stat-value text-base-content">{team.viceCaptains.length}</div>
-                                </div>
-                                <div className="stat">
-                                    <div className="stat-title">Manager</div>
-                                    <div className="stat-value text-base-content">{team.managers.length}</div>
-                                </div>
-                                <div className="stat">
-                                    <div className="stat-title">Coach</div>
-                                    <div className="stat-value text-base-content">{team.coaches.length}</div>
-                                </div>
-                                <div className="stat">
-                                    <div className="stat-title">Player</div>
-                                    <div className="stat-value text-base-content">{team.players.length}</div>
-                                </div>
-                            </div>
-                            <TeamDetailActions
-                                teamId={team.id}
-                                teamSlug={team.slug}
-                                pendingInviteId={pendingInvite?.id ?? null}
-                                canManage={Boolean(team.permissions.canEditTeam || team.permissions.canInvite)}
-                                canLeave={team.permissions.canLeave}
-                                hasActiveTeam={Boolean(activeMembership)}
-                                isMember={Boolean(team.viewerMembership)}
-                            />
-                        </div>
+                        <TeamDetailActions
+                            teamId={team.id}
+                            pendingInviteId={pendingInvite?.id ?? null}
+                            hasActiveTeam={Boolean(activeMembership)}
+                            isMember={Boolean(team.viewerMembership)}
+                            hasPendingJoin={team.viewerHasPendingJoin}
+                        />
                     </div>
                 </div>
             </section>
@@ -186,17 +168,13 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ slu
                         <RoleBlock title="Coaches" description="Strategi dan latihan untuk performa tim." members={team.coaches} />
                         <section className="card border border-base-300 bg-base-100 shadow-sm">
                             <div className="card-body">
-                                <h2 className="card-title">Quick Links</h2>
-                                <div className="flex flex-col gap-2">
-                                    <Link href="/teams" className="btn btn-outline justify-start">
-                                        Direktori Teams
-                                    </Link>
-                                    {team.viewerMembership ? (
-                                        <Link href={`/teams/${team.slug}/manage`} className="btn btn-secondary justify-start">
-                                            Kelola Team
-                                        </Link>
-                                    ) : null}
-                                </div>
+                                <h2 className="card-title">Info</h2>
+                                <p className="text-sm text-base-content/70">
+                                    Pengelolaan roster dilakukan di dashboard oleh captain dan pengurus team.
+                                </p>
+                                <Link href="/teams" className="btn btn-outline justify-start">
+                                    Direktori Teams
+                                </Link>
                             </div>
                         </section>
                     </div>

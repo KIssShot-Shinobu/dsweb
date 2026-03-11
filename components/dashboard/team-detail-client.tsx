@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { normalizeAssetUrl } from "@/lib/asset-url";
-import { btnDanger, btnOutline, btnPrimary, filterBarCls, searchInputCls } from "@/components/dashboard/form-styles";
+import { btnDanger, btnOutline, filterBarCls, searchInputCls } from "@/components/dashboard/form-styles";
 import { FormSelect } from "@/components/dashboard/form-select";
 import {
     DashboardEmptyState,
@@ -27,22 +27,9 @@ type TeamMember = {
     teamJoinedAt: string | null;
 };
 
-type AvailableMember = {
-    id: string;
-    fullName: string;
-    email: string;
-    role: string;
-    city: string | null;
-    avatarUrl: string | null;
-    teamId: string | null;
-    teamJoinedAt: string | null;
-    lastActiveAt: string | null;
-};
-
 type TeamDetail = {
     id: string;
     name: string;
-    slug: string;
     description: string | null;
     logoUrl: string | null;
     isActive: boolean;
@@ -50,7 +37,6 @@ type TeamDetail = {
     updatedAt: string;
     memberCount: number;
     members: TeamMember[];
-    availableMembers: AvailableMember[];
 };
 
 type SelectOption = {
@@ -95,9 +81,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [rosterSearch, setRosterSearch] = useState("");
-    const [candidateSearch, setCandidateSearch] = useState("");
     const [rosterRole, setRosterRole] = useState("ALL");
-    const [candidateRole, setCandidateRole] = useState("ALL");
     const [pendingUserId, setPendingUserId] = useState<string | null>(null);
     const [memberToUnassign, setMemberToUnassign] = useState<TeamMember | null>(null);
 
@@ -129,33 +113,6 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
     useEffect(() => {
         loadTeam();
     }, [loadTeam]);
-
-    const handleAssign = async (userId: string) => {
-        setPendingUserId(userId);
-        setMessage(null);
-        setError(null);
-
-        try {
-            const response = await fetch(`/api/teams/${teamId}/roster`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId }),
-            });
-            const data = await response.json();
-
-            if (!response.ok) {
-                setError(data.message || "Gagal menambah roster");
-                return;
-            }
-
-            setMessage(data.message || "Roster berhasil diperbarui.");
-            await loadTeam();
-        } catch {
-            setError("Gagal menambah roster");
-        } finally {
-            setPendingUserId(null);
-        }
-    };
 
     const handleUnassign = async (userId: string) => {
         setPendingUserId(userId);
@@ -190,19 +147,6 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
         return buildRoleOptions(Array.from(new Set(team.members.map((member) => member.role))));
     }, [team]);
 
-    const candidateRoleOptions = useMemo(() => {
-        if (!team) return [ALL_ROLE_OPTION];
-        return buildRoleOptions(
-            Array.from(
-                new Set(
-                    team.availableMembers
-                        .filter((member) => !member.teamId || member.teamId === team.id)
-                        .map((member) => member.role)
-                )
-            )
-        );
-    }, [team]);
-
     const filteredRoster = useMemo(() => {
         if (!team) return [];
         const query = rosterSearch.trim().toLowerCase();
@@ -220,33 +164,6 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
     }, [team, rosterRole, rosterSearch]);
 
     const hasRosterFilters = Boolean(rosterSearch.trim()) || rosterRole !== "ALL";
-
-    const assignableMembers = useMemo(() => {
-        if (!team) return [];
-        const query = candidateSearch.trim().toLowerCase();
-
-        return team.availableMembers.filter((member) => {
-            const isAssignablePool = !member.teamId || member.teamId === team.id;
-            const isAlreadyInRoster = member.teamId === team.id;
-            const matchesRole = candidateRole === "ALL" || member.role === candidateRole;
-            const matchesQuery =
-                !query ||
-                [member.fullName, member.email, member.role, member.city || ""].some((value) =>
-                    value.toLowerCase().includes(query)
-                );
-
-            return isAssignablePool && !isAlreadyInRoster && matchesRole && matchesQuery;
-        });
-    }, [team, candidateRole, candidateSearch]);
-
-    const hasCandidateFilters = Boolean(candidateSearch.trim()) || candidateRole !== "ALL";
-    const totalAssignableMembers = useMemo(() => {
-        if (!team) return 0;
-        return Math.max(
-            team.availableMembers.filter((member) => !member.teamId || member.teamId === team.id).length - team.members.length,
-            0
-        );
-    }, [team]);
 
     return (
         <DashboardPageShell>
@@ -284,7 +201,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
 
                 <DashboardPanel
                     title="Ringkasan Team"
-                    description="Role komunitas dan afiliasi team tetap dipisah. User publik tidak akan tampil sebagai kandidat roster."
+                    description="Role komunitas dan afiliasi team tetap dipisah agar data roster tetap rapi."
                 >
                     {loading ? (
                         <div className="h-40 animate-pulse rounded-box border border-base-300 bg-base-200/50" />
@@ -320,7 +237,6 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                                 {team.isActive ? "Aktif" : "Nonaktif"}
                                             </span>
                                         </div>
-                                        <div className="text-[11px] uppercase tracking-[0.22em] text-base-content/45">/{team.slug}</div>
                                         <p className="text-sm leading-6 text-base-content/60">
                                             {team.description || "Belum ada deskripsi team. Tambahkan identitas singkat supaya officer lain cepat membaca konteks roster ini."}
                                         </p>
@@ -338,10 +254,6 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                     <div className="flex flex-col gap-1 border-b border-base-300 pb-3">
                                         <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Roster Aktif</span>
                                         <span className="text-base font-bold text-base-content">{team.memberCount} anggota</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1 border-b border-base-300 pb-3">
-                                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Kandidat Bebas</span>
-                                        <span className="text-base font-bold text-base-content">{totalAssignableMembers} kandidat</span>
                                     </div>
                                     <div className="flex flex-col gap-1 border-b border-base-300 pb-3">
                                         <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Dibuat</span>
@@ -401,7 +313,7 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                                 description={
                                     hasRosterFilters
                                         ? "Coba longgarkan kata kunci atau ubah role filter untuk melihat roster yang lain."
-                                        : "Belum ada anggota yang terhubung ke team ini. Tambahkan dari panel kandidat di bawah."
+                                        : "Belum ada anggota yang terhubung ke team ini."
                                 }
                             />
                         </div>
@@ -458,112 +370,6 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                     )}
                 </DashboardPanel>
 
-                <DashboardPanel
-                    title="Kandidat Roster"
-                    description={
-                        isAdmin
-                            ? "Tambahkan member Duel Standby yang belum punya team langsung dari halaman ini."
-                            : "Officer bisa melihat kandidat roster di sini. Mutasi roster dilakukan oleh admin."
-                    }
-                >
-                    <div className={filterBarCls}>
-                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
-                            <input
-                                type="text"
-                                value={candidateSearch}
-                                onChange={(event) => setCandidateSearch(event.target.value)}
-                                placeholder="Cari kandidat berdasarkan nama, email, role, atau kota..."
-                                className={searchInputCls}
-                            />
-                            <FormSelect
-                                value={candidateRole}
-                                onChange={setCandidateRole}
-                                options={candidateRoleOptions}
-                                className="w-full"
-                            />
-                        </div>
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/45">
-                            <span>
-                                {team?.isActive
-                                    ? `Tersedia ${assignableMembers.length} kandidat untuk filter saat ini.`
-                                    : "Team nonaktif. Anda tetap bisa review kandidat, tetapi assignment dinonaktifkan."}
-                            </span>
-                            {hasCandidateFilters ? (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setCandidateSearch("");
-                                        setCandidateRole("ALL");
-                                    }}
-                                    className="font-medium text-primary transition-colors hover:text-primary/80"
-                                >
-                                    Reset Filter
-                                </button>
-                            ) : null}
-                        </div>
-                    </div>
-
-                    {!team ? null : assignableMembers.length === 0 ? (
-                        <div className="mt-4">
-                            <DashboardEmptyState
-                                title={hasCandidateFilters ? "Tidak ada kandidat yang cocok" : "Tidak ada kandidat bebas"}
-                                description={
-                                    hasCandidateFilters
-                                        ? "Coba longgarkan kata kunci atau ubah role filter untuk melihat kandidat lain."
-                                        : "Semua member aktif sudah masuk ke team lain atau belum ada member aktif tanpa team."
-                                }
-                            />
-                        </div>
-                    ) : (
-                        <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
-                            {assignableMembers.map((member) => (
-                                <article key={member.id} className="rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex min-w-0 flex-1 items-start gap-3">
-                                            {normalizeAssetUrl(member.avatarUrl) ? (
-                                                <Image
-                                                    unoptimized
-                                                    src={normalizeAssetUrl(member.avatarUrl) || undefined}
-                                                    alt={member.fullName}
-                                                    width={48}
-                                                    height={48}
-                                                    className="h-12 w-12 flex-shrink-0 rounded-2xl border border-base-300 object-cover"
-                                                />
-                                            ) : (
-                                                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-sm font-bold text-primary">
-                                                    {getInitials(member.fullName)}
-                                                </div>
-                                            )}
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <h3 className="truncate text-base font-bold text-base-content">{member.fullName}</h3>
-                                                    <span className="rounded-full border border-base-300 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-base-content/55">
-                                                        {member.role}
-                                                    </span>
-                                                </div>
-                                                <div className="mt-1 text-sm text-base-content/60">{member.email}</div>
-                                                <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-base-content/45 sm:grid-cols-2">
-                                                    <div>Kota: {member.city || "Belum diisi"}</div>
-                                                    <div>Terakhir aktif: {formatDate(member.lastActiveAt)}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {isAdmin ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleAssign(member.id)}
-                                                className={btnPrimary}
-                                                disabled={pendingUserId === member.id || !team.isActive}
-                                            >
-                                                {pendingUserId === member.id ? "Memproses..." : "Masukkan"}
-                                            </button>
-                                        ) : null}
-                                    </div>
-                                </article>
-                            ))}
-                        </div>
-                    )}
-                </DashboardPanel>
             </div>
 
             {memberToUnassign ? (

@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { ToastProvider } from "@/components/dashboard/toast";
 
 export const metadata: Metadata = {
   title: "Duel Standby | Komunitas Gaming untuk Duelist Kompetitif",
@@ -21,7 +22,9 @@ export default function RootLayout({
         }}
         className="antialiased"
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

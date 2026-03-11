@@ -73,6 +73,8 @@ export type TeamView = {
     invites: TeamInviteSummary[];
     joinRequests: TeamJoinRequestSummary[];
     viewerMembership: TeamMemberSummary | null;
+    viewerHasPendingInvite: boolean;
+    viewerHasPendingJoin: boolean;
     permissions: {
         canInvite: boolean;
         canEditTeam: boolean;

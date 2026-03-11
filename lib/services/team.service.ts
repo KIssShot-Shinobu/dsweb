@@ -2,6 +2,7 @@ import { Prisma, type PrismaClient, type TeamRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import { logAudit } from "@/lib/audit-logger";
+import { generateUniqueTeamSlug } from "@/lib/team-slug";
 import { createTeamRepository, type TeamRepository } from "@/lib/repositories/team.repository";
 import { createNotificationService, type NotificationService } from "@/lib/services/notification.service";
 import {
@@ -21,6 +22,7 @@ import type {
     TeamInviteDecisionInput,
     TeamInviteInput,
     TeamJoinRequestInput,
+    TeamJoinRequestDecisionInput,
     TeamLeaveInput,
     TeamMemberPromoteInput,
     TeamMemberRemoveInput,
@@ -109,6 +111,8 @@ function formatTeam(team: Awaited<ReturnType<TeamRepository["findTeamBySlug"]>>,
         ? canInviteMembers(viewerMembership.role) || canEditTeamInfo(viewerMembership.role)
         : false;
     const captain = memberships.find((member) => member.role === "CAPTAIN") ?? null;
+    const viewerInvite = viewerUserId ? team.invites.find((invite) => invite.userId === viewerUserId) ?? null : null;
+    const viewerJoinRequest = viewerUserId ? team.joinRequests.find((req) => req.userId === viewerUserId) ?? null : null;
 
     return {
         id: team.id,
@@ -129,6 +133,8 @@ function formatTeam(team: Awaited<ReturnType<TeamRepository["findTeamBySlug"]>>,
         invites: canViewManagement ? team.invites : [],
         joinRequests: canViewManagement ? team.joinRequests : [],
         viewerMembership: viewerMembership ? mapMember(viewerMembership) : null,
+        viewerHasPendingInvite: Boolean(viewerInvite),
+        viewerHasPendingJoin: Boolean(viewerJoinRequest),
         permissions: viewerMembership
             ? {
                   canInvite: canInviteMembers(viewerMembership.role),
@@ -209,10 +215,15 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
             await ensureNoActiveMembership(repository, actorUserId, "Anda masih memiliki team aktif");
 
             try {
+                const slug = await generateUniqueTeamSlug(input.name, async (candidate) => {
+                    const existing = await repository.findTeamBySlug(candidate);
+                    return Boolean(existing);
+                });
                 const team = await deps.prisma.$transaction((tx) => {
                     const txRepository = createTeamRepository(tx);
                     return txRepository.createTeamWithCaptain({
                         ...input,
+                        slug,
                         description: cleanNullable(input.description),
                         logoUrl: cleanNullable(input.logoUrl),
                         captainUserId: actorUserId,
@@ -441,12 +452,109 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
                         type: "TEAM_JOIN_REQUEST",
                         title: "Permintaan Join Team",
                         message: `Ada permintaan bergabung ke ${team.name}.`,
-                        link: `/teams/${team.slug}/manage`,
+                        link: `/dashboard/team`,
                     })
                 )
             );
 
             return request;
+        },
+
+        async acceptJoinRequest(actorUserId: string, input: TeamJoinRequestDecisionInput) {
+            const joinRequest = await repository.findJoinRequestById(input.joinRequestId);
+            if (!joinRequest || joinRequest.status !== "PENDING") {
+                throw new TeamServiceError(404, "Request join tidak ditemukan atau sudah diproses");
+            }
+
+            const actorMembership = await resolveActorMembership(repository, joinRequest.teamId, actorUserId);
+            ensureCanManage(actorMembership, canInviteMembers(actorMembership.role), "Anda tidak boleh menerima request join");
+
+            const targetUser = await deps.prisma.user.findUnique({
+                where: { id: joinRequest.userId },
+                select: { id: true, status: true },
+            });
+
+            if (!targetUser) {
+                throw new TeamServiceError(404, "User target tidak ditemukan");
+            }
+
+            if (targetUser.status !== "ACTIVE") {
+                throw new TeamServiceError(400, "Hanya user aktif yang bisa diterima");
+            }
+
+            await ensureNoActiveMembership(repository, joinRequest.userId, "User sudah memiliki team aktif");
+
+            const result = await deps.prisma.$transaction(async (tx) => {
+                const txRepository = createTeamRepository(tx);
+                const existingMembership = await txRepository.findMembershipRecord(joinRequest.teamId, joinRequest.userId);
+
+                if (existingMembership && existingMembership.leftAt === null) {
+                    throw new TeamServiceError(409, "User sudah menjadi member team ini");
+                }
+
+                const membership = existingMembership
+                    ? await txRepository.reactivateMembership(existingMembership.id, "PLAYER")
+                    : await txRepository.createMembership({
+                          teamId: joinRequest.teamId,
+                          userId: joinRequest.userId,
+                          role: "PLAYER",
+                      });
+
+                const updatedRequest = await txRepository.updateJoinRequestStatus(joinRequest.id, "ACCEPTED");
+                const team = await txRepository.findTeamById(joinRequest.teamId);
+                return { membership, updatedRequest, team };
+            });
+
+            await deps.audit({
+                userId: actorUserId,
+                action: AUDIT_ACTIONS.TEAM_JOIN_REQUEST_ACCEPTED,
+                targetId: joinRequest.id,
+                targetType: "TeamJoinRequest",
+                details: { teamId: joinRequest.teamId, userId: joinRequest.userId },
+            });
+
+            const teamName = result.team?.name ?? "team";
+            const teamSlug = result.team?.slug;
+            await notifications.createNotification({
+                userId: joinRequest.userId,
+                type: "SYSTEM_ALERT",
+                title: "Request Join Disetujui",
+                message: `Request join Anda telah disetujui. Selamat bergabung di ${teamName}.`,
+                link: teamSlug ? `/teams/${teamSlug}` : "/dashboard/team",
+            });
+
+            return formatTeam(result.team, actorUserId);
+        },
+
+        async rejectJoinRequest(actorUserId: string, input: TeamJoinRequestDecisionInput) {
+            const joinRequest = await repository.findJoinRequestById(input.joinRequestId);
+            if (!joinRequest || joinRequest.status !== "PENDING") {
+                throw new TeamServiceError(404, "Request join tidak ditemukan atau sudah diproses");
+            }
+
+            const actorMembership = await resolveActorMembership(repository, joinRequest.teamId, actorUserId);
+            ensureCanManage(actorMembership, canInviteMembers(actorMembership.role), "Anda tidak boleh menolak request join");
+
+            const rejectedRequest = await repository.updateJoinRequestStatus(joinRequest.id, "DECLINED");
+            const team = await repository.findTeamById(joinRequest.teamId);
+
+            await deps.audit({
+                userId: actorUserId,
+                action: AUDIT_ACTIONS.TEAM_JOIN_REQUEST_REJECTED,
+                targetId: joinRequest.id,
+                targetType: "TeamJoinRequest",
+                details: { teamId: joinRequest.teamId, userId: joinRequest.userId },
+            });
+
+            await notifications.createNotification({
+                userId: joinRequest.userId,
+                type: "SYSTEM_ALERT",
+                title: "Request Join Ditolak",
+                message: "Maaf, request join Anda ditolak oleh pengurus team.",
+                link: team?.slug ? `/teams/${team.slug}` : "/teams",
+            });
+
+            return rejectedRequest;
         },
 
         async removeMember(actorUserId: string, input: TeamMemberRemoveInput) {
@@ -581,7 +689,7 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
                 type: "TEAM_ROLE_CHANGED",
                 title: "Anda Menjadi Captain",
                 message: "Captain team telah ditransfer kepada Anda.",
-                link: team ? `/teams/${team.slug}/manage` : `/teams/${input.teamId}/manage`,
+                link: `/dashboard/team`,
             });
 
             return formatTeam(team, actorUserId);
@@ -611,7 +719,6 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
             try {
                 const team = await repository.updateTeam(teamId, {
                     ...(typeof input.name === "string" ? { name: input.name } : {}),
-                    ...(typeof input.slug === "string" ? { slug: input.slug } : {}),
                     ...(typeof input.description !== "undefined" ? { description: cleanNullable(input.description) } : {}),
                     ...(typeof input.logoUrl !== "undefined" ? { logoUrl: cleanNullable(input.logoUrl) } : {}),
                 });

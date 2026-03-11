@@ -5,7 +5,6 @@ const IGN_REGEX = /^[A-Za-z0-9 _.\-\[\]()]{2,32}$/;
 const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
 const SAFE_TEXT_REGEX = /^[\p{L}\p{N}\s'.,()\-_/]+$/u;
 const LOCAL_UPLOAD_PATH_REGEX = /^\/uploads\/[A-Za-z0-9._/-]+$/;
-const TEAM_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const USERNAME_REGEX = /^[a-zA-Z0-9._-]{3,24}$/;
 
 const gameIdFieldSchema = z
@@ -18,6 +17,7 @@ export const USER_STATUS_VALUES = ["ACTIVE", "BANNED"] as const;
 export const USER_ROLE_VALUES = ["USER", "MEMBER", "OFFICER", "ADMIN", "FOUNDER"] as const;
 export const TEAM_ROLE_VALUES = ["CAPTAIN", "VICE_CAPTAIN", "PLAYER", "COACH", "MANAGER"] as const;
 export const TEAM_INVITE_STATUS_VALUES = ["PENDING", "ACCEPTED", "DECLINED"] as const;
+export const TEAM_REQUEST_STATUS_VALUES = ["PENDING", "APPROVED", "REJECTED"] as const;
 export const TOURNAMENT_STATUS_VALUES = ["OPEN", "ONGOING", "COMPLETED", "CANCELLED"] as const;
 export const TOURNAMENT_FORMAT_VALUES = ["BO1", "BO3", "BO5"] as const;
 export const GAME_TYPE_VALUES = ["DUEL_LINKS", "MASTER_DUEL"] as const;
@@ -101,13 +101,6 @@ export const approveSchema = z.object({
 
 export const teamSchema = z.object({
     name: z.string().trim().min(2, "Nama team minimal 2 karakter").max(191, "Nama team terlalu panjang"),
-    slug: z
-        .string()
-        .trim()
-        .toLowerCase()
-        .min(2, "Slug team minimal 2 karakter")
-        .max(191, "Slug team terlalu panjang")
-        .regex(TEAM_SLUG_REGEX, "Slug hanya boleh huruf kecil, angka, dan strip"),
     description: z.string().trim().max(500, "Deskripsi team terlalu panjang").optional().or(z.literal("")),
     logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload lokal").optional().or(z.literal("")),
     isActive: z.boolean().optional(),
@@ -142,15 +135,23 @@ export const notificationReadSchema = z.object({
 
 export const teamCreateSchema = z.object({
     name: z.string().trim().min(2, "Nama team minimal 2 karakter").max(191, "Nama team terlalu panjang"),
-    slug: z
-        .string()
-        .trim()
-        .toLowerCase()
-        .min(2, "Slug team minimal 2 karakter")
-        .max(191, "Slug team terlalu panjang")
-        .regex(TEAM_SLUG_REGEX, "Slug hanya boleh huruf kecil, angka, dan strip"),
     description: z.string().trim().max(500, "Deskripsi team terlalu panjang").optional().or(z.literal("")),
     logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload lokal").optional().or(z.literal("")),
+});
+
+export const teamRequestCreateSchema = z.object({
+    name: z.string().trim().min(2, "Nama team minimal 2 karakter").max(191, "Nama team terlalu panjang"),
+    description: z.string().trim().max(500, "Deskripsi team terlalu panjang").optional().or(z.literal("")),
+    logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload lokal").optional().or(z.literal("")),
+});
+
+export const teamRequestQuerySchema = z.object({
+    status: z.enum(["ALL", ...TEAM_REQUEST_STATUS_VALUES] as const).optional(),
+    mine: z.string().optional(),
+});
+
+export const teamRequestRejectSchema = z.object({
+    reason: z.string().trim().max(500, "Alasan terlalu panjang").optional().or(z.literal("")),
 });
 
 export const teamUpdateSchema = teamCreateSchema.partial().refine(
@@ -169,6 +170,10 @@ export const teamInviteDecisionSchema = z.object({
 
 export const teamJoinRequestSchema = z.object({
     teamId: z.string().cuid("Team ID tidak valid"),
+});
+
+export const teamJoinRequestDecisionSchema = z.object({
+    joinRequestId: z.string().cuid("Join request ID tidak valid"),
 });
 
 export const teamMemberRemoveSchema = z.object({
@@ -207,9 +212,13 @@ export type UsersQueryInput = z.infer<typeof usersQuerySchema>;
 export type TeamsQueryInput = z.infer<typeof teamsQuerySchema>;
 export type TeamCreateInput = z.infer<typeof teamCreateSchema>;
 export type TeamUpdateInput = z.infer<typeof teamUpdateSchema>;
+export type TeamRequestCreateInput = z.infer<typeof teamRequestCreateSchema>;
+export type TeamRequestQueryInput = z.infer<typeof teamRequestQuerySchema>;
+export type TeamRequestRejectInput = z.infer<typeof teamRequestRejectSchema>;
 export type TeamInviteInput = z.infer<typeof teamInviteSchema>;
 export type TeamInviteDecisionInput = z.infer<typeof teamInviteDecisionSchema>;
 export type TeamJoinRequestInput = z.infer<typeof teamJoinRequestSchema>;
+export type TeamJoinRequestDecisionInput = z.infer<typeof teamJoinRequestDecisionSchema>;
 export type TeamMemberRemoveInput = z.infer<typeof teamMemberRemoveSchema>;
 export type TeamMemberPromoteInput = z.infer<typeof teamMemberPromoteSchema>;
 export type TeamTransferCaptainInput = z.infer<typeof teamTransferCaptainSchema>;

@@ -90,12 +90,14 @@ const prismaExtension = Prisma.defineExtension((client) =>
                     });
 
                     const changedFields = getChangedSensitiveFields(previous, protectedData);
-                    if (changedFields.length > 0) {
+                    const resultUserId = (result as UserResultWithId)?.id ?? previous?.id;
+
+                    if (changedFields.length > 0 && resultUserId) {
                         basePrisma.auditLog.create({
                             data: {
-                                userId: (result as UserResultWithId).id,
+                                userId: resultUserId,
                                 action: "SENSITIVE_FIELD_CHANGED",
-                                targetId: (result as UserResultWithId).id,
+                                targetId: resultUserId,
                                 targetType: "User",
                                 ipAddress: "127.0.0.1",
                                 userAgent: "prisma-extension",
@@ -107,6 +109,8 @@ const prismaExtension = Prisma.defineExtension((client) =>
                         }).catch((error) => {
                             console.error("[Prisma][SensitiveFieldAudit]", error);
                         });
+                    } else if (changedFields.length > 0) {
+                        console.warn("[Prisma][SensitiveFieldAudit] Missing user id; audit log skipped.");
                     }
 
                     return unprotectUserRecord(result);
@@ -133,13 +137,14 @@ const prismaExtension = Prisma.defineExtension((client) =>
                         previous,
                         previous ? (args.update as Record<string, unknown>) : (args.create as Record<string, unknown>)
                     );
+                    const resultUserId = (result as UserResultWithId)?.id ?? previous?.id;
 
-                    if (changedFields.length > 0) {
+                    if (changedFields.length > 0 && resultUserId) {
                         basePrisma.auditLog.create({
                             data: {
-                                userId: (result as UserResultWithId).id,
+                                userId: resultUserId,
                                 action: "SENSITIVE_FIELD_CHANGED",
-                                targetId: (result as UserResultWithId).id,
+                                targetId: resultUserId,
                                 targetType: "User",
                                 ipAddress: "127.0.0.1",
                                 userAgent: "prisma-extension",
@@ -151,6 +156,8 @@ const prismaExtension = Prisma.defineExtension((client) =>
                         }).catch((error) => {
                             console.error("[Prisma][SensitiveFieldAudit]", error);
                         });
+                    } else if (changedFields.length > 0) {
+                        console.warn("[Prisma][SensitiveFieldAudit] Missing user id; audit log skipped.");
                     }
 
                     return unprotectUserRecord(result);

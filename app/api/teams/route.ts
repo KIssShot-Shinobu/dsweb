@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, hasRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
+import { generateUniqueTeamSlug } from "@/lib/team-slug";
 import { teamSchema, teamsQuerySchema } from "@/lib/validators";
 
 export async function GET(req: NextRequest) {
@@ -81,11 +82,11 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    const { name, slug, description, logoUrl, isActive = true } = parsed.data;
-    const existingSlug = await prisma.team.findUnique({ where: { slug } });
-    if (existingSlug) {
-        return NextResponse.json({ success: false, message: "Slug team sudah dipakai" }, { status: 409 });
-    }
+    const { name, description, logoUrl, isActive = true } = parsed.data;
+    const slug = await generateUniqueTeamSlug(name, async (candidate) => {
+        const existingSlug = await prisma.team.findUnique({ where: { slug: candidate } });
+        return Boolean(existingSlug);
+    });
 
     const team = await prisma.team.create({
         data: {

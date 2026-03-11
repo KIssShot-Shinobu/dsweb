@@ -52,6 +52,18 @@ export function NotificationBell({ isLoggedIn }: { isLoggedIn: boolean }) {
         setUnreadCount(0);
     }, [isLoggedIn]);
 
+    const deleteNotification = useCallback(async (id: string) => {
+        if (!isLoggedIn) return;
+        await fetch(`/api/notifications/${id}`, { method: "DELETE" });
+        setNotifications((current) => {
+            const target = current.find((item) => item.id === id);
+            if (target && !target.isRead) {
+                setUnreadCount((prev) => Math.max(0, prev - 1));
+            }
+            return current.filter((item) => item.id !== id);
+        });
+    }, [isLoggedIn]);
+
     useEffect(() => {
         if (!isLoggedIn) return;
         const timeoutId = setTimeout(() => {
@@ -120,6 +132,7 @@ export function NotificationBell({ isLoggedIn }: { isLoggedIn: boolean }) {
                     loading={loading}
                     onRead={markAsRead}
                     onReadAll={markAllAsRead}
+                    onDelete={deleteNotification}
                 />
             ) : null}
         </div>

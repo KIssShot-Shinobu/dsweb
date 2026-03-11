@@ -31,6 +31,7 @@ export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [me, setMe] = useState<MeUser | null>(null);
+    const [checkingAuth, setCheckingAuth] = useState(true);
     const menuRef = useRef<HTMLDivElement | null>(null);
     const { theme, toggleTheme } = useTheme();
     const hydrated = useHydrated();
@@ -39,6 +40,7 @@ export function Navbar() {
         let active = true;
 
         const syncMe = async () => {
+            if (active) setCheckingAuth(true);
             try {
                 const response = await fetch("/api/auth/me");
                 if (!response.ok) {
@@ -63,6 +65,8 @@ export function Navbar() {
                 setMe(null);
             } catch {
                 if (active) setMe(null);
+            } finally {
+                if (active) setCheckingAuth(false);
             }
         };
 
@@ -95,6 +99,7 @@ export function Navbar() {
 
     const handleLogout = async () => {
         await clientLogout("/login");
+        setMe(null);
     };
 
     const isAdmin = me ? ["ADMIN", "FOUNDER"].includes(me.role) : false;
@@ -113,12 +118,15 @@ export function Navbar() {
         </button>
     );
 
+    const isAuthReady = hydrated && !checkingAuth;
+    const showAuthSkeleton = !me && !isAuthReady;
+
     return (
         <nav className="navbar fixed left-0 right-0 top-0 z-50 border-b border-base-300 bg-base-100/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
             <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
                 <div className="flex items-center gap-3">
                     <Link href="/" className="flex items-center gap-2">
-                        <div className="badge badge-primary h-11 w-11 rounded-2xl border-0 shadow-lg">
+                        <div className="badge badge-primary h-11 w-11 rounded-2xl border-0 text-center shadow-lg">
                             <Swords className="h-5 w-5" />
                         </div>
                         <span className="bg-gradient-to-r from-primary to-warning bg-clip-text text-lg font-black text-transparent sm:text-xl">
@@ -137,16 +145,7 @@ export function Navbar() {
                     </ul>
                     {themeButton}
                     {me ? <NotificationBell isLoggedIn /> : null}
-                    {!me ? (
-                        <>
-                            <Link href="/login" className="btn btn-outline rounded-box">
-                                Masuk
-                            </Link>
-                            <Link href="/register" className="btn btn-primary rounded-box">
-                                Daftar
-                            </Link>
-                        </>
-                    ) : (
+                    {me ? (
                         <div className="dropdown dropdown-end" ref={menuRef}>
                             <button onClick={() => setMenuOpen((current) => !current)} className="btn btn-ghost btn-circle avatar" aria-label="Buka menu profil">
                                 <div className="w-10 rounded-full border border-base-300 bg-base-200">
@@ -160,7 +159,7 @@ export function Navbar() {
                                             className="h-full w-full object-cover"
                                         />
                                     ) : (
-                                        <div className="flex h-full w-full items-center justify-center bg-primary text-xs font-bold text-primary-content">
+                                        <div className="flex h-full w-full items-center justify-center text-center bg-primary text-xs font-bold text-primary-content">
                                             {initials(me.username)}
                                         </div>
                                     )}
@@ -195,6 +194,20 @@ export function Navbar() {
                                 ) : null}
                             </AnimatePresence>
                         </div>
+                    ) : showAuthSkeleton ? (
+                        <div className="flex items-center gap-2">
+                            <div className="skeleton h-10 w-20 rounded-box" />
+                            <div className="skeleton h-10 w-24 rounded-box" />
+                        </div>
+                    ) : (
+                        <>
+                            <Link href="/login" className="btn btn-outline rounded-box">
+                                Masuk
+                            </Link>
+                            <Link href="/register" className="btn btn-primary rounded-box">
+                                Daftar
+                            </Link>
+                        </>
                     )}
                 </div>
 
@@ -223,16 +236,7 @@ export function Navbar() {
                                 <span>{theme === "dark" ? "Mode terang" : "Mode gelap"}</span>
                                 {isDark ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
                             </button>
-                            {!me ? (
-                                <div className="grid grid-cols-1 gap-2 pt-1">
-                                    <Link href="/login" onClick={() => setIsOpen(false)} className="btn btn-outline rounded-box">
-                                        Masuk
-                                    </Link>
-                                    <Link href="/register" onClick={() => setIsOpen(false)} className="btn btn-primary rounded-box">
-                                        Daftar
-                                    </Link>
-                                </div>
-                            ) : (
+                            {me ? (
                                 <div className="grid grid-cols-1 gap-2 pt-1">
                                     <Link href={isAdmin ? "/dashboard" : "/dashboard/profile"} onClick={() => setIsOpen(false)} className="btn btn-ghost justify-start rounded-box">
                                         {isAdmin ? "Dashboard" : "Profil Saya"}
@@ -245,6 +249,20 @@ export function Navbar() {
                                     <button onClick={handleLogout} className="btn btn-error btn-outline rounded-box">
                                         Keluar
                                     </button>
+                                </div>
+                            ) : showAuthSkeleton ? (
+                                <div className="grid grid-cols-1 gap-2 pt-1">
+                                    <div className="skeleton h-10 w-full rounded-box" />
+                                    <div className="skeleton h-10 w-full rounded-box" />
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-2 pt-1">
+                                    <Link href="/login" onClick={() => setIsOpen(false)} className="btn btn-outline rounded-box">
+                                        Masuk
+                                    </Link>
+                                    <Link href="/register" onClick={() => setIsOpen(false)} className="btn btn-primary rounded-box">
+                                        Daftar
+                                    </Link>
                                 </div>
                             )}
                         </div>

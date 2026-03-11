@@ -47,7 +47,7 @@ export const INITIAL_FORM: RegistrationFormData = {
     agreement: false,
 };
 
-export const SOCIAL_OPTIONS = ["WhatsApp", "Instagram", "Facebook", "TikTok", "X / Twitter", "YouTube", "Discord", "Rekomendasi Teman"];
+export const SOCIAL_OPTIONS = ["WhatsApp", "Instagram", "Facebook", "TikTok", "YouTube", "Discord", "Rekomendasi Teman"];
 export const SOURCE_OPTIONS = ["Media sosial", "YouTube", "Discord", "Rekomendasi teman", "Turnamen online", "Lainnya"];
 export const REGISTER_STEPS = [
     { title: "Akun", icon: "1", desc: "Identitas akun utama Anda" },

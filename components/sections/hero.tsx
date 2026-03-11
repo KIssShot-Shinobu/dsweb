@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Swords } from "lucide-react";
+import { SOCIAL_LINKS } from "@/lib/social-links";
 
 export function Hero() {
+    const communityLink = SOCIAL_LINKS.discord || "/register";
+
     return (
         <section className="relative flex min-h-[88vh] items-center justify-center overflow-hidden sm:min-h-[90vh]">
             <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_top,rgba(255,201,22,0.18),transparent_24%),linear-gradient(180deg,transparent_0%,rgba(255,255,255,0.02)_100%)]" />
@@ -32,8 +35,8 @@ export function Hero() {
                     </motion.p>
 
                     <motion.div variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} transition={{ duration: 0.5 }} className="flex w-full max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4">
-                        <Link href="https://discord.gg/duelstandby" target="_blank" className="btn btn-primary rounded-full px-6 sm:px-8">
-                            Gabung ke Discord
+                        <Link href={communityLink} target={SOCIAL_LINKS.discord ? "_blank" : undefined} className="btn btn-primary rounded-full px-6 sm:px-8">
+                            {SOCIAL_LINKS.discord ? "Gabung ke Discord" : "Gabung Komunitas"}
                             <ArrowRight className="h-5 w-5" />
                         </Link>
 

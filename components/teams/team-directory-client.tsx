@@ -2,52 +2,27 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState, useTransition, type ChangeEvent } from "react";
-import { Modal } from "@/components/dashboard/modal";
+import { useMemo, useState, useTransition } from "react";
 import { TeamAvatar } from "@/components/teams/team-avatar";
 import type { TeamView } from "@/components/teams/types";
-
-type PendingInvite = {
-    id: string;
-    createdAt: string;
-    team: {
-        id: string;
-        name: string;
-        slug: string;
-        logoUrl: string | null;
-    };
-    invitedBy: {
-        fullName: string;
-    };
-};
+import { useToast } from "@/components/dashboard/toast";
 
 export function TeamDirectoryClient({
     teams,
-    pendingInvites,
     isLoggedIn,
     activeTeamSlug,
 }: {
     teams: TeamView[];
-    pendingInvites: PendingInvite[];
     isLoggedIn: boolean;
     activeTeamSlug: string | null;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
-    const [message, setMessage] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const { success, error: toastError, info } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
-    const [createOpen, setCreateOpen] = useState(false);
-    const [uploadingLogo, setUploadingLogo] = useState(false);
-    const [form, setForm] = useState({
-        name: "",
-        slug: "",
-        description: "",
-        logoUrl: "",
-    });
+    const [pendingTeamIds, setPendingTeamIds] = useState<string[]>([]);
 
     const hasActiveTeam = Boolean(activeTeamSlug);
-    const isBusy = isPending || uploadingLogo;
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
     const filteredTeams = useMemo(() => {
@@ -60,9 +35,6 @@ export function TeamDirectoryClient({
     }, [teams, normalizedQuery]);
 
     const runAction = async (url: string, init: RequestInit, successMessage: string) => {
-        setMessage(null);
-        setError(null);
-
         const response = await fetch(url, init);
         const data = await response.json();
 
@@ -70,35 +42,15 @@ export function TeamDirectoryClient({
             throw new Error(data.error || data.message || "Aksi gagal diproses");
         }
 
-        setMessage(successMessage);
+        success(successMessage);
         startTransition(() => {
             router.refresh();
         });
     };
 
-    const handleCreateTeam = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-
-        try {
-            await runAction(
-                "/api/team/create",
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(form),
-                },
-                "Team berhasil dibuat. Anda sekarang menjadi captain."
-            );
-
-            setForm({ name: "", slug: "", description: "", logoUrl: "" });
-            setCreateOpen(false);
-        } catch (actionError) {
-            setError(actionError instanceof Error ? actionError.message : "Gagal membuat team");
-        }
-    };
-
     const handleJoinRequest = async (teamId: string) => {
         try {
+            setPendingTeamIds((prev) => (prev.includes(teamId) ? prev : [...prev, teamId]));
             await runAction(
                 "/api/team/request-join",
                 {
@@ -108,55 +60,17 @@ export function TeamDirectoryClient({
                 },
                 "Permintaan bergabung berhasil dikirim."
             );
+            info("Menunggu persetujuan admin team.");
         } catch (actionError) {
-            setError(actionError instanceof Error ? actionError.message : "Gagal mengirim request join");
-        }
-    };
-
-    const handleLogoUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        setError(null);
-        setUploadingLogo(true);
-
-        const payload = new FormData();
-        payload.append("file", file);
-
-        try {
-            const response = await fetch("/api/upload", { method: "POST", body: payload });
-            const data = await response.json();
-
-            if (!response.ok || !data?.success || !data?.url) {
-                throw new Error(data?.message || "Gagal upload logo team.");
-            }
-
-            setForm((current) => ({ ...current, logoUrl: data.url }));
-        } catch (actionError) {
-            setError(actionError instanceof Error ? actionError.message : "Gagal upload logo team.");
-        } finally {
-            setUploadingLogo(false);
-            event.target.value = "";
+            toastError(actionError instanceof Error ? actionError.message : "Gagal mengirim request join");
         }
     };
 
     return (
         <div className="space-y-6">
-            {message ? <div className="alert alert-success shadow-sm">{message}</div> : null}
-            {error ? <div className="alert alert-error shadow-sm">{error}</div> : null}
-
-            {isLoggedIn ? null : null}
-
-            {isLoggedIn && !hasActiveTeam ? null : null}
-
             <section className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="text-sm font-semibold uppercase tracking-[0.2em] text-base-content/50">Teams</div>
-                    {hasActiveTeam ? (
-                        <Link href={`/teams/${activeTeamSlug}/manage`} className="btn btn-secondary btn-sm">
-                            Kelola Team Saya
-                        </Link>
-                    ) : null}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <input
@@ -166,11 +80,6 @@ export function TeamDirectoryClient({
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
                     />
-                    {isLoggedIn && !hasActiveTeam ? (
-                        <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-                            Buat Team
-                        </button>
-                    ) : null}
                 </div>
                 {filteredTeams.length === 0 ? (
                     <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 p-5 text-sm text-base-content/70">
@@ -179,8 +88,10 @@ export function TeamDirectoryClient({
                 ) : (
                     <div className="grid gap-4 xl:grid-cols-2">
                         {filteredTeams.map((team) => {
-                            const hasPendingInvite = pendingInvites.some((invite) => invite.team.id === team.id);
-                            const canRequestJoin = isLoggedIn && !hasActiveTeam && !team.viewerMembership && !hasPendingInvite;
+                            const isLocallyPending = pendingTeamIds.includes(team.id);
+                            const hasPendingJoin = team.viewerHasPendingJoin || isLocallyPending;
+                            const hasPendingInvite = team.viewerHasPendingInvite;
+                            const canRequestJoin = isLoggedIn && !hasActiveTeam && !team.viewerMembership && !hasPendingJoin && !hasPendingInvite;
 
                             return (
                                 <article key={team.id} className="card border border-base-300 bg-base-100 shadow-sm">
@@ -194,6 +105,10 @@ export function TeamDirectoryClient({
                                                         {team.isActive ? "Aktif" : "Nonaktif"}
                                                     </span>
                                                     {team.viewerMembership ? <span className="badge badge-primary badge-outline">Member</span> : null}
+                                                    {hasPendingInvite ? <span className="badge badge-secondary badge-outline">Ada Invite</span> : null}
+                                                    {hasPendingJoin ? (
+                                                        <span className="badge badge-warning badge-outline">Menunggu</span>
+                                                    ) : null}
                                                 </div>
                                                 <p className="text-sm text-base-content/70">
                                                     {team.description || "Belum ada deskripsi team."}
@@ -229,12 +144,14 @@ export function TeamDirectoryClient({
                                                 Lihat Detail
                                             </Link>
                                             <div className="flex gap-2">
-                                                {team.viewerMembership ? (
-                                                    <Link href={`/teams/${team.slug}/manage`} className="btn btn-secondary btn-sm">
-                                                        Manage
-                                                    </Link>
+                                                {hasPendingInvite ? (
+                                                    <span className="badge badge-secondary">Ada Invite</span>
                                                 ) : null}
-                                                {canRequestJoin ? (
+                                                {hasPendingJoin ? (
+                                                    <button type="button" className="btn btn-outline btn-sm" disabled>
+                                                        Menunggu Persetujuan
+                                                    </button>
+                                                ) : canRequestJoin ? (
                                                     <button
                                                         type="button"
                                                         className="btn btn-primary btn-sm"
@@ -253,76 +170,6 @@ export function TeamDirectoryClient({
                     </div>
                 )}
             </section>
-
-            <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Buat Team Baru" size="md">
-                <form className="space-y-4" onSubmit={handleCreateTeam}>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <label className="form-control w-full">
-                            <div className="label">
-                                <span className="label-text">Nama Team</span>
-                            </div>
-                            <input
-                                className="input input-bordered w-full"
-                                value={form.name}
-                                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                                placeholder="Duel Standby Alpha"
-                                required
-                                disabled={isBusy}
-                            />
-                        </label>
-                        <label className="form-control w-full">
-                            <div className="label">
-                                <span className="label-text">Slug</span>
-                            </div>
-                            <input
-                                className="input input-bordered w-full"
-                                value={form.slug}
-                                onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value.toLowerCase() }))}
-                                placeholder="duel-standby-alpha"
-                                required
-                                disabled={isBusy}
-                            />
-                        </label>
-                    </div>
-                    <label className="form-control w-full">
-                        <div className="label">
-                            <span className="label-text">Deskripsi</span>
-                        </div>
-                        <textarea
-                            className="textarea textarea-bordered min-h-28"
-                            value={form.description}
-                            onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                            placeholder="Ceritakan visi, gaya bermain, dan target team."
-                            disabled={isBusy}
-                        />
-                    </label>
-                    <label className="form-control w-full">
-                        <div className="label">
-                            <span className="label-text">Logo</span>
-                            {form.logoUrl ? (
-                                <button type="button" className="btn btn-ghost btn-xs" onClick={() => setForm((current) => ({ ...current, logoUrl: "" }))}>
-                                    Hapus
-                                </button>
-                            ) : null}
-                        </div>
-                        <input
-                            type="file"
-                            accept="image/png,image/jpeg,image/jpg,image/webp"
-                            className="file-input file-input-bordered w-full"
-                            onChange={handleLogoUpload}
-                            disabled={isBusy}
-                        />
-                    </label>
-                    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                        <button type="button" className="btn btn-outline" onClick={() => setCreateOpen(false)} disabled={isBusy}>
-                            Batal
-                        </button>
-                        <button type="submit" className={`btn btn-primary ${isPending ? "loading" : ""}`} disabled={isBusy}>
-                            {isPending ? "Menyimpan" : "Buat Team"}
-                        </button>
-                    </div>
-                </form>
-            </Modal>
         </div>
     );
 }

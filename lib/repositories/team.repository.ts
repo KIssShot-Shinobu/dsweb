@@ -186,6 +186,13 @@ export function createTeamRepository(db: TeamDbClient) {
             });
         },
 
+        findJoinRequestById(joinRequestId: string) {
+            return db.teamJoinRequest.findUnique({
+                where: { id: joinRequestId },
+                select: teamJoinRequestSelect,
+            });
+        },
+
         createTeamWithCaptain(data: {
             name: string;
             slug: string;

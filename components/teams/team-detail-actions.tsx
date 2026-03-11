@@ -3,31 +3,26 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useToast } from "@/components/dashboard/toast";
 
 export function TeamDetailActions({
     teamId,
-    teamSlug,
     pendingInviteId,
-    canManage,
-    canLeave,
     hasActiveTeam,
     isMember,
+    hasPendingJoin,
 }: {
     teamId: string;
-    teamSlug: string;
     pendingInviteId: string | null;
-    canManage: boolean;
-    canLeave: boolean;
     hasActiveTeam: boolean;
     isMember: boolean;
+    hasPendingJoin: boolean;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
-    const [error, setError] = useState<string | null>(null);
+    const { success, error: toastError, info } = useToast();
 
     const runAction = async (url: string, body: Record<string, string>, successRedirect?: string) => {
-        setError(null);
-
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -36,10 +31,13 @@ export function TeamDetailActions({
         const data = await response.json();
 
         if (!response.ok) {
-            setError(data.error || data.message || "Aksi gagal diproses");
-            return;
+            toastError(data.error || data.message || "Aksi gagal diproses");
+            return false;
         }
 
+        if (!successRedirect) {
+            success("Aksi berhasil diproses.");
+        }
         startTransition(() => {
             if (successRedirect) {
                 router.push(successRedirect);
@@ -48,20 +46,15 @@ export function TeamDetailActions({
 
             router.refresh();
         });
+        return true;
     };
 
     return (
         <div className="space-y-3">
-            {error ? <div className="alert alert-error">{error}</div> : null}
             <div className="flex flex-wrap gap-2">
                 <Link href="/teams" className="btn btn-outline btn-sm">
                     Kembali ke Teams
                 </Link>
-                {canManage ? (
-                    <Link href={`/teams/${teamSlug}/manage`} className="btn btn-secondary btn-sm">
-                        Manage Team
-                    </Link>
-                ) : null}
                 {pendingInviteId ? (
                     <>
                         <button
@@ -83,24 +76,25 @@ export function TeamDetailActions({
                     </>
                 ) : null}
                 {!isMember && !pendingInviteId && !hasActiveTeam ? (
-                    <button
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        onClick={() => runAction("/api/team/request-join", { teamId })}
-                        disabled={isPending}
-                    >
-                        Request Join
-                    </button>
-                ) : null}
-                {isMember && canLeave ? (
-                    <button
-                        type="button"
-                        className="btn btn-outline btn-warning btn-sm"
-                        onClick={() => runAction("/api/team/leave", { teamId }, "/teams")}
-                        disabled={isPending}
-                    >
-                        Leave Team
-                    </button>
+                    hasPendingJoin ? (
+                        <button type="button" className="btn btn-outline btn-sm" disabled>
+                            Menunggu Persetujuan
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={async () => {
+                                const ok = await runAction("/api/team/request-join", { teamId });
+                                if (ok) {
+                                    info("Request join dikirim. Menunggu persetujuan admin team.");
+                                }
+                            }}
+                            disabled={isPending}
+                        >
+                            Request Join
+                        </button>
+                    )
                 ) : null}
             </div>
         </div>

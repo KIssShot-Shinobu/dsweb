@@ -150,3 +150,14 @@ html.dark input[type="date"],
 html.dark input[type="datetime-local"] {
   color-scheme: dark;
 }
+
+@layer components {
+  .btn,
+  .badge {
+    @apply items-center justify-center text-center;
+  }
+
+  .badge {
+    @apply leading-none;
+  }
+}

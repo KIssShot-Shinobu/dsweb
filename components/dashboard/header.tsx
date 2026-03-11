@@ -48,7 +48,7 @@ export function Header() {
                         {avatarUrl ? (
                             <img src={avatarUrl} alt={displayName} className="h-10 w-10 rounded-2xl object-cover" />
                         ) : (
-                            <div className="badge badge-primary h-10 w-10 rounded-2xl border-0 text-sm font-black text-primary-content">
+                            <div className="badge badge-primary h-10 w-10 rounded-2xl border-0 text-center text-sm font-black text-primary-content">
                                 {getInitials(displayName)}
                             </div>
                         )}

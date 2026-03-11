@@ -27,9 +27,12 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Form di dashboard `tournament`, `users`, dan `treasury` menggunakan custom dropdown konsisten (tidak lagi native select browser).
 - Style form/button dashboard dipusatkan di `components/dashboard/form-styles.ts` agar konsisten lintas halaman.
 - Aksi row list (`Edit/Hapus`) dipusatkan di `components/dashboard/row-actions.tsx` agar pola tabel konsisten.
-- Team management kini memakai model membership relasional (`TeamMember`, `TeamInvite`, `TeamJoinRequest`) dan dikelola mandiri oleh pemain melalui `/teams`, `/teams/[slug]`, dan `/teams/[slug]/manage`.
-- UI publik team (`/teams` dan `/teams/[slug]`) kini memakai layout DaisyUI yang lebih konsisten, ada search direktori, stats ringkas, badge role, empty state yang jelas, serta card responsif untuk mobile.
-- Team Manager (`/teams/[slug]/manage`) dipoles ulang: section terstruktur, modal invite, konfirmasi remove, highlight role dengan badge, dan tabel roster responsif (stack ke card di mobile).
+- Team management kini memakai model membership relasional (`TeamMember`, `TeamInvite`, `TeamJoinRequest`). Direktori publik (`/teams`, `/teams/[slug]`) hanya untuk browse + request join, sementara pengelolaan roster dilakukan di dashboard oleh captain dan pengurus team. Pembuatan team hanya dilakukan oleh admin melalui dashboard.
+- User dapat mengirim request pembuatan team dari dashboard; admin memproses approve/reject di panel `Teams`.
+- User menerima notifikasi in-app saat request team disetujui atau ditolak.
+- UI publik team (`/teams` dan `/teams/[slug]`) kini lebih ringan: fokus ke pencarian team, ringkasan role, dan aksi request join tanpa kontrol manage.
+- Slug team kini otomatis dibuat dari nama team; form create/edit tidak lagi meminta input slug manual.
+- Aksi manajemen team kini diarahkan dari dashboard; halaman publik tidak lagi menampilkan tombol manage agar lebih ringan.
 - Captain bisa menghapus team dari halaman manage ketika roster sudah kosong (hanya captain tersisa).
 - Halaman `Users` (`/dashboard/users`) tetap fokus ke moderasi global akun, role komunitas, dan status user. Admin tidak lagi assign/unassign roster team dari dashboard users.
 - Treasury transaksi + analytics ringkas dengan filter server-side; halaman treasury sekarang default ke semua periode agar sinkron dengan total data dashboard.
@@ -120,6 +123,7 @@ Variabel penting:
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`: kredensial Google OAuth untuk Auth.js.
 - `DATA_ENCRYPTION_KEY`: kunci enkripsi data sensitif at-rest (`phoneWhatsapp`, `accountNumber`, `twoFactorSecret`).
 - `NEXT_PUBLIC_APP_URL`: base URL app (dipakai URL hasil upload).
+- `NEXT_PUBLIC_SOCIAL_DISCORD` / `NEXT_PUBLIC_SOCIAL_YOUTUBE` / `NEXT_PUBLIC_SOCIAL_INSTAGRAM`: link sosial publik untuk footer + landing page (opsional).
 - `UPLOAD_DIR`: lokasi simpan file upload permanen (default `./public/uploads`). `APP_ROOT` ditetapkan otomatis oleh `start.js` agar runtime build lokal dan standalone memakai root upload yang sama. Asset `/uploads/*` juga dilayani oleh route server agar gambar tetap tampil meski static copy berbeda antar runtime.
 - `MAX_FILE_SIZE`: batas upload byte (default 5MB).
 - `REGION_CACHE_DIR`: lokasi cache lokal dataset wilayah Indonesia (default `./data/regions-cache`).
@@ -173,6 +177,8 @@ Lalu jalankan SQL manual:
 
 1. `prisma/migrations_manual/20260310_team_membership_system.sql`
 2. Jika perlu rollback: `prisma/migrations_manual/20260310_team_membership_system.rollback.sql`
+3. `prisma/migrations_manual/20260311_team_creation_requests.sql`
+4. Jika perlu rollback: `prisma/migrations_manual/20260311_team_creation_requests.rollback.sql`
 
 Catatan:
 
@@ -274,17 +280,19 @@ Lainnya:
 - `GET /api/users/:id`
 - `PUT /api/users/:id/status` (status, role)
 - `GET /api/teams`, `POST /api/teams`, `GET/PUT/DELETE /api/teams/:id`, `POST/DELETE /api/teams/:id/roster`
+- `GET /api/team-requests` (admin), `POST /api/team-requests` (user request), `POST /api/team-requests/:id/approve`, `POST /api/team-requests/:id/reject`
 - `GET /api/notifications`
 - `GET /api/notifications/unread-count`
 - `POST /api/notifications/read`
 - `POST /api/notifications/read-all`
 - `DELETE /api/notifications/:id`
 - `GET /api/notifications/stream` (SSE realtime)
-- `POST /api/team/create`
 - `POST /api/team/invite`
 - `POST /api/team/invite/accept`
 - `POST /api/team/invite/decline`
 - `POST /api/team/request-join`
+- `POST /api/team/request-join/accept`
+- `POST /api/team/request-join/reject`
 - `POST /api/team/member/remove`
 - `POST /api/team/member/promote`
 - `POST /api/team/member/transfer-captain`
@@ -306,6 +314,7 @@ Lainnya:
 ## Role Akses (UI Dashboard)
 
 - `USER/MEMBER`: profile dan menu personal.
+- `MEMBER+` dengan role team pengurus: akses `Team Saya` untuk mengelola roster/invite/role team.
 - `OFFICER`: fitur guild level menengah, termasuk melihat roster team, detail team, dan users.
 - `ADMIN/FOUNDER`: akses penuh dashboard operasional (users, teams, tournaments, treasury, audit).
 
@@ -317,7 +326,7 @@ Catatan tambahan: pendaftaran tournament publik memakai status akun `ACTIVE`; ro
 Untuk endpoint penting (terutama operasi write `POST/PUT/DELETE`), audit log wajib ditulis.
 
 - Perubahan status user dan role tetap tercatat (`USER_APPROVED`, `USER_BANNED`, `ROLE_CHANGED`).
-- Flow team self-managed juga tercatat (`TEAM_CREATED`, `TEAM_UPDATED`, `TEAM_INVITED`, `TEAM_INVITE_ACCEPTED`, `TEAM_INVITE_DECLINED`, `TEAM_JOIN_REQUESTED`, `TEAM_MEMBER_REMOVED`, `TEAM_ROLE_CHANGED`, `TEAM_CAPTAIN_TRANSFERRED`, `TEAM_LEFT`).
+- Flow team self-managed juga tercatat (`TEAM_CREATED`, `TEAM_UPDATED`, `TEAM_INVITED`, `TEAM_INVITE_ACCEPTED`, `TEAM_INVITE_DECLINED`, `TEAM_JOIN_REQUESTED`, `TEAM_JOIN_REQUEST_ACCEPTED`, `TEAM_JOIN_REQUEST_REJECTED`, `TEAM_MEMBER_REMOVED`, `TEAM_ROLE_CHANGED`, `TEAM_CAPTAIN_TRANSFERRED`, `TEAM_LEFT`).
 - Treasury: add/update/delete sudah tercatat (`TREASURY_ADDED`, `TREASURY_UPDATED`, `TREASURY_DELETED`).
 - Tournament: create/update/delete/register sudah tercatat.
 - Auth/Profile/Upload: event penting sudah tercatat.

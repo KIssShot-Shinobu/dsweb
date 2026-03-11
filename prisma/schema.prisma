@@ -79,6 +79,12 @@ enum TeamJoinRequestStatus {
   DECLINED
 }
 
+enum TeamCreationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum NotificationType {
   TEAM_INVITE
   TEAM_JOIN_REQUEST
@@ -187,6 +193,8 @@ model User {
   receivedTeamInvites TeamInvite[] @relation("TeamInviteTargetUser")
   sentTeamInvites TeamInvite[] @relation("TeamInviteSender")
   teamJoinRequests TeamJoinRequest[]
+  teamCreationRequests TeamCreationRequest[] @relation("TeamCreationRequester")
+  reviewedTeamCreationRequests TeamCreationRequest[] @relation("TeamCreationReviewer")
   notifications Notification[]
   notificationPreference NotificationPreference?
   gameProfiles    GameProfile[]
@@ -280,6 +288,26 @@ model TeamJoinRequest {
   @@index([teamId, status])
   @@index([userId, status])
   @@unique([teamId, userId, status])
+}
+
+model TeamCreationRequest {
+  id              String                    @id @default(cuid())
+  requesterId     String
+  reviewerId      String?
+  teamName        String                    @db.VarChar(191)
+  description     String?                   @db.VarChar(500)
+  logoUrl         String?
+  status          TeamCreationRequestStatus @default(PENDING)
+  rejectionReason String?                   @db.VarChar(500)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  reviewedAt      DateTime?
+
+  requester User @relation("TeamCreationRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  reviewer  User? @relation("TeamCreationReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([requesterId, status])
 }
 
 model Badge {
