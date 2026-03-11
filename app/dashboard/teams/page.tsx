@@ -303,18 +303,18 @@ export default function TeamsPage() {
             {modalOpen ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={resetModal} />
-                    <div className="relative w-full max-w-2xl rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
+                    <div className="relative w-full max-w-xl rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
                         <div className="space-y-1">
                             <h2 className="text-xl font-bold text-base-content">
-                                {editingTeam ? "Edit Team" : "Buat Team Baru"}
+                                {editingTeam ? "Edit Team" : "Buat Team"}
                             </h2>
-                            <p className="text-sm text-base-content/60">
-                                Team hanya memetakan roster Duel Standby. Role komunitas MEMBER tidak otomatis berarti sudah punya team.
+                            <p className="text-xs text-base-content/55">
+                                Isi data inti team untuk kebutuhan roster.
                             </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-3">
                                 <label className="block">
                                     <span className={labelCls}>Nama Team</span>
                                     <input
@@ -326,7 +326,7 @@ export default function TeamsPage() {
                                     />
                                 </label>
                                 <label className="block">
-                                    <span className={labelCls}>Slug Team</span>
+                                    <span className={labelCls}>Slug</span>
                                     <input
                                         value={form.slug}
                                         onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value.toLowerCase().replace(/\s+/g, "-") }))}
@@ -338,19 +338,19 @@ export default function TeamsPage() {
                             </div>
 
                             <label className="block">
-                                <span className={labelCls}>Deskripsi</span>
+                                <span className={labelCls}>Deskripsi (Opsional)</span>
                                 <textarea
                                     value={form.description}
                                     onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                                    rows={4}
+                                    rows={3}
                                     className={`${inputCls} resize-none`}
-                                    placeholder="Ringkasan singkat fokus roster atau identitas team."
+                                    placeholder="Ringkas dan jelas."
                                 />
                             </label>
 
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_160px]">
                                 <label className="block">
-                                    <span className={labelCls}>Logo Lokal</span>
+                                    <span className={labelCls}>Logo (Opsional)</span>
                                     <input
                                         value={form.logoUrl}
                                         onChange={(event) => setForm((current) => ({ ...current, logoUrl: event.target.value }))}
@@ -359,7 +359,7 @@ export default function TeamsPage() {
                                     />
                                 </label>
                                 <label className="block">
-                                    <span className={labelCls}>Status Team</span>
+                                    <span className={labelCls}>Status</span>
                                     <FormSelect
                                         value={form.isActive ? "ACTIVE" : "INACTIVE"}
                                         onChange={(value) => setForm((current) => ({ ...current, isActive: value === "ACTIVE" }))}
@@ -372,7 +372,7 @@ export default function TeamsPage() {
                             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                                 <button type="button" onClick={resetModal} className={btnOutline}>Batal</button>
                                 <button type="submit" className={btnPrimary} disabled={saving}>
-                                    {saving ? "Menyimpan..." : editingTeam ? "Simpan Perubahan" : "Buat Team"}
+                                    {saving ? "Menyimpan..." : editingTeam ? "Simpan" : "Buat Team"}
                                 </button>
                             </div>
                         </form>

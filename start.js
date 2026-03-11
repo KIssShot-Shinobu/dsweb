@@ -6,6 +6,9 @@ const fs = require("fs");
 const path = require("path");
 
 process.env.APP_ROOT = process.env.APP_ROOT || __dirname;
+const APP_ROOT = process.env.APP_ROOT;
+const DEFAULT_PORT = "5116";
+const DEFAULT_HOST = "0.0.0.0";
 
 function getRequiredDatabaseUrl() {
     const databaseUrl = process.env.DATABASE_URL?.trim();
@@ -27,28 +30,30 @@ function getRequiredDatabaseUrl() {
     return databaseUrl;
 }
 
-function run(cmd) {
+function run(cmd, options = {}) {
     console.log(`\n=== ${cmd} ===`);
-    execSync(cmd, { stdio: "inherit" });
+    execSync(cmd, { stdio: "inherit", ...options });
+}
+
+function ensureDir(dir) {
+    fs.mkdirSync(dir, { recursive: true });
 }
 
 function copyDir(src, dest) {
     if (!fs.existsSync(src)) return;
-    fs.mkdirSync(dest, { recursive: true });
-    for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-        const srcPath = path.join(src, entry.name);
-        const destPath = path.join(dest, entry.name);
-        if (entry.isDirectory()) {
-            copyDir(srcPath, destPath);
-        } else {
-            fs.copyFileSync(srcPath, destPath);
-        }
-    }
+    ensureDir(dest);
+    fs.cpSync(src, dest, { recursive: true });
+}
+
+function copyFileIfExists(src, dest) {
+    if (!fs.existsSync(src)) return;
+    ensureDir(path.dirname(dest));
+    fs.copyFileSync(src, dest);
 }
 
 function startDevServer() {
-    process.env.PORT = process.env.PORT || "5116";
-    process.env.HOSTNAME = process.env.HOSTNAME || "0.0.0.0";
+    process.env.PORT = process.env.PORT || DEFAULT_PORT;
+    process.env.HOSTNAME = process.env.HOSTNAME || DEFAULT_HOST;
     console.warn("\nBuild fallback active: starting Next.js dev server because standalone build is blocked on this Windows environment.");
     run(`npx next dev -p ${process.env.PORT} -H ${process.env.HOSTNAME}`);
 }
@@ -81,24 +86,21 @@ try {
 }
 
 console.log("\n=== Copying static files ===");
-copyDir(".next/static", ".next/standalone/.next/static");
-copyDir("public", ".next/standalone/public");
+copyDir(path.join(APP_ROOT, ".next", "static"), path.join(APP_ROOT, ".next", "standalone", ".next", "static"));
+copyDir(path.join(APP_ROOT, "public"), path.join(APP_ROOT, ".next", "standalone", "public"));
 
 console.log("\n=== Copying database files ===");
-if (fs.existsSync("prisma")) {
-    copyDir("prisma", ".next/standalone/prisma");
+if (fs.existsSync(path.join(APP_ROOT, "prisma"))) {
+    copyDir(path.join(APP_ROOT, "prisma"), path.join(APP_ROOT, ".next", "standalone", "prisma"));
     console.log("Copied prisma/ to standalone");
 }
-if (fs.existsSync(".env")) {
-    fs.copyFileSync(".env", ".next/standalone/.env");
-    console.log("Copied .env to standalone");
-}
-if (fs.existsSync("public/uploads")) {
-    copyDir("public/uploads", ".next/standalone/public/uploads");
+copyFileIfExists(path.join(APP_ROOT, ".env"), path.join(APP_ROOT, ".next", "standalone", ".env"));
+if (fs.existsSync(path.join(APP_ROOT, "public", "uploads"))) {
+    copyDir(path.join(APP_ROOT, "public", "uploads"), path.join(APP_ROOT, ".next", "standalone", "public", "uploads"));
     console.log("Copied public/uploads/ to standalone");
 }
 
 console.log("\n=== Starting server ===");
-process.env.PORT = process.env.PORT || "5116";
-process.env.HOSTNAME = "0.0.0.0";
-require("./.next/standalone/server.js");
+process.env.PORT = process.env.PORT || DEFAULT_PORT;
+process.env.HOSTNAME = DEFAULT_HOST;
+require(path.join(APP_ROOT, ".next", "standalone", "server.js"));
