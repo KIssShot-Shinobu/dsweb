@@ -27,7 +27,7 @@ const footerLinks = {
 export function Footer() {
     return (
         <footer className="border-t border-base-300 bg-base-100/90">
-            <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
+            <div className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
                 <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-5 lg:gap-12">
                     <div className="lg:col-span-2">
                         <div className="mb-4 flex items-center gap-2">
@@ -79,7 +79,7 @@ export function Footer() {
                 </div>
             </div>
             <div className="border-t border-base-300">
-                <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-center sm:px-6 md:flex-row md:text-left lg:px-8">
+                <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-4 px-4 py-6 text-center sm:px-6 md:flex-row md:text-left lg:px-8">
                     <p className="text-sm text-base-content/55">&copy; {new Date().getFullYear()} Duel Standby. Seluruh hak cipta dilindungi.</p>
                     <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:justify-end">
                         {footerLinks.legal.map((link) => <Link key={link.name} href={link.href} className="link-hover link text-sm text-base-content/55">{link.name}</Link>)}

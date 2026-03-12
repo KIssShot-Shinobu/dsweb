@@ -19,8 +19,10 @@ export const TEAM_ROLE_VALUES = ["CAPTAIN", "VICE_CAPTAIN", "PLAYER", "COACH", "
 export const TEAM_INVITE_STATUS_VALUES = ["PENDING", "ACCEPTED", "DECLINED"] as const;
 export const TEAM_REQUEST_STATUS_VALUES = ["PENDING", "APPROVED", "REJECTED"] as const;
 export const TOURNAMENT_STATUS_VALUES = ["OPEN", "ONGOING", "COMPLETED", "CANCELLED"] as const;
+export const TOURNAMENT_STRUCTURE_VALUES = ["SINGLE_ELIM", "DOUBLE_ELIM", "SWISS"] as const;
 export const TOURNAMENT_FORMAT_VALUES = ["BO1", "BO3", "BO5"] as const;
 export const GAME_TYPE_VALUES = ["DUEL_LINKS", "MASTER_DUEL"] as const;
+export const MATCH_STATUS_VALUES = ["PENDING", "READY", "ONGOING", "RESULT_SUBMITTED", "CONFIRMED", "DISPUTED", "COMPLETED"] as const;
 
 export const registerSchema = z
     .object({
@@ -110,6 +112,15 @@ export const teamRosterAssignmentSchema = z.object({
     userId: z.string().cuid("User ID tidak valid"),
 });
 
+export const teamRosterAdminAssignSchema = z.object({
+    teamId: z.string().cuid("Team ID tidak valid"),
+    userId: z.string().cuid("User ID tidak valid"),
+    role: z.enum(TEAM_ROLE_VALUES).optional(),
+}).refine((data) => data.role !== "CAPTAIN", {
+    message: "Gunakan transfer captain untuk menentukan captain",
+    path: ["role"],
+});
+
 export const usersQuerySchema = z.object({
     status: z.enum(["ALL", ...USER_STATUS_VALUES] as const).optional(),
     role: z.enum(["ALL", ...USER_ROLE_VALUES] as const).optional(),
@@ -128,6 +139,53 @@ export const notificationQuerySchema = z.object({
     page: z.coerce.number().int().min(1).optional(),
     limit: z.coerce.number().int().min(1).max(50).optional(),
 });
+
+export const tournamentParticipantsQuerySchema = z.object({
+    search: z.string().trim().max(191).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+export const tournamentParticipantUpdateSchema = z.object({
+    gameId: z
+        .string()
+        .trim()
+        .min(2, "In-game name minimal 2 karakter")
+        .max(64, "In-game name terlalu panjang")
+        .regex(SAFE_TEXT_REGEX, "In-game name mengandung karakter yang tidak valid"),
+});
+
+export const tournamentMatchesQuerySchema = z.object({
+    status: z.enum(["ALL", ...MATCH_STATUS_VALUES] as const).optional(),
+    round: z.coerce.number().int().min(1).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+const checkInAtSchema = z
+    .string()
+    .trim()
+    .refine((value) => value === "" || !Number.isNaN(Date.parse(value)), "Tanggal check-in tidak valid");
+
+export const tournamentCheckInActionSchema = z
+    .object({
+        action: z.enum(["OPEN", "CLOSE"]).optional(),
+        checkInAt: checkInAtSchema.optional(),
+    })
+    .refine((value) => value.action || value.checkInAt !== undefined, {
+        message: "Aksi atau jadwal check-in wajib diisi",
+    });
+
+export const tournamentAnnouncementSchema = z.object({
+    title: z.string().trim().min(3, "Judul minimal 3 karakter").max(191, "Judul terlalu panjang"),
+    content: z.string().trim().min(5, "Isi pengumuman terlalu singkat").max(2000, "Isi pengumuman terlalu panjang"),
+    pinned: z.boolean().optional(),
+});
+
+export const tournamentAnnouncementUpdateSchema = tournamentAnnouncementSchema.partial().refine(
+    (value) => Object.keys(value).length > 0,
+    "Minimal satu field harus diubah"
+);
 
 export const notificationReadSchema = z.object({
     id: z.string().cuid("Notification ID tidak valid"),
@@ -208,6 +266,7 @@ export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
 export type ApproveInput = z.infer<typeof approveSchema>;
 export type TeamInput = z.infer<typeof teamSchema>;
 export type TeamRosterAssignmentInput = z.infer<typeof teamRosterAssignmentSchema>;
+export type TeamRosterAdminAssignInput = z.infer<typeof teamRosterAdminAssignSchema>;
 export type UsersQueryInput = z.infer<typeof usersQuerySchema>;
 export type TeamsQueryInput = z.infer<typeof teamsQuerySchema>;
 export type TeamCreateInput = z.infer<typeof teamCreateSchema>;
@@ -281,6 +340,7 @@ export const tournamentSchema = z.object({
     description: z.string().trim().max(1000, "Deskripsi terlalu panjang").optional().or(z.literal("")),
     format: z.enum(TOURNAMENT_FORMAT_VALUES, { message: "Format tidak valid" }),
     gameType: z.enum(GAME_TYPE_VALUES, { message: "Pilih game" }),
+    structure: z.enum(TOURNAMENT_STRUCTURE_VALUES).optional(),
     status: z.enum(TOURNAMENT_STATUS_VALUES).optional(),
     entryFee: z.coerce.number().min(0, "Biaya masuk tidak boleh negatif"),
     prizePool: z.coerce.number().min(0, "Prize pool tidak boleh negatif"),
@@ -291,6 +351,24 @@ export const tournamentSchema = z.object({
 export type TournamentInput = z.infer<typeof tournamentSchema>;
 export const tournamentUpdateSchema = tournamentSchema.partial();
 export type TournamentUpdateInput = z.infer<typeof tournamentUpdateSchema>;
+
+export const matchReportSchema = z.object({
+    scoreA: z.coerce.number().int().min(0).max(2),
+    scoreB: z.coerce.number().int().min(0).max(2),
+    winnerId: z.string().cuid("Winner ID tidak valid"),
+});
+
+export const matchDisputeSchema = z.object({
+    reason: z.string().trim().max(500, "Alasan terlalu panjang").optional().or(z.literal("")),
+});
+
+export const matchAdminResolveSchema = matchReportSchema.extend({
+    reason: z.string().trim().max(500, "Alasan terlalu panjang").optional().or(z.literal("")),
+});
+
+export type MatchReportInput = z.infer<typeof matchReportSchema>;
+export type MatchDisputeInput = z.infer<typeof matchDisputeSchema>;
+export type MatchAdminResolveInput = z.infer<typeof matchAdminResolveSchema>;
 
 
 

@@ -51,6 +51,12 @@ const ACTION_OPTIONS = [
     { value: "TREASURY_DELETED", label: "Treasury Dihapus" },
 ];
 
+const PAGE_SIZE_OPTIONS = [
+    { value: "10", label: "10 / halaman" },
+    { value: "20", label: "20 / halaman" },
+    { value: "50", label: "50 / halaman" },
+];
+
 function useAuditLogs(
     page: number,
     limit: number,
@@ -143,7 +149,7 @@ const getActionBadgeColor = (action: string) => {
 
 export default function AuditLogsPage() {
     const [page, setPage] = useState(1);
-    const limit = 20;
+    const [limit, setLimit] = useState("20");
     const [actionFilter, setActionFilter] = useState("ALL");
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
@@ -152,8 +158,9 @@ export default function AuditLogsPage() {
     const [appliedDateRange, setAppliedDateRange] = useState({ start: "", end: "" });
     const [exportMessage, setExportMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
-    const { logs, total, loading } = useAuditLogs(page, limit, actionFilter, search, appliedDateRange);
-    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const limitValue = Math.max(1, Number(limit) || 20);
+    const { logs, total, loading } = useAuditLogs(page, limitValue, actionFilter, search, appliedDateRange);
+    const totalPages = Math.max(1, Math.ceil(total / limitValue));
 
     const summary = useMemo(
         () => ({
@@ -238,7 +245,7 @@ export default function AuditLogsPage() {
 
                 <DashboardPanel title="Filter Audit" description="Cari user, target, atau rentang tanggal agar investigasi lebih cepat.">
                     <div className={filterBarCls}>
-                        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[220px_minmax(0,1fr)_170px_170px_auto]">
+                        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[220px_minmax(0,1fr)_160px_160px_150px_auto]">
                             <FormSelect value={actionFilter} onChange={(value) => { setActionFilter(value); setPage(1); }} options={ACTION_OPTIONS} />
                             <input
                                 type="text"
@@ -250,6 +257,14 @@ export default function AuditLogsPage() {
                             />
                             <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className={searchInputCls} />
                             <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className={searchInputCls} />
+                            <FormSelect
+                                value={limit}
+                                onChange={(value) => {
+                                    setLimit(value);
+                                    setPage(1);
+                                }}
+                                options={PAGE_SIZE_OPTIONS}
+                            />
                             <button onClick={applyFilters} className={btnPrimary}>
                                 Terapkan
                             </button>
@@ -309,7 +324,7 @@ export default function AuditLogsPage() {
 
                     {!loading && logs.length > 0 ? (
                         <div className="mt-5">
-                            <Pagination page={page} totalPages={totalPages} total={total} perPage={limit} onPage={setPage} />
+                            <Pagination page={page} totalPages={totalPages} total={total} perPage={limitValue} onPage={setPage} />
                         </div>
                     ) : null}
                 </DashboardPanel>

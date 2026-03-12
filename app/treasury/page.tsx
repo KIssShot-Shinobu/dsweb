@@ -107,7 +107,7 @@ export default function PublicTreasuryPage() {
         <main className="min-h-screen bg-transparent text-base-content">
             <Navbar />
             <section className="border-b border-base-300 pt-28">
-                <div className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-[1400px] px-4 pb-14 sm:px-6 lg:px-8">
                     <p className="mb-4 text-sm font-bold uppercase tracking-[0.34em] text-primary">Transparansi Treasury</p>
                     <h1 className="max-w-3xl text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
                         Kas komunitas terbuka agar setiap member tahu arus keuangan guild.
@@ -118,7 +118,7 @@ export default function PublicTreasuryPage() {
                 </div>
             </section>
 
-            <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+            <section className="mx-auto max-w-[1400px] px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
                 <div className="stats stats-vertical w-full border border-base-300 bg-base-100/80 shadow-sm sm:stats-horizontal">
                     <div className="stat">
                         <div className="stat-title">Saldo Bersih</div>

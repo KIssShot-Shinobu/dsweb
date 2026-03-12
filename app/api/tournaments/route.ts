@@ -107,10 +107,12 @@ export async function POST(request: NextRequest) {
                 format: data.format,
                 gameType: data.gameType,
                 status: data.status || "OPEN",
+                structure: data.structure || "SINGLE_ELIM",
                 entryFee: data.entryFee,
                 prizePool: data.prizePool,
                 startDate: new Date(data.startDate),
                 image: data.image || null,
+                createdById: currentUser.id,
             },
         });
 

@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { normalizeAssetUrl } from "@/lib/asset-url";
-import { btnDanger, btnOutline, filterBarCls, searchInputCls } from "@/components/dashboard/form-styles";
+import { btnDanger, btnOutline, btnPrimary, filterBarCls, inputCls, labelCls, searchInputCls } from "@/components/dashboard/form-styles";
 import { FormSelect } from "@/components/dashboard/form-select";
 import {
     DashboardEmptyState,
@@ -13,6 +13,7 @@ import {
     DashboardPageShell,
     DashboardPanel,
 } from "@/components/dashboard/page-shell";
+import { Modal } from "@/components/dashboard/modal";
 
 type TeamMember = {
     id: string;
@@ -37,6 +38,16 @@ type TeamDetail = {
     updatedAt: string;
     memberCount: number;
     members: TeamMember[];
+};
+
+type CandidateUser = {
+    id: string;
+    fullName: string;
+    email: string;
+    role: string;
+    status: string;
+    city: string | null;
+    avatarUrl: string | null;
 };
 
 type SelectOption = {
@@ -84,6 +95,14 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
     const [rosterRole, setRosterRole] = useState("ALL");
     const [pendingUserId, setPendingUserId] = useState<string | null>(null);
     const [memberToUnassign, setMemberToUnassign] = useState<TeamMember | null>(null);
+    const [assignOpen, setAssignOpen] = useState(false);
+    const [assignSearch, setAssignSearch] = useState("");
+    const [assignRole, setAssignRole] = useState("PLAYER");
+    const [assignCandidates, setAssignCandidates] = useState<CandidateUser[]>([]);
+    const [assignLoading, setAssignLoading] = useState(false);
+    const [assignError, setAssignError] = useState<string | null>(null);
+    const [assigningUserId, setAssigningUserId] = useState<string | null>(null);
+    const assignSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isAdmin = ["ADMIN", "FOUNDER"].includes(user?.role || "");
 
@@ -114,6 +133,48 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
         loadTeam();
     }, [loadTeam]);
 
+    const fetchCandidates = useCallback(async (query: string) => {
+        setAssignLoading(true);
+        setAssignError(null);
+
+        try {
+            const params = new URLSearchParams({
+                status: "ACTIVE",
+                teamId: "NO_TEAM",
+                page: "1",
+                perPage: "8",
+            });
+            if (query.trim()) {
+                params.set("search", query.trim());
+            }
+
+            const response = await fetch(`/api/users?${params.toString()}`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                setAssignError(data.message || "Gagal memuat user.");
+                setAssignCandidates([]);
+                return;
+            }
+
+            setAssignCandidates(data.data || []);
+        } catch {
+            setAssignError("Gagal memuat user.");
+            setAssignCandidates([]);
+        } finally {
+            setAssignLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!assignOpen) return;
+        fetchCandidates(assignSearch);
+    }, [assignOpen, fetchCandidates]);
+
+    useEffect(() => () => {
+        if (assignSearchTimeoutRef.current) clearTimeout(assignSearchTimeoutRef.current);
+    }, []);
+
     const handleUnassign = async (userId: string) => {
         setPendingUserId(userId);
         setMessage(null);
@@ -142,6 +203,35 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
         }
     };
 
+    const handleAssign = async (userId: string) => {
+        setAssigningUserId(userId);
+        setAssignError(null);
+        setMessage(null);
+        setError(null);
+
+        try {
+            const response = await fetch(`/api/teams/${teamId}/roster`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId, role: assignRole }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                setAssignError(data.message || "Gagal menambah roster.");
+                return;
+            }
+
+            setMessage(data.message || "Roster berhasil ditambahkan.");
+            await loadTeam();
+            await fetchCandidates(assignSearch);
+        } catch {
+            setAssignError("Gagal menambah roster.");
+        } finally {
+            setAssigningUserId(null);
+        }
+    };
+
     const rosterRoleOptions = useMemo(() => {
         if (!team) return [ALL_ROLE_OPTION];
         return buildRoleOptions(Array.from(new Set(team.members.map((member) => member.role))));
@@ -164,6 +254,23 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
     }, [team, rosterRole, rosterSearch]);
 
     const hasRosterFilters = Boolean(rosterSearch.trim()) || rosterRole !== "ALL";
+    const assignRoleOptions: SelectOption[] = [
+        { value: "PLAYER", label: "Player" },
+        { value: "VICE_CAPTAIN", label: "Vice Captain" },
+        { value: "MANAGER", label: "Manager" },
+        { value: "COACH", label: "Coach" },
+    ];
+
+    const closeAssignModal = () => {
+        setAssignOpen(false);
+        setAssignSearch("");
+        setAssignRole("PLAYER");
+        setAssignCandidates([]);
+        setAssignError(null);
+        if (assignSearchTimeoutRef.current) {
+            clearTimeout(assignSearchTimeoutRef.current);
+        }
+    };
 
     return (
         <DashboardPageShell>
@@ -272,6 +379,11 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                 <DashboardPanel
                     title="Roster Aktif"
                     description="Gunakan panel ini untuk meninjau semua anggota yang saat ini terhubung ke team ini."
+                    action={isAdmin ? (
+                        <button className={btnPrimary} onClick={() => setAssignOpen(true)}>
+                            Tambah Roster
+                        </button>
+                    ) : null}
                 >
                     <div className={filterBarCls}>
                         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
@@ -371,6 +483,87 @@ export function TeamDetailClient({ teamId }: { teamId: string }) {
                 </DashboardPanel>
 
             </div>
+
+            <Modal open={assignOpen} onClose={closeAssignModal} title="Tambah Roster" size="md">
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
+                        <div>
+                            <label className={labelCls}>Cari User</label>
+                            <input
+                                type="text"
+                                value={assignSearch}
+                                onChange={(event) => {
+                                    const nextValue = event.target.value;
+                                    setAssignSearch(nextValue);
+                                    if (assignSearchTimeoutRef.current) clearTimeout(assignSearchTimeoutRef.current);
+                                    assignSearchTimeoutRef.current = setTimeout(() => {
+                                        fetchCandidates(nextValue);
+                                    }, 250);
+                                }}
+                                placeholder="Cari nama atau email..."
+                                className={inputCls}
+                            />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Role</label>
+                            <FormSelect value={assignRole} onChange={setAssignRole} options={assignRoleOptions} />
+                        </div>
+                    </div>
+
+                    {assignError ? (
+                        <div className="rounded-box border border-error/20 bg-error/10 px-3 py-2 text-sm text-error">
+                            {assignError}
+                        </div>
+                    ) : null}
+
+                    {assignLoading ? (
+                        <div className="space-y-2">
+                            {[1, 2, 3].map((item) => (
+                                <div key={item} className="h-16 animate-pulse rounded-box border border-base-300 bg-base-200/50" />
+                            ))}
+                        </div>
+                    ) : assignCandidates.length === 0 ? (
+                        <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 px-4 py-6 text-center text-sm text-base-content/60">
+                            Tidak ada user aktif yang bisa ditambahkan.
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {assignCandidates.map((candidate) => (
+                                <div key={candidate.id} className="flex items-center justify-between gap-3 rounded-box border border-base-300 bg-base-200/40 px-3 py-2">
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        {normalizeAssetUrl(candidate.avatarUrl) ? (
+                                            <Image
+                                                unoptimized
+                                                src={normalizeAssetUrl(candidate.avatarUrl) || undefined}
+                                                alt={candidate.fullName}
+                                                width={40}
+                                                height={40}
+                                                className="h-10 w-10 rounded-2xl border border-base-300 object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-xs font-bold text-primary">
+                                                {getInitials(candidate.fullName)}
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <div className="truncate text-sm font-semibold text-base-content">{candidate.fullName}</div>
+                                            <div className="truncate text-xs text-base-content/60">{candidate.email}</div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAssign(candidate.id)}
+                                        className={btnOutline}
+                                        disabled={assigningUserId === candidate.id}
+                                    >
+                                        {assigningUserId === candidate.id ? "Menambah..." : "Tambah"}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </Modal>
 
             {memberToUnassign ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

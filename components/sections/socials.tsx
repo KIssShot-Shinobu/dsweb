@@ -22,7 +22,7 @@ export function Socials() {
     return (
         <section id="socials" className="relative py-20 sm:py-24">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,201,22,0.12),transparent_24%)]" />
-            <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
                 <motion.h2 initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-10 text-center text-2xl font-bold tracking-tight text-base-content sm:mb-16 sm:text-3xl md:text-5xl">
                     Ikuti semua update Duel Standby
                 </motion.h2>

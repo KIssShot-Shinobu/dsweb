@@ -124,7 +124,7 @@ export function Navbar() {
 
     return (
         <nav className="navbar fixed left-0 right-0 top-0 z-50 border-b border-base-300 bg-base-100/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
-            <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
+            <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between">
                 <div className="flex items-center gap-3">
                     <Link href="/" className="flex items-center gap-2">
                         <div className="badge badge-primary h-11 w-11 rounded-2xl border-0 text-center shadow-lg">

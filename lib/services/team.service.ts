@@ -28,6 +28,7 @@ import type {
     TeamMemberRemoveInput,
     TeamTransferCaptainInput,
     TeamUpdateInput,
+    TeamRosterAdminAssignInput,
 } from "@/lib/validators";
 
 type TeamServiceDeps = {
@@ -555,6 +556,114 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
             });
 
             return rejectedRequest;
+        },
+
+        async assignMemberAsAdmin(actorUserId: string, input: TeamRosterAdminAssignInput) {
+            const team = ensureTeamExists(await repository.findTeamById(input.teamId));
+            const role = input.role ?? "PLAYER";
+
+            const [targetUser, activeMembership, existingMembership, pendingInvite, pendingJoinRequest] = await Promise.all([
+                deps.prisma.user.findUnique({
+                    where: { id: input.userId },
+                    select: { id: true, fullName: true, status: true },
+                }),
+                repository.findActiveMembershipByUserId(input.userId),
+                repository.findMembershipRecord(input.teamId, input.userId),
+                repository.findPendingInvite(input.teamId, input.userId),
+                repository.findPendingJoinRequest(input.teamId, input.userId),
+            ]);
+
+            if (!targetUser) {
+                throw new TeamServiceError(404, "User target tidak ditemukan");
+            }
+
+            if (targetUser.status !== "ACTIVE") {
+                throw new TeamServiceError(400, "Hanya user aktif yang bisa ditambahkan ke roster");
+            }
+
+            if (activeMembership) {
+                if (activeMembership.teamId === input.teamId) {
+                    throw new TeamServiceError(409, "User sudah ada di roster team ini");
+                }
+                throw new TeamServiceError(409, "User sudah memiliki team aktif");
+            }
+
+            const result = await deps.prisma.$transaction(async (tx) => {
+                const txRepository = createTeamRepository(tx);
+
+                const membership = existingMembership
+                    ? await txRepository.reactivateMembership(existingMembership.id, role)
+                    : await txRepository.createMembership({
+                          teamId: input.teamId,
+                          userId: input.userId,
+                          role,
+                      });
+
+                if (pendingInvite) {
+                    await txRepository.updateInviteStatus(pendingInvite.id, "ACCEPTED");
+                }
+
+                if (pendingJoinRequest) {
+                    await txRepository.updateJoinRequestStatus(pendingJoinRequest.id, "ACCEPTED");
+                }
+
+                const refreshedTeam = await txRepository.findTeamById(input.teamId);
+                return { membership, team: refreshedTeam };
+            });
+
+            await deps.audit({
+                userId: actorUserId,
+                action: AUDIT_ACTIONS.TEAM_ASSIGNED,
+                targetId: result.membership.id,
+                targetType: "TeamMember",
+                details: {
+                    teamId: input.teamId,
+                    userId: input.userId,
+                    role,
+                },
+            });
+
+            await notifications.createNotification({
+                userId: input.userId,
+                type: "SYSTEM_ALERT",
+                title: "Roster Team Diperbarui",
+                message: `Anda telah ditambahkan ke roster ${team.name}.`,
+                link: team.slug ? `/teams/${team.slug}` : "/dashboard/team",
+            });
+
+            return result.membership;
+        },
+
+        async unassignMemberAsAdmin(actorUserId: string, input: { teamId: string; userId: string }) {
+            const team = ensureTeamExists(await repository.findTeamById(input.teamId));
+            const membership = await repository.findActiveMembershipByTeamAndUser(input.teamId, input.userId);
+
+            if (!membership) {
+                throw new TeamServiceError(404, "Member roster tidak ditemukan");
+            }
+
+            const removedMembership = await repository.markMembershipLeft(membership.id);
+
+            await deps.audit({
+                userId: actorUserId,
+                action: AUDIT_ACTIONS.TEAM_UNASSIGNED,
+                targetId: removedMembership.id,
+                targetType: "TeamMember",
+                details: {
+                    teamId: input.teamId,
+                    userId: input.userId,
+                },
+            });
+
+            await notifications.createNotification({
+                userId: input.userId,
+                type: "TEAM_MEMBER_REMOVED",
+                title: "Dilepas dari Roster",
+                message: `Anda telah dilepas dari roster ${team.name}.`,
+                link: team.slug ? `/teams/${team.slug}` : "/teams",
+            });
+
+            return removedMembership;
         },
 
         async removeMember(actorUserId: string, input: TeamMemberRemoveInput) {

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/ui/footer";
 import { Navbar } from "@/components/ui/navbar";
 import { TournamentRegisterButton } from "@/components/public/tournament-register-button";
+import { TournamentBracketSection } from "@/components/public/tournament-bracket-section";
 import { prisma } from "@/lib/prisma";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { resolveTournamentImage } from "@/lib/tournament-image";
@@ -69,7 +70,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         <main className="min-h-screen bg-transparent text-base-content">
             <Navbar />
             <section className="border-b border-base-300 pt-28">
-                <div className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-[1400px] px-4 pb-14 sm:px-6 lg:px-8">
                     <Link href="/tournaments" className="mb-6 inline-flex items-center text-sm font-semibold text-base-content/55 transition-colors hover:text-primary">
                         Kembali ke direktori turnamen
                     </Link>
@@ -177,6 +178,27 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                     )}
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="border-b border-base-300 py-16">
+                <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+                    <div className="card border border-base-300 bg-base-100 shadow-xl">
+                        <div className="card-body gap-6 p-6">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <div className="text-xs font-bold uppercase tracking-[0.28em] text-primary">Bracket</div>
+                                    <h2 className="mt-2 text-2xl font-black text-base-content">Rangkaian Pertandingan</h2>
+                                    <p className="mt-2 text-sm text-base-content/60">Pantau progress pertandingan dan status setiap match secara real-time.</p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]">
+                                    <span className="badge badge-outline">{tournament.structure.replace("_", " ")}</span>
+                                    <span className="badge badge-outline">{tournament.format}</span>
+                                </div>
+                            </div>
+                            <TournamentBracketSection tournamentId={tournament.id} structure={tournament.structure} />
                         </div>
                     </div>
                 </div>

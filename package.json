@@ -36,6 +36,9 @@
     "prisma": "^7.3.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-svg-pan-zoom": "^3.13.1",
+    "react-tournament-brackets": "^1.0.41",
+    "styled-components": "^6.3.11",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4",
     "zod": "^4.3.6"

@@ -104,9 +104,9 @@ export function Sidebar() {
                 onClick={close}
             />
             <aside
-                className={`min-h-full w-80 bg-base-100 text-base-content shadow-2xl transition-transform duration-300 lg:w-72 lg:shadow-none ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+                className={`min-h-full w-80 bg-base-100 text-base-content shadow-2xl transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:w-72 lg:shadow-none ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
             >
-                <div className="flex h-full flex-col border-r border-base-300 bg-base-100/95 backdrop-blur-xl">
+                <div className="flex h-full flex-col border-r border-base-300 bg-base-100/95 backdrop-blur-xl lg:overflow-y-auto">
                     <div className="flex h-16 items-center justify-between border-b border-base-300 px-5">
                         <div className="flex items-center gap-3">
                             <div className="badge badge-primary h-10 w-10 rounded-2xl border-0 text-base font-black text-primary-content">DS</div>

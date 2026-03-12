@@ -110,7 +110,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ slu
         <main className="min-h-screen bg-transparent text-base-content">
             <Navbar />
             <section className="border-b border-base-300 pt-28">
-                <div className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-[1400px] px-4 pb-14 sm:px-6 lg:px-8">
                     <div className="flex flex-col gap-6">
                         <div className="flex items-start gap-4">
                             <TeamAvatar name={team.name} avatarUrl={team.logoUrl} size="lg" />
@@ -148,7 +148,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ slu
                 </div>
             </section>
 
-            <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+            <section className="mx-auto max-w-[1400px] px-4 py-10 sm:px-6 lg:px-8">
                 <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-6">
                         <RoleBlock

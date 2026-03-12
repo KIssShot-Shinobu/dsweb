@@ -15,7 +15,7 @@ export function Hero() {
             <div className="absolute -left-20 top-1/4 h-72 w-72 rounded-full bg-primary/20 blur-3xl opacity-50 sm:h-96 sm:w-96" />
             <div className="absolute -right-20 bottom-1/4 h-72 w-72 rounded-full bg-accent/20 blur-3xl opacity-50 sm:h-96 sm:w-96" />
 
-            <div className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 text-center sm:px-6 sm:pb-16 sm:pt-28 lg:px-8">
+            <div className="relative z-10 mx-auto max-w-[1400px] px-4 pb-12 pt-24 text-center sm:px-6 sm:pb-16 sm:pt-28 lg:px-8">
                 <motion.div initial="hidden" animate="show" transition={{ staggerChildren: 0.08, delayChildren: 0.08 }} className="flex flex-col items-center">
                     <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }} transition={{ duration: 0.45 }} className="badge badge-primary badge-outline mb-4 h-auto rounded-full px-4 py-3 text-[11px] font-bold uppercase tracking-[0.28em]">
                         Komunitas Yu-Gi-Oh! Duel Links & Master Duel

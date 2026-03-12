@@ -12,7 +12,7 @@ interface TournamentsProps {
 export function Tournaments({ tournaments }: TournamentsProps) {
     return (
         <section id="tournaments" className="border-y border-base-300 py-20 sm:py-24">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
                 <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-10 flex flex-col gap-5 sm:mb-12 sm:gap-6 md:flex-row md:items-end md:justify-between">
                     <div className="max-w-2xl">
                         <p className="mb-3 text-xs font-bold uppercase tracking-[0.32em] text-primary sm:text-sm">Turnamen Unggulan</p>

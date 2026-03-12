@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pagination } from "@/components/dashboard/pagination";
 import { Modal } from "@/components/dashboard/modal";
@@ -8,7 +10,8 @@ import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { RowActions } from "@/components/dashboard/row-actions";
-import { btnOutline, btnPrimary, dashboardStackCls, inputCls, labelCls, searchInputCls } from "@/components/dashboard/form-styles";
+import { TournamentBracketAdmin } from "@/components/dashboard/tournament-bracket-admin";
+import { btnOutline, btnPrimary, dashboardStackCls, searchInputCls } from "@/components/dashboard/form-styles";
 import {
     DashboardEmptyState,
     DashboardMetricCard,
@@ -25,6 +28,7 @@ interface Tournament {
     gameType: "DUEL_LINKS" | "MASTER_DUEL";
     format: "BO1" | "BO3" | "BO5";
     status: "OPEN" | "ONGOING" | "COMPLETED" | "CANCELLED";
+    structure?: "SINGLE_ELIM" | "DOUBLE_ELIM" | "SWISS";
     entryFee: number;
     prizePool: number;
     startDate: string;
@@ -47,21 +51,6 @@ const UNDO_DURATION = 5000;
 const PER_PAGE = 10;
 
 const selectOptions = {
-    gameType: [
-        { value: "DUEL_LINKS", label: "Duel Links" },
-        { value: "MASTER_DUEL", label: "Master Duel" },
-    ],
-    format: [
-        { value: "BO1", label: "Best of 1" },
-        { value: "BO3", label: "Best of 3" },
-        { value: "BO5", label: "Best of 5" },
-    ],
-    status: [
-        { value: "OPEN", label: "OPEN" },
-        { value: "ONGOING", label: "ONGOING" },
-        { value: "COMPLETED", label: "COMPLETED" },
-        { value: "CANCELLED", label: "CANCELLED" },
-    ],
     filterStatus: [
         { value: "ALL", label: "Semua Status" },
         { value: "OPEN", label: "OPEN" },
@@ -81,11 +70,8 @@ const EMPTY_SUMMARY = { open: 0, ongoing: 0, completed: 0, cancelled: 0 };
 export default function AdminTournamentsPage() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [editingTournamentId, setEditingTournamentId] = useState<string | null>(null);
-    const [uploadingImage, setUploadingImage] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
+    const [showBracketModal, setShowBracketModal] = useState(false);
+    const [activeBracketTournament, setActiveBracketTournament] = useState<{ id: string; title: string; structure: "SINGLE_ELIM" | "DOUBLE_ELIM" | "SWISS" } | null>(null);
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
@@ -98,40 +84,9 @@ export default function AdminTournamentsPage() {
     const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string; item: Tournament } | null>(null);
     const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const [formData, setFormData] = useState({
-        title: "",
-        description: "",
-        gameType: "DUEL_LINKS",
-        format: "BO3",
-        status: "OPEN",
-        entryFee: 0,
-        prizePool: 0,
-        startDate: "",
-        image: "",
-    });
+    const router = useRouter();
 
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
-
-    const resetForm = () => {
-        setFormData({
-            title: "",
-            description: "",
-            gameType: "DUEL_LINKS",
-            format: "BO3",
-            status: "OPEN",
-            entryFee: 0,
-            prizePool: 0,
-            startDate: "",
-            image: "",
-        });
-    };
-
-    const toDateTimeLocal = (dateString: string) => {
-        const date = new Date(dateString);
-        const pad = (num: number) => String(num).padStart(2, "0");
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-    };
 
     const fetchTournaments = useCallback(() => {
         setLoading(true);
@@ -170,31 +125,6 @@ export default function AdminTournamentsPage() {
         []
     );
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSubmitting(true);
-        try {
-            const res = await fetch("/api/tournaments", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                success("Turnamen berhasil dibuat.");
-                setShowModal(false);
-                resetForm();
-                fetchTournaments();
-            } else {
-                error(data.message || "Gagal membuat turnamen.");
-            }
-        } catch {
-            error("Kesalahan jaringan.");
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
     const updateStatus = async (tournament: Tournament) => {
         const statusOrder = ["OPEN", "ONGOING", "COMPLETED"];
         const currentIndex = statusOrder.indexOf(tournament.status);
@@ -221,49 +151,35 @@ export default function AdminTournamentsPage() {
         }
     };
 
-    const openEditModal = (tournament: Tournament) => {
-        setEditingTournamentId(tournament.id);
-        setFormData({
-            title: tournament.title,
-            description: tournament.description || "",
-            gameType: tournament.gameType,
-            format: tournament.format,
-            status: tournament.status,
-            entryFee: tournament.entryFee,
-            prizePool: tournament.prizePool,
-            startDate: toDateTimeLocal(tournament.startDate),
-            image: tournament.image || "",
-        });
-        setShowEditModal(true);
-    };
+    const handleStartBracket = async (tournament: Tournament) => {
+        const participantCount = tournament._count?.participants ?? 0;
+        if (tournament.status !== "OPEN") {
+            error("Bracket hanya bisa dibuat saat turnamen masih OPEN.");
+            return;
+        }
+        if (participantCount < 2) {
+            error("Minimal 2 peserta untuk membuat bracket.");
+            return;
+        }
 
-    const handleUpdate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!editingTournamentId) return;
-
-        setSubmitting(true);
         try {
-            const res = await fetch(`/api/tournaments/${editingTournamentId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
+            const res = await fetch(`/api/tournaments/${tournament.id}/start`, { method: "POST" });
             const data = await res.json();
-
             if (res.ok) {
-                success("Turnamen berhasil diupdate.");
-                setShowEditModal(false);
-                setEditingTournamentId(null);
-                resetForm();
+                success("Bracket berhasil dibuat.");
                 fetchTournaments();
             } else {
-                error(data.message || "Gagal update turnamen.");
+                error(data?.message || "Gagal membuat bracket.");
             }
         } catch {
             error("Kesalahan jaringan.");
-        } finally {
-            setSubmitting(false);
         }
+    };
+
+    const openBracketModal = (tournament: Tournament) => {
+        const structure = tournament.structure || "SINGLE_ELIM";
+        setActiveBracketTournament({ id: tournament.id, title: tournament.title, structure });
+        setShowBracketModal(true);
     };
 
     const executePermanentDelete = async (id: string) => {
@@ -313,31 +229,6 @@ export default function AdminTournamentsPage() {
         fetchTournaments();
     };
 
-    const handleUploadImage = async (file: File) => {
-        setUploadingImage(true);
-        try {
-            const body = new FormData();
-            body.append("file", file);
-
-            const res = await fetch("/api/upload", {
-                method: "POST",
-                body,
-            });
-            const data = await res.json();
-
-            if (res.ok && data?.url) {
-                setFormData((prev) => ({ ...prev, image: data.url }));
-                success("Gambar berhasil diupload.");
-            } else {
-                error(data?.message || "Gagal upload gambar.");
-            }
-        } catch {
-            error("Kesalahan jaringan saat upload.");
-        } finally {
-            setUploadingImage(false);
-        }
-    };
-
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
 
@@ -359,7 +250,11 @@ export default function AdminTournamentsPage() {
                     kicker="Event Control"
                     title="Tournaments"
                     description="Kelola jadwal event, thumbnail, hadiah, dan pergerakan status bracket dari satu halaman yang lebih ringkas."
-                    actions={<button onClick={() => setShowModal(true)} className={btnPrimary}>+ Buat Turnamen</button>}
+                    actions={
+                        <Link href="/dashboard/tournaments/new" className={btnPrimary}>
+                            + Buat Turnamen
+                        </Link>
+                    }
                 />
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -440,16 +335,37 @@ export default function AdminTournamentsPage() {
                                                     {tournament.status}
                                                 </span>
                                                 <RowActions
-                                                    onEdit={() => openEditModal(tournament)}
+                                                    onEdit={() => router.push(`/dashboard/tournaments/${tournament.id}/settings`)}
                                                     onDelete={() => handleDeleteClick(tournament.id, tournament.title)}
                                                     extra={
-                                                        <button
-                                                            onClick={() => updateStatus(tournament)}
-                                                            disabled={tournament.status === "COMPLETED" || tournament.status === "CANCELLED"}
-                                                            className={`${btnOutline} btn-sm disabled:opacity-40`}
-                                                        >
-                                                            Next Status
-                                                        </button>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleStartBracket(tournament)}
+                                                                disabled={tournament.status !== "OPEN" || (tournament._count?.participants ?? 0) < 2}
+                                                                className={`${btnPrimary} btn-sm disabled:opacity-40`}
+                                                            >
+                                                                Start Bracket
+                                                            </button>
+                                                            <button
+                                                                onClick={() => updateStatus(tournament)}
+                                                                disabled={tournament.status === "COMPLETED" || tournament.status === "CANCELLED"}
+                                                                className={`${btnOutline} btn-sm disabled:opacity-40`}
+                                                            >
+                                                                Next Status
+                                                            </button>
+                                                            <button
+                                                                onClick={() => openBracketModal(tournament)}
+                                                                className={`${btnOutline} btn-sm`}
+                                                            >
+                                                                Manage Bracket
+                                                            </button>
+                                                            <Link href={`/dashboard/tournaments/${tournament.id}`} className={`${btnOutline} btn-sm`}>
+                                                                Admin Dashboard
+                                                            </Link>
+                                                            <Link href={`/tournaments/${tournament.id}`} className={`${btnOutline} btn-sm`}>
+                                                                Lihat Detail
+                                                            </Link>
+                                                        </div>
                                                     }
                                                 />
                                             </div>
@@ -465,31 +381,6 @@ export default function AdminTournamentsPage() {
                 </DashboardPanel>
             </div>
 
-            <Modal open={showModal} onClose={() => { setShowModal(false); resetForm(); }} title="Buat Turnamen Baru">
-                <TournamentForm
-                    formData={formData}
-                    setFormData={setFormData}
-                    uploadingImage={uploadingImage}
-                    submitting={submitting}
-                    onUploadImage={handleUploadImage}
-                    onSubmit={handleCreate}
-                    submitLabel="Buat Turnamen"
-                />
-            </Modal>
-
-            <Modal open={showEditModal} onClose={() => { setShowEditModal(false); setEditingTournamentId(null); resetForm(); }} title="Edit Turnamen">
-                <TournamentForm
-                    formData={formData}
-                    setFormData={setFormData}
-                    uploadingImage={uploadingImage}
-                    submitting={submitting}
-                    onUploadImage={handleUploadImage}
-                    onSubmit={handleUpdate}
-                    showStatus
-                    submitLabel="Simpan Perubahan"
-                />
-            </Modal>
-
             <ConfirmModal
                 open={confirmState.open}
                 title="Hapus Turnamen"
@@ -500,125 +391,21 @@ export default function AdminTournamentsPage() {
             />
 
             <UndoSnackbar open={!!pendingDelete} message={`"${pendingDelete?.title}" akan dihapus`} duration={UNDO_DURATION} onUndo={handleUndo} />
-        </DashboardPageShell>
-    );
-}
 
-function TournamentForm({
-    formData,
-    setFormData,
-    uploadingImage,
-    submitting,
-    onUploadImage,
-    onSubmit,
-    submitLabel,
-    showStatus = false,
-}: {
-    formData: {
-        title: string;
-        description: string;
-        gameType: string;
-        format: string;
-        status: string;
-        entryFee: number;
-        prizePool: number;
-        startDate: string;
-        image: string;
-    };
-    setFormData: React.Dispatch<React.SetStateAction<{
-        title: string;
-        description: string;
-        gameType: string;
-        format: string;
-        status: string;
-        entryFee: number;
-        prizePool: number;
-        startDate: string;
-        image: string;
-    }>>;
-    uploadingImage: boolean;
-    submitting: boolean;
-    onUploadImage: (file: File) => Promise<void>;
-    onSubmit: (e: React.FormEvent) => Promise<void>;
-    submitLabel: string;
-    showStatus?: boolean;
-}) {
-    return (
-        <form onSubmit={onSubmit} className="space-y-4">
-            <div>
-                <label className={labelCls}>Judul Turnamen</label>
-                <input type="text" className={inputCls} required value={formData.title} onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))} />
-            </div>
-            <div>
-                <label className={labelCls}>Deskripsi</label>
-                <textarea className={`${inputCls} min-h-[104px] resize-y`} rows={3} value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} />
-            </div>
-            <div className={`grid gap-4 ${showStatus ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
-                <div>
-                    <label className={labelCls}>Game</label>
-                    <FormSelect value={formData.gameType} onChange={(value) => setFormData((prev) => ({ ...prev, gameType: value }))} options={selectOptions.gameType} />
-                </div>
-                <div>
-                    <label className={labelCls}>Format</label>
-                    <FormSelect value={formData.format} onChange={(value) => setFormData((prev) => ({ ...prev, format: value }))} options={selectOptions.format} />
-                </div>
-                {showStatus ? (
-                    <div>
-                        <label className={labelCls}>Status</label>
-                        <FormSelect value={formData.status} onChange={(value) => setFormData((prev) => ({ ...prev, status: value }))} options={selectOptions.status} />
-                    </div>
+            <Modal
+                open={showBracketModal}
+                onClose={() => { setShowBracketModal(false); setActiveBracketTournament(null); }}
+                title={activeBracketTournament ? `Bracket: ${activeBracketTournament.title}` : "Bracket"}
+                size="xl"
+            >
+                {activeBracketTournament ? (
+                    <TournamentBracketAdmin
+                        tournamentId={activeBracketTournament.id}
+                        structure={activeBracketTournament.structure}
+                        onUpdated={fetchTournaments}
+                    />
                 ) : null}
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                    <label className={labelCls}>Entry Fee (Rp)</label>
-                    <input type="number" className={inputCls} value={formData.entryFee} onChange={(e) => setFormData((prev) => ({ ...prev, entryFee: Number(e.target.value) }))} min="0" />
-                </div>
-                <div>
-                    <label className={labelCls}>Prize Pool (Rp)</label>
-                    <input type="number" className={inputCls} value={formData.prizePool} onChange={(e) => setFormData((prev) => ({ ...prev, prizePool: Number(e.target.value) }))} min="0" />
-                </div>
-            </div>
-            <div>
-                <label className={labelCls}>Upload Image</label>
-                <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    className={`${inputCls} file:mr-3 file:rounded-xl file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:font-semibold file:text-primary`}
-                    onChange={async (e) => {
-                        const inputEl = e.currentTarget;
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        await onUploadImage(file);
-                        inputEl.value = "";
-                    }}
-                    disabled={uploadingImage}
-                />
-                {uploadingImage ? <p className="mt-2 text-xs text-base-content/45">Mengupload gambar...</p> : null}
-            </div>
-            <div>
-                <label className={labelCls}>Path Gambar Lokal</label>
-                <input type="text" className={inputCls} placeholder="/uploads/namafile.jpg" value={formData.image} onChange={(e) => setFormData((prev) => ({ ...prev, image: e.target.value }))} />
-                <p className="mt-2 text-xs text-base-content/45">Gunakan upload internal. URL eksternal tidak didukung lagi.</p>
-            </div>
-            {formData.image ? (
-                <div className="rounded-box border border-base-300 bg-base-200/40 p-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={normalizeAssetUrl(formData.image) || ""} alt="Preview tournament" className="h-44 w-full rounded-xl object-cover" />
-                    <button type="button" onClick={() => setFormData((prev) => ({ ...prev, image: "" }))} className="mt-3 text-xs font-medium text-error hover:text-error/80">
-                        Hapus gambar
-                    </button>
-                </div>
-            ) : null}
-            <div>
-                <label className={labelCls}>Tanggal & Waktu Mulai</label>
-                <input type="datetime-local" className={inputCls} required value={formData.startDate} onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))} />
-            </div>
-            <div className="flex justify-end gap-3">
-                <button type="submit" disabled={submitting} className={btnPrimary}>
-                    {submitting ? "Menyimpan..." : submitLabel}
-                </button>
-            </div>
-        </form>
+            </Modal>
+        </DashboardPageShell>
     );
 }
