@@ -30,6 +30,12 @@ const STATUS_OPTIONS = [
     { value: "CANCELLED", label: "CANCELLED" },
 ];
 
+const formatIdrInput = (value: number) => new Intl.NumberFormat("id-ID").format(value);
+const parseIdrInput = (value: string) => {
+    const numeric = Number(value.replace(/[^0-9]/g, ""));
+    return Number.isNaN(numeric) ? 0 : numeric;
+};
+
 type TournamentForm = {
     title: string;
     description: string;
@@ -180,11 +186,25 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                         </div>
                         <div>
                             <label className={labelCls}>Entry Fee (Rp)</label>
-                            <input type="number" min={0} className={inputCls} value={form.entryFee} onChange={(event) => setForm((prev) => ({ ...prev, entryFee: Number(event.target.value) }))} />
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                className={inputCls}
+                                value={form.entryFee ? formatIdrInput(form.entryFee) : ""}
+                                onChange={(event) => setForm((prev) => ({ ...prev, entryFee: parseIdrInput(event.target.value) }))}
+                                placeholder="0"
+                            />
                         </div>
                         <div>
                             <label className={labelCls}>Prize Pool (Rp)</label>
-                            <input type="number" min={0} className={inputCls} value={form.prizePool} onChange={(event) => setForm((prev) => ({ ...prev, prizePool: Number(event.target.value) }))} />
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                className={inputCls}
+                                value={form.prizePool ? formatIdrInput(form.prizePool) : ""}
+                                onChange={(event) => setForm((prev) => ({ ...prev, prizePool: parseIdrInput(event.target.value) }))}
+                                placeholder="0"
+                            />
                         </div>
                     </div>
                 </DashboardPanel>

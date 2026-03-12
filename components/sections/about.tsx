@@ -33,7 +33,7 @@ export function About({ activeUserCount, tournamentCount }: AboutProps) {
                         </div>
                         <div className="stat text-center">
                             <div className="stat-value text-primary">{tournamentCount}</div>
-                            <div className="stat-title">Turnamen Terselenggara</div>
+                            <div className="stat-title">Turnamen</div>
                         </div>
                     </div>
                 </motion.div>

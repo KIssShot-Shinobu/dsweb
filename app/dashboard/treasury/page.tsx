@@ -227,6 +227,12 @@ export default function TreasuryPage() {
         setShowModal(false);
     };
 
+    const formatIdrInput = (value: number) => new Intl.NumberFormat("id-ID").format(value);
+    const parseIdrInput = (value: string) => {
+        const numeric = Number(value.replace(/[^0-9]/g, ""));
+        return Number.isNaN(numeric) ? 0 : numeric;
+    };
+
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
 
@@ -339,7 +345,15 @@ export default function TreasuryPage() {
                     </div>
                     <div>
                         <label className={labelCls}>Nominal (IDR)</label>
-                        <input type="number" className={inputCls} value={formData.amount || ""} onChange={(event) => setFormData((prev) => ({ ...prev, amount: Number(event.target.value) }))} required min="1" placeholder="10000" />
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            className={inputCls}
+                            value={formData.amount ? formatIdrInput(formData.amount) : ""}
+                            onChange={(event) => setFormData((prev) => ({ ...prev, amount: parseIdrInput(event.target.value) }))}
+                            required
+                            placeholder="10000"
+                        />
                     </div>
                     <div>
                         <label className={labelCls}>Deskripsi</label>

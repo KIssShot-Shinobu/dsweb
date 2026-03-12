@@ -42,6 +42,11 @@ export const tournamentFormSelectOptions = {
 };
 
 const DEFAULT_MAX_PLAYERS = "32";
+const formatIdrInput = (value: number) => new Intl.NumberFormat("id-ID").format(value);
+const parseIdrInput = (value: string) => {
+    const numeric = Number(value.replace(/[^0-9]/g, ""));
+    return Number.isNaN(numeric) ? 0 : numeric;
+};
 
 export type TournamentFormState = ReturnType<typeof getDefaultTournamentForm>;
 
@@ -470,12 +475,26 @@ export function TournamentForm({
                             </div>
                             <div>
                                 <label className={labelCls}>Entry Fee (Rp)</label>
-                                <input type="number" className={inputCls} value={formData.entryFee} onChange={(e) => setFormData((prev) => ({ ...prev, entryFee: Number(e.target.value) }))} min="0" />
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    className={inputCls}
+                                    value={formData.entryFee ? formatIdrInput(formData.entryFee) : ""}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, entryFee: parseIdrInput(e.target.value) }))}
+                                    placeholder="0"
+                                />
                             </div>
                         </div>
                         <div>
                             <label className={labelCls}>Prize Pool (Rp)</label>
-                            <input type="number" className={inputCls} value={formData.prizePool} onChange={(e) => setFormData((prev) => ({ ...prev, prizePool: Number(e.target.value) }))} min="0" />
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                className={inputCls}
+                                value={formData.prizePool ? formatIdrInput(formData.prizePool) : ""}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, prizePool: parseIdrInput(e.target.value) }))}
+                                placeholder="0"
+                            />
                         </div>
                         <div>
                             <label className={labelCls}>Participation Rules</label>
