@@ -11,6 +11,7 @@ export function TournamentBracketPage({ tournamentId }: { tournamentId: string }
     const { error } = useToast();
     const [structure, setStructure] = useState<TournamentStructure>("SINGLE_ELIM");
     const [title, setTitle] = useState("Bracket");
+    const [status, setStatus] = useState<"OPEN" | "ONGOING" | "COMPLETED" | "CANCELLED">("OPEN");
 
     useEffect(() => {
         let active = true;
@@ -24,6 +25,7 @@ export function TournamentBracketPage({ tournamentId }: { tournamentId: string }
                 if (res.ok) {
                     setStructure(data.tournament?.structure ?? "SINGLE_ELIM");
                     setTitle(data.tournament?.title ?? "Bracket");
+                    setStatus(data.tournament?.status ?? "OPEN");
                 } else {
                     error("Gagal memuat data turnamen.");
                 }
@@ -48,7 +50,7 @@ export function TournamentBracketPage({ tournamentId }: { tournamentId: string }
                     description="Kelola hasil pertandingan langsung dari tampilan bracket."
                 />
                 <DashboardPanel title="Bracket View" description="Klik match untuk mengubah skor atau menentukan pemenang.">
-                    <TournamentBracketAdmin tournamentId={tournamentId} structure={structure} />
+                    <TournamentBracketAdmin tournamentId={tournamentId} structure={structure} status={status} />
                 </DashboardPanel>
             </div>
         </DashboardPageShell>

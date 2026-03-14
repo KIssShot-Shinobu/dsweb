@@ -29,27 +29,30 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
             where: { tournamentId: tournament.id },
         });
 
-        if (existingRounds > 0) {
-            return NextResponse.json({ success: false, message: "Bracket sudah dibuat" }, { status: 409 });
+        if (existingRounds === 0) {
+            const participants = await prisma.tournamentParticipant.findMany({
+                where: { tournamentId: tournament.id },
+                select: { id: true },
+            });
+
+            if (participants.length < 2) {
+                return NextResponse.json({ success: false, message: "Minimal 2 peserta untuk memulai turnamen" }, { status: 400 });
+            }
+
+            await generateTournamentBracket(
+                prisma,
+                tournament.id,
+                tournament.structure,
+                participants.map((participant) => ({ participantId: participant.id }))
+            );
         }
-
-        const participants = await prisma.tournamentParticipant.findMany({
-            where: { tournamentId: tournament.id },
-            select: { userId: true },
-        });
-
-        if (participants.length < 2) {
-            return NextResponse.json({ success: false, message: "Minimal 2 peserta untuk memulai turnamen" }, { status: 400 });
-        }
-
-        await generateTournamentBracket(prisma, tournament.id, tournament.structure, participants);
 
         await prisma.tournament.update({
             where: { id: tournament.id },
             data: { status: "ONGOING" },
         });
 
-        return NextResponse.json({ success: true, message: "Bracket berhasil dibuat" }, { status: 201 });
+        return NextResponse.json({ success: true, message: "Turnamen dimulai." }, { status: 201 });
     } catch (error) {
         console.error("[Tournament Start]", error);
         return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });

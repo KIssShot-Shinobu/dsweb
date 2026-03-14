@@ -25,6 +25,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         }
 
         const { id } = await params;
+        const resolveParticipantName = (participant?: { guestName: string | null; user?: { fullName: string | null; username: string | null } | null }) => {
+            if (!participant) return "TBD";
+            return participant.user?.fullName || participant.user?.username || participant.guestName || "TBD";
+        };
         const rounds = await prisma.tournamentRound.findMany({
             where: { tournamentId: id },
             orderBy: [{ roundNumber: "asc" }],
@@ -32,8 +36,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
                 matches: {
                     orderBy: { bracketIndex: "asc" },
                     include: {
-                        playerA: { select: { id: true, fullName: true } },
-                        playerB: { select: { id: true, fullName: true } },
+                        playerA: { select: { id: true, guestName: true, user: { select: { fullName: true, username: true } } } },
+                        playerB: { select: { id: true, guestName: true, user: { select: { fullName: true, username: true } } } },
                         winner: { select: { id: true } },
                     },
                 },
@@ -72,13 +76,13 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
                     participants: [
                         {
                             id: match.playerA?.id ?? undefined,
-                            name: match.playerA?.fullName ?? "TBD",
+                            name: resolveParticipantName(match.playerA),
                             resultText: match.scoreA?.toString() ?? "",
                             isWinner: Boolean(match.winner?.id && match.winner.id === match.playerA?.id),
                         },
                         {
                             id: match.playerB?.id ?? undefined,
-                            name: match.playerB?.fullName ?? "TBD",
+                            name: resolveParticipantName(match.playerB),
                             resultText: match.scoreB?.toString() ?? "",
                             isWinner: Boolean(match.winner?.id && match.winner.id === match.playerB?.id),
                         },

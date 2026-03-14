@@ -14,14 +14,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         const seeds = await prisma.tournamentParticipant.findMany({
             where: { tournamentId: id, seed: { not: null } },
             select: {
+                id: true,
                 seed: true,
-                user: {
-                    select: {
-                        id: true,
-                        fullName: true,
-                        username: true,
-                    },
-                },
+                guestName: true,
+                user: { select: { id: true, fullName: true, username: true } },
             },
             orderBy: { seed: "asc" },
         });
@@ -30,7 +26,15 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
             where: { tournamentId: id, seed: null },
         });
 
-        return NextResponse.json({ success: true, seeds, unseededCount }, { status: 200 });
+        const normalized = seeds.map((entry) => ({
+            seed: entry.seed,
+            participant: {
+                id: entry.id,
+                name: entry.user?.fullName || entry.user?.username || entry.guestName || "Guest",
+            },
+        }));
+
+        return NextResponse.json({ success: true, seeds: normalized, unseededCount }, { status: 200 });
     } catch (error) {
         console.error("[Tournament Seeds]", error);
         return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });

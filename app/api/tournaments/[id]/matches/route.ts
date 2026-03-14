@@ -43,9 +43,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                     round: {
                         select: { roundNumber: true, type: true },
                     },
-                    playerA: { select: { id: true, fullName: true, username: true } },
-                    playerB: { select: { id: true, fullName: true, username: true } },
-                    winner: { select: { id: true, fullName: true } },
+                    playerA: { select: { id: true, guestName: true, user: { select: { id: true, fullName: true, username: true } } } },
+                    playerB: { select: { id: true, guestName: true, user: { select: { id: true, fullName: true, username: true } } } },
+                    winner: { select: { id: true, guestName: true, user: { select: { id: true, fullName: true, username: true } } } },
                 },
                 orderBy: [{ round: { roundNumber: "asc" } }, { bracketIndex: "asc" }],
                 skip,

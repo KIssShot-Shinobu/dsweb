@@ -146,13 +146,35 @@ export const tournamentParticipantsQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
+const tournamentParticipantGameIdSchema = z
+    .string()
+    .trim()
+    .min(2, "In-game name minimal 2 karakter")
+    .max(64, "In-game name terlalu panjang")
+    .regex(SAFE_TEXT_REGEX, "In-game name mengandung karakter yang tidak valid");
+
 export const tournamentParticipantUpdateSchema = z.object({
-    gameId: z
-        .string()
-        .trim()
-        .min(2, "In-game name minimal 2 karakter")
-        .max(64, "In-game name terlalu panjang")
-        .regex(SAFE_TEXT_REGEX, "In-game name mengandung karakter yang tidak valid"),
+    gameId: tournamentParticipantGameIdSchema,
+});
+
+export const tournamentParticipantAddSchema = z
+    .object({
+        userId: z.string().cuid("User ID tidak valid").optional(),
+        guestName: z
+            .string()
+            .trim()
+            .min(2, "Nama peserta minimal 2 karakter")
+            .max(191, "Nama peserta terlalu panjang")
+            .regex(SAFE_TEXT_REGEX, "Nama peserta mengandung karakter yang tidak valid")
+            .optional(),
+        gameId: tournamentParticipantGameIdSchema,
+    })
+    .refine((data) => Boolean(data.userId) || Boolean(data.guestName), {
+        message: "Pilih user atau isi nama guest terlebih dahulu",
+    });
+
+export const tournamentParticipantBulkSchema = z.object({
+    text: z.string().trim().min(1, "Data peserta tidak boleh kosong"),
 });
 
 export const tournamentMatchesQuerySchema = z.object({
@@ -285,6 +307,8 @@ export type TeamLeaveInput = z.infer<typeof teamLeaveSchema>;
 export type TeamDeleteInput = z.infer<typeof teamDeleteSchema>;
 export type NotificationQueryInput = z.infer<typeof notificationQuerySchema>;
 export type NotificationReadInput = z.infer<typeof notificationReadSchema>;
+export type TournamentParticipantAddInput = z.infer<typeof tournamentParticipantAddSchema>;
+export type TournamentParticipantBulkInput = z.infer<typeof tournamentParticipantBulkSchema>;
 
 export const treasurySchema = z.object({
     type: z.enum(["MASUK", "KELUAR"], { message: "Tipe transaksi wajib diisi" }),

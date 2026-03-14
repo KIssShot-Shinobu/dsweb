@@ -1,11 +1,11 @@
 import { Prisma, type PrismaClient, MatchPlayerSide, MatchStatus, MatchResultSource, TournamentStructure, RoundType } from "@prisma/client";
 
 type BracketParticipant = {
-    userId: string;
+    participantId: string;
 };
 
 type SeedAssignment = {
-    userId: string;
+    participantId: string;
     seed: number;
 };
 
@@ -28,6 +28,15 @@ type BracketContext = {
     upperMatches: Record<number, BracketMatch[]>;
     lowerMatches: Record<number, BracketMatch[]>;
     grandFinalMatch: BracketMatch | null;
+};
+
+type SyncResult = {
+    syncedCount: number;
+    pendingCount: number;
+};
+
+type BracketSyncSummary = SyncResult & {
+    created: boolean;
 };
 
 function shuffleArray<T>(items: T[]) {
@@ -61,9 +70,9 @@ function buildSeededSlots(participants: BracketParticipant[], bracketSize: numbe
 
     for (let index = 0; index < shuffled.length; index += 1) {
         const targetSeed = seedingOrder[index];
-        slots[targetSeed - 1] = shuffled[index]?.userId ?? null;
-        if (shuffled[index]?.userId) {
-            assignments.push({ userId: shuffled[index].userId, seed: targetSeed });
+        slots[targetSeed - 1] = shuffled[index]?.participantId ?? null;
+        if (shuffled[index]?.participantId) {
+            assignments.push({ participantId: shuffled[index].participantId, seed: targetSeed });
         }
     }
 
@@ -77,7 +86,7 @@ function nextPowerOfTwo(value: number) {
 }
 
 function buildSlots(participants: BracketParticipant[], bracketSize: number) {
-    const slots = participants.map((item) => item.userId);
+    const slots = participants.map((item) => item.participantId);
     while (slots.length < bracketSize) slots.push(null);
     return slots;
 }
@@ -86,10 +95,23 @@ function mapSideToField(side: MatchPlayerSide) {
     return side === "A" ? "playerAId" : "playerBId";
 }
 
+function resolveRoundType(structure: TournamentStructure) {
+    if (structure === "DOUBLE_ELIM") return "UPPER";
+    if (structure === "SWISS") return "SWISS";
+    return "MAIN";
+}
+
+function sortParticipants(a: { seed: number | null; joinedAt: Date }, b: { seed: number | null; joinedAt: Date }) {
+    const seedA = a.seed ?? Number.POSITIVE_INFINITY;
+    const seedB = b.seed ?? Number.POSITIVE_INFINITY;
+    if (seedA !== seedB) return seedA - seedB;
+    return a.joinedAt.getTime() - b.joinedAt.getTime();
+}
+
 async function ensureMatchPlayers(tx: PrismaClient, matchId: string, playerAId: string | null, playerBId: string | null) {
     const data: Prisma.MatchPlayerCreateManyInput[] = [];
-    if (playerAId) data.push({ matchId, userId: playerAId, side: "A" });
-    if (playerBId) data.push({ matchId, userId: playerBId, side: "B" });
+    if (playerAId) data.push({ matchId, participantId: playerAId, side: "A" });
+    if (playerBId) data.push({ matchId, participantId: playerBId, side: "B" });
     if (data.length === 0) return;
 
     await tx.matchPlayer.createMany({
@@ -291,12 +313,12 @@ async function maybeAdvanceSwissRound(tx: PrismaClient, tournamentId: string, cu
 
     const participants = await tx.tournamentParticipant.findMany({
         where: { tournamentId },
-        select: { userId: true },
+        select: { id: true },
     });
 
     const winMap = new Map<string, number>();
     for (const participant of participants) {
-        winMap.set(participant.userId, 0);
+        winMap.set(participant.id, 0);
     }
 
     const results = await tx.matchResult.findMany({
@@ -318,20 +340,20 @@ async function maybeAdvanceSwissRound(tx: PrismaClient, tournamentId: string, cu
 
     const ordered = participants
         .map((participant) => ({
-            userId: participant.userId,
-            wins: winMap.get(participant.userId) ?? 0,
+            participantId: participant.id,
+            wins: winMap.get(participant.id) ?? 0,
         }))
         .sort((a, b) => {
             if (b.wins !== a.wins) return b.wins - a.wins;
-            return a.userId.localeCompare(b.userId);
+            return a.participantId.localeCompare(b.participantId);
         });
 
     const matchCount = Math.ceil(ordered.length / 2);
     const matches = await createMatches(tx, tournamentId, { id: nextRound.id, roundNumber: currentRoundNumber + 1, type: "SWISS" }, matchCount);
 
     for (let i = 0; i < matches.length; i += 1) {
-        const playerAId = ordered[i * 2]?.userId ?? null;
-        const playerBId = ordered[i * 2 + 1]?.userId ?? null;
+        const playerAId = ordered[i * 2]?.participantId ?? null;
+        const playerBId = ordered[i * 2 + 1]?.participantId ?? null;
         await assignMatchPlayers(tx, matches[i].id, playerAId, playerBId);
     }
 
@@ -354,7 +376,7 @@ async function persistSeeding(tx: PrismaClient, tournamentId: string, assignment
 
     await Promise.all(assignments.map((assignment) =>
         tx.tournamentParticipant.updateMany({
-            where: { tournamentId, userId: assignment.userId },
+            where: { id: assignment.participantId, tournamentId },
             data: {
                 seed: assignment.seed,
                 seededAt,
@@ -362,18 +384,52 @@ async function persistSeeding(tx: PrismaClient, tournamentId: string, assignment
         })
     ));
 
-    await tx.auditLog.create({
+    try {
+        await tx.auditLog.create({
+            data: {
+                userId: null,
+                action: "TOURNAMENT_SEEDED",
+                targetId: tournamentId,
+                targetType: "Tournament",
+                ipAddress: "0.0.0.0",
+                userAgent: "bracket-engine",
+                details: JSON.stringify({
+                    seeds: assignments,
+                }),
+            },
+        });
+    } catch (error) {
+        console.warn("[Tournament Seeding] Audit log skipped:", error);
+    }
+}
+
+async function fillMatchSlot(
+    tx: PrismaClient,
+    match: { id: string; playerAId: string | null; playerBId: string | null },
+    side: MatchPlayerSide,
+    participantId: string
+) {
+    const nextPlayerAId = side === "A" ? participantId : match.playerAId;
+    const nextPlayerBId = side === "B" ? participantId : match.playerBId;
+
+    if (nextPlayerAId && nextPlayerBId) {
+        await assignMatchPlayers(tx, match.id, nextPlayerAId, nextPlayerBId);
+        return;
+    }
+
+    await tx.match.update({
+        where: { id: match.id },
         data: {
-            userId: null,
-            action: "TOURNAMENT_SEEDED",
-            targetId: tournamentId,
-            targetType: "Tournament",
-            ipAddress: "0.0.0.0",
-            userAgent: "bracket-engine",
-            details: JSON.stringify({
-                seeds: assignments,
-            }),
+            playerAId: nextPlayerAId,
+            playerBId: nextPlayerBId,
+            status: "PENDING",
+            matchVersion: { increment: 1 },
         },
+    });
+
+    await tx.matchPlayer.createMany({
+        data: [{ matchId: match.id, participantId, side }],
+        skipDuplicates: true,
     });
 }
 
@@ -599,12 +655,30 @@ async function generateSwiss(tx: PrismaClient, tournamentId: string, participant
     const matches = await createMatches(tx, tournamentId, roundOne, matchCount);
 
     for (let i = 0; i < matches.length; i += 1) {
-        const playerAId = shuffled[i * 2]?.userId ?? null;
-        const playerBId = shuffled[i * 2 + 1]?.userId ?? null;
+        const playerAId = shuffled[i * 2]?.participantId ?? null;
+        const playerBId = shuffled[i * 2 + 1]?.participantId ?? null;
         await assignMatchPlayers(tx, matches[i].id, playerAId, playerBId);
     }
 
     await createBracketNodes(tx, tournamentId);
+}
+
+async function generateTournamentBracketWithTx(
+    tx: PrismaClient,
+    tournamentId: string,
+    structure: TournamentStructure,
+    participants: BracketParticipant[]
+) {
+    if (structure === "SINGLE_ELIM") {
+        await generateSingleElim(tx, tournamentId, participants);
+        return;
+    }
+    if (structure === "DOUBLE_ELIM") {
+        await generateDoubleElim(tx, tournamentId, participants);
+        return;
+    }
+
+    await generateSwiss(tx, tournamentId, participants);
 }
 
 export async function generateTournamentBracket(prisma: PrismaClient, tournamentId: string, structure: TournamentStructure, participants: BracketParticipant[]) {
@@ -613,17 +687,149 @@ export async function generateTournamentBracket(prisma: PrismaClient, tournament
     }
 
     await prisma.$transaction(async (tx) => {
-        if (structure === "SINGLE_ELIM") {
-            await generateSingleElim(tx as PrismaClient, tournamentId, participants);
-            return;
-        }
-        if (structure === "DOUBLE_ELIM") {
-            await generateDoubleElim(tx as PrismaClient, tournamentId, participants);
-            return;
+        await generateTournamentBracketWithTx(tx as PrismaClient, tournamentId, structure, participants);
+    });
+}
+
+export async function rebuildTournamentBracket(prisma: PrismaClient, tournamentId: string, structure: TournamentStructure, participants: BracketParticipant[]) {
+    if (participants.length < 2) {
+        throw new Error("Minimal 2 peserta untuk membuat bracket.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+        await tx.bracketNode.deleteMany({ where: { tournamentId } });
+        await tx.matchDispute.deleteMany({ where: { match: { tournamentId } } });
+        await tx.matchReport.deleteMany({ where: { match: { tournamentId } } });
+        await tx.matchResult.deleteMany({ where: { match: { tournamentId } } });
+        await tx.matchPlayer.deleteMany({ where: { match: { tournamentId } } });
+        await tx.match.deleteMany({ where: { tournamentId } });
+        await tx.tournamentRound.deleteMany({ where: { tournamentId } });
+        await tx.tournamentParticipant.updateMany({
+            where: { tournamentId },
+            data: { seed: null, seededAt: null },
+        });
+
+        await generateTournamentBracketWithTx(tx as PrismaClient, tournamentId, structure, participants);
+    });
+}
+
+export async function syncTournamentRosterToBracket(prisma: PrismaClient, tournamentId: string, participantIds?: string[]): Promise<SyncResult> {
+    return prisma.$transaction(async (tx) => {
+        const tournament = await tx.tournament.findUnique({
+            where: { id: tournamentId },
+            select: { id: true, structure: true },
+        });
+
+        if (!tournament) {
+            return { syncedCount: 0, pendingCount: participantIds?.length ?? 0 };
         }
 
-        await generateSwiss(tx as PrismaClient, tournamentId, participants);
+        const roundType = resolveRoundType(tournament.structure);
+        const round = await tx.tournamentRound.findFirst({
+            where: { tournamentId, roundNumber: 1, type: roundType },
+            select: { id: true },
+        });
+
+        if (!round) {
+            return { syncedCount: 0, pendingCount: participantIds?.length ?? 0 };
+        }
+
+        const matches = await tx.match.findMany({
+            where: { roundId: round.id },
+            orderBy: { bracketIndex: "asc" },
+            select: { id: true, playerAId: true, playerBId: true, status: true, winnerId: true },
+        });
+
+        if (matches.length === 0) {
+            return { syncedCount: 0, pendingCount: participantIds?.length ?? 0 };
+        }
+
+        const assignedIds = new Set(
+            matches
+                .flatMap((match) => [match.playerAId, match.playerBId])
+                .filter((value): value is string => Boolean(value))
+        );
+
+        const participants = await tx.tournamentParticipant.findMany({
+            where: {
+                tournamentId,
+                ...(participantIds?.length ? { id: { in: participantIds } } : {}),
+            },
+            select: { id: true, seed: true, joinedAt: true },
+        });
+
+        const candidates = participants.filter((participant) => !assignedIds.has(participant.id)).sort(sortParticipants);
+
+        const slots: Array<{ matchId: string; side: MatchPlayerSide }> = [];
+        for (const match of matches) {
+            if (match.status === "COMPLETED" || match.winnerId) continue;
+            if (!match.playerAId) slots.push({ matchId: match.id, side: "A" });
+            if (!match.playerBId) slots.push({ matchId: match.id, side: "B" });
+        }
+
+        if (slots.length === 0 || candidates.length === 0) {
+            return { syncedCount: 0, pendingCount: candidates.length };
+        }
+
+        const matchState = new Map(matches.map((match) => [match.id, { ...match }]));
+        let syncedCount = 0;
+
+        for (let index = 0; index < Math.min(slots.length, candidates.length); index += 1) {
+            const slot = slots[index];
+            const participant = candidates[index];
+            const current = matchState.get(slot.matchId);
+            if (!current) continue;
+
+            await fillMatchSlot(tx as PrismaClient, current, slot.side, participant.id);
+            syncedCount += 1;
+
+            const nextPlayerAId = slot.side === "A" ? participant.id : current.playerAId;
+            const nextPlayerBId = slot.side === "B" ? participant.id : current.playerBId;
+            matchState.set(slot.matchId, { ...current, playerAId: nextPlayerAId, playerBId: nextPlayerBId });
+        }
+
+        return { syncedCount, pendingCount: candidates.length - syncedCount };
     });
+}
+
+export async function syncOrCreateTournamentBracket(
+    prisma: PrismaClient,
+    tournamentId: string,
+    participantIds?: string[]
+): Promise<BracketSyncSummary> {
+    const tournament = await prisma.tournament.findUnique({
+        where: { id: tournamentId },
+        select: { id: true, structure: true },
+    });
+
+    if (!tournament) {
+        return { created: false, syncedCount: 0, pendingCount: participantIds?.length ?? 0 };
+    }
+
+    const rounds = await prisma.tournamentRound.count({ where: { tournamentId } });
+
+    if (rounds === 0) {
+        const participants = await prisma.tournamentParticipant.findMany({
+            where: { tournamentId },
+            select: { id: true },
+        });
+
+        if (participants.length < 2) {
+            return { created: false, syncedCount: 0, pendingCount: participants.length };
+        }
+
+        await generateTournamentBracket(
+            prisma,
+            tournamentId,
+            tournament.structure,
+            participants.map((participant) => ({ participantId: participant.id }))
+        );
+
+        return { created: true, syncedCount: participants.length, pendingCount: 0 };
+    }
+
+    const syncResult = await syncTournamentRosterToBracket(prisma, tournamentId, participantIds);
+    return { created: false, ...syncResult };
 }
 
 export async function resolveMatchResult(prisma: PrismaClient, matchId: string, result: { scoreA: number; scoreB: number; winnerId: string; source: MatchResultSource; confirmedById?: string | null }) {

@@ -19,14 +19,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         const match = await prisma.match.findUnique({
             where: { id },
-            select: { id: true, playerAId: true, playerBId: true, status: true },
+            select: {
+                id: true,
+                playerAId: true,
+                playerBId: true,
+                status: true,
+                playerA: { select: { userId: true } },
+                playerB: { select: { userId: true } },
+            },
         });
 
         if (!match) {
             return NextResponse.json({ success: false, message: "Match tidak ditemukan" }, { status: 404 });
         }
 
-        if (![match.playerAId, match.playerBId].includes(currentUser.id)) {
+        const participantUserIds = [match.playerA?.userId, match.playerB?.userId].filter(Boolean);
+        if (!participantUserIds.includes(currentUser.id)) {
             return NextResponse.json({ success: false, message: "Anda bukan pemain di match ini" }, { status: 403 });
         }
 

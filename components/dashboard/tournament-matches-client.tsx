@@ -15,9 +15,9 @@ type MatchRow = {
     scoreA: number | null;
     scoreB: number | null;
     round: { roundNumber: number; type: string };
-    playerA: { id: string; fullName: string } | null;
-    playerB: { id: string; fullName: string } | null;
-    winner: { id: string; fullName: string } | null;
+    playerA: { id: string; guestName: string | null; user: { id: string; fullName: string | null; username: string | null } | null } | null;
+    playerB: { id: string; guestName: string | null; user: { id: string; fullName: string | null; username: string | null } | null } | null;
+    winner: { id: string; guestName: string | null; user: { id: string; fullName: string | null; username: string | null } | null } | null;
 };
 
 type MatchResponse = {
@@ -53,6 +53,10 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
     const [winnerId, setWinnerId] = useState("");
 
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+    const resolveParticipantName = (participant?: MatchRow["playerA"]) => {
+        if (!participant) return "TBD";
+        return participant.user?.fullName || participant.user?.username || participant.guestName || "TBD";
+    };
 
     const fetchMatches = async () => {
         setLoading(true);
@@ -91,8 +95,8 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
     const winnerOptions = useMemo(() => {
         if (!activeMatch) return [];
         const options = [];
-        if (activeMatch.playerA) options.push({ value: activeMatch.playerA.id, label: activeMatch.playerA.fullName });
-        if (activeMatch.playerB) options.push({ value: activeMatch.playerB.id, label: activeMatch.playerB.fullName });
+        if (activeMatch.playerA) options.push({ value: activeMatch.playerA.id, label: resolveParticipantName(activeMatch.playerA) });
+        if (activeMatch.playerB) options.push({ value: activeMatch.playerB.id, label: resolveParticipantName(activeMatch.playerB) });
         return options;
     }, [activeMatch]);
 
@@ -175,8 +179,8 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                     {matches.map((match) => (
                                         <tr key={match.id}>
                                             <td className="text-sm text-base-content/70">R{match.round.roundNumber}</td>
-                                            <td className="text-sm font-semibold text-base-content">{match.playerA?.fullName || "TBD"}</td>
-                                            <td className="text-sm font-semibold text-base-content">{match.playerB?.fullName || "TBD"}</td>
+                                            <td className="text-sm font-semibold text-base-content">{resolveParticipantName(match.playerA)}</td>
+                                            <td className="text-sm font-semibold text-base-content">{resolveParticipantName(match.playerB)}</td>
                                             <td className="text-sm text-base-content/70">
                                                 {match.scoreA ?? 0} - {match.scoreB ?? 0}
                                             </td>

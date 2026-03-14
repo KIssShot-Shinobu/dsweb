@@ -12,7 +12,8 @@ import {
 import { StyleSheetManager } from "styled-components";
 import { useToast } from "@/components/dashboard/toast";
 import { Modal } from "@/components/dashboard/modal";
-import { btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import { ConfirmModal } from "@/components/dashboard/confirm-modal";
+import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 
 type BracketParticipant = {
     id?: string;
@@ -53,10 +54,9 @@ type BracketResponse = {
 
 type SeedEntry = {
     seed: number;
-    user: {
+    participant: {
         id: string;
-        fullName: string | null;
-        username: string | null;
+        name: string;
     };
 };
 
@@ -137,10 +137,12 @@ function resolveWinnerId(match: BracketMatch) {
 export function TournamentBracketAdmin({
     tournamentId,
     structure,
+    status,
     onUpdated,
 }: {
     tournamentId: string;
     structure: "SINGLE_ELIM" | "DOUBLE_ELIM" | "SWISS";
+    status?: "OPEN" | "ONGOING" | "COMPLETED" | "CANCELLED";
     onUpdated?: () => void;
 }) {
     const [data, setData] = useState<BracketRound[]>([]);
@@ -186,6 +188,8 @@ export function TournamentBracketAdmin({
     const [seedsLoading, setSeedsLoading] = useState(false);
     const [unseededCount, setUnseededCount] = useState(0);
     const [showAllSeeds, setShowAllSeeds] = useState(false);
+    const [shuffleConfirmOpen, setShuffleConfirmOpen] = useState(false);
+    const [shuffling, setShuffling] = useState(false);
     const [formState, setFormState] = useState({
         scoreA: 0,
         scoreB: 0,
@@ -193,6 +197,7 @@ export function TournamentBracketAdmin({
         reason: "",
     });
     const { success, error: toastError } = useToast();
+    const canShuffle = status === "OPEN";
 
     const fetchBracket = () => {
         setLoading(true);
@@ -402,6 +407,28 @@ export function TournamentBracketAdmin({
         }
     };
 
+    const handleShuffle = async () => {
+        setShuffling(true);
+        try {
+            const res = await fetch(`/api/tournaments/${tournamentId}/shuffle`, { method: "POST" });
+            const payload = await res.json();
+            if (!res.ok) {
+                toastError(payload?.message || "Gagal mengacak bracket.");
+                return;
+            }
+            success(payload?.message || "Bracket diacak ulang.");
+            fetchBracket();
+            fetchSeeds();
+            setShowAllSeeds(false);
+            onUpdated?.();
+        } catch {
+            toastError("Kesalahan jaringan.");
+        } finally {
+            setShuffling(false);
+            setShuffleConfirmOpen(false);
+        }
+    };
+
     const clampScale = (value: number) => Math.min(1.8, Math.max(0.6, value));
     const zoomIn = () => setScaleFactor((prev) => clampScale(prev + 0.15));
     const zoomOut = () => setScaleFactor((prev) => clampScale(prev - 0.15));
@@ -478,6 +505,18 @@ export function TournamentBracketAdmin({
 
         return (
             <div className="space-y-4">
+                {canShuffle ? (
+                    <div className="flex justify-end">
+                        <button
+                            type="button"
+                            className={`${btnOutline} btn-sm`}
+                            onClick={() => setShuffleConfirmOpen(true)}
+                            disabled={shuffling}
+                        >
+                            {shuffling ? "Mengacak..." : "Shuffle Bracket"}
+                        </button>
+                    </div>
+                ) : null}
                 <SeedOrderPanel
                     seeds={visibleSeeds}
                     hasMore={seeds.length > limit}
@@ -526,6 +565,14 @@ export function TournamentBracketAdmin({
                     onClose={() => setModalOpen(false)}
                     onSave={handleSaveResult}
                 />
+                <ConfirmModal
+                    open={shuffleConfirmOpen}
+                    title="Acak ulang bracket?"
+                    description="Urutan peserta akan diacak ulang dan bracket dibuat ulang. Hanya bisa dilakukan saat turnamen masih OPEN."
+                    confirmLabel="Shuffle"
+                    onConfirm={handleShuffle}
+                    onClose={() => setShuffleConfirmOpen(false)}
+                />
             </div>
         );
     }
@@ -538,6 +585,16 @@ export function TournamentBracketAdmin({
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">Bracket Admin</div>
                 <div className="flex flex-wrap items-center gap-2">
+                    {canShuffle ? (
+                        <button
+                            type="button"
+                            className={`${btnOutline} btn-sm`}
+                            onClick={() => setShuffleConfirmOpen(true)}
+                            disabled={shuffling}
+                        >
+                            {shuffling ? "Mengacak..." : "Shuffle Bracket"}
+                        </button>
+                    ) : null}
                     <button className="btn btn-sm btn-ghost" onClick={zoomOut}>-</button>
                     <button className="btn btn-sm btn-ghost" onClick={resetZoom}>Reset</button>
                     <button className="btn btn-sm btn-ghost" onClick={zoomIn}>+</button>
@@ -560,6 +617,14 @@ export function TournamentBracketAdmin({
                 setFormState={setFormState}
                 onClose={() => setModalOpen(false)}
                 onSave={handleSaveResult}
+            />
+            <ConfirmModal
+                open={shuffleConfirmOpen}
+                title="Acak ulang bracket?"
+                description="Urutan peserta akan diacak ulang dan bracket dibuat ulang. Hanya bisa dilakukan saat turnamen masih OPEN."
+                confirmLabel="Shuffle"
+                onConfirm={handleShuffle}
+                onClose={() => setShuffleConfirmOpen(false)}
             />
         </div>
     );
@@ -609,15 +674,12 @@ function SeedOrderPanel({
                     <div className="text-xs text-base-content/50">Seed belum tersedia.</div>
                 ) : (
                     <div className={`grid gap-2 ${gridCls}`}>
-                        {seeds.map((entry) => {
-                            const label = entry.user.username || entry.user.fullName || "User";
-                            return (
-                                <div key={entry.user.id} className="flex items-center justify-between rounded-xl border border-base-300 bg-base-200/60 px-3 py-2 text-xs">
-                                    <span className="font-semibold text-base-content">#{entry.seed}</span>
-                                    <span className="truncate text-base-content/70">{label}</span>
-                                </div>
-                            );
-                        })}
+                        {seeds.map((entry) => (
+                            <div key={entry.participant.id} className="flex items-center justify-between rounded-xl border border-base-300 bg-base-200/60 px-3 py-2 text-xs">
+                                <span className="font-semibold text-base-content">#{entry.seed}</span>
+                                <span className="truncate text-base-content/70">{entry.participant.name}</span>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

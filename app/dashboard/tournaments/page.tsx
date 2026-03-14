@@ -71,7 +71,12 @@ export default function AdminTournamentsPage() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
     const [showBracketModal, setShowBracketModal] = useState(false);
-    const [activeBracketTournament, setActiveBracketTournament] = useState<{ id: string; title: string; structure: "SINGLE_ELIM" | "DOUBLE_ELIM" | "SWISS" } | null>(null);
+    const [activeBracketTournament, setActiveBracketTournament] = useState<{
+        id: string;
+        title: string;
+        structure: "SINGLE_ELIM" | "DOUBLE_ELIM" | "SWISS";
+        status: "OPEN" | "ONGOING" | "COMPLETED" | "CANCELLED";
+    } | null>(null);
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
@@ -166,7 +171,7 @@ export default function AdminTournamentsPage() {
             const res = await fetch(`/api/tournaments/${tournament.id}/start`, { method: "POST" });
             const data = await res.json();
             if (res.ok) {
-                success("Bracket berhasil dibuat.");
+                success(data?.message || "Turnamen dimulai.");
                 fetchTournaments();
             } else {
                 error(data?.message || "Gagal membuat bracket.");
@@ -178,7 +183,7 @@ export default function AdminTournamentsPage() {
 
     const openBracketModal = (tournament: Tournament) => {
         const structure = tournament.structure || "SINGLE_ELIM";
-        setActiveBracketTournament({ id: tournament.id, title: tournament.title, structure });
+        setActiveBracketTournament({ id: tournament.id, title: tournament.title, structure, status: tournament.status });
         setShowBracketModal(true);
     };
 
@@ -402,6 +407,7 @@ export default function AdminTournamentsPage() {
                     <TournamentBracketAdmin
                         tournamentId={activeBracketTournament.id}
                         structure={activeBracketTournament.structure}
+                        status={activeBracketTournament.status}
                         onUpdated={fetchTournaments}
                     />
                 ) : null}

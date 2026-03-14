@@ -24,6 +24,7 @@ type ParticipantRow = {
     gameId: string;
     joinedAt: string;
     checkedInAt: string | null;
+    guestName: string | null;
     user: {
         id: string;
         fullName: string;
@@ -31,7 +32,7 @@ type ParticipantRow = {
         email: string;
         discordId: string | null;
         avatarUrl: string | null;
-    };
+    } | null;
 };
 
 type ParticipantResponse = {
@@ -41,7 +42,20 @@ type ParticipantResponse = {
     limit: number;
 };
 
+type SyncInfo = {
+    syncedCount?: number;
+    pendingCount?: number;
+};
+
 const PER_PAGE = 20;
+
+type CandidateUser = {
+    id: string;
+    fullName: string;
+    username: string;
+    email: string;
+    avatarUrl: string | null;
+};
 
 export function TournamentParticipantsClient({ tournamentId }: { tournamentId: string }) {
     const { success, error } = useToast();
@@ -54,9 +68,30 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
     const [editing, setEditing] = useState<ParticipantRow | null>(null);
     const [gameId, setGameId] = useState("");
     const [confirmRemove, setConfirmRemove] = useState<ParticipantRow | null>(null);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showBulkModal, setShowBulkModal] = useState(false);
+    const [activeTab, setActiveTab] = useState<"user" | "guest">("user");
+    const [candidateQuery, setCandidateQuery] = useState("");
+    const [candidateResults, setCandidateResults] = useState<CandidateUser[]>([]);
+    const [candidateLoading, setCandidateLoading] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<CandidateUser | null>(null);
+    const [addUserGameId, setAddUserGameId] = useState("");
+    const [guestName, setGuestName] = useState("");
+    const [guestGameId, setGuestGameId] = useState("");
+    const [bulkText, setBulkText] = useState("");
+    const [submitting, setSubmitting] = useState(false);
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const candidateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+
+    const toastSyncInfo = (fallback: string, data?: SyncInfo) => {
+        if (typeof data?.syncedCount === "number" && typeof data?.pendingCount === "number") {
+            success(`${fallback} ${data.syncedCount} peserta masuk bracket, ${data.pendingCount} menunggu slot kosong.`);
+            return;
+        }
+        success(fallback);
+    };
 
     const fetchParticipants = async () => {
         setLoading(true);
@@ -88,9 +123,36 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
     useEffect(
         () => () => {
             if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+            if (candidateTimerRef.current) clearTimeout(candidateTimerRef.current);
         },
         []
     );
+
+    useEffect(() => {
+        if (candidateQuery.trim().length < 2) {
+            setCandidateResults([]);
+            return;
+        }
+
+        if (candidateTimerRef.current) clearTimeout(candidateTimerRef.current);
+        candidateTimerRef.current = setTimeout(async () => {
+            try {
+                setCandidateLoading(true);
+                const params = new URLSearchParams({ search: candidateQuery.trim() });
+                const res = await fetch(`/api/tournaments/${tournamentId}/participants/candidates?${params.toString()}`);
+                const data = await res.json();
+                if (res.ok) {
+                    setCandidateResults(data.users || []);
+                } else {
+                    error(data.message || "Gagal mencari user.");
+                }
+            } catch {
+                error("Kesalahan jaringan.");
+            } finally {
+                setCandidateLoading(false);
+            }
+        }, 250);
+    }, [candidateQuery, tournamentId, error]);
 
     const openEdit = (participant: ParticipantRow) => {
         setEditing(participant);
@@ -154,6 +216,110 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
         }
     };
 
+    const resetAddModal = () => {
+        setShowAddModal(false);
+        setSelectedUser(null);
+        setCandidateQuery("");
+        setCandidateResults([]);
+        setAddUserGameId("");
+        setGuestName("");
+        setGuestGameId("");
+        setActiveTab("user");
+    };
+
+    const handleAddUser = async () => {
+        if (!selectedUser) {
+            error("Pilih user terlebih dahulu.");
+            return;
+        }
+        if (!addUserGameId.trim()) {
+            error("In-game name wajib diisi.");
+            return;
+        }
+        setSubmitting(true);
+        try {
+            const res = await fetch(`/api/tournaments/${tournamentId}/participants`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: selectedUser.id, gameId: addUserGameId }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toastSyncInfo("Peserta berhasil ditambahkan.", data);
+                resetAddModal();
+                fetchParticipants();
+            } else {
+                error(data.message || "Gagal menambahkan peserta.");
+            }
+        } catch {
+            error("Kesalahan jaringan.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleAddGuest = async () => {
+        if (!guestName.trim()) {
+            error("Nama guest wajib diisi.");
+            return;
+        }
+        if (!guestGameId.trim()) {
+            error("Game ID wajib diisi.");
+            return;
+        }
+        setSubmitting(true);
+        try {
+            const res = await fetch(`/api/tournaments/${tournamentId}/participants`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ guestName: guestName.trim(), gameId: guestGameId.trim() }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toastSyncInfo("Guest berhasil ditambahkan.", data);
+                resetAddModal();
+                fetchParticipants();
+            } else {
+                error(data.message || "Gagal menambahkan guest.");
+            }
+        } catch {
+            error("Kesalahan jaringan.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleBulkAdd = async () => {
+        if (!bulkText.trim()) {
+            error("Data bulk tidak boleh kosong.");
+            return;
+        }
+        setSubmitting(true);
+        try {
+            const res = await fetch(`/api/tournaments/${tournamentId}/participants/bulk`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: bulkText }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toastSyncInfo(
+                    `Bulk selesai. Added ${data.result.added}, skipped ${data.result.skipped}, failed ${data.result.failed.length}.`,
+                    data
+                );
+                setBulkText("");
+                setShowBulkModal(false);
+                fetchParticipants();
+            } else {
+                error(data.message || "Gagal bulk add.");
+            }
+        } catch {
+            error("Kesalahan jaringan.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const hasData = participants.length > 0;
 
     return (
@@ -163,6 +329,16 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                     kicker="Participants"
                     title="Daftar Peserta"
                     description="Kelola data peserta, update in-game name, dan pantau status check-in."
+                    actions={
+                        <>
+                            <button className={btnOutline} onClick={() => setShowBulkModal(true)}>
+                                Bulk Add
+                            </button>
+                            <button className={btnPrimary} onClick={() => setShowAddModal(true)}>
+                                Tambah Peserta
+                            </button>
+                        </>
+                    }
                 />
 
                 <DashboardPanel
@@ -215,7 +391,7 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                                         <tr key={participant.id}>
                                             <td>
                                                 <div className="flex items-center gap-3">
-                                                    {normalizeAssetUrl(participant.user.avatarUrl) ? (
+                                                    {participant.user?.avatarUrl && normalizeAssetUrl(participant.user.avatarUrl) ? (
                                                         <Image
                                                             unoptimized
                                                             src={normalizeAssetUrl(participant.user.avatarUrl) || ""}
@@ -226,17 +402,24 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                                                         />
                                                     ) : (
                                                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                                                            {getInitials(participant.user.fullName)}
+                                                            {getInitials(participant.user?.fullName || participant.guestName || "Guest")}
                                                         </div>
                                                     )}
                                                     <div>
-                                                        <div className="text-sm font-semibold text-base-content">{participant.user.fullName}</div>
-                                                        <div className="text-xs text-base-content/50">@{participant.user.username}</div>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <div className="text-sm font-semibold text-base-content">
+                                                                {participant.user?.fullName || participant.guestName || "Guest"}
+                                                            </div>
+                                                            {!participant.user ? <span className="badge badge-outline badge-xs">Guest</span> : null}
+                                                        </div>
+                                                        <div className="text-xs text-base-content/50">
+                                                            {participant.user ? `@${participant.user.username}` : "Peserta non-user"}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="text-sm text-base-content/70">{participant.gameId}</td>
-                                            <td className="text-sm text-base-content/70">{participant.user.discordId || "-"}</td>
+                                            <td className="text-sm text-base-content/70">{participant.user?.discordId || "-"}</td>
                                             <td className="text-sm text-base-content/70">
                                                 {new Date(participant.joinedAt).toLocaleDateString("id-ID")}
                                             </td>
@@ -289,6 +472,130 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                         </button>
                         <button type="button" className={btnPrimary} onClick={handleSave}>
                             Simpan
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal open={showAddModal} onClose={resetAddModal} title="Tambah Peserta" size="lg">
+                <div className="space-y-5">
+                    <div className="tabs tabs-boxed">
+                        <button type="button" className={`tab ${activeTab === "user" ? "tab-active" : ""}`} onClick={() => setActiveTab("user")}>
+                            User
+                        </button>
+                        <button type="button" className={`tab ${activeTab === "guest" ? "tab-active" : ""}`} onClick={() => setActiveTab("guest")}>
+                            Guest
+                        </button>
+                    </div>
+
+                    {activeTab === "user" ? (
+                        <div className="space-y-4">
+                            <div>
+                                <label className={labelCls}>Cari User</label>
+                                <input
+                                    className={inputCls}
+                                    value={candidateQuery}
+                                    onChange={(event) => setCandidateQuery(event.target.value)}
+                                    placeholder="Cari nama, username, atau email"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                {candidateLoading ? (
+                                    <div className="text-xs text-base-content/60">Memuat hasil...</div>
+                                ) : candidateQuery.trim().length < 2 ? (
+                                    <div className="text-xs text-base-content/50">Masukkan minimal 2 karakter untuk mencari.</div>
+                                ) : candidateResults.length === 0 ? (
+                                    <div className="text-xs text-base-content/50">Tidak ada hasil.</div>
+                                ) : (
+                                    candidateResults.map((user) => (
+                                        <button
+                                            key={user.id}
+                                            type="button"
+                                            className={`flex w-full items-center justify-between rounded-box border px-3 py-2 text-left text-sm transition ${
+                                                selectedUser?.id === user.id ? "border-primary bg-primary/10" : "border-base-300 bg-base-200/40 hover:border-primary/40"
+                                            }`}
+                                            onClick={() => setSelectedUser(user)}
+                                        >
+                                            <div>
+                                                <div className="font-semibold text-base-content">{user.fullName}</div>
+                                                <div className="text-xs text-base-content/50">@{user.username} • {user.email}</div>
+                                            </div>
+                                            {selectedUser?.id === user.id ? <span className="badge badge-primary badge-sm">Dipilih</span> : null}
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                            <div>
+                                <label className={labelCls}>In-game Name / ID</label>
+                                <input
+                                    className={inputCls}
+                                    value={addUserGameId}
+                                    onChange={(event) => setAddUserGameId(event.target.value)}
+                                    placeholder="Masukkan IGN / Game ID"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                                <button type="button" className={btnOutline} onClick={resetAddModal}>
+                                    Batal
+                                </button>
+                                <button type="button" className={btnPrimary} onClick={handleAddUser} disabled={submitting}>
+                                    {submitting ? "Menyimpan..." : "Tambah User"}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div>
+                                <label className={labelCls}>Nama Guest</label>
+                                <input
+                                    className={inputCls}
+                                    value={guestName}
+                                    onChange={(event) => setGuestName(event.target.value)}
+                                    placeholder="Nama peserta"
+                                />
+                            </div>
+                            <div>
+                                <label className={labelCls}>In-game Name / ID</label>
+                                <input
+                                    className={inputCls}
+                                    value={guestGameId}
+                                    onChange={(event) => setGuestGameId(event.target.value)}
+                                    placeholder="Masukkan IGN / Game ID"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                                <button type="button" className={btnOutline} onClick={resetAddModal}>
+                                    Batal
+                                </button>
+                                <button type="button" className={btnPrimary} onClick={handleAddGuest} disabled={submitting}>
+                                    {submitting ? "Menyimpan..." : "Tambah Guest"}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </Modal>
+
+            <Modal open={showBulkModal} onClose={() => setShowBulkModal(false)} title="Bulk Add Peserta" size="lg">
+                <div className="space-y-4">
+                    <div>
+                        <label className={labelCls}>Format (Nama | Game ID)</label>
+                        <textarea
+                            className={`${inputCls} min-h-[180px] resize-y`}
+                            value={bulkText}
+                            onChange={(event) => setBulkText(event.target.value)}
+                            placeholder={`Contoh:\nAlpha Player | 123-456-789\nBeta Duelist | 987-654-321`}
+                        />
+                    </div>
+                    <div className="text-xs text-base-content/55">
+                        Gunakan satu peserta per baris, pisahkan nama dan Game ID dengan tanda |.
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <button type="button" className={btnOutline} onClick={() => setShowBulkModal(false)}>
+                            Batal
+                        </button>
+                        <button type="button" className={btnPrimary} onClick={handleBulkAdd} disabled={submitting}>
+                            {submitting ? "Memproses..." : "Proses Bulk"}
                         </button>
                     </div>
                 </div>

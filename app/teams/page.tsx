@@ -4,6 +4,7 @@ import { Navbar } from "@/components/ui/navbar";
 import { getCurrentUser } from "@/lib/auth";
 import { createTeamService } from "@/lib/services/team.service";
 import { TeamDirectoryClient } from "@/components/teams/team-directory-client";
+import { prisma } from "@/lib/prisma";
 
 const teamService = createTeamService();
 

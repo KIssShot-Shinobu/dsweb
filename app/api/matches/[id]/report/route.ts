@@ -29,6 +29,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 status: true,
                 playerAId: true,
                 playerBId: true,
+                playerA: { select: { userId: true } },
+                playerB: { select: { userId: true } },
             },
         });
 
@@ -40,7 +42,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             return NextResponse.json({ success: false, message: "Match sudah selesai" }, { status: 400 });
         }
 
-        if (![match.playerAId, match.playerBId].includes(currentUser.id)) {
+        const participantUserIds = [match.playerA?.userId, match.playerB?.userId].filter(Boolean);
+        if (!participantUserIds.includes(currentUser.id)) {
             return NextResponse.json({ success: false, message: "Anda bukan pemain di match ini" }, { status: 403 });
         }
 

@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") || 20)));
 
         const where = {
-            OR: [{ playerAId: id }, { playerBId: id }],
+            OR: [{ playerA: { userId: id } }, { playerB: { userId: id } }],
         };
 
         const [matches, total] = await Promise.all([

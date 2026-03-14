@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { getServerCurrentUser } from "@/lib/server-current-user";
+import { syncOrCreateTournamentBracket } from "@/lib/services/tournament-bracket.service";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -49,7 +50,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         });
 
         if (!gameProfile) {
-            return NextResponse.json({ success: false, message: `Harap lengkapi Profil Game ${tournament.gameType} di Pengaturan Profil Anda terlebih dahulu` }, { status: 400 });
+            const gameLabel = tournament.gameType === "MASTER_DUEL" ? "Master Duel" : "Duel Links";
+            return NextResponse.json({ success: false, message: `Harap lengkapi Profil Game ${gameLabel} di Pengaturan Profil Anda terlebih dahulu` }, { status: 400 });
         }
 
         const participant = await prisma.tournamentParticipant.create({
@@ -71,6 +73,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 tournamentTitle: tournament.title,
             },
         });
+
+        await syncOrCreateTournamentBracket(prisma, tournamentId, [participant.id]);
 
         return NextResponse.json({ success: true, participant, message: "Berhasil mendaftar turnamen!" }, { status: 201 });
 

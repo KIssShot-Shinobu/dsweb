@@ -186,15 +186,23 @@ model TournamentParticipant {
   id           String     @id @default(cuid())
   tournamentId String
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestName    String?    @db.VarChar(191)
   gameId       String // Snapshot of IGN or Game ID used at registration
   checkedInAt  DateTime?
   seed         Int?
   seededAt     DateTime?
   joinedAt     DateTime   @default(now())
 
+  matchesAsPlayerA Match[]       @relation("MatchPlayerA")
+  matchesAsPlayerB Match[]       @relation("MatchPlayerB")
+  matchesWon       Match[]       @relation("MatchWinner")
+  matchPlayers     MatchPlayer[]
+  matchResultsWon  MatchResult[] @relation("MatchResultWinner")
+
   @@unique([tournamentId, userId])
+  @@unique([tournamentId, guestName])
   @@index([tournamentId])
   @@index([userId])
   @@index([tournamentId, seed])
@@ -285,12 +293,7 @@ model User {
   auditLogs                    AuditLog[]
   tournaments                  TournamentParticipant[]
   createdTournaments           Tournament[]             @relation("TournamentCreator")
-  matchesAsPlayerA             Match[]                  @relation("MatchPlayerA")
-  matchesAsPlayerB             Match[]                  @relation("MatchPlayerB")
-  matchesWon                   Match[]                  @relation("MatchWinner")
-  matchPlayers                 MatchPlayer[]
   matchReports                 MatchReport[]
-  matchResultsWon              MatchResult[]            @relation("MatchResultWinner")
   matchResultsConfirmed        MatchResult[]            @relation("MatchResultConfirmedBy")
   matchDisputesRaised          MatchDispute[]           @relation("MatchDisputeRaisedBy")
   matchDisputesResolved        MatchDispute[]           @relation("MatchDisputeResolvedBy")
@@ -573,11 +576,11 @@ model Match {
 
   playerAId String?
   playerBId String?
-  playerA   User?   @relation("MatchPlayerA", fields: [playerAId], references: [id], onDelete: SetNull)
-  playerB   User?   @relation("MatchPlayerB", fields: [playerBId], references: [id], onDelete: SetNull)
+  playerA   TournamentParticipant? @relation("MatchPlayerA", fields: [playerAId], references: [id], onDelete: SetNull)
+  playerB   TournamentParticipant? @relation("MatchPlayerB", fields: [playerBId], references: [id], onDelete: SetNull)
 
   winnerId String?
-  winner   User?   @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: SetNull)
+  winner   TournamentParticipant? @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: SetNull)
 
   scoreA Int? @default(0)
   scoreB Int? @default(0)
@@ -609,16 +612,16 @@ model Match {
 }
 
 model MatchPlayer {
-  id      String          @id @default(cuid())
-  matchId String
-  match   Match           @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  userId  String
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  side    MatchPlayerSide
+  id            String                @id @default(cuid())
+  matchId       String
+  match         Match                 @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  side          MatchPlayerSide
 
-  @@unique([matchId, userId])
+  @@unique([matchId, participantId])
   @@unique([matchId, side])
-  @@index([userId])
+  @@index([participantId])
 }
 
 model MatchReport {
@@ -639,17 +642,17 @@ model MatchReport {
 }
 
 model MatchResult {
-  id            String            @id @default(cuid())
-  matchId       String            @unique
-  match         Match             @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  id            String                @id @default(cuid())
+  matchId       String                @unique
+  match         Match                 @relation(fields: [matchId], references: [id], onDelete: Cascade)
   winnerId      String
-  winner        User              @relation("MatchResultWinner", fields: [winnerId], references: [id], onDelete: Cascade)
+  winner        TournamentParticipant @relation("MatchResultWinner", fields: [winnerId], references: [id], onDelete: Cascade)
   scoreA        Int
   scoreB        Int
   confirmedById String?
-  confirmedBy   User?             @relation("MatchResultConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
-  source        MatchResultSource @default(PLAYER)
-  createdAt     DateTime          @default(now())
+  confirmedBy   User?                 @relation("MatchResultConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  source        MatchResultSource     @default(PLAYER)
+  createdAt     DateTime              @default(now())
 
   @@index([winnerId])
 }
