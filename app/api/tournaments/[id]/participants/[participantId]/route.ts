@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { logAudit } from "@/lib/audit-logger";
 import { tournamentParticipantUpdateSchema } from "@/lib/validators";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string; participantId: string }> }) {
     try {
@@ -35,7 +36,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
         await logAudit({
             userId: currentUser.id,
-            action: "TOURNAMENT_PARTICIPANT_UPDATED",
+            action: AUDIT_ACTIONS.TOURNAMENT_PARTICIPANT_UPDATED,
             targetId: participantId,
             targetType: "TournamentParticipant",
             details: { tournamentId: id },
@@ -73,7 +74,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
         await logAudit({
             userId: currentUser.id,
-            action: "TOURNAMENT_PARTICIPANT_REMOVED",
+            action: AUDIT_ACTIONS.TOURNAMENT_PARTICIPANT_REMOVED,
             targetId: participantId,
             targetType: "TournamentParticipant",
             details: { tournamentId: id },

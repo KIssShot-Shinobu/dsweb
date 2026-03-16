@@ -3,29 +3,49 @@ import { auth } from "@/auth";
 import { logAudit } from "@/lib/audit-logger";
 import { prisma, touchUserLastActiveAt } from "@/lib/prisma";
 import { finalizeAuthenticatedSession } from "@/lib/services/auth-session-finalize-service";
+import { createNotificationService } from "@/lib/services/notification.service";
 
-function getSafeRedirect(input: string | null) {
-    if (!input) {
+const DEFAULT_REDIRECT = "/dashboard";
+
+function resolveRedirect(input: unknown) {
+    if (typeof input !== "string") {
+        return { redirectTarget: DEFAULT_REDIRECT, isDefault: true };
+    }
+
+    const trimmed = input.trim();
+    if (!trimmed || !trimmed.startsWith("/") || trimmed.startsWith("//")) {
+        return { redirectTarget: DEFAULT_REDIRECT, isDefault: true };
+    }
+
+    return { redirectTarget: trimmed, isDefault: trimmed === DEFAULT_REDIRECT };
+}
+
+function getDefaultRedirect(role: string, emailVerified: boolean) {
+    if (!emailVerified) {
+        return "/dashboard/settings";
+    }
+
+    if (role === "ADMIN" || role === "FOUNDER") {
         return "/dashboard";
     }
 
-    if (!input.startsWith("/") || input.startsWith("//")) {
-        return "/dashboard";
-    }
-
-    return input;
+    return "/dashboard/profile";
 }
 
-function getProvider(input: string | null): "google" | "credentials" {
-    return input === "credentials" ? "credentials" : "google";
+function getProvider(input: string | null): "google" | "credentials" | "discord" {
+    if (input === "credentials") return "credentials";
+    if (input === "discord") return "discord";
+    return "google";
 }
 
-async function runFinalize(request: NextRequest, redirectTarget: string, provider: "google" | "credentials") {
+async function runFinalize(request: NextRequest, redirectTarget: string, provider: "google" | "credentials" | "discord") {
     const session = await auth();
 
     if (!session?.user?.email) {
         return { ok: false as const, code: "NO_SESSION" };
     }
+
+    const notifications = createNotificationService({ prisma });
 
     return finalizeAuthenticatedSession(
         {
@@ -35,6 +55,7 @@ async function runFinalize(request: NextRequest, redirectTarget: string, provide
                     update: (args) => prisma.user.update(args as never),
                 },
             },
+            notifications,
             touchUserLastActiveAt,
             logAudit: (params) => logAudit(params as any),
         },
@@ -49,7 +70,7 @@ async function runFinalize(request: NextRequest, redirectTarget: string, provide
 }
 
 export async function GET(request: NextRequest) {
-    const redirectTarget = getSafeRedirect(request.nextUrl.searchParams.get("redirect"));
+    const { redirectTarget } = resolveRedirect(request.nextUrl.searchParams.get("redirect"));
     const provider = getProvider(request.nextUrl.searchParams.get("provider"));
     const targetUrl = new URL("/oauth-finalize", request.url);
     targetUrl.searchParams.set("provider", provider);
@@ -59,7 +80,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
-    const redirectTarget = getSafeRedirect(typeof body?.redirect === "string" ? body.redirect : null);
+    const { redirectTarget, isDefault } = resolveRedirect(body?.redirect);
     const provider = getProvider(typeof body?.provider === "string" ? body.provider : null);
     const result = await runFinalize(request, redirectTarget, provider);
 
@@ -77,9 +98,13 @@ export async function POST(request: NextRequest) {
         );
     }
 
+    const resolvedRedirect = isDefault
+        ? getDefaultRedirect(result.user.role, result.emailVerified)
+        : redirectTarget;
+
     return NextResponse.json({
         success: true,
-        redirectTo: redirectTarget,
+        redirectTo: resolvedRedirect,
         user: {
             id: result.user.id,
             username: result.user.username,

@@ -9,6 +9,7 @@ type SummaryResponse = {
     tournament: {
         checkInOpen: boolean;
         checkInAt: string | null;
+        checkinRequired?: boolean;
     };
     stats: {
         registeredPlayers: number;
@@ -66,6 +67,7 @@ export function TournamentCheckInClient({ tournamentId }: { tournamentId: string
     const registered = summary?.stats.registeredPlayers ?? 0;
     const checkedIn = summary?.stats.checkedInPlayers ?? 0;
     const progress = registered > 0 ? Math.round((checkedIn / registered) * 100) : 0;
+    const checkinRequired = summary?.tournament?.checkinRequired ?? false;
 
     const updateCheckIn = async (payload: { action?: "OPEN" | "CLOSE"; checkInAt?: string }) => {
         setUpdating(true);
@@ -112,7 +114,11 @@ export function TournamentCheckInClient({ tournamentId }: { tournamentId: string
         await updateCheckIn({ checkInAt: "" });
     };
 
-    const checkInStatus = summary?.tournament?.checkInOpen ? "Check-in sedang dibuka" : "Check-in belum dibuka";
+    const checkInStatus = checkinRequired
+        ? summary?.tournament?.checkInOpen
+            ? "Check-in sedang dibuka"
+            : "Check-in belum dibuka"
+        : "Check-in tidak diaktifkan";
     const scheduleLabel = summary?.tournament?.checkInAt
         ? (() => {
               const date = new Date(summary.tournament.checkInAt);
@@ -132,10 +138,10 @@ export function TournamentCheckInClient({ tournamentId }: { tournamentId: string
                     description="Buka check-in dan pantau progres konfirmasi peserta."
                     actions={
                         <>
-                            <button className={btnPrimary} disabled={updating || summary?.tournament?.checkInOpen} onClick={() => updateCheckIn({ action: "OPEN" })}>
+                            <button className={btnPrimary} disabled={updating || !checkinRequired || summary?.tournament?.checkInOpen} onClick={() => updateCheckIn({ action: "OPEN" })}>
                                 Open Check-In
                             </button>
-                            <button className={btnOutline} disabled={updating || !summary?.tournament?.checkInOpen} onClick={() => updateCheckIn({ action: "CLOSE" })}>
+                            <button className={btnOutline} disabled={updating || !checkinRequired || !summary?.tournament?.checkInOpen} onClick={() => updateCheckIn({ action: "CLOSE" })}>
                                 Close Check-In
                             </button>
                         </>
@@ -156,15 +162,15 @@ export function TournamentCheckInClient({ tournamentId }: { tournamentId: string
                                 className="input input-bordered w-full"
                                 value={scheduleValue}
                                 onChange={(event) => setScheduleValue(event.target.value)}
-                                disabled={updating}
+                                disabled={updating || !checkinRequired}
                             />
                             <p className="text-xs text-base-content/55">{scheduleLabel}</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            <button className={btnPrimary} type="button" disabled={updating} onClick={handleScheduleSave}>
+                            <button className={btnPrimary} type="button" disabled={updating || !checkinRequired} onClick={handleScheduleSave}>
                                 Simpan Jadwal
                             </button>
-                            <button className={btnOutline} type="button" disabled={updating || !summary?.tournament?.checkInAt} onClick={handleScheduleClear}>
+                            <button className={btnOutline} type="button" disabled={updating || !checkinRequired || !summary?.tournament?.checkInAt} onClick={handleScheduleClear}>
                                 Hapus Jadwal
                             </button>
                         </div>

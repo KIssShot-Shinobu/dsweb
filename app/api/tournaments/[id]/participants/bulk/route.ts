@@ -23,7 +23,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const { id } = await params;
         const tournament = await prisma.tournament.findUnique({
             where: { id },
-            select: { id: true, status: true, createdById: true, title: true },
+            select: {
+                id: true,
+                status: true,
+                createdById: true,
+                title: true,
+                maxPlayers: true,
+                _count: { select: { participants: true } },
+            },
         });
 
         if (!tournament) {
@@ -61,6 +68,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const seen = new Set<string>();
         const toCreate: Array<{ tournamentId: string; guestName: string; gameId: string }> = [];
         const result: BulkResult = { added: 0, skipped: 0, failed: [] };
+        let remainingSlots =
+            tournament.maxPlayers !== null && tournament.maxPlayers !== undefined
+                ? Math.max(0, tournament.maxPlayers - tournament._count.participants)
+                : Number.POSITIVE_INFINITY;
 
         for (const line of rows) {
             const [rawName, rawGameId] = line.split("|").map((part) => part?.trim());
@@ -72,6 +83,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             const normalizedName = rawName.toLowerCase();
             if (existingSet.has(normalizedName) || seen.has(normalizedName)) {
                 result.skipped += 1;
+                continue;
+            }
+
+            if (remainingSlots <= 0) {
+                result.failed.push({ line, reason: "Slot peserta sudah penuh" });
                 continue;
             }
 
@@ -87,6 +103,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
             seen.add(normalizedName);
             toCreate.push({ tournamentId: id, guestName: rawName, gameId: rawGameId });
+            remainingSlots = remainingSlots === Number.POSITIVE_INFINITY ? remainingSlots : remainingSlots - 1;
         }
 
         if (toCreate.length > 0) {

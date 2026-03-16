@@ -22,7 +22,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             role: true,
             createdAt: true,
             lastLoginAt: true,
-            gameProfiles: true,
+            playerGameAccounts: {
+                select: {
+                    game: { select: { code: true, name: true } },
+                    gamePlayerId: true,
+                    ign: true,
+                    screenshotUrl: true,
+                },
+            },
             registrationLog: true,
             ...activeTeamMembershipSelect,
             auditLogs: {
@@ -41,10 +48,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!user) return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
     const activeTeam = getActiveTeamSnapshot(user);
 
+    const { playerGameAccounts, ...userData } = user;
+    const gameProfiles = (playerGameAccounts || []).map((account) => ({
+        gameType: account.game.code,
+        gameName: account.game.name,
+        gameId: account.gamePlayerId,
+        ign: account.ign,
+        screenshotUrl: account.screenshotUrl,
+    }));
+
     return NextResponse.json({
         success: true,
         data: {
-            ...user,
+            ...userData,
+            gameProfiles,
             teamId: activeTeam.teamId,
             teamJoinedAt: activeTeam.teamJoinedAt,
             team: activeTeam.team,

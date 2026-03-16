@@ -31,7 +31,11 @@ function OAuthFinalizeContent() {
         () => getSafeRedirect(searchParams.get("redirect")),
         [searchParams],
     );
-    const provider = searchParams.get("provider") === "credentials" ? "credentials" : "google";
+    const providerParam = searchParams.get("provider");
+    const provider =
+        providerParam === "credentials" || providerParam === "google" || providerParam === "discord"
+            ? providerParam
+            : "google";
 
     const [state, setState] = useState<FinalizeState>("loading");
     const [message, setMessage] = useState("Kami sedang menyiapkan sesi akun Anda...");

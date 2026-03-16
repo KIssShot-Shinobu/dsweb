@@ -13,24 +13,10 @@ type AuthMockUser = {
 };
 
 const baseRegisterInput = {
-    username: "test.user",
+    fullName: "Test User",
     email: "test@example.com",
     password: "Password123",
     confirmPassword: "Password123",
-    phoneWhatsapp: "+628123456789",
-    provinceCode: "31",
-    provinceName: "DKI Jakarta",
-    cityCode: "3171",
-    cityName: "Kota Jakarta Pusat",
-    duelLinksGameId: "123-456-789",
-    duelLinksIgn: "[DS] Test",
-    masterDuelGameId: "",
-    masterDuelIgn: "",
-    duelLinksScreenshotUploadId: "",
-    masterDuelScreenshotUploadId: "",
-    sourceInfo: "Discord",
-    socialMedia: ["discord"],
-    agreement: true as const,
 };
 
 test("authenticateUser returns user for valid credentials", async () => {
@@ -112,31 +98,26 @@ test("authenticateUser blocks banned non-admin user", async () => {
     assert.deepEqual(result, { ok: false, code: "BANNED", userId: "user_2" });
 });
 
-test("registerUser rejects duplicate username", async () => {
+test("registerUser rejects duplicate email", async () => {
     const result = await registerUser(
         {
             prisma: {
                 user: {
-                    findUnique: async (args: { where: { username?: string; email?: string; phoneWhatsapp?: string } }) => {
-                        if (args.where.username) {
-                            return {
-                                id: "user_dup",
-                                email: "existing@example.com",
-                                username: "existing.user",
-                                fullName: "Existing User",
-                                status: "ACTIVE",
-                                role: "USER",
-                            };
-                        }
-                        return null;
-                    },
+                    findUnique: async (args: { where: { username?: string; email?: string } }) =>
+                        args.where.email
+                            ? {
+                                  id: "user_dup",
+                                  email: "existing@example.com",
+                                  username: "existing.user",
+                                  fullName: "Existing User",
+                                  status: "ACTIVE",
+                                  role: "USER",
+                              }
+                            : null,
                     create: async () => {
                         throw new Error("should not create");
                     },
                     update: async () => null,
-                },
-                gameProfile: {
-                    findFirst: async () => null,
                 },
                 emailVerificationToken: {
                     upsert: async () => null,
@@ -148,49 +129,9 @@ test("registerUser rejects duplicate username", async () => {
         },
         {
             ...baseRegisterInput,
-            username: "existing.user",
+            email: "existing@example.com",
         },
     );
 
-    assert.deepEqual(result, { ok: false, code: "USERNAME_EXISTS" });
-});
-
-test("registerUser rejects duplicate phone number", async () => {
-    const result = await registerUser(
-        {
-            prisma: {
-                user: {
-                    findUnique: async (args: { where: { username?: string; email?: string; phoneWhatsapp?: string } }) => {
-                        if (args.where.phoneWhatsapp) {
-                            return {
-                                id: "user_3",
-                                email: "existing@example.com",
-                                username: "existing.user",
-                                fullName: "Existing User",
-                                status: "ACTIVE",
-                                role: "USER",
-                            };
-                        }
-                        return null;
-                    },
-                    create: async () => {
-                        throw new Error("should not create");
-                    },
-                    update: async () => null,
-                },
-                gameProfile: {
-                    findFirst: async () => null,
-                },
-                emailVerificationToken: {
-                    upsert: async () => null,
-                },
-            } as unknown as Parameters<typeof registerUser>[0]["prisma"],
-            hashPassword: async () => "hashed",
-            comparePassword: async () => false,
-            generateSecureToken: () => "verify-token",
-        },
-        baseRegisterInput,
-    );
-
-    assert.deepEqual(result, { ok: false, code: "PHONE_EXISTS" });
+    assert.deepEqual(result, { ok: false, code: "EMAIL_EXISTS" });
 });

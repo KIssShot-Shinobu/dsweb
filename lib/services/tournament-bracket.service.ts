@@ -85,6 +85,11 @@ function nextPowerOfTwo(value: number) {
     return size;
 }
 
+function resolveBracketSize(participantCount: number, maxPlayers?: number | null) {
+    const base = maxPlayers && maxPlayers > participantCount ? maxPlayers : participantCount;
+    return nextPowerOfTwo(base);
+}
+
 function buildSlots(participants: BracketParticipant[], bracketSize: number) {
     const slots = participants.map((item) => item.participantId);
     while (slots.length < bracketSize) slots.push(null);
@@ -476,8 +481,13 @@ async function createBracketNodes(tx: PrismaClient, tournamentId: string) {
     );
 }
 
-async function generateSingleElim(tx: PrismaClient, tournamentId: string, participants: BracketParticipant[]) {
-    const bracketSize = nextPowerOfTwo(participants.length);
+async function generateSingleElim(
+    tx: PrismaClient,
+    tournamentId: string,
+    participants: BracketParticipant[],
+    maxPlayers?: number | null
+) {
+    const bracketSize = resolveBracketSize(participants.length, maxPlayers);
     const { slots, assignments } = buildSeededSlots(participants, bracketSize);
     const roundsCount = Math.log2(bracketSize);
 
@@ -520,8 +530,13 @@ async function generateSingleElim(tx: PrismaClient, tournamentId: string, partic
     await createBracketNodes(tx, tournamentId);
 }
 
-async function generateDoubleElim(tx: PrismaClient, tournamentId: string, participants: BracketParticipant[]) {
-    const bracketSize = nextPowerOfTwo(participants.length);
+async function generateDoubleElim(
+    tx: PrismaClient,
+    tournamentId: string,
+    participants: BracketParticipant[],
+    maxPlayers?: number | null
+) {
+    const bracketSize = resolveBracketSize(participants.length, maxPlayers);
     const { slots, assignments } = buildSeededSlots(participants, bracketSize);
     const upperRoundsCount = Math.log2(bracketSize);
     const lowerRoundsCount = Math.max(1, 2 * (upperRoundsCount - 1));
@@ -667,31 +682,44 @@ async function generateTournamentBracketWithTx(
     tx: PrismaClient,
     tournamentId: string,
     structure: TournamentStructure,
-    participants: BracketParticipant[]
+    participants: BracketParticipant[],
+    maxPlayers?: number | null
 ) {
     if (structure === "SINGLE_ELIM") {
-        await generateSingleElim(tx, tournamentId, participants);
+        await generateSingleElim(tx, tournamentId, participants, maxPlayers);
         return;
     }
     if (structure === "DOUBLE_ELIM") {
-        await generateDoubleElim(tx, tournamentId, participants);
+        await generateDoubleElim(tx, tournamentId, participants, maxPlayers);
         return;
     }
 
     await generateSwiss(tx, tournamentId, participants);
 }
 
-export async function generateTournamentBracket(prisma: PrismaClient, tournamentId: string, structure: TournamentStructure, participants: BracketParticipant[]) {
+export async function generateTournamentBracket(
+    prisma: PrismaClient,
+    tournamentId: string,
+    structure: TournamentStructure,
+    participants: BracketParticipant[],
+    maxPlayers?: number | null
+) {
     if (participants.length < 2) {
         throw new Error("Minimal 2 peserta untuk memulai turnamen.");
     }
 
     await prisma.$transaction(async (tx) => {
-        await generateTournamentBracketWithTx(tx as PrismaClient, tournamentId, structure, participants);
+        await generateTournamentBracketWithTx(tx as PrismaClient, tournamentId, structure, participants, maxPlayers);
     });
 }
 
-export async function rebuildTournamentBracket(prisma: PrismaClient, tournamentId: string, structure: TournamentStructure, participants: BracketParticipant[]) {
+export async function rebuildTournamentBracket(
+    prisma: PrismaClient,
+    tournamentId: string,
+    structure: TournamentStructure,
+    participants: BracketParticipant[],
+    maxPlayers?: number | null
+) {
     if (participants.length < 2) {
         throw new Error("Minimal 2 peserta untuk membuat bracket.");
     }
@@ -709,7 +737,7 @@ export async function rebuildTournamentBracket(prisma: PrismaClient, tournamentI
             data: { seed: null, seededAt: null },
         });
 
-        await generateTournamentBracketWithTx(tx as PrismaClient, tournamentId, structure, participants);
+        await generateTournamentBracketWithTx(tx as PrismaClient, tournamentId, structure, participants, maxPlayers);
     });
 }
 
@@ -717,7 +745,7 @@ export async function syncTournamentRosterToBracket(prisma: PrismaClient, tourna
     return prisma.$transaction(async (tx) => {
         const tournament = await tx.tournament.findUnique({
             where: { id: tournamentId },
-            select: { id: true, structure: true },
+            select: { id: true, structure: true, checkinRequired: true },
         });
 
         if (!tournament) {
@@ -753,6 +781,7 @@ export async function syncTournamentRosterToBracket(prisma: PrismaClient, tourna
         const participants = await tx.tournamentParticipant.findMany({
             where: {
                 tournamentId,
+                ...(tournament.checkinRequired ? { status: "CHECKED_IN" } : {}),
                 ...(participantIds?.length ? { id: { in: participantIds } } : {}),
             },
             select: { id: true, seed: true, joinedAt: true },
@@ -799,7 +828,7 @@ export async function syncOrCreateTournamentBracket(
 ): Promise<BracketSyncSummary> {
     const tournament = await prisma.tournament.findUnique({
         where: { id: tournamentId },
-        select: { id: true, structure: true },
+        select: { id: true, structure: true, maxPlayers: true, checkinRequired: true },
     });
 
     if (!tournament) {
@@ -810,7 +839,10 @@ export async function syncOrCreateTournamentBracket(
 
     if (rounds === 0) {
         const participants = await prisma.tournamentParticipant.findMany({
-            where: { tournamentId },
+            where: {
+                tournamentId,
+                ...(tournament.checkinRequired ? { status: "CHECKED_IN" } : {}),
+            },
             select: { id: true },
         });
 
@@ -822,7 +854,8 @@ export async function syncOrCreateTournamentBracket(
             prisma,
             tournamentId,
             tournament.structure,
-            participants.map((participant) => ({ participantId: participant.id }))
+            participants.map((participant) => ({ participantId: participant.id })),
+            tournament.maxPlayers ?? undefined
         );
 
         return { created: true, syncedCount: participants.length, pendingCount: 0 };

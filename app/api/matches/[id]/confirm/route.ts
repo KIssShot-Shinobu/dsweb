@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { resolveMatchResult } from "@/lib/services/tournament-bracket.service";
+import { logAudit } from "@/lib/audit-logger";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 
 export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -62,6 +64,14 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
             winnerId: report.winnerId,
             source: "PLAYER",
             confirmedById: currentUser.id,
+        });
+
+        await logAudit({
+            userId: currentUser.id,
+            action: AUDIT_ACTIONS.MATCH_CONFIRMED,
+            targetId: id,
+            targetType: "Match",
+            details: { scoreA: report.scoreA, scoreB: report.scoreB, winnerId: report.winnerId },
         });
 
         return NextResponse.json({ success: true, message: "Hasil match terkonfirmasi" }, { status: 200 });

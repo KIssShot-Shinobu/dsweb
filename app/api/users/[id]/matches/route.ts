@@ -37,14 +37,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     winnerId: true,
                     playerAId: true,
                     playerBId: true,
-                    tournament: { select: { id: true, title: true, gameType: true } },
+                    tournament: { select: { id: true, title: true, game: { select: { code: true, name: true } } } },
                     round: { select: { id: true, roundNumber: true, type: true } },
                 },
             }),
             prisma.match.count({ where }),
         ]);
 
-        return NextResponse.json({ success: true, data: matches, total, page, limit }, { status: 200 });
+        const mappedMatches = matches.map((match) => ({
+            ...match,
+            tournament: match.tournament
+                ? {
+                      ...match.tournament,
+                      gameType: match.tournament.game?.code ?? "",
+                      gameName: match.tournament.game?.name ?? "",
+                  }
+                : null,
+        }));
+
+        return NextResponse.json({ success: true, data: mappedMatches, total, page, limit }, { status: 200 });
     } catch (error) {
         console.error("[User Matches]", error);
         return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });

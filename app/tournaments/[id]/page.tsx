@@ -49,6 +49,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     const tournament = await prisma.tournament.findUnique({
         where: { id },
         include: {
+            game: { select: { code: true, name: true } },
             participants: {
                 include: {
                     user: {
@@ -70,15 +71,15 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     const isRegistered = currentUser
         ? tournament.participants.some((participant) => participant.userId === currentUser.id)
         : false;
+    const participantCount = tournament.participants.length;
+    const maxPlayers = tournament.maxPlayers ?? null;
+    const isFull = Boolean(maxPlayers && participantCount >= maxPlayers);
 
     return (
         <main className="min-h-screen bg-transparent text-base-content">
             <Navbar />
             <section className="border-b border-base-300 pt-28">
                 <div className="mx-auto max-w-[1400px] px-4 pb-14 sm:px-6 lg:px-8">
-                    <Link href="/tournaments" className="mb-6 inline-flex items-center text-sm font-semibold text-base-content/55 transition-colors hover:text-primary">
-                        Kembali ke direktori turnamen
-                    </Link>
                     <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
                         <div className="card overflow-hidden border border-base-300 bg-base-100 shadow-2xl">
                             <div className="relative min-h-[320px] border-b border-base-300 bg-gradient-to-br from-info/20 via-base-200 to-warning/15">
@@ -103,7 +104,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                             {tournament.format}
                                         </span>
                                         <span className="badge badge-outline h-auto px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em]">
-                                            {tournament.gameType === "MASTER_DUEL" ? "Master Duel" : "Duel Links"}
+                                            {tournament.game?.name ?? "Game"}
                                         </span>
                                     </div>
                                     <h1 className="max-w-4xl text-4xl font-black leading-tight text-base-content sm:text-5xl">{tournament.title}</h1>
@@ -115,7 +116,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                             <div className="grid gap-4 p-6 md:grid-cols-4">
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
                                     <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">Jadwal Event</div>
-                                    <div className="text-sm font-semibold text-base-content">{formatDate(tournament.startDate)}</div>
+                                    <div className="text-sm font-semibold text-base-content">{formatDate(tournament.startAt)}</div>
                                 </div>
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
                                     <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">Prize Pool</div>
@@ -127,74 +128,80 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                 </div>
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
                                     <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">Peserta Terdaftar</div>
-                                    <div className="text-sm font-semibold text-base-content">{tournament.participants.length} pemain</div>
+                                    <div className="text-sm font-semibold text-base-content">
+                                        {maxPlayers ? `${participantCount} / ${maxPlayers}` : `${participantCount} pemain`}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="card border border-base-300 bg-base-100 shadow-xl">
-                                <div className="card-body p-6">
-                                    <div className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-primary">Pendaftaran</div>
-                                    <h2 className="mb-2 text-2xl font-black text-base-content">Amankan slot Anda</h2>
-                                    <p className="mb-5 text-sm leading-6 text-base-content/60">
-                                        Pelajari detail event, pastikan formatnya sesuai, lalu daftar langsung selama registrasi masih dibuka.
-                                    </p>
-                                    <TournamentRegisterButton
-                                        tournamentId={tournament.id}
-                                        disabled={tournament.status !== "OPEN"}
-                                        isRegistered={isRegistered}
-                                    />
-                                </div>
-                            </div>
+                        <div>
+                            <div className="card border border-base-300 bg-base-100 shadow-xl lg:sticky lg:top-28">
+                                <div className="card-body space-y-6 p-6">
+                                    <div>
+                                        <div className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-primary">Pendaftaran</div>
+                                        <h2 className="mb-2 text-2xl font-black text-base-content">Amankan slot Anda</h2>
+                                        <p className="mb-5 text-sm leading-6 text-base-content/60">
+                                            Pelajari detail event, pastikan formatnya sesuai, lalu daftar langsung selama registrasi masih dibuka.
+                                        </p>
+                                        <TournamentRegisterButton
+                                            tournamentId={tournament.id}
+                                            disabled={tournament.status !== "OPEN" || isFull}
+                                            isFull={isFull}
+                                            isRegistered={isRegistered}
+                                        />
+                                    </div>
 
-                            <div className="card border border-base-300 bg-base-100 shadow-xl">
-                                <div className="card-body p-6">
-                                    <div className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-primary">Roster Peserta</div>
-                                    {tournament.participants.length === 0 ? (
-                                        <p className="text-sm text-base-content/60">Belum ada peserta terdaftar. Jadilah yang pertama mengisi bracket ini.</p>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {tournament.participants.map((participant, index) => {
-                                                const displayName = participant.user?.fullName || participant.guestName || "Guest";
-                                                const roleLabel = participant.user?.role || "Guest";
-                                                const avatarUrl = participant.user?.avatarUrl ? normalizeAssetUrl(participant.user.avatarUrl) : null;
+                                    <div className="divider my-1" />
 
-                                                return (
-                                                <div key={participant.id} className="flex items-center justify-between rounded-box border border-base-300 bg-base-200/50 px-4 py-3">
-                                                    <div className="flex items-center gap-3">
-                                                        {avatarUrl ? (
-                                                            <Image
-                                                                unoptimized
-                                                                src={avatarUrl}
-                                                                alt={displayName}
-                                                                width={40}
-                                                                height={40}
-                                                                className="h-10 w-10 rounded-full border border-base-300 object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="badge badge-primary h-10 w-10 rounded-full border-0 font-black text-primary-content">
-                                                                {displayName.slice(0, 1).toUpperCase()}
+                                    <div>
+                                        <div className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-primary">Roster Peserta</div>
+                                        {tournament.participants.length === 0 ? (
+                                            <p className="text-sm text-base-content/60">Belum ada peserta terdaftar. Jadilah yang pertama mengisi bracket ini.</p>
+                                        ) : (
+                                            <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+                                                {tournament.participants.map((participant, index) => {
+                                                    const displayName = participant.user?.fullName || participant.guestName || "Guest";
+                                                    const roleLabel = participant.user?.role || "Guest";
+                                                    const avatarUrl = participant.user?.avatarUrl ? normalizeAssetUrl(participant.user.avatarUrl) : null;
+
+                                                    return (
+                                                        <div key={participant.id} className="flex items-center justify-between rounded-box border border-base-300 bg-base-200/40 px-4 py-3">
+                                                            <div className="flex items-center gap-3">
+                                                                {avatarUrl ? (
+                                                                    <Image
+                                                                        unoptimized
+                                                                        src={avatarUrl}
+                                                                        alt={displayName}
+                                                                        width={40}
+                                                                        height={40}
+                                                                        className="h-10 w-10 rounded-full border border-base-300 object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="badge badge-primary h-10 w-10 rounded-full border-0 font-black text-primary-content">
+                                                                        {displayName.slice(0, 1).toUpperCase()}
+                                                                    </div>
+                                                                )}
+                                                                <div>
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <div className="font-semibold text-base-content">{displayName}</div>
+                                                                        {!participant.user ? (
+                                                                            <span className="badge badge-outline badge-sm">Guest</span>
+                                                                        ) : null}
+                                                                    </div>
+                                                                    <div className="text-xs text-base-content/50">{participant.gameId}</div>
+                                                                </div>
                                                             </div>
-                                                        )}
-                                                        <div>
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <div className="font-semibold text-base-content">{displayName}</div>
-                                                                {!participant.user ? (
-                                                                    <span className="badge badge-outline badge-sm">Guest</span>
-                                                                ) : null}
+                                                            <div className="text-right text-xs text-base-content/50">
+                                                                <div>#{String(index + 1).padStart(2, "0")}</div>
+                                                                <div>{roleLabel}</div>
                                                             </div>
-                                                            <div className="text-xs text-base-content/50">{participant.gameId}</div>
                                                         </div>
-                                                    </div>
-                                                    <div className="text-right text-xs text-base-content/50">
-                                                        <div>#{String(index + 1).padStart(2, "0")}</div>
-                                                        <div>{roleLabel}</div>
-                                                    </div>
-                                                </div>
-                                            )})}
-                                        </div>
-                                    )}
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -4,6 +4,8 @@ import { getServerCurrentUser } from "@/lib/server-current-user";
 import { hasRole, ROLES } from "@/lib/auth";
 import { matchAdminResolveSchema } from "@/lib/validators";
 import { resolveMatchResult } from "@/lib/services/tournament-bracket.service";
+import { logAudit } from "@/lib/audit-logger";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -43,6 +45,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         await prisma.matchDispute.updateMany({
             where: { matchId: id, status: "OPEN" },
             data: { status: "RESOLVED", resolvedById: currentUser.id, resolvedAt: new Date() },
+        });
+
+        await logAudit({
+            userId: currentUser.id,
+            action: AUDIT_ACTIONS.MATCH_ADMIN_RESOLVED,
+            targetId: id,
+            targetType: "Match",
+            details: {
+                scoreA: parsed.data.scoreA,
+                scoreB: parsed.data.scoreB,
+                winnerId: parsed.data.winnerId,
+                reason: parsed.data.reason || undefined,
+            },
         });
 
         return NextResponse.json({ success: true, message: "Hasil match diset oleh admin" }, { status: 200 });

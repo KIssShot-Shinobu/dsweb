@@ -87,7 +87,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const { id } = await params;
         const tournament = await prisma.tournament.findUnique({
             where: { id },
-            select: { id: true, status: true, createdById: true, title: true },
+            select: {
+                id: true,
+                status: true,
+                createdById: true,
+                title: true,
+                maxPlayers: true,
+                _count: { select: { participants: true } },
+            },
         });
 
         if (!tournament) {
@@ -134,6 +141,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 return NextResponse.json({ success: false, message: "User sudah terdaftar di turnamen ini" }, { status: 409 });
             }
 
+            if (tournament.maxPlayers && tournament._count.participants >= tournament.maxPlayers) {
+                return NextResponse.json({ success: false, message: "Slot peserta sudah penuh" }, { status: 409 });
+            }
+
             const participant = await prisma.tournamentParticipant.create({
                 data: {
                     tournamentId: id,
@@ -174,6 +185,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         if (existingGuest) {
             return NextResponse.json({ success: false, message: "Guest dengan nama yang sama sudah terdaftar" }, { status: 409 });
+        }
+
+        if (tournament.maxPlayers && tournament._count.participants >= tournament.maxPlayers) {
+            return NextResponse.json({ success: false, message: "Slot peserta sudah penuh" }, { status: 409 });
         }
 
         const participant = await prisma.tournamentParticipant.create({

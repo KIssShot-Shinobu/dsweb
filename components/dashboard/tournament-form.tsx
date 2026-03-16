@@ -60,7 +60,7 @@ export function getDefaultTournamentForm() {
         structure: "SINGLE_ELIM",
         entryFee: 0,
         prizePool: 0,
-        startDate: "",
+        startAt: "",
         image: "",
         onlineMode: "ONLINE",
         checkInEnabled: true,
@@ -102,7 +102,11 @@ export function buildTournamentPayload(formData: TournamentFormState) {
         status: formData.status,
         entryFee: formData.entryFee,
         prizePool: formData.prizePool,
-        startDate: formData.startDate,
+        maxPlayers: formData.maxPlayers ? Number(formData.maxPlayers) : undefined,
+        registrationOpen: formData.registrationStart || undefined,
+        registrationClose: formData.registrationEnd || undefined,
+        checkinRequired: formData.checkInEnabled,
+        startAt: formData.startAt,
         image: formData.image,
     };
 }
@@ -226,7 +230,7 @@ export function TournamentForm({
                             </div>
                             <div>
                                 <label className={labelCls}>Start Time</label>
-                                <input type="datetime-local" className={inputCls} required value={formData.startDate} onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))} />
+                                <input type="datetime-local" className={inputCls} required value={formData.startAt} onChange={(e) => setFormData((prev) => ({ ...prev, startAt: e.target.value }))} />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

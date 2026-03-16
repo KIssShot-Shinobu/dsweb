@@ -5,6 +5,7 @@ import { logAudit } from "@/lib/audit-logger";
 import { tournamentUpdateSchema } from "@/lib/validators";
 import { resolveTournamentImage } from "@/lib/tournament-image";
 import { getServerCurrentUser } from "@/lib/server-current-user";
+import { resolveGameByCodeOrId } from "@/lib/game";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -12,6 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const tournament = await prisma.tournament.findUnique({
             where: { id },
             include: {
+                game: { select: { code: true, name: true } },
                 participants: {
                     include: {
                         user: {
@@ -31,6 +33,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             success: true,
             tournament: {
                 ...tournament,
+                gameType: tournament.game?.code ?? "",
+                gameName: tournament.game?.name ?? "",
+                startAt: tournament.startAt.toISOString(),
                 image: resolveTournamentImage(tournament.image),
             },
         }, { status: 200 });
@@ -61,8 +66,25 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ success: false, message: "Tidak ada data untuk diupdate" }, { status: 400 });
         }
 
-        if (typeof updateData.startDate === "string") {
-            updateData.startDate = new Date(updateData.startDate);
+        if (typeof updateData.startAt === "string") {
+            updateData.startAt = new Date(updateData.startAt);
+        }
+
+        if (typeof updateData.gameType === "string") {
+            const game = await resolveGameByCodeOrId(prisma, updateData.gameType);
+            if (!game) {
+                return NextResponse.json({ success: false, message: "Game tidak ditemukan" }, { status: 400 });
+            }
+            updateData.gameId = game.id;
+            delete updateData.gameType;
+        }
+
+        if (typeof updateData.registrationOpen === "string") {
+            updateData.registrationOpen = updateData.registrationOpen ? new Date(updateData.registrationOpen) : null;
+        }
+
+        if (typeof updateData.registrationClose === "string") {
+            updateData.registrationClose = updateData.registrationClose ? new Date(updateData.registrationClose) : null;
         }
 
         if (updateData.description === "") {
@@ -71,6 +93,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         if (updateData.image === "") {
             updateData.image = null;
+        }
+
+        if (typeof updateData.maxPlayers === "number") {
+            const participantCount = await prisma.tournamentParticipant.count({
+                where: { tournamentId: id },
+            });
+            if (participantCount > updateData.maxPlayers) {
+                return NextResponse.json(
+                    { success: false, message: "Max players lebih kecil dari jumlah peserta saat ini." },
+                    { status: 400 }
+                );
+            }
         }
 
         const tournament = await prisma.tournament.update({

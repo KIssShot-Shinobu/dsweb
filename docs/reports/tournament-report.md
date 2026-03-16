@@ -42,6 +42,7 @@ erDiagram
 - Tournament
   - status: OPEN, ONGOING, COMPLETED, CANCELLED
   - structure: SINGLE_ELIM, DOUBLE_ELIM, SWISS
+  - maxPlayers: kapasitas maksimal peserta (opsional)
 - TournamentParticipant
   - userId optional for guest
   - guestName optional for non-user participants
@@ -75,7 +76,7 @@ Participants:
 - POST /api/tournaments/[id]/participants/[participantId]/check-in
 
 Bracket:
-- GET /api/tournaments/[id]/bracket
+- GET /api/tournaments/[id]/bracket (public, no auth)
 - GET /api/tournaments/[id]/seeds
 - POST /api/tournaments/[id]/start
 - POST /api/tournaments/[id]/shuffle
@@ -85,6 +86,9 @@ Matches:
 - POST /api/matches/[id]/report
 - POST /api/matches/[id]/confirm
 - POST /api/matches/[id]/admin-resolve
+
+Notes:
+- Endpoint register dan match report memiliki rate limit per user untuk mencegah abuse.
 
 Announcements:
 - GET /api/tournaments/[id]/announcements
@@ -130,6 +134,7 @@ Public:
 - Tournament list and detail page.
 - Bracket viewer (react-tournament-brackets).
 - Register button with status update.
+  - Bracket public hanya mengembalikan data yang dibutuhkan (tanpa ID peserta internal).
 
 Admin:
 - Tournament list with quick actions.
@@ -143,8 +148,8 @@ Admin:
 - Guest participants are allowed via admin flows.
 
 ## Known Limitations
-- No explicit maxPlayers field; bracket size is based on participants at creation time.
-- If participants exceed bracket capacity after creation, extra participants wait for slots.
+- maxPlayers wajib selaras ukuran bracket (8/16/32/64/128/256).
+- Bracket size masih mengikuti peserta saat create, tapi registrasi akan berhenti saat kapasitas penuh.
 - Shuffle rebuilds bracket and resets match history (OPEN only).
 
 ## Test Coverage
@@ -156,7 +161,6 @@ Test entry point:
 - `npm run test:unit`
 
 ## Recommendations
-- Add maxPlayers to make bracket capacity explicit.
 - Add a warning banner when pending participants exceed available slots.
 - Add admin action to expand bracket size without rebuild (future).
 

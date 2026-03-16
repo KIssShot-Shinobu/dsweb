@@ -24,11 +24,6 @@ enum UserRole {
   FOUNDER
 }
 
-enum GameType {
-  DUEL_LINKS
-  MASTER_DUEL
-}
-
 enum TournamentFormat {
   BO1
   BO3
@@ -46,6 +41,12 @@ enum TournamentStructure {
   SINGLE_ELIM
   DOUBLE_ELIM
   SWISS
+}
+
+enum TournamentMode {
+  INDIVIDUAL
+  TEAM_BOARD
+  TEAM_KOTH
 }
 
 enum RoundType {
@@ -137,6 +138,13 @@ enum MatchDisputeStatus {
   REJECTED
 }
 
+enum TournamentParticipantStatus {
+  REGISTERED
+  CHECKED_IN
+  DISQUALIFIED
+  PLAYING
+}
+
 model Team {
   id          String   @id @default(cuid())
   name        String   @db.VarChar(191)
@@ -157,14 +165,23 @@ model Tournament {
   title       String
   description String?
   format      TournamentFormat    @default(BO3)
-  gameType    GameType            @default(DUEL_LINKS)
+  gameId      String
+  game        Game                @relation(fields: [gameId], references: [id], onDelete: Restrict)
   status      TournamentStatus    @default(OPEN)
   structure   TournamentStructure @default(SINGLE_ELIM)
+  mode        TournamentMode      @default(INDIVIDUAL)
+  isTeamTournament Boolean        @default(false)
+  checkinRequired Boolean         @default(false)
   checkInOpen Boolean             @default(false)
   checkInAt   DateTime?
+  minPlayers Int?
+  maxPlayers Int?
+  bracketSize Int?
+  registrationOpen DateTime?
+  registrationClose DateTime?
   entryFee    Int                 @default(0)
   prizePool   Int                 @default(0)
-  startDate   DateTime
+  startAt     DateTime
   image       String?
   createdById String
   createdBy   User                @relation("TournamentCreator", fields: [createdById], references: [id], onDelete: Cascade)
@@ -178,8 +195,9 @@ model Tournament {
   announcements TournamentAnnouncement[]
 
   @@index([createdById])
-  @@index([status, startDate])
-  @@index([structure, startDate])
+  @@index([gameId])
+  @@index([status, startAt])
+  @@index([structure, startAt])
 }
 
 model TournamentParticipant {
@@ -190,6 +208,7 @@ model TournamentParticipant {
   user         User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   guestName    String?    @db.VarChar(191)
   gameId       String // Snapshot of IGN or Game ID used at registration
+  status       TournamentParticipantStatus @default(REGISTERED)
   checkedInAt  DateTime?
   seed         Int?
   seededAt     DateTime?
@@ -287,7 +306,7 @@ model User {
   reviewedTeamCreationRequests TeamCreationRequest[]    @relation("TeamCreationReviewer")
   notifications                Notification[]
   notificationPreference       NotificationPreference?
-  gameProfiles                 GameProfile[]
+  playerGameAccounts           PlayerGameAccount[]
   tournamentAnnouncements      TournamentAnnouncement[]
   registrationLog              RegistrationLog?
   auditLogs                    AuditLog[]
@@ -468,19 +487,34 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 }
 
-model GameProfile {
+model Game {
+  id        String   @id @default(cuid())
+  code      String   @unique @db.VarChar(50)
+  name      String   @db.VarChar(191)
+  type      String?  @db.VarChar(50)
+  isOnline  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tournaments Tournament[]
+  accounts    PlayerGameAccount[]
+}
+
+model PlayerGameAccount {
   id            String   @id @default(cuid())
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameType      GameType
-  gameId        String   @db.VarChar(191)
+  gameId        String
+  game          Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gamePlayerId  String   @db.VarChar(191)
   ign           String
   screenshotUrl String?
+  verified      Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@unique([userId, gameType])
-  @@unique([gameType, gameId])
+  @@unique([userId, gameId])
+  @@unique([gameId, gamePlayerId])
   @@index([userId])
 }
 

@@ -47,7 +47,7 @@ export function TournamentAdminShell({ tournamentId, children }: TournamentShell
                 const data = await res.json();
                 if (!active || !res.ok) return;
                 setTournamentTitle(data.tournament?.title ?? "");
-                setTournamentMeta(`${data.tournament?.gameType ?? ""} · ${new Date(data.tournament?.startDate ?? Date.now()).toLocaleDateString("id-ID")}`);
+                setTournamentMeta(`${data.tournament?.gameType ?? ""} · ${new Date(data.tournament?.startAt ?? Date.now()).toLocaleDateString("id-ID")}`);
             } catch {
                 if (active) {
                     setTournamentTitle("");

@@ -94,8 +94,12 @@ export async function GET() {
                     avatarUrl: true,
                     role: true,
                     ...activeTeamMembershipSelect,
-                    gameProfiles: {
-                        select: { gameId: true, ign: true, gameType: true },
+                    playerGameAccounts: {
+                        select: {
+                            game: { select: { code: true, name: true } },
+                            gamePlayerId: true,
+                            ign: true,
+                        },
                         orderBy: { createdAt: "asc" },
                     },
                     lastActiveAt: true,
@@ -108,6 +112,7 @@ export async function GET() {
                 orderBy: [{ createdAt: "desc" }],
                 take: 12,
                 include: {
+                    game: { select: { code: true, name: true } },
                     _count: {
                         select: { participants: true },
                     },
@@ -140,6 +145,13 @@ export async function GET() {
             }),
         ]);
 
+        const mappedRecentTournaments = recentTournaments.map((tournament) => ({
+            ...tournament,
+            gameType: tournament.game?.code ?? "",
+            gameName: tournament.game?.name ?? "",
+            startAt: tournament.startAt.toISOString(),
+        }));
+
         return NextResponse.json({
             success: true,
             summary: {
@@ -159,15 +171,25 @@ export async function GET() {
                     teams: totalTeams,
                     activeTeams,
                 },
-                recentActiveUsers: recentActiveUsers.map((user) => ({
-                    ...user,
-                    team: getActiveTeamSnapshot(user).team,
-                })),
-                recentTournaments: recentTournaments
+                recentActiveUsers: recentActiveUsers.map((user) => {
+                    const { playerGameAccounts, ...userData } = user;
+                    const gameProfiles = (playerGameAccounts || []).map((account) => ({
+                        gameType: account.game.code,
+                        gameName: account.game.name,
+                        gameId: account.gamePlayerId,
+                        ign: account.ign,
+                    }));
+                    return {
+                        ...userData,
+                        gameProfiles,
+                        team: getActiveTeamSnapshot(user).team,
+                    };
+                }),
+                recentTournaments: mappedRecentTournaments
                     .sort((left, right) => {
                         const statusOrder = getTournamentPriority(left.status) - getTournamentPriority(right.status);
                         if (statusOrder !== 0) return statusOrder;
-                        return new Date(left.startDate).getTime() - new Date(right.startDate).getTime();
+                        return new Date(left.startAt).getTime() - new Date(right.startAt).getTime();
                     })
                     .slice(0, 5),
                 treasury: {

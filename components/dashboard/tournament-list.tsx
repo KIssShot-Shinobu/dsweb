@@ -8,8 +8,9 @@ interface Tournament {
     title: string;
     gameType: string;
     status: string;
-    startDate: string;
+    startAt: string;
     prizePool: number;
+    maxPlayers?: number | null;
     _count?: { participants: number };
 }
 
@@ -88,7 +89,9 @@ export function TournamentList({
                             <div className="min-w-0 flex-1">
                                 <div className="truncate text-sm font-semibold text-base-content">{tournament.title}</div>
                                 <div className="text-xs text-base-content/50">
-                                    {formatDate(tournament.startDate)} - {formatPrize(tournament.prizePool)} - {tournament._count?.participants || 0} peserta
+                                    {formatDate(tournament.startAt)} - {formatPrize(tournament.prizePool)} - {tournament.maxPlayers
+                                        ? `${tournament._count?.participants || 0} / ${tournament.maxPlayers} peserta`
+                                        : `${tournament._count?.participants || 0} peserta`}
                                 </div>
                             </div>
                             <span className={`badge h-auto px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getStatusBadge(tournament.status)}`}>

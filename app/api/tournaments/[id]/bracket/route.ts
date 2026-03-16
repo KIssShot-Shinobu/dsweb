@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerCurrentUser } from "@/lib/server-current-user";
+import { hasRole, ROLES } from "@/lib/auth";
 
 function mapState(status: string) {
     if (status === "COMPLETED" || status === "CONFIRMED") return "DONE";
@@ -20,10 +21,7 @@ function sortRoundOrder(type: string) {
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const currentUser = await getServerCurrentUser();
-        if (!currentUser) {
-            return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-        }
-
+        const canViewInternal = Boolean(currentUser && hasRole(currentUser.role, ROLES.OFFICER));
         const { id } = await params;
         const resolveParticipantName = (participant?: { guestName: string | null; user?: { fullName: string | null; username: string | null } | null }) => {
             if (!participant) return "TBD";
@@ -59,35 +57,54 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
                 name: round.name || `Round ${round.roundNumber}`,
                 roundType: round.type,
                 roundNumber: round.roundNumber,
-                matches: round.matches.map((match) => ({
-                    id: match.id,
-                    name: `Match ${match.bracketIndex}`,
-                    nextMatchId: match.nextMatchId,
-                    nextLooserMatchId: match.loserNextMatchId ?? undefined,
-                    status: match.status,
-                    scoreA: match.scoreA,
-                    scoreB: match.scoreB,
-                    playerAId: match.playerA?.id ?? null,
-                    playerBId: match.playerB?.id ?? null,
-                    winnerId: match.winner?.id ?? null,
-                    tournamentRoundId: round.id,
-                    startTime: match.scheduledAt?.toISOString() ?? undefined,
-                    state: mapState(match.status),
-                    participants: [
-                        {
-                            id: match.playerA?.id ?? undefined,
-                            name: resolveParticipantName(match.playerA),
-                            resultText: match.scoreA?.toString() ?? "",
-                            isWinner: Boolean(match.winner?.id && match.winner.id === match.playerA?.id),
-                        },
-                        {
-                            id: match.playerB?.id ?? undefined,
-                            name: resolveParticipantName(match.playerB),
-                            resultText: match.scoreB?.toString() ?? "",
-                            isWinner: Boolean(match.winner?.id && match.winner.id === match.playerB?.id),
-                        },
-                    ],
-                })),
+                matches: round.matches.map((match) => {
+                    const winnerId = match.winner?.id ?? null;
+                    const base = {
+                        id: match.id,
+                        name: `Match ${match.bracketIndex}`,
+                        nextMatchId: match.nextMatchId,
+                        nextLooserMatchId: match.loserNextMatchId ?? undefined,
+                        status: match.status,
+                        scoreA: match.scoreA,
+                        scoreB: match.scoreB,
+                        tournamentRoundId: round.id,
+                        startTime: match.scheduledAt?.toISOString() ?? undefined,
+                        state: mapState(match.status),
+                        participants: [
+                            {
+                                id: canViewInternal
+                                    ? match.playerA?.id ?? undefined
+                                    : match.playerA
+                                      ? `${match.id}-A`
+                                      : undefined,
+                                name: resolveParticipantName(match.playerA),
+                                resultText: match.scoreA?.toString() ?? "",
+                                isWinner: Boolean(winnerId && winnerId === match.playerA?.id),
+                            },
+                            {
+                                id: canViewInternal
+                                    ? match.playerB?.id ?? undefined
+                                    : match.playerB
+                                      ? `${match.id}-B`
+                                      : undefined,
+                                name: resolveParticipantName(match.playerB),
+                                resultText: match.scoreB?.toString() ?? "",
+                                isWinner: Boolean(winnerId && winnerId === match.playerB?.id),
+                            },
+                        ],
+                    };
+
+                    if (!canViewInternal) {
+                        return base;
+                    }
+
+                    return {
+                        ...base,
+                        playerAId: match.playerA?.id ?? null,
+                        playerBId: match.playerB?.id ?? null,
+                        winnerId,
+                    };
+                }),
             }));
 
         return NextResponse.json({ success: true, rounds: normalizedRounds }, { status: 200 });

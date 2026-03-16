@@ -47,7 +47,7 @@ type ViewerSize = {
     height: number;
 };
 
-const bracketOptionsDark = {
+const bracketOptions = {
     style: {
         boxHeight: 84,
         canvasPadding: 28,
@@ -58,32 +58,12 @@ const bracketOptionsDark = {
             height: 26,
             marginBottom: 10,
             fontSize: 12,
-            fontColor: "#FFFFFF",
-            backgroundColor: "#1f2937",
+            fontColor: "hsl(var(--bc))",
+            backgroundColor: "hsl(var(--b2))",
             fontFamily: "inherit",
         },
-        connectorColor: "#334155",
-        connectorColorHighlight: "#facc15",
-    },
-};
-
-const bracketOptionsLight = {
-    style: {
-        boxHeight: 84,
-        canvasPadding: 28,
-        spaceBetweenRows: 24,
-        spaceBetweenColumns: 42,
-        roundHeader: {
-            isShown: true,
-            height: 26,
-            marginBottom: 10,
-            fontSize: 12,
-            fontColor: "#111827",
-            backgroundColor: "#e2e8f0",
-            fontFamily: "inherit",
-        },
-        connectorColor: "#94a3b8",
-        connectorColorHighlight: "#f59e0b",
+        connectorColor: "hsl(var(--b3))",
+        connectorColorHighlight: "hsl(var(--p))",
     },
 };
 
@@ -120,35 +100,38 @@ export function TournamentBracket({
     const [error, setError] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [viewerSize, setViewerSize] = useState<ViewerSize>({ width: 980, height: 520 });
-    const [bracketTheme, setBracketTheme] = useState(() => createTheme({
-        fontFamily: "inherit",
-        textColor: {
-            main: "#e2e8f0",
-            highlighted: "#f8fafc",
-            dark: "#cbd5f5",
-            disabled: "rgba(148, 163, 184, 0.5)",
-        },
-        matchBackground: {
-            wonColor: "rgba(34, 197, 94, 0.16)",
-            lostColor: "rgba(15, 23, 42, 0.85)",
-        },
-        border: {
-            color: "rgba(51, 65, 85, 0.8)",
-            highlightedColor: "rgba(250, 204, 21, 0.8)",
-        },
-        score: {
-            text: {
-                highlightedWonColor: "#22c55e",
-                highlightedLostColor: "#ef4444",
-            },
-            background: {
-                wonColor: "rgba(34, 197, 94, 0.2)",
-                lostColor: "rgba(51, 65, 85, 0.7)",
-            },
-        },
-        canvasBackground: "rgba(15, 23, 42, 0.2)",
-    }));
-    const [isDarkTheme, setIsDarkTheme] = useState(true);
+    const bracketTheme = useMemo(
+        () =>
+            createTheme({
+                fontFamily: "inherit",
+                textColor: {
+                    main: "hsl(var(--bc))",
+                    highlighted: "hsl(var(--bc))",
+                    dark: "hsl(var(--bc) / 0.7)",
+                    disabled: "hsl(var(--bc) / 0.45)",
+                },
+                matchBackground: {
+                    wonColor: "hsl(var(--su) / 0.18)",
+                    lostColor: "hsl(var(--b2))",
+                },
+                border: {
+                    color: "hsl(var(--b3))",
+                    highlightedColor: "hsl(var(--p))",
+                },
+                score: {
+                    text: {
+                        highlightedWonColor: "hsl(var(--su))",
+                        highlightedLostColor: "hsl(var(--er))",
+                    },
+                    background: {
+                        wonColor: "hsl(var(--su) / 0.22)",
+                        lostColor: "hsl(var(--b3))",
+                    },
+                },
+                canvasBackground: "hsl(var(--b1) / 0.25)",
+            }),
+        []
+    );
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [scaleFactor, setScaleFactor] = useState(1);
     const [startAt, setStartAt] = useState<[number, number]>([0, 0]);
@@ -195,78 +178,6 @@ export function TournamentBracket({
         updateSize();
         window.addEventListener("resize", updateSize);
         return () => window.removeEventListener("resize", updateSize);
-    }, []);
-
-    useEffect(() => {
-        const root = document.documentElement;
-        const updateTheme = () => {
-            const isDark = root.getAttribute("data-theme") === "dark";
-            setIsDarkTheme(isDark);
-            setBracketTheme(
-                isDark
-                    ? createTheme({
-                        fontFamily: "inherit",
-                        textColor: {
-                            main: "#e2e8f0",
-                            highlighted: "#f8fafc",
-                            dark: "#cbd5f5",
-                            disabled: "rgba(148, 163, 184, 0.5)",
-                        },
-                        matchBackground: {
-                            wonColor: "rgba(34, 197, 94, 0.16)",
-                            lostColor: "rgba(15, 23, 42, 0.85)",
-                        },
-                        border: {
-                            color: "rgba(51, 65, 85, 0.8)",
-                            highlightedColor: "rgba(250, 204, 21, 0.8)",
-                        },
-                        score: {
-                            text: {
-                                highlightedWonColor: "#22c55e",
-                                highlightedLostColor: "#ef4444",
-                            },
-                            background: {
-                                wonColor: "rgba(34, 197, 94, 0.2)",
-                                lostColor: "rgba(51, 65, 85, 0.7)",
-                            },
-                        },
-                        canvasBackground: "rgba(15, 23, 42, 0.2)",
-                    })
-                    : createTheme({
-                        fontFamily: "inherit",
-                        textColor: {
-                            main: "#1f2937",
-                            highlighted: "#111827",
-                            dark: "#334155",
-                            disabled: "rgba(107, 114, 128, 0.5)",
-                        },
-                        matchBackground: {
-                            wonColor: "rgba(34, 197, 94, 0.14)",
-                            lostColor: "rgba(248, 250, 252, 0.9)",
-                        },
-                        border: {
-                            color: "rgba(148, 163, 184, 0.5)",
-                            highlightedColor: "rgba(250, 204, 21, 0.8)",
-                        },
-                        score: {
-                            text: {
-                                highlightedWonColor: "#15803d",
-                                highlightedLostColor: "#b91c1c",
-                            },
-                            background: {
-                                wonColor: "rgba(34, 197, 94, 0.15)",
-                                lostColor: "rgba(226, 232, 240, 0.7)",
-                            },
-                        },
-                        canvasBackground: "rgba(248, 250, 252, 0.8)",
-                    })
-            );
-        };
-
-        updateTheme();
-        const observer = new MutationObserver(updateTheme);
-        observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
-        return () => observer.disconnect();
     }, []);
 
     const { singleMatches, upperMatches, lowerMatches } = useMemo(() => {
@@ -398,7 +309,7 @@ export function TournamentBracket({
                         matchComponent={Match}
                         svgWrapper={svgWrapper}
                         theme={bracketTheme}
-                        options={isDarkTheme ? bracketOptionsDark : bracketOptionsLight}
+                        options={bracketOptions}
                     />
                 </StyleSheetManager>
             );
@@ -411,16 +322,16 @@ export function TournamentBracket({
                     matchComponent={Match}
                     svgWrapper={svgWrapper}
                     theme={bracketTheme}
-                    options={isDarkTheme ? bracketOptionsDark : bracketOptionsLight}
+                    options={bracketOptions}
                 />
             </StyleSheetManager>
         );
     };
 
     return (
-        <div ref={containerRef} className="mx-auto w-full max-w-[1200px] rounded-box border border-base-300 bg-base-200/40 p-4">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">Bracket View</div>
+        <div ref={containerRef} className="mx-auto w-full max-w-[1200px] overflow-hidden rounded-box border border-base-300 bg-base-100 shadow-lg">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-base-300 bg-base-200/60 px-4 py-3">
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/60">Bracket View</div>
                 <div className="flex flex-wrap items-center gap-2">
                     <button className="btn btn-sm btn-ghost" onClick={zoomOut}>-</button>
                     <button className="btn btn-sm btn-ghost" onClick={resetZoom}>Reset</button>
@@ -428,11 +339,15 @@ export function TournamentBracket({
                     <button className="btn btn-sm btn-outline" onClick={() => setIsFullscreen(true)}>Fullscreen</button>
                 </div>
             </div>
-            {renderBracket(viewerSize)}
+            <div className="bg-base-100/70 p-4">
+                <div className="rounded-box border border-base-300 bg-base-200/40 p-2">
+                    {renderBracket(viewerSize)}
+                </div>
+            </div>
 
             {isFullscreen ? (
                 <div className="modal modal-open">
-                    <div className="modal-box max-w-6xl bg-base-100">
+                    <div className="modal-box max-w-6xl border border-base-300 bg-base-100">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold">Bracket Fullscreen</h3>
                             <button className="btn btn-sm btn-ghost" onClick={() => setIsFullscreen(false)}>Close</button>

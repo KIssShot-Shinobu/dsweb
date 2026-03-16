@@ -6,13 +6,15 @@ export type PublicTournamentCardData = {
     id: string;
     title: string;
     gameType: "DUEL_LINKS" | "MASTER_DUEL" | string;
+    gameName?: string;
     format?: "BO1" | "BO3" | "BO5" | string;
     status: "OPEN" | "ONGOING" | "COMPLETED" | "CANCELLED" | string;
-    startDate: string;
+    startAt: string;
     prizePool: number;
     entryFee?: number;
     image?: string | null;
     participantCount?: number;
+    maxPlayers?: number | null;
     description?: string | null;
 };
 
@@ -79,7 +81,7 @@ export function PublicTournamentCard({ tournament, compact = false }: Tournament
                     </div>
                     <div>
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-base-content/55 sm:text-[11px]">
-                            {tournament.gameType === "MASTER_DUEL" ? "Master Duel" : "Duel Links"}
+                            {tournament.gameName ?? (tournament.gameType === "MASTER_DUEL" ? "Master Duel" : "Duel Links")}
                         </p>
                         <h3 className="line-clamp-2 text-lg font-black leading-tight text-base-content sm:text-xl lg:text-2xl">{tournament.title}</h3>
                     </div>
@@ -89,7 +91,7 @@ export function PublicTournamentCard({ tournament, compact = false }: Tournament
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
                         <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-base-content/50">Jadwal Event</div>
-                        <div className="text-xs font-semibold text-base-content sm:text-sm">{formatSchedule(tournament.startDate, compact)}</div>
+                        <div className="text-xs font-semibold text-base-content sm:text-sm">{formatSchedule(tournament.startAt, compact)}</div>
                     </div>
                     <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
                         <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-base-content/50">Prize Pool</div>
@@ -98,7 +100,11 @@ export function PublicTournamentCard({ tournament, compact = false }: Tournament
                 </div>
                 {!compact ? (
                     <div className="flex flex-col gap-1 text-xs text-base-content/60 sm:flex-row sm:items-center sm:justify-between sm:text-sm">
-                        <span>{tournament.participantCount ?? 0} peserta terdaftar</span>
+                        <span>
+                            {tournament.maxPlayers
+                                ? `${tournament.participantCount ?? 0} / ${tournament.maxPlayers} peserta`
+                                : `${tournament.participantCount ?? 0} peserta terdaftar`}
+                        </span>
                         <span>{tournament.entryFee && tournament.entryFee > 0 ? formatPrize(tournament.entryFee) : "Tanpa biaya pendaftaran"}</span>
                     </div>
                 ) : null}

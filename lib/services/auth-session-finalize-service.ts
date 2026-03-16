@@ -1,4 +1,5 @@
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
+import type { NotificationService } from "@/lib/services/notification.service";
 
 type FinalizeUserRecord = {
     id: string;
@@ -7,15 +8,17 @@ type FinalizeUserRecord = {
     fullName: string;
     role: string;
     status: string;
+    emailVerificationToken?: { id: string } | null;
 };
 
 type FinalizeDeps = {
     prisma: {
         user: {
-            findUnique: (args: { where: { email: string }; select: Record<string, boolean> }) => Promise<FinalizeUserRecord | null>;
+            findUnique: (args: { where: { email: string }; select: Record<string, unknown> }) => Promise<FinalizeUserRecord | null>;
             update: (args: { where: { id: string }; data: Record<string, unknown> }) => Promise<unknown>;
         };
     };
+    notifications?: NotificationService;
     touchUserLastActiveAt: (userId: string) => Promise<void>;
     logAudit: (params: {
         action: string;
@@ -29,7 +32,7 @@ type FinalizeDeps = {
 
 type FinalizeInput = {
     email: string;
-    provider: "google" | "credentials";
+    provider: "google" | "credentials" | "discord";
     redirectTarget: string;
     ipAddress?: string | null;
     userAgent?: string | null;
@@ -47,6 +50,9 @@ export async function finalizeAuthenticatedSession(deps: FinalizeDeps, input: Fi
             fullName: true,
             role: true,
             status: true,
+            emailVerificationToken: {
+                select: { id: true },
+            },
         },
     });
 
@@ -72,9 +78,30 @@ export async function finalizeAuthenticatedSession(deps: FinalizeDeps, input: Fi
     });
     await deps.touchUserLastActiveAt(user.id);
 
+    const emailVerified = !user.emailVerificationToken;
+    if (!emailVerified && deps.notifications) {
+        await deps.notifications.createNotification({
+            userId: user.id,
+            type: "SYSTEM_ALERT",
+            title: "Verifikasi email kamu",
+            message: "Akun kamu belum diverifikasi. Verifikasi email untuk mengamankan akun dan akses penuh.",
+            link: "/dashboard/settings",
+        });
+    }
+
     if (input.provider === "google") {
         await deps.logAudit({
             action: AUDIT_ACTIONS.OAUTH_GOOGLE_LOGIN_SUCCESS,
+            userId: user.id,
+            targetId: user.id,
+            targetType: "User",
+            details: { provider: input.provider, redirectTarget: input.redirectTarget },
+        });
+    }
+
+    if (input.provider === "discord") {
+        await deps.logAudit({
+            action: AUDIT_ACTIONS.OAUTH_DISCORD_LOGIN_SUCCESS,
             userId: user.id,
             targetId: user.id,
             targetType: "User",
@@ -90,5 +117,5 @@ export async function finalizeAuthenticatedSession(deps: FinalizeDeps, input: Fi
         details: { provider: input.provider },
     });
 
-    return { ok: true as const, user };
+    return { ok: true as const, user, emailVerified };
 }

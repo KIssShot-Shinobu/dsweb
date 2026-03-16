@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Chrome } from "lucide-react";
 import { signIn, signOut } from "next-auth/react";
 import {
     AuthShell,
@@ -12,6 +11,7 @@ import {
     authLabelCls,
     authPrimaryBtnCls,
 } from "@/components/auth/auth-shell";
+import { DiscordIcon, GoogleIcon } from "@/components/auth/oauth-icons";
 
 const ERROR_MESSAGES: Record<string, string> = {
     banned: "Akses akun Anda sedang dibatasi. Silakan hubungi tim admin Duel Standby.",
@@ -29,7 +29,9 @@ function LoginForm() {
     const [form, setForm] = useState({ identifier: "", password: "" });
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
+    const [discordLoading, setDiscordLoading] = useState(false);
     const [googleEnabled, setGoogleEnabled] = useState(false);
+    const [discordEnabled, setDiscordEnabled] = useState(false);
     const [error, setError] = useState<string | null>(errorParam ? ERROR_MESSAGES[errorParam] ?? "Terjadi kendala saat memproses login Anda." : null);
 
     useEffect(() => {
@@ -40,10 +42,12 @@ function LoginForm() {
             .then((providers) => {
                 if (!active) return;
                 setGoogleEnabled(Boolean(providers?.google));
+                setDiscordEnabled(Boolean(providers?.discord));
             })
             .catch(() => {
                 if (!active) return;
                 setGoogleEnabled(false);
+                setDiscordEnabled(false);
             });
 
         return () => {
@@ -105,6 +109,20 @@ function LoginForm() {
         }
     };
 
+    const handleDiscordLogin = async () => {
+        setDiscordLoading(true);
+        setError(null);
+        try {
+            await signOut({ redirect: false });
+            await signIn("discord", {
+                callbackUrl: `/oauth-finalize?provider=discord&redirect=${encodeURIComponent(redirect)}`,
+            });
+        } catch {
+            setError("Masuk dengan Discord belum berhasil. Silakan coba kembali.");
+            setDiscordLoading(false);
+        }
+    };
+
     return (
         <AuthShell
             eyebrow="Akses Akun"
@@ -157,30 +175,50 @@ function LoginForm() {
                     />
                 </div>
 
-                <button type="submit" disabled={loading || googleLoading} className={authPrimaryBtnCls}>
+                <button type="submit" disabled={loading || googleLoading || discordLoading} className={authPrimaryBtnCls}>
                     {loading ? "Memproses masuk..." : "Masuk ke Akun"}
                 </button>
             </form>
 
-            {googleEnabled ? (
-                <div className="mt-5">
+            {(googleEnabled || discordEnabled) ? (
+                <div className="mt-5 space-y-4">
                     <div className="flex items-center gap-3 text-xs text-base-content/35">
                         <div className="h-px flex-1 bg-base-300" />
                         <span>atau</span>
                         <div className="h-px flex-1 bg-base-300" />
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={handleGoogleLogin}
-                        disabled={loading || googleLoading}
-                        className="btn btn-outline mt-5 w-full rounded-box"
-                    >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-base-100 text-base-content shadow-sm">
-                            <Chrome className="h-4 w-4" />
-                        </span>
-                        <span>{googleLoading ? "Mengalihkan ke Google..." : "Lanjut dengan Google"}</span>
-                    </button>
+                    <div className="flex items-center justify-center gap-4">
+                        <button
+                            type="button"
+                            onClick={googleEnabled ? handleGoogleLogin : undefined}
+                            disabled={!googleEnabled || loading || googleLoading || discordLoading}
+                            className={`btn btn-outline btn-square tooltip h-14 w-14 ${!googleEnabled ? "opacity-60" : ""}`}
+                            data-tip={googleEnabled ? "Lanjut dengan Google" : "Google belum aktif"}
+                            aria-label="Lanjut dengan Google"
+                        >
+                            {googleLoading ? (
+                                <span className="loading loading-spinner loading-xs" />
+                            ) : (
+                                <GoogleIcon className="h-6 w-6" />
+                            )}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={discordEnabled ? handleDiscordLogin : undefined}
+                            disabled={!discordEnabled || loading || googleLoading || discordLoading}
+                            className={`btn btn-outline btn-square tooltip h-14 w-14 ${!discordEnabled ? "opacity-60" : ""}`}
+                            data-tip={discordEnabled ? "Lanjut dengan Discord" : "Discord belum aktif"}
+                            aria-label="Lanjut dengan Discord"
+                        >
+                            {discordLoading ? (
+                                <span className="loading loading-spinner loading-xs" />
+                            ) : (
+                                <DiscordIcon className="h-6 w-6" />
+                            )}
+                        </button>
+                    </div>
                 </div>
             ) : null}
         </AuthShell>

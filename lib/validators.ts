@@ -21,18 +21,13 @@ export const TEAM_REQUEST_STATUS_VALUES = ["PENDING", "APPROVED", "REJECTED"] as
 export const TOURNAMENT_STATUS_VALUES = ["OPEN", "ONGOING", "COMPLETED", "CANCELLED"] as const;
 export const TOURNAMENT_STRUCTURE_VALUES = ["SINGLE_ELIM", "DOUBLE_ELIM", "SWISS"] as const;
 export const TOURNAMENT_FORMAT_VALUES = ["BO1", "BO3", "BO5"] as const;
-export const GAME_TYPE_VALUES = ["DUEL_LINKS", "MASTER_DUEL"] as const;
+export const TOURNAMENT_MODE_VALUES = ["INDIVIDUAL", "TEAM_BOARD", "TEAM_KOTH"] as const;
+export const TOURNAMENT_MAX_PLAYERS_VALUES = [8, 16, 32, 64, 128, 256] as const;
 export const MATCH_STATUS_VALUES = ["PENDING", "READY", "ONGOING", "RESULT_SUBMITTED", "CONFIRMED", "DISPUTED", "COMPLETED"] as const;
 
 export const registerSchema = z
     .object({
-        username: z
-            .string()
-            .trim()
-            .min(3, "Username minimal 3 karakter")
-            .max(24, "Username maksimal 24 karakter")
-            .regex(USERNAME_REGEX, "Username hanya boleh huruf, angka, titik, underscore, dan strip")
-            .transform((value) => value.toLowerCase()),
+        fullName: z.string().trim().min(2, "Nama minimal 2 karakter").max(191, "Nama terlalu panjang"),
         email: z.string().trim().toLowerCase().email("Email tidak valid"),
         password: z
             .string()
@@ -40,34 +35,10 @@ export const registerSchema = z
             .regex(/[A-Za-z]/, "Password harus mengandung huruf")
             .regex(/[0-9]/, "Password harus mengandung angka"),
         confirmPassword: z.string(),
-        phoneWhatsapp: z.string().trim().regex(PHONE_REGEX, "Nomor WhatsApp tidak valid (contoh: +628123456789)"),
-        provinceCode: z.string().trim().min(2, "Provinsi harus dipilih").max(16, "Kode provinsi tidak valid"),
-        cityCode: z.string().trim().min(4, "Kabupaten / kota harus dipilih").max(16, "Kode kabupaten / kota tidak valid"),
-        duelLinksGameId: gameIdFieldSchema.optional(),
-        duelLinksIgn: z.string().min(2, "IGN Duel Links minimal 2 karakter").regex(IGN_REGEX, "IGN Duel Links mengandung karakter yang tidak valid").optional().or(z.literal("")),
-        masterDuelGameId: gameIdFieldSchema.optional(),
-        masterDuelIgn: z.string().min(2, "IGN Master Duel minimal 2 karakter").regex(IGN_REGEX, "IGN Master Duel mengandung karakter yang tidak valid").optional().or(z.literal("")),
-        duelLinksScreenshotUploadId: z.string().cuid("Upload screenshot Duel Links tidak valid").optional().or(z.literal("")),
-        masterDuelScreenshotUploadId: z.string().cuid("Upload screenshot Master Duel tidak valid").optional().or(z.literal("")),
-        sourceInfo: z.string().trim().min(1, "Sumber informasi harus diisi").max(191, "Sumber informasi terlalu panjang"),
-        socialMedia: z.array(z.string()).min(1, "Pilih minimal 1 sosial media"),
-        agreement: z.literal(true, { message: "Anda harus menyetujui pernyataan" }),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "Konfirmasi password tidak cocok",
         path: ["confirmPassword"],
-    })
-    .refine((data) => (data.duelLinksGameId && data.duelLinksIgn) || (data.masterDuelGameId && data.masterDuelIgn), {
-        message: "Minimal satu game profile wajib diisi (Game ID + IGN)",
-        path: ["duelLinksGameId"],
-    })
-    .refine((data) => !data.duelLinksScreenshotUploadId || Boolean(data.duelLinksGameId && data.duelLinksIgn), {
-        message: "Screenshot Duel Links hanya bisa dipakai jika profile Duel Links diisi",
-        path: ["duelLinksScreenshotUploadId"],
-    })
-    .refine((data) => !data.masterDuelScreenshotUploadId || Boolean(data.masterDuelGameId && data.masterDuelIgn), {
-        message: "Screenshot Master Duel hanya bisa dipakai jika profile Master Duel diisi",
-        path: ["masterDuelScreenshotUploadId"],
     });
 
 export const loginSchema = z.object({
@@ -325,7 +296,7 @@ export const treasurySchema = z.object({
 export type TreasuryInput = z.infer<typeof treasurySchema>;
 
 export const updateGameProfileSchema = z.object({
-    gameType: z.enum(GAME_TYPE_VALUES),
+    gameType: z.string().trim().min(2, "Pilih game"),
     ign: z.string().min(1, "IGN tidak boleh kosong"),
     gameId: z
         .string()
@@ -363,12 +334,34 @@ export const tournamentSchema = z.object({
     title: z.string().trim().min(3, "Judul turnamen minimal 3 karakter").max(191, "Judul turnamen terlalu panjang"),
     description: z.string().trim().max(1000, "Deskripsi terlalu panjang").optional().or(z.literal("")),
     format: z.enum(TOURNAMENT_FORMAT_VALUES, { message: "Format tidak valid" }),
-    gameType: z.enum(GAME_TYPE_VALUES, { message: "Pilih game" }),
+    gameType: z.string().trim().min(2, "Pilih game"),
     structure: z.enum(TOURNAMENT_STRUCTURE_VALUES).optional(),
+    mode: z.enum(TOURNAMENT_MODE_VALUES).optional(),
+    isTeamTournament: z.boolean().optional(),
     status: z.enum(TOURNAMENT_STATUS_VALUES).optional(),
     entryFee: z.coerce.number().min(0, "Biaya masuk tidak boleh negatif"),
     prizePool: z.coerce.number().min(0, "Prize pool tidak boleh negatif"),
-    startDate: z.string().refine((date) => !isNaN(Date.parse(date)), { message: "Tanggal tidak valid" }),
+    minPlayers: z.coerce.number().int().min(2, "Min players minimal 2").optional(),
+    bracketSize: z.coerce.number().int().min(2, "Bracket size minimal 2").optional(),
+    maxPlayers: z.coerce
+        .number()
+        .int()
+        .refine((value) => TOURNAMENT_MAX_PLAYERS_VALUES.includes(value), {
+            message: "Max players harus 8/16/32/64/128/256",
+        })
+        .optional(),
+    startAt: z.string().refine((date) => !isNaN(Date.parse(date)), { message: "Tanggal tidak valid" }),
+    registrationOpen: z
+        .string()
+        .trim()
+        .optional()
+        .refine((value) => !value || !Number.isNaN(Date.parse(value)), { message: "Tanggal registrasi tidak valid" }),
+    registrationClose: z
+        .string()
+        .trim()
+        .optional()
+        .refine((value) => !value || !Number.isNaN(Date.parse(value)), { message: "Tanggal registrasi tidak valid" }),
+    checkinRequired: z.boolean().optional(),
     image: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload lokal").optional().or(z.literal("")),
 });
 

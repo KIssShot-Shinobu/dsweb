@@ -1,7 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { GameType } from "@prisma/client";
 
 export async function GET() {
     try {
@@ -14,9 +13,9 @@ export async function GET() {
             prisma.tournamentParticipant.count({
                 where: { userId: user.id },
             }),
-            prisma.gameProfile.findMany({
+            prisma.playerGameAccount.findMany({
                 where: { userId: user.id },
-                select: { gameType: true, screenshotUrl: true },
+                select: { game: { select: { code: true } }, screenshotUrl: true },
             }),
             prisma.reputationLog.findMany({
                 where: {
@@ -45,8 +44,8 @@ export async function GET() {
         }
 
         const verifiedGameAccounts = Array.from(
-            new Set(gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).map((profile) => profile.gameType))
-        ) as GameType[];
+            new Set(gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).map((profile) => profile.game.code))
+        );
 
         const winRate = tournamentsJoined > 0 ? tournamentsWon / tournamentsJoined : 0;
 

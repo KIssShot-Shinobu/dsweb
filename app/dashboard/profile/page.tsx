@@ -7,7 +7,14 @@ import { ProfileGameSection } from "@/components/dashboard/profile-game-section"
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { dashboardStackCls } from "@/components/dashboard/form-styles";
 import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
-import type { GameProfile } from "@prisma/client";
+
+type GameProfileView = {
+    gameType: string;
+    gameName?: string;
+    gameId: string;
+    ign: string;
+    screenshotUrl?: string | null;
+};
 
 export default async function ProfilePage() {
     const user = await getCurrentUser();
@@ -19,7 +26,14 @@ export default async function ProfilePage() {
             select: {
                 id: true,
                 username: true,
-                gameProfiles: true,
+                playerGameAccounts: {
+                    select: {
+                        game: { select: { code: true, name: true } },
+                        gamePlayerId: true,
+                        ign: true,
+                        screenshotUrl: true,
+                    },
+                },
                 ...activeTeamMembershipSelect,
             },
         }),
@@ -33,8 +47,15 @@ export default async function ProfilePage() {
         }),
     ]);
 
-    const duelLinksProfile = userWithProfiles?.gameProfiles.find((profile: GameProfile) => profile.gameType === "DUEL_LINKS");
-    const masterDuelProfile = userWithProfiles?.gameProfiles.find((profile: GameProfile) => profile.gameType === "MASTER_DUEL");
+    const gameProfiles: GameProfileView[] = (userWithProfiles?.playerGameAccounts || []).map((account) => ({
+        gameType: account.game.code,
+        gameName: account.game.name,
+        gameId: account.gamePlayerId,
+        ign: account.ign,
+        screenshotUrl: account.screenshotUrl,
+    }));
+    const duelLinksProfile = gameProfiles.find((profile) => profile.gameType === "DUEL_LINKS");
+    const masterDuelProfile = gameProfiles.find((profile) => profile.gameType === "MASTER_DUEL");
     const activeTeam = userWithProfiles ? getActiveTeamSnapshot(userWithProfiles) : { team: null, teamJoinedAt: null };
 
     const roleColors: Record<string, string> = {
@@ -59,8 +80,8 @@ export default async function ProfilePage() {
     const emailVerificationClass = user.emailVerified
         ? "border-success/20 bg-success/10 text-success"
         : "border-warning/20 bg-warning/10 text-warning";
-    const totalProfiles = userWithProfiles?.gameProfiles.length || 0;
-    const verifiedProfiles = userWithProfiles?.gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).length || 0;
+    const totalProfiles = gameProfiles.length || 0;
+    const verifiedProfiles = gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).length || 0;
     const reputationPoints = reputation._sum.points || 0;
 
     const stats = [

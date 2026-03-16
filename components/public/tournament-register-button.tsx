@@ -8,10 +8,12 @@ export function TournamentRegisterButton({
     tournamentId,
     disabled,
     isRegistered = false,
+    isFull = false,
 }: {
     tournamentId: string;
     disabled: boolean;
     isRegistered?: boolean;
+    isFull?: boolean;
 }) {
     const router = useRouter();
     const { success, error: toastError } = useToast();
@@ -56,7 +58,13 @@ export function TournamentRegisterButton({
                     disabled={disabled || submitting}
                     className={`btn w-full rounded-box ${disabled ? "btn-disabled" : "btn-primary"}`}
                 >
-                    {submitting ? "Memproses pendaftaran..." : disabled ? "Pendaftaran belum tersedia" : "Daftar Turnamen"}
+                    {submitting
+                        ? "Memproses pendaftaran..."
+                        : isFull
+                          ? "Slot peserta penuh"
+                          : disabled
+                            ? "Pendaftaran belum tersedia"
+                            : "Daftar Turnamen"}
                 </button>
             )}
         </div>

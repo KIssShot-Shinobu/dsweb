@@ -7,6 +7,10 @@ const sqliteDbPath = process.env.SQLITE_SOURCE_DB_PATH
     : path.resolve(process.cwd(), "prisma/dev.db");
 
 const prismaMySQL = new PrismaClient();
+const DEFAULT_GAME_NAMES: Record<string, string> = {
+    DUEL_LINKS: "Yu-Gi-Oh! Duel Links",
+    MASTER_DUEL: "Yu-Gi-Oh! Master Duel",
+};
 
 function toUsername(value: string | null | undefined) {
     return (value || "user")
@@ -44,27 +48,88 @@ async function migrate() {
             console.log(`Berhasil mentransfer ${users.length} user.`);
         }
 
+        const ensureGame = async (code: string) => {
+            return prismaMySQL.game.upsert({
+                where: { code },
+                update: {},
+                create: {
+                    code,
+                    name: DEFAULT_GAME_NAMES[code] || code,
+                    type: "ONLINE",
+                    isOnline: true,
+                },
+            });
+        };
+
         const gameProfiles = sqlite.prepare("SELECT * FROM GameProfile").all() as any[];
         if (gameProfiles.length > 0) {
-            const parsedProfiles = gameProfiles.map((profile) => ({
-                ...profile,
-                createdAt: new Date(profile.createdAt),
-                updatedAt: new Date(profile.updatedAt),
-            }));
-            await prismaMySQL.gameProfile.createMany({ data: parsedProfiles, skipDuplicates: true });
-            console.log(`Berhasil mentransfer ${gameProfiles.length} game profile.`);
+            const gameMap = new Map<string, string>();
+            for (const profile of gameProfiles) {
+                const code = String(profile.gameType || "").toUpperCase();
+                if (!code) continue;
+                if (!gameMap.has(code)) {
+                    const game = await ensureGame(code);
+                    gameMap.set(code, game.id);
+                }
+            }
+
+            const parsedProfiles = gameProfiles
+                .map((profile) => {
+                    const code = String(profile.gameType || "").toUpperCase();
+                    const gameId = gameMap.get(code);
+                    if (!gameId) return null;
+                    return {
+                        id: profile.id,
+                        userId: profile.userId,
+                        gameId,
+                        gamePlayerId: profile.gameId,
+                        ign: profile.ign,
+                        screenshotUrl: profile.screenshotUrl || null,
+                        verified: Boolean(profile.screenshotUrl),
+                        createdAt: new Date(profile.createdAt),
+                        updatedAt: new Date(profile.updatedAt),
+                    };
+                })
+                .filter(Boolean) as any[];
+
+            if (parsedProfiles.length > 0) {
+                await prismaMySQL.playerGameAccount.createMany({ data: parsedProfiles, skipDuplicates: true });
+                console.log(`Berhasil mentransfer ${parsedProfiles.length} player game account.`);
+            }
         }
 
         const tournaments = sqlite.prepare("SELECT * FROM Tournament").all() as any[];
         if (tournaments.length > 0) {
-            const parsedTournaments = tournaments.map((tournament) => ({
-                ...tournament,
-                startDate: new Date(tournament.startDate),
-                createdAt: new Date(tournament.createdAt),
-                updatedAt: new Date(tournament.updatedAt),
-            }));
-            await prismaMySQL.tournament.createMany({ data: parsedTournaments, skipDuplicates: true });
-            console.log(`Berhasil mentransfer ${tournaments.length} turnamen.`);
+            const gameMap = new Map<string, string>();
+            for (const tournament of tournaments) {
+                const code = String(tournament.gameType || "").toUpperCase();
+                if (!code) continue;
+                if (!gameMap.has(code)) {
+                    const game = await ensureGame(code);
+                    gameMap.set(code, game.id);
+                }
+            }
+
+            const parsedTournaments = tournaments
+                .map((tournament) => {
+                    const code = String(tournament.gameType || "").toUpperCase();
+                    const gameId = gameMap.get(code);
+                    if (!gameId) return null;
+                    const { gameType, startDate, ...rest } = tournament;
+                    return {
+                        ...rest,
+                        gameId,
+                        startAt: new Date(startDate),
+                        createdAt: new Date(rest.createdAt),
+                        updatedAt: new Date(rest.updatedAt),
+                    };
+                })
+                .filter(Boolean) as any[];
+
+            if (parsedTournaments.length > 0) {
+                await prismaMySQL.tournament.createMany({ data: parsedTournaments, skipDuplicates: true });
+                console.log(`Berhasil mentransfer ${parsedTournaments.length} turnamen.`);
+            }
         }
 
         const participants = sqlite.prepare("SELECT * FROM TournamentParticipant").all() as any[];

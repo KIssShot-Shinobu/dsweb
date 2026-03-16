@@ -43,8 +43,23 @@ const ACTION_OPTIONS = [
     { value: "OAUTH_GOOGLE_LOGIN_SUCCESS", label: "Google Login" },
     { value: "OAUTH_GOOGLE_ACCOUNT_LINKED", label: "Google Ditautkan" },
     { value: "OAUTH_GOOGLE_ACCOUNT_CREATED", label: "User Baru dari Google" },
+    { value: "OAUTH_DISCORD_LOGIN_SUCCESS", label: "Discord Login" },
+    { value: "OAUTH_DISCORD_ACCOUNT_LINKED", label: "Discord Ditautkan" },
+    { value: "OAUTH_DISCORD_ACCOUNT_CREATED", label: "User Baru dari Discord" },
     { value: "SENSITIVE_FIELD_CHANGED", label: "Perubahan Data Sensitif" },
     { value: "TOURNAMENT_REGISTERED", label: "Daftar Turnamen" },
+    { value: "TOURNAMENT_STARTED", label: "Turnamen Dimulai" },
+    { value: "TOURNAMENT_CHECKIN_UPDATED", label: "Check-in Turnamen" },
+    { value: "TOURNAMENT_PARTICIPANT_UPDATED", label: "Update Peserta Turnamen" },
+    { value: "TOURNAMENT_PARTICIPANT_REMOVED", label: "Hapus Peserta Turnamen" },
+    { value: "TOURNAMENT_PARTICIPANT_CHECKIN_TOGGLED", label: "Check-in Peserta" },
+    { value: "TOURNAMENT_ANNOUNCEMENT_CREATED", label: "Pengumuman Turnamen Dibuat" },
+    { value: "TOURNAMENT_ANNOUNCEMENT_UPDATED", label: "Pengumuman Turnamen Diubah" },
+    { value: "TOURNAMENT_ANNOUNCEMENT_DELETED", label: "Pengumuman Turnamen Dihapus" },
+    { value: "MATCH_REPORTED", label: "Laporan Match" },
+    { value: "MATCH_CONFIRMED", label: "Match Dikonfirmasi" },
+    { value: "MATCH_ADMIN_RESOLVED", label: "Match Diresolve Admin" },
+    { value: "RATE_LIMIT_HIT", label: "Rate Limit" },
     { value: "ROLE_CHANGED", label: "Perubahan Role" },
     { value: "TREASURY_ADDED", label: "Treasury Ditambah" },
     { value: "TREASURY_UPDATED", label: "Treasury Diubah" },
@@ -132,7 +147,7 @@ const ACTION_LABELS: Record<string, string> = Object.fromEntries(
 );
 
 const getActionBadgeColor = (action: string) => {
-    if (action.startsWith("OAUTH_GOOGLE")) {
+    if (action.startsWith("OAUTH_GOOGLE") || action.startsWith("OAUTH_DISCORD")) {
         return "border-success/20 bg-success/10 text-success";
     }
     if (action.includes("SUCCESS") || action.includes("APPROVED") || action.includes("REGISTERED")) {
@@ -166,7 +181,7 @@ export default function AuditLogsPage() {
         () => ({
             failed: logs.filter((log) => log.action.includes("FAILED") || log.action.includes("BANNED")).length,
             sensitive: logs.filter((log) => log.action === "SENSITIVE_FIELD_CHANGED").length,
-            auth: logs.filter((log) => log.action.startsWith("LOGIN") || log.action.startsWith("PASSWORD_") || log.action.startsWith("OAUTH_GOOGLE")).length,
+            auth: logs.filter((log) => log.action.startsWith("LOGIN") || log.action.startsWith("PASSWORD_") || log.action.startsWith("OAUTH_GOOGLE") || log.action.startsWith("OAUTH_DISCORD")).length,
         }),
         [logs]
     );

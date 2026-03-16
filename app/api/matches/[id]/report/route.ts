@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { matchReportSchema } from "@/lib/validators";
 import { resolveMatchResult } from "@/lib/services/tournament-bracket.service";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { extractIP, logAudit } from "@/lib/audit-logger";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
+import { getRateLimitEnabled, getRateLimitMatchReport } from "@/lib/runtime-config";
 
 function reportsMatch(left: { scoreA: number; scoreB: number; winnerId: string }, right: { scoreA: number; scoreB: number; winnerId: string }) {
     return left.scoreA === right.scoreA && left.scoreB === right.scoreB && left.winnerId === right.winnerId;
@@ -16,6 +20,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         }
 
         const { id } = await params;
+        const ipAddress = extractIP(request.headers);
+        if (getRateLimitEnabled()) {
+            const { max, windowSeconds } = getRateLimitMatchReport();
+            const rate = checkRateLimit(`match-report:${currentUser.id}:${ipAddress}`, {
+                windowMs: windowSeconds * 1000,
+                max,
+            });
+            if (!rate.allowed) {
+                await logAudit({
+                    userId: currentUser.id,
+                    action: AUDIT_ACTIONS.RATE_LIMIT_HIT,
+                    targetId: id,
+                    targetType: "Match",
+                    details: { scope: "match_report", resetAt: new Date(rate.resetAt).toISOString() },
+                });
+                return NextResponse.json({ success: false, message: "Terlalu banyak percobaan. Coba lagi nanti." }, { status: 429 });
+            }
+        }
+
         const body = await request.json();
         const parsed = matchReportSchema.safeParse(body);
         if (!parsed.success) {
@@ -81,6 +104,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                     winnerId: first.winnerId,
                     source: "PLAYER",
                 });
+                await logAudit({
+                    userId: currentUser.id,
+                    action: AUDIT_ACTIONS.MATCH_CONFIRMED,
+                    targetId: id,
+                    targetType: "Match",
+                    details: { scoreA: first.scoreA, scoreB: first.scoreB, winnerId: first.winnerId },
+                });
                 return NextResponse.json({ success: true, message: "Hasil match terkonfirmasi" }, { status: 200 });
             }
 
@@ -98,12 +128,38 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 },
             });
 
+            await logAudit({
+                userId: currentUser.id,
+                action: AUDIT_ACTIONS.MATCH_REPORTED,
+                targetId: id,
+                targetType: "Match",
+                details: {
+                    scoreA: parsed.data.scoreA,
+                    scoreB: parsed.data.scoreB,
+                    winnerId: parsed.data.winnerId,
+                    status: "DISPUTED",
+                },
+            });
+
             return NextResponse.json({ success: false, message: "Laporan tidak cocok, match masuk sengketa" }, { status: 409 });
         }
 
         await prisma.match.update({
             where: { id },
             data: { status: "RESULT_SUBMITTED", matchVersion: { increment: 1 } },
+        });
+
+        await logAudit({
+            userId: currentUser.id,
+            action: AUDIT_ACTIONS.MATCH_REPORTED,
+            targetId: id,
+            targetType: "Match",
+            details: {
+                scoreA: parsed.data.scoreA,
+                scoreB: parsed.data.scoreB,
+                winnerId: parsed.data.winnerId,
+                status: "RESULT_SUBMITTED",
+            },
         });
 
         return NextResponse.json({ success: true, message: "Laporan hasil dikirim, menunggu konfirmasi lawan" }, { status: 200 });

@@ -8,11 +8,6 @@ type StoredUser = {
     username: string;
     fullName: string;
     password: string;
-    phoneWhatsapp: string;
-    provinceCode?: string;
-    provinceName?: string;
-    cityCode?: string;
-    city?: string;
     status: string;
     role: string;
 };
@@ -29,11 +24,10 @@ test("auth flow integration: register then login against in-memory repository", 
 
     const prisma = {
         user: {
-            findUnique: async ({ where }: { where: { username?: string; email?: string; phoneWhatsapp?: string } }) => {
+            findUnique: async ({ where }: { where: { username?: string; email?: string } }) => {
                 if (!storedUser) return null;
                 if (where.username && where.username === storedUser.username) return storedUser;
                 if (where.email && where.email === storedUser.email) return storedUser;
-                if (where.phoneWhatsapp && where.phoneWhatsapp === storedUser.phoneWhatsapp) return storedUser;
                 return null;
             },
             findFirst: async ({ where }: { where: { OR?: Array<{ email?: string; username?: string }> } }) => {
@@ -48,9 +42,6 @@ test("auth flow integration: register then login against in-memory repository", 
                 return storedUser;
             },
             update: async () => storedUser,
-        },
-        gameProfile: {
-            findFirst: async () => null,
         },
         emailVerificationToken: {
             upsert: async ({ create }: { create: VerificationToken }) => {
@@ -68,24 +59,10 @@ test("auth flow integration: register then login against in-memory repository", 
             generateSecureToken: () => "verify-token",
         },
         {
-            username: "integration.user",
+            fullName: "Integration User",
             email: "integration@example.com",
             password: "Password123",
             confirmPassword: "Password123",
-            phoneWhatsapp: "+628123456789",
-            provinceCode: "31",
-            provinceName: "DKI Jakarta",
-            cityCode: "3171",
-            cityName: "Kota Jakarta Pusat",
-            duelLinksGameId: "123-456-789",
-            duelLinksIgn: "[DS] Integrator",
-            masterDuelGameId: "",
-            masterDuelIgn: "",
-            duelLinksScreenshotUploadId: "",
-            masterDuelScreenshotUploadId: "",
-            sourceInfo: "Discord",
-            socialMedia: ["discord"],
-            agreement: true,
         },
     );
 

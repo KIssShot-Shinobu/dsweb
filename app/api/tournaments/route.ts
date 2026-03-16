@@ -5,6 +5,7 @@ import { logAudit } from "@/lib/audit-logger";
 import { tournamentSchema } from "@/lib/validators";
 import { resolveTournamentImage } from "@/lib/tournament-image";
 import { getServerCurrentUser } from "@/lib/server-current-user";
+import { resolveGameByCodeOrId } from "@/lib/game";
 
 function buildTournamentWhere(searchParams: URLSearchParams) {
     const status = searchParams.get("status");
@@ -18,7 +19,7 @@ function buildTournamentWhere(searchParams: URLSearchParams) {
     }
 
     if (gameType && gameType !== "ALL") {
-        where.gameType = gameType;
+        where.game = { code: gameType };
     }
 
     if (search) {
@@ -43,8 +44,9 @@ export async function GET(request: NextRequest) {
         const [tournaments, total, open, ongoing, completed, cancelled] = await Promise.all([
             prisma.tournament.findMany({
                 where,
-                orderBy: [{ startDate: "asc" }, { createdAt: "desc" }],
+                orderBy: [{ startAt: "asc" }, { createdAt: "desc" }],
                 include: {
+                    game: { select: { code: true, name: true } },
                     _count: {
                         select: { participants: true },
                     },
@@ -60,6 +62,9 @@ export async function GET(request: NextRequest) {
 
         const sanitizedTournaments = tournaments.map((tournament) => ({
             ...tournament,
+            gameType: tournament.game?.code ?? "",
+            gameName: tournament.game?.name ?? "",
+            startAt: tournament.startAt.toISOString(),
             image: resolveTournamentImage(tournament.image),
         }));
 
@@ -99,18 +104,32 @@ export async function POST(request: NextRequest) {
         }
 
         const data = validBody.data;
+        const game = await resolveGameByCodeOrId(prisma, data.gameType);
+        if (!game) {
+            return NextResponse.json({ success: false, message: "Game tidak ditemukan" }, { status: 400 });
+        }
+        const registrationOpen = data.registrationOpen ? new Date(data.registrationOpen) : null;
+        const registrationClose = data.registrationClose ? new Date(data.registrationClose) : null;
 
         const tournament = await prisma.tournament.create({
             data: {
                 title: data.title,
                 description: data.description || null,
                 format: data.format,
-                gameType: data.gameType,
+                gameId: game.id,
                 status: data.status || "OPEN",
                 structure: data.structure || "SINGLE_ELIM",
+                mode: data.mode || "INDIVIDUAL",
+                isTeamTournament: data.isTeamTournament ?? false,
                 entryFee: data.entryFee,
                 prizePool: data.prizePool,
-                startDate: new Date(data.startDate),
+                maxPlayers: data.maxPlayers ?? null,
+                minPlayers: data.minPlayers ?? null,
+                bracketSize: data.bracketSize ?? null,
+                checkinRequired: data.checkinRequired ?? false,
+                registrationOpen,
+                registrationClose,
+                startAt: new Date(data.startAt),
                 image: data.image || null,
                 createdById: currentUser.id,
             },
@@ -122,7 +141,7 @@ export async function POST(request: NextRequest) {
             action: "TOURNAMENT_CREATED",
             targetId: tournament.id,
             targetType: "Tournament",
-            details: { title: tournament.title, gameType: tournament.gameType, format: tournament.format }
+            details: { title: tournament.title, gameCode: game.code, format: tournament.format }
         });
 
         return NextResponse.json({ success: true, tournament }, { status: 201 });

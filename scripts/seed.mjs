@@ -8,9 +8,66 @@ if (!databaseUrl) {
     throw new Error("DATABASE_URL is not set in .env");
 }
 
-const prisma = new PrismaClient({
-    adapter: new PrismaMariaDb(databaseUrl),
-});
+const MAX_SEED_ATTEMPTS = 2;
+const MAX_QUERY_RETRIES = 3;
+const RETRY_DELAY_MS = 1500;
+
+function createPrismaClient() {
+    const adapter = new PrismaMariaDb(databaseUrl, {
+        onConnectionError: (error) => {
+            console.error("[Seed][MariaDB] Connection error:", error?.message || error);
+        },
+    });
+    return new PrismaClient({ adapter });
+}
+
+let prisma = createPrismaClient();
+
+function isConnectionClosed(error) {
+    if (!error) return false;
+    const message = String(error.message || error);
+    return message.includes("connection closed") || message.includes("Cannot execute new commands");
+}
+
+function isLockWaitTimeout(error) {
+    if (!error) return false;
+    const message = String(error.message || error);
+    return message.includes("Lock wait timeout exceeded");
+}
+
+function isRetryableError(error) {
+    return isConnectionClosed(error) || isLockWaitTimeout(error);
+}
+
+async function reconnectPrisma() {
+    try {
+        await prisma.$disconnect();
+    } catch {
+        // ignore disconnect errors
+    }
+    prisma = createPrismaClient();
+}
+
+async function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withRetry(task, label) {
+    for (let attempt = 1; attempt <= MAX_QUERY_RETRIES; attempt += 1) {
+        try {
+            return await task();
+        } catch (error) {
+            if (!isRetryableError(error) || attempt === MAX_QUERY_RETRIES) {
+                throw error;
+            }
+            console.warn(`[Seed] ${label} failed (attempt ${attempt}). Retrying...`);
+            if (isConnectionClosed(error)) {
+                await reconnectPrisma();
+            }
+            await delay(RETRY_DELAY_MS * attempt);
+        }
+    }
+}
 
 const DEV_EMAIL_SUFFIX = "@duelstandby.local";
 const DEV_PASSWORD = process.env.DEV_SEED_PASSWORD || "DevSeed123!";
@@ -46,6 +103,11 @@ const teamFixtures = [
         slug: "duel-standby-echo",
         description: "Roster cadangan untuk sparring, event komunitas, dan eksperimen format.",
     },
+];
+
+const gameFixtures = [
+    { code: "DUEL_LINKS", name: "Yu-Gi-Oh! Duel Links", type: "ONLINE" },
+    { code: "MASTER_DUEL", name: "Yu-Gi-Oh! Master Duel", type: "ONLINE" },
 ];
 
 const userFixtures = [
@@ -126,25 +188,34 @@ function getFixtureDate(dayOffset, hour = 19) {
 async function cleanupDevData() {
     console.log("Cleaning old dev data...");
 
-    await prisma.auditLog.deleteMany();
-    await prisma.notification.deleteMany();
-    await prisma.notificationPreference.deleteMany();
-    await prisma.pendingUpload.deleteMany();
-    await prisma.tournamentParticipant.deleteMany();
-    await prisma.treasury.deleteMany();
-    await prisma.tournament.deleteMany();
-    await prisma.teamMember.deleteMany();
-    await prisma.teamInvite.deleteMany();
-    await prisma.teamJoinRequest.deleteMany();
-    await prisma.teamCreationRequest.deleteMany();
-    await prisma.passwordResetToken.deleteMany();
-    await prisma.emailVerificationToken.deleteMany();
-    await prisma.userBadge.deleteMany();
-    await prisma.reputationLog.deleteMany();
-    await prisma.gameProfile.deleteMany();
-    await prisma.registrationLog.deleteMany();
-    await prisma.team.deleteMany();
-    await prisma.user.deleteMany();
+    await withRetry(() => prisma.bracketNode.deleteMany(), "cleanup bracketNode");
+    await withRetry(() => prisma.matchDispute.deleteMany(), "cleanup matchDispute");
+    await withRetry(() => prisma.matchResult.deleteMany(), "cleanup matchResult");
+    await withRetry(() => prisma.matchReport.deleteMany(), "cleanup matchReport");
+    await withRetry(() => prisma.matchPlayer.deleteMany(), "cleanup matchPlayer");
+    await withRetry(() => prisma.match.deleteMany(), "cleanup match");
+    await withRetry(() => prisma.tournamentRound.deleteMany(), "cleanup tournamentRound");
+    await withRetry(() => prisma.tournamentParticipant.deleteMany(), "cleanup tournamentParticipant");
+    await withRetry(() => prisma.tournamentAnnouncement.deleteMany(), "cleanup tournamentAnnouncement");
+    await withRetry(() => prisma.treasury.deleteMany(), "cleanup treasury");
+    await withRetry(() => prisma.notification.deleteMany(), "cleanup notification");
+    await withRetry(() => prisma.notificationPreference.deleteMany(), "cleanup notificationPreference");
+    await withRetry(() => prisma.pendingUpload.deleteMany(), "cleanup pendingUpload");
+    await withRetry(() => prisma.registrationLog.deleteMany(), "cleanup registrationLog");
+    await withRetry(() => prisma.passwordResetToken.deleteMany(), "cleanup passwordResetToken");
+    await withRetry(() => prisma.emailVerificationToken.deleteMany(), "cleanup emailVerificationToken");
+    await withRetry(() => prisma.userBadge.deleteMany(), "cleanup userBadge");
+    await withRetry(() => prisma.reputationLog.deleteMany(), "cleanup reputationLog");
+    await withRetry(() => prisma.playerGameAccount.deleteMany(), "cleanup playerGameAccount");
+    await withRetry(() => prisma.auditLog.deleteMany(), "cleanup auditLog");
+    await withRetry(() => prisma.teamMember.deleteMany(), "cleanup teamMember");
+    await withRetry(() => prisma.teamInvite.deleteMany(), "cleanup teamInvite");
+    await withRetry(() => prisma.teamJoinRequest.deleteMany(), "cleanup teamJoinRequest");
+    await withRetry(() => prisma.teamCreationRequest.deleteMany(), "cleanup teamCreationRequest");
+    await withRetry(() => prisma.tournament.deleteMany(), "cleanup tournament");
+    await withRetry(() => prisma.team.deleteMany(), "cleanup team");
+    await withRetry(() => prisma.user.deleteMany(), "cleanup user");
+    await withRetry(() => prisma.game.deleteMany(), "cleanup game");
 }
 
 async function ensureAdminUser() {
@@ -198,7 +269,26 @@ async function seedTeams() {
     return teamMap;
 }
 
-async function seedUsers(teamMap) {
+async function seedGames() {
+    console.log("Seeding games...");
+
+    const gameMap = new Map();
+    for (const fixture of gameFixtures) {
+        const game = await prisma.game.create({
+            data: {
+                code: fixture.code,
+                name: fixture.name,
+                type: fixture.type,
+                isOnline: true,
+            },
+        });
+        gameMap.set(game.code, game.id);
+    }
+
+    return gameMap;
+}
+
+async function seedUsers(teamMap, gameMap) {
     console.log("Seeding 20 dev users...");
 
     const passwordHash = await bcrypt.hash(DEV_PASSWORD, 10);
@@ -229,10 +319,10 @@ async function seedUsers(teamMap) {
                 lastLoginAt: isActive ? getFixtureDate(index - 1, 20) : null,
                 createdAt,
                 updatedAt: createdAt,
-                gameProfiles: {
+                playerGameAccounts: {
                     create: {
-                        gameType: fixture.gameType,
-                        gameId: fixture.gameId,
+                        gameId: gameMap.get(fixture.gameType),
+                        gamePlayerId: fixture.gameId,
                         ign: fixture.ign,
                         createdAt,
                     },
@@ -247,7 +337,7 @@ async function seedUsers(teamMap) {
                 },
             },
             include: {
-                gameProfiles: true,
+                playerGameAccounts: true,
             },
         });
 
@@ -275,7 +365,7 @@ async function seedUsers(teamMap) {
     return createdUsers;
 }
 
-async function seedTournaments(createdUsers, creatorId) {
+async function seedTournaments(createdUsers, creatorId, gameMap) {
     console.log("Seeding 20 dev tournaments...");
 
     const activeUsers = createdUsers.filter((user) => user.status === "ACTIVE");
@@ -287,29 +377,29 @@ async function seedTournaments(createdUsers, creatorId) {
                 title: fixture.title,
                 description: `Dataset dev tournament ${index + 1} untuk uji dashboard, public cards, register flow, dan detail page terbaru.`,
                 format: fixture.format,
-                gameType: fixture.gameType,
+                gameId: gameMap.get(fixture.gameType),
                 status: fixture.status,
                 entryFee: fixture.entryFee,
                 prizePool: fixture.prizePool,
-                startDate: getFixtureDate(fixture.startOffsetDays, 19),
+                startAt: getFixtureDate(fixture.startOffsetDays, 19),
                 image: null,
                 createdById: creatorId,
             },
         });
 
-        const eligibleUsers = activeUsers.filter((user) => user.gameProfiles.some((profile) => profile.gameType === fixture.gameType));
+        const eligibleUsers = activeUsers.filter((user) => user.playerGameAccounts.some((profile) => profile.gameId === gameMap.get(fixture.gameType)));
         const participantCount = fixture.status === "CANCELLED" ? 0 : Math.min(eligibleUsers.length, (index % 5) + 2);
 
         for (let participantIndex = 0; participantIndex < participantCount; participantIndex += 1) {
             const participant = eligibleUsers[(index + participantIndex) % eligibleUsers.length];
-            const profile = participant.gameProfiles.find((item) => item.gameType === fixture.gameType);
+            const profile = participant.playerGameAccounts.find((item) => item.gameId === gameMap.get(fixture.gameType));
             if (!profile) continue;
 
             await prisma.tournamentParticipant.create({
                 data: {
                     tournamentId: tournament.id,
                     userId: participant.id,
-                    gameId: profile.gameId,
+                    gameId: profile.gamePlayerId,
                     joinedAt: getFixtureDate(Math.min(fixture.startOffsetDays - 1, -1), 18),
                 },
             });
@@ -379,9 +469,10 @@ async function seedAuditLogs(createdUsers) {
 async function main() {
     await cleanupDevData();
     const adminUser = await ensureAdminUser();
+    const gameMap = await seedGames();
     const teamMap = await seedTeams();
-    const createdUsers = await seedUsers(teamMap);
-    await seedTournaments(createdUsers, adminUser.id);
+    const createdUsers = await seedUsers(teamMap, gameMap);
+    await seedTournaments(createdUsers, adminUser.id, gameMap);
     await seedTreasury(createdUsers);
     await seedAuditLogs(createdUsers);
 
@@ -390,7 +481,22 @@ async function main() {
     console.log(`Dev admin email: ${adminUser.email}`);
 }
 
-main()
+async function runSeedWithRetry() {
+    for (let attempt = 1; attempt <= MAX_SEED_ATTEMPTS; attempt += 1) {
+        try {
+            await main();
+            return;
+        } catch (error) {
+            if (attempt === MAX_SEED_ATTEMPTS || !isConnectionClosed(error)) {
+                throw error;
+            }
+            console.warn(`[Seed] Connection closed on attempt ${attempt}. Reconnecting and retrying...`);
+            await reconnectPrisma();
+        }
+    }
+}
+
+runSeedWithRetry()
     .catch((error) => {
         console.error("Dev seed failed:", error);
         process.exit(1);

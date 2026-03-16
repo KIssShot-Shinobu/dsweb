@@ -6,6 +6,9 @@ const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024;
 const DEFAULT_REGION_CACHE_DIR = path.join("data", "regions-cache");
 const DEFAULT_REGION_CACHE_TTL_HOURS = 24 * 30;
 const DEFAULT_EMSIFA_API_BASE_URL = "https://www.emsifa.com/api-wilayah-indonesia/api";
+const DEFAULT_RATE_LIMIT_ENABLED = true;
+const DEFAULT_RATE_LIMIT_TOURNAMENT_REGISTER = { max: 5, windowSeconds: 600 };
+const DEFAULT_RATE_LIMIT_MATCH_REPORT = { max: 10, windowSeconds: 300 };
 
 export function getAppUrl() {
     const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -54,4 +57,38 @@ export function getRegionCacheTtlHours() {
 
 export function getEmsifaApiBaseUrl() {
     return (process.env.EMSIFA_API_BASE_URL?.trim() || DEFAULT_EMSIFA_API_BASE_URL).replace(/\/+$/, "");
+}
+
+function parseBooleanEnv(value: string | undefined, defaultValue: boolean) {
+    if (!value) return defaultValue;
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes", "on"].includes(normalized)) return true;
+    if (["false", "0", "no", "off"].includes(normalized)) return false;
+    return defaultValue;
+}
+
+function parsePositiveInt(value: string | undefined) {
+    const parsed = Number.parseInt(value ?? "", 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+export function getRateLimitEnabled() {
+    return parseBooleanEnv(process.env.RATE_LIMIT_ENABLED, DEFAULT_RATE_LIMIT_ENABLED);
+}
+
+export function getRateLimitTournamentRegister() {
+    const max = parsePositiveInt(process.env.RATE_LIMIT_TOURNAMENT_REGISTER_MAX) ?? DEFAULT_RATE_LIMIT_TOURNAMENT_REGISTER.max;
+    const windowSeconds =
+        parsePositiveInt(process.env.RATE_LIMIT_TOURNAMENT_REGISTER_WINDOW_SECONDS) ??
+        DEFAULT_RATE_LIMIT_TOURNAMENT_REGISTER.windowSeconds;
+
+    return { max, windowSeconds };
+}
+
+export function getRateLimitMatchReport() {
+    const max = parsePositiveInt(process.env.RATE_LIMIT_MATCH_REPORT_MAX) ?? DEFAULT_RATE_LIMIT_MATCH_REPORT.max;
+    const windowSeconds =
+        parsePositiveInt(process.env.RATE_LIMIT_MATCH_REPORT_WINDOW_SECONDS) ?? DEFAULT_RATE_LIMIT_MATCH_REPORT.windowSeconds;
+
+    return { max, windowSeconds };
 }

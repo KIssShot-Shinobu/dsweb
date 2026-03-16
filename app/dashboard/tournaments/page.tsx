@@ -31,7 +31,8 @@ interface Tournament {
     structure?: "SINGLE_ELIM" | "DOUBLE_ELIM" | "SWISS";
     entryFee: number;
     prizePool: number;
-    startDate: string;
+    maxPlayers?: number | null;
+    startAt: string;
     image?: string | null;
     _count?: { participants: number };
 }
@@ -326,12 +327,16 @@ export default function AdminTournamentsPage() {
                                             <div className="min-w-0 flex-1">
                                                 <div className="truncate text-sm font-semibold text-base-content">{tournament.title}</div>
                                                 <div className="mt-1 truncate text-xs text-base-content/45">
-                                                    {tournament.gameType} - {tournament.format} - {formatDate(tournament.startDate)}
+                                                    {tournament.gameType} - {tournament.format} - {formatDate(tournament.startAt)}
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
                                                     <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">Hadiah {formatCurrency(tournament.prizePool)}</span>
                                                     <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">Entry {tournament.entryFee === 0 ? "FREE" : formatCurrency(tournament.entryFee)}</span>
-                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">{tournament._count?.participants || 0} peserta</span>
+                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">
+                                                        {tournament.maxPlayers
+                                                            ? `${tournament._count?.participants || 0} / ${tournament.maxPlayers} peserta`
+                                                            : `${tournament._count?.participants || 0} peserta`}
+                                                    </span>
                                                 </div>
                                             </div>
 

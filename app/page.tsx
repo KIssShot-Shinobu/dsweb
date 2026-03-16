@@ -21,17 +21,18 @@ export default async function Home() {
         select: {
           id: true,
           title: true,
-          gameType: true,
-          startDate: true,
+          game: { select: { code: true, name: true } },
+          startAt: true,
           prizePool: true,
           status: true,
           image: true,
           description: true,
+          maxPlayers: true,
           _count: {
             select: { participants: true },
           },
         },
-        orderBy: { startDate: "asc" },
+        orderBy: { startAt: "asc" },
         take: 12,
       }),
     ]);
@@ -47,21 +48,23 @@ export default async function Home() {
     };
 
     tournaments = dbTournaments
-        .map((t) => ({
+      .map((t) => ({
         id: t.id,
         title: t.title,
-        gameType: t.gameType,
-        startDate: t.startDate.toISOString(),
+        gameType: t.game?.code ?? "",
+        gameName: t.game?.name ?? "",
+        startAt: t.startAt.toISOString(),
         prizePool: t.prizePool,
         status: t.status,
         image: resolveTournamentImage(t.image),
         description: t.description,
         participantCount: t._count.participants,
+        maxPlayers: t.maxPlayers,
       }))
       .sort((a, b) => {
         const byStatus = (order[a.status] ?? 9) - (order[b.status] ?? 9);
         if (byStatus !== 0) return byStatus;
-        return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        return new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
       })
       .slice(0, 6);
   } catch (error) {

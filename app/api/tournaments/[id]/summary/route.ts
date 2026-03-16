@@ -18,11 +18,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                 select: {
                     id: true,
                     title: true,
-                    gameType: true,
+                    game: { select: { code: true, name: true } },
                     status: true,
-                    startDate: true,
+                    startAt: true,
                     format: true,
                     structure: true,
+                    checkinRequired: true,
                     checkInOpen: true,
                     checkInAt: true,
                 },
@@ -37,9 +38,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             return NextResponse.json({ success: false, message: "Turnamen tidak ditemukan" }, { status: 404 });
         }
 
+        const tournamentPayload = {
+            ...tournament,
+            gameType: tournament.game?.code ?? "",
+            gameName: tournament.game?.name ?? "",
+            startAt: tournament.startAt.toISOString(),
+        };
+
         return NextResponse.json({
             success: true,
-            tournament,
+            tournament: tournamentPayload,
             stats: {
                 registeredPlayers,
                 checkedInPlayers,

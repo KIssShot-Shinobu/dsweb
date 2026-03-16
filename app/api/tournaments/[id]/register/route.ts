@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { logAudit } from "@/lib/audit-logger";
+import { extractIP, logAudit } from "@/lib/audit-logger";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { syncOrCreateTournamentBracket } from "@/lib/services/tournament-bracket.service";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
+import { getRateLimitEnabled, getRateLimitTournamentRegister } from "@/lib/runtime-config";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -17,9 +20,34 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         const userId = currentUser.id;
         const { id: tournamentId } = await params;
+        const ipAddress = extractIP(request.headers);
+
+        if (getRateLimitEnabled()) {
+            const { max, windowSeconds } = getRateLimitTournamentRegister();
+            const rate = checkRateLimit(`tournament-register:${userId}:${ipAddress}`, {
+                windowMs: windowSeconds * 1000,
+                max,
+            });
+            if (!rate.allowed) {
+                await logAudit({
+                    userId,
+                    action: AUDIT_ACTIONS.RATE_LIMIT_HIT,
+                    targetId: tournamentId,
+                    targetType: "Tournament",
+                    details: { scope: "tournament_register", resetAt: new Date(rate.resetAt).toISOString() },
+                });
+                return NextResponse.json({ success: false, message: "Terlalu banyak percobaan. Coba lagi nanti." }, { status: 429 });
+            }
+        }
 
         const tournament = await prisma.tournament.findUnique({
-            where: { id: tournamentId }
+            where: { id: tournamentId },
+            include: {
+                game: { select: { id: true, code: true, name: true } },
+                _count: {
+                    select: { participants: true },
+                },
+            },
         });
 
         if (!tournament) {
@@ -28,6 +56,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         if (tournament.status !== "OPEN") {
             return NextResponse.json({ success: false, message: "Pendaftaran Turnamen sudah ditutup" }, { status: 400 });
+        }
+
+        const now = new Date();
+        if (tournament.registrationOpen && now < tournament.registrationOpen) {
+            return NextResponse.json({ success: false, message: "Pendaftaran belum dibuka" }, { status: 400 });
+        }
+        if (tournament.registrationClose && now > tournament.registrationClose) {
+            return NextResponse.json({ success: false, message: "Pendaftaran sudah ditutup" }, { status: 400 });
         }
 
         // Check if already registered
@@ -41,16 +77,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             return NextResponse.json({ success: false, message: "Anda sudah terdaftar di turnamen ini" }, { status: 400 });
         }
 
+        if (tournament.maxPlayers && tournament._count.participants >= tournament.maxPlayers) {
+            return NextResponse.json({ success: false, message: "Slot peserta sudah penuh" }, { status: 409 });
+        }
+
         // Get Game Profile specific to tournament format to snapshot IGN
-        const gameProfile = await prisma.gameProfile.findFirst({
+        const gameProfile = await prisma.playerGameAccount.findFirst({
             where: {
                 userId,
-                gameType: tournament.gameType
+                gameId: tournament.gameId
             }
         });
 
         if (!gameProfile) {
-            const gameLabel = tournament.gameType === "MASTER_DUEL" ? "Master Duel" : "Duel Links";
+            const gameLabel = tournament.game?.name ?? "Game";
             return NextResponse.json({ success: false, message: `Harap lengkapi Profil Game ${gameLabel} di Pengaturan Profil Anda terlebih dahulu` }, { status: 400 });
         }
 
@@ -64,12 +104,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         await logAudit({
             userId,
-            action: "TOURNAMENT_REGISTERED",
+            action: AUDIT_ACTIONS.TOURNAMENT_REGISTERED,
             targetId: tournamentId,
             targetType: "Tournament",
             details: {
                 ign: gameProfile.ign,
-                gameType: tournament.gameType,
+                gameCode: tournament.game?.code ?? "",
                 tournamentTitle: tournament.title,
             },
         });

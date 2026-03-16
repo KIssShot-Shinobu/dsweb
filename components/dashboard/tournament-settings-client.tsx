@@ -30,6 +30,16 @@ const STATUS_OPTIONS = [
     { value: "CANCELLED", label: "CANCELLED" },
 ];
 
+const MAX_PLAYERS_OPTIONS = [
+    { value: "", label: "Tanpa batas" },
+    { value: "8", label: "8 pemain" },
+    { value: "16", label: "16 pemain" },
+    { value: "32", label: "32 pemain" },
+    { value: "64", label: "64 pemain" },
+    { value: "128", label: "128 pemain" },
+    { value: "256", label: "256 pemain" },
+];
+
 const formatIdrInput = (value: number) => new Intl.NumberFormat("id-ID").format(value);
 const parseIdrInput = (value: string) => {
     const numeric = Number(value.replace(/[^0-9]/g, ""));
@@ -42,10 +52,14 @@ type TournamentForm = {
     gameType: string;
     format: string;
     structure: string;
-    startDate: string;
+    startAt: string;
+    registrationOpen: string;
+    registrationClose: string;
+    checkinRequired: boolean;
     entryFee: number;
     prizePool: number;
     status: string;
+    maxPlayers: string;
 };
 
 export function TournamentSettingsClient({ tournamentId }: { tournamentId: string }) {
@@ -58,10 +72,14 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
         gameType: "DUEL_LINKS",
         format: "BO3",
         structure: "SINGLE_ELIM",
-        startDate: "",
+        startAt: "",
+        registrationOpen: "",
+        registrationClose: "",
+        checkinRequired: false,
         entryFee: 0,
         prizePool: 0,
         status: "OPEN",
+        maxPlayers: "",
     });
 
     useEffect(() => {
@@ -82,10 +100,14 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                         gameType: tournament.gameType,
                         format: tournament.format,
                         structure: tournament.structure ?? "SINGLE_ELIM",
-                        startDate: new Date(tournament.startDate).toISOString().slice(0, 16),
+                        startAt: new Date(tournament.startAt).toISOString().slice(0, 16),
+                        registrationOpen: tournament.registrationOpen ? new Date(tournament.registrationOpen).toISOString().slice(0, 16) : "",
+                        registrationClose: tournament.registrationClose ? new Date(tournament.registrationClose).toISOString().slice(0, 16) : "",
+                        checkinRequired: Boolean(tournament.checkinRequired),
                         entryFee: tournament.entryFee ?? 0,
                         prizePool: tournament.prizePool ?? 0,
                         status: tournament.status,
+                        maxPlayers: tournament.maxPlayers ? String(tournament.maxPlayers) : "",
                     });
                 } else {
                     error(data.message || "Gagal memuat turnamen.");
@@ -116,10 +138,14 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                     gameType: form.gameType,
                     format: form.format,
                     structure: form.structure,
-                    startDate: form.startDate,
+                    startAt: form.startAt,
+                    registrationOpen: form.registrationOpen || undefined,
+                    registrationClose: form.registrationClose || undefined,
+                    checkinRequired: form.checkinRequired,
                     entryFee: form.entryFee,
                     prizePool: form.prizePool,
                     status: form.status,
+                    maxPlayers: form.maxPlayers ? Number(form.maxPlayers) : undefined,
                 }),
             });
             const data = await res.json();
@@ -157,7 +183,15 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                         </div>
                         <div>
                             <label className={labelCls}>Start Time</label>
-                            <input type="datetime-local" className={inputCls} value={form.startDate} onChange={(event) => setForm((prev) => ({ ...prev, startDate: event.target.value }))} />
+                            <input type="datetime-local" className={inputCls} value={form.startAt} onChange={(event) => setForm((prev) => ({ ...prev, startAt: event.target.value }))} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Registration Open</label>
+                            <input type="datetime-local" className={inputCls} value={form.registrationOpen} onChange={(event) => setForm((prev) => ({ ...prev, registrationOpen: event.target.value }))} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Registration Close</label>
+                            <input type="datetime-local" className={inputCls} value={form.registrationClose} onChange={(event) => setForm((prev) => ({ ...prev, registrationClose: event.target.value }))} />
                         </div>
                         <div className="lg:col-span-2">
                             <label className={labelCls}>Description</label>
@@ -183,6 +217,14 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                         <div>
                             <label className={labelCls}>Status</label>
                             <FormSelect value={form.status} onChange={(value) => setForm((prev) => ({ ...prev, status: value }))} options={STATUS_OPTIONS} />
+                        </div>
+                        <label className="flex items-center justify-between rounded-box border border-base-300 bg-base-200/40 px-3 py-3 text-sm font-semibold text-base-content">
+                            Check-in Required
+                            <input type="checkbox" className="toggle toggle-primary" checked={form.checkinRequired} onChange={(event) => setForm((prev) => ({ ...prev, checkinRequired: event.target.checked }))} />
+                        </label>
+                        <div>
+                            <label className={labelCls}>Max Players</label>
+                            <FormSelect value={form.maxPlayers} onChange={(value) => setForm((prev) => ({ ...prev, maxPlayers: value }))} options={MAX_PLAYERS_OPTIONS} />
                         </div>
                         <div>
                             <label className={labelCls}>Entry Fee (Rp)</label>

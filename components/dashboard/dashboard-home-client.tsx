@@ -43,8 +43,9 @@ interface DashboardSummary {
         title: string;
         gameType: string;
         status: string;
-        startDate: string;
+        startAt: string;
         prizePool: number;
+        maxPlayers?: number | null;
         _count?: { participants: number };
     }[];
     treasury: {

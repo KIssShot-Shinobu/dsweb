@@ -86,7 +86,13 @@ export async function GET(req: NextRequest) {
                 role: true,
                 createdAt: true,
                 lastLoginAt: true,
-                gameProfiles: { select: { gameType: true, ign: true, gameId: true } },
+                playerGameAccounts: {
+                    select: {
+                        game: { select: { code: true, name: true } },
+                        gamePlayerId: true,
+                        ign: true,
+                    },
+                },
                 ...activeTeamMembershipSelect,
             },
             orderBy: [{ role: "desc" }, { createdAt: "desc" }],
@@ -114,9 +120,17 @@ export async function GET(req: NextRequest) {
     ]);
 
     const mappedUsers = users.map((user) => {
+        const { playerGameAccounts, ...userData } = user;
         const activeTeam = getActiveTeamSnapshot(user);
+        const gameProfiles = (playerGameAccounts || []).map((account) => ({
+            gameType: account.game.code,
+            gameName: account.game.name,
+            gameId: account.gamePlayerId,
+            ign: account.ign,
+        }));
         return {
-            ...user,
+            ...userData,
+            gameProfiles,
             teamId: activeTeam.teamId,
             teamJoinedAt: activeTeam.teamJoinedAt,
             team: activeTeam.team,

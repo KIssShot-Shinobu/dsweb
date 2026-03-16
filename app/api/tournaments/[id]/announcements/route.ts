@@ -3,6 +3,8 @@ import { hasRole, ROLES } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { tournamentAnnouncementSchema } from "@/lib/validators";
+import { logAudit } from "@/lib/audit-logger";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -44,6 +46,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 pinned: parsed.data.pinned ?? false,
                 createdById: currentUser.id,
             },
+        });
+
+        await logAudit({
+            userId: currentUser.id,
+            action: AUDIT_ACTIONS.TOURNAMENT_ANNOUNCEMENT_CREATED,
+            targetId: announcement.id,
+            targetType: "TournamentAnnouncement",
+            details: { tournamentId: id, title: announcement.title, pinned: announcement.pinned },
         });
 
         return NextResponse.json({ success: true, announcement }, { status: 201 });

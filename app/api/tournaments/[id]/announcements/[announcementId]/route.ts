@@ -3,6 +3,8 @@ import { hasRole, ROLES } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { tournamentAnnouncementUpdateSchema } from "@/lib/validators";
+import { logAudit } from "@/lib/audit-logger";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string; announcementId: string }> }) {
     try {
@@ -32,6 +34,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             data: parsed.data,
         });
 
+        await logAudit({
+            userId: currentUser.id,
+            action: AUDIT_ACTIONS.TOURNAMENT_ANNOUNCEMENT_UPDATED,
+            targetId: announcementId,
+            targetType: "TournamentAnnouncement",
+            details: { tournamentId: id, updatedFields: Object.keys(parsed.data) },
+        });
+
         return NextResponse.json({ success: true, announcement: updated });
     } catch (error) {
         console.error("[Tournament Announcement Update]", error);
@@ -57,6 +67,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         }
 
         await prisma.tournamentAnnouncement.delete({ where: { id: announcementId } });
+
+        await logAudit({
+            userId: currentUser.id,
+            action: AUDIT_ACTIONS.TOURNAMENT_ANNOUNCEMENT_DELETED,
+            targetId: announcementId,
+            targetType: "TournamentAnnouncement",
+            details: { tournamentId: id },
+        });
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("[Tournament Announcement Delete]", error);

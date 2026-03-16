@@ -16,6 +16,7 @@ test("finalizeAuthenticatedSession records successful login for active user", as
                         fullName: "Member One",
                         role: "MEMBER",
                         status: "ACTIVE",
+                        emailVerificationToken: null,
                     }),
                     update: async () => {
                         calls.push("update");
@@ -43,6 +44,7 @@ test("finalizeAuthenticatedSession records successful login for active user", as
     assert.equal(result.ok, true);
     if (result.ok) {
         assert.equal(result.user.username, "member.one");
+        assert.equal(result.emailVerified, true);
     }
     assert.deepEqual(calls, [
         "update",
@@ -65,6 +67,7 @@ test("finalizeAuthenticatedSession rejects banned user and logs failed login", a
                         fullName: "Banned User",
                         role: "USER",
                         status: "BANNED",
+                        emailVerificationToken: null,
                     }),
                     update: async () => null,
                 },
@@ -91,7 +94,62 @@ test("finalizeAuthenticatedSession rejects banned user and logs failed login", a
             fullName: "Banned User",
             role: "USER",
             status: "BANNED",
+            emailVerificationToken: null,
         },
     });
     assert.deepEqual(actions, ["LOGIN_FAILED"]);
+});
+
+test("finalizeAuthenticatedSession sends verification notification when email unverified", async () => {
+    const calls: string[] = [];
+
+    const result = await finalizeAuthenticatedSession(
+        {
+            prisma: {
+                user: {
+                    findUnique: async () => ({
+                        id: "user_3",
+                        email: "unverified@example.com",
+                        username: "unverified.user",
+                        fullName: "Unverified User",
+                        role: "USER",
+                        status: "ACTIVE",
+                        emailVerificationToken: { id: "token_1" },
+                    }),
+                    update: async () => {
+                        calls.push("update");
+                        return null;
+                    },
+                },
+            },
+            notifications: {
+                createNotification: async (input) => {
+                    calls.push(`notify:${input.type}:${input.title}`);
+                    return null;
+                },
+            },
+            touchUserLastActiveAt: async () => {
+                calls.push("touchUserLastActiveAt");
+            },
+            logAudit: async ({ action }) => {
+                calls.push(`audit:${action}`);
+            },
+        },
+        {
+            email: "unverified@example.com",
+            provider: "credentials",
+            redirectTarget: "/dashboard",
+        }
+    );
+
+    assert.equal(result.ok, true);
+    if (result.ok) {
+        assert.equal(result.emailVerified, false);
+    }
+    assert.deepEqual(calls, [
+        "update",
+        "touchUserLastActiveAt",
+        "notify:SYSTEM_ALERT:Verifikasi email kamu",
+        "audit:LOGIN_SUCCESS",
+    ]);
 });

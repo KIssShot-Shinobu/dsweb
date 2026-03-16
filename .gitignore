@@ -46,3 +46,4 @@ next-env.d.ts
 # large/unnecessary files
 *.zip
 *.db
+public/uploads/

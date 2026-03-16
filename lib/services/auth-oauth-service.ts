@@ -10,6 +10,7 @@ type OAuthUserRecord = {
     teamId?: string | null;
     googleId?: string | null;
     avatarUrl?: string | null;
+    discordId?: string | null;
 };
 
 type OAuthPrismaLike = {
@@ -41,6 +42,20 @@ type SyncGoogleUserInput = {
 type SyncGoogleUserResult =
     | { ok: true; outcome: "existing" | "linked" | "created"; user: OAuthUserRecord }
     | { ok: false; code: "PROFILE_INVALID" | "BANNED" | "GOOGLE_ACCOUNT_CONFLICT"; user?: OAuthUserRecord };
+
+type SyncDiscordUserDeps = SyncGoogleUserDeps;
+
+type SyncDiscordUserInput = {
+    discordId: string | null | undefined;
+    email: string | null | undefined;
+    name?: string | null;
+    image?: string | null;
+    emailVerified?: boolean;
+};
+
+type SyncDiscordUserResult =
+    | { ok: true; outcome: "existing" | "linked" | "created"; user: OAuthUserRecord }
+    | { ok: false; code: "PROFILE_INVALID" | "BANNED" | "DISCORD_ACCOUNT_CONFLICT"; user?: OAuthUserRecord };
 
 function sanitizeUsernameBase(value: string) {
     const cleaned = value
@@ -141,6 +156,83 @@ export async function syncGoogleUser(
             email: normalizedEmail,
             password: hashedPassword,
             googleId,
+            emailVerifiedAt: input.emailVerified ? deps.now?.() ?? new Date() : null,
+            avatarUrl: input.image || null,
+            status: "ACTIVE",
+            role: "USER",
+        },
+    });
+
+    if (input.emailVerified && deps.prisma.emailVerificationToken) {
+        await deps.prisma.emailVerificationToken.deleteMany({ where: { userId: createdUser.id } });
+    }
+
+    return { ok: true, outcome: "created", user: createdUser };
+}
+
+export async function syncDiscordUser(
+    deps: SyncDiscordUserDeps,
+    input: SyncDiscordUserInput
+): Promise<SyncDiscordUserResult> {
+    const discordId = input.discordId?.trim();
+    const normalizedEmail = input.email?.trim().toLowerCase();
+
+    if (!discordId || !normalizedEmail) {
+        return { ok: false, code: "PROFILE_INVALID" };
+    }
+
+    const userByDiscordId = await deps.prisma.user.findUnique({ where: { discordId } });
+    if (userByDiscordId) {
+        if (userByDiscordId.status === "BANNED") {
+            return { ok: false, code: "BANNED", user: userByDiscordId };
+        }
+
+        if (input.emailVerified && deps.prisma.emailVerificationToken) {
+            await deps.prisma.emailVerificationToken.deleteMany({ where: { userId: userByDiscordId.id } });
+        }
+
+        return { ok: true, outcome: "existing", user: userByDiscordId };
+    }
+
+    const userByEmail = await deps.prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (userByEmail) {
+        if (userByEmail.status === "BANNED") {
+            return { ok: false, code: "BANNED", user: userByEmail };
+        }
+
+        if (userByEmail.discordId && userByEmail.discordId !== discordId) {
+            return { ok: false, code: "DISCORD_ACCOUNT_CONFLICT", user: userByEmail };
+        }
+
+        const updatedUser = await deps.prisma.user.update({
+            where: { id: userByEmail.id },
+            data: {
+                discordId,
+                emailVerifiedAt: input.emailVerified ? deps.now?.() ?? new Date() : undefined,
+                avatarUrl: userByEmail.avatarUrl || input.image || undefined,
+            },
+        });
+
+        if (input.emailVerified && deps.prisma.emailVerificationToken) {
+            await deps.prisma.emailVerificationToken.deleteMany({ where: { userId: userByEmail.id } });
+        }
+
+        return { ok: true, outcome: "linked", user: updatedUser };
+    }
+
+    const username = await ensureUniqueUsername(
+        deps.prisma,
+        input.name || normalizedEmail.split("@")[0] || "user"
+    );
+    const hashedPassword = await deps.hashPassword(deps.generateSecureToken(32));
+
+    const createdUser = await deps.prisma.user.create({
+        data: {
+            username,
+            fullName: input.name?.trim() || username,
+            email: normalizedEmail,
+            password: hashedPassword,
+            discordId,
             emailVerifiedAt: input.emailVerified ? deps.now?.() ?? new Date() : null,
             avatarUrl: input.image || null,
             status: "ACTIVE",

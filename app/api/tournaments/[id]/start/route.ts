@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { hasRole, ROLES } from "@/lib/auth";
 import { generateTournamentBracket } from "@/lib/services/tournament-bracket.service";
+import { logAudit } from "@/lib/audit-logger";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 
 export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -14,7 +16,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
         const { id } = await params;
         const tournament = await prisma.tournament.findUnique({
             where: { id },
-            select: { id: true, status: true, structure: true },
+            select: { id: true, status: true, structure: true, maxPlayers: true, title: true, checkinRequired: true },
         });
 
         if (!tournament) {
@@ -31,7 +33,10 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
 
         if (existingRounds === 0) {
             const participants = await prisma.tournamentParticipant.findMany({
-                where: { tournamentId: tournament.id },
+                where: {
+                    tournamentId: tournament.id,
+                    ...(tournament.checkinRequired ? { status: "CHECKED_IN" } : {}),
+                },
                 select: { id: true },
             });
 
@@ -43,13 +48,22 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
                 prisma,
                 tournament.id,
                 tournament.structure,
-                participants.map((participant) => ({ participantId: participant.id }))
+                participants.map((participant) => ({ participantId: participant.id })),
+                tournament.maxPlayers ?? undefined
             );
         }
 
         await prisma.tournament.update({
             where: { id: tournament.id },
             data: { status: "ONGOING" },
+        });
+
+        await logAudit({
+            userId: currentUser.id,
+            action: AUDIT_ACTIONS.TOURNAMENT_STARTED,
+            targetId: tournament.id,
+            targetType: "Tournament",
+            details: { title: tournament.title, structure: tournament.structure },
         });
 
         return NextResponse.json({ success: true, message: "Turnamen dimulai." }, { status: 201 });

@@ -14,10 +14,13 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 
 ## Fitur Utama
 
-- Registrasi akun publik + game profile (Duel Links / Master Duel). Role komunitas dan team diatur terpisah setelah akun dibuat. Form wilayah kini memakai combobox provinsi + kabupaten/kota Indonesia berbasis kode wilayah, dengan cache lokal agar request tidak boros dan input kota tidak ngawur. Pre-check conflict email/nomor/game ID dijalankan lebih awal agar error 409 muncul cepat, dan pengiriman email verifikasi tidak lagi menahan response sukses.
-- Login/logout + cek sesi user (`/api/auth/me`), termasuk payload role komunitas dan team aktif jika ada. Login Google dan login username/email+password kini sama-sama melewati Auth.js, lalu difinalisasi ke state internal aplikasi untuk audit, role, dan sinkronisasi profil.
+- Registrasi akun publik disederhanakan: hanya `nama`, `email`, dan `password`. Data lain (game profile, wilayah, sosial) dilengkapi setelah login lewat dashboard profile/settings.
+- Login/logout + cek sesi user (`/api/auth/me`), termasuk payload role komunitas dan team aktif jika ada. Login Google, Discord, dan login username/email+password kini sama-sama melewati Auth.js, lalu difinalisasi ke state internal aplikasi untuk audit, role, dan sinkronisasi profil.
 - Manajemen role dan status akun user.
 - CRUD tournament + register participant tournament.
+- Bracket tournament dapat diakses publik (tanpa login) untuk halaman public.
+- Tournament sekarang punya `maxPlayers` untuk batas kapasitas. Registrasi publik/admin akan menolak jika slot penuh.
+- Tournament kini menyimpan `startAt` serta window pendaftaran (`registrationOpen`/`registrationClose`) dan toggle `checkinRequired` per event.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
 - Panel operasional disatukan ke halaman `/dashboard`, termasuk summary users, teams, tournament, treasury, dan quick actions.
 - Hapus tournament di dashboard memakai confirm modal + undo 5 detik.
@@ -48,7 +51,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - `Settings` menyediakan aksi kirim ulang link verifikasi email untuk user yang belum verifikasi.
 - Halaman `Profile` kini lebih minimal: data akun tampil lebih dulu, lalu ringkasan Duel Links dan Master Duel diletakkan tepat di bawahnya. Form edit/tambah profile game hanya muncul lewat modal saat dibutuhkan.
 - Card `Profile Game` di halaman `Profile` kini memakai judul dan copy yang lebih singkat agar nama game dan data inti lebih mudah dipindai.
-- Game ID untuk Duel Links dan Master Duel kini distandardkan ke format `XXX-XXX-XXX` dengan tepat 9 digit, baik di form registrasi maupun edit profile game.
+- Game ID untuk Duel Links dan Master Duel kini distandardkan ke format `XXX-XXX-XXX` dengan tepat 9 digit (profil game).
 - Data akun utama di halaman `Profile` juga kini tampil sebagai ringkasan saja. Edit `username`, `email`, `WhatsApp`, `provinsi`, dan `kabupaten/kota` dilakukan lewat satu modal agar halaman tidak ramai card/form terbuka sekaligus.
 - Susunan halaman `Profile` kini lebih ringkas: data akun diikuti profile game dalam panel yang sama, sementara aktivitas terbaru ditampilkan sebagai daftar kecil yang lebih tenang agar tidak mengambil fokus utama.
 - Surface `Data Akun` dan `Profile Game` di halaman `Profile` kini disatukan dalam satu kelompok visual agar halaman terasa lebih tenang dan tidak penuh card yang saling bersaing.
@@ -63,7 +66,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Surface card public di dark mode kini memakai dark panel solid yang konsisten agar tidak muncul panel putih atau teks yang kehilangan kontras.
 - Navbar public kini memakai icon toggle light/dark dengan animasi transisi, dan social icons di footer kembali memakai hover glow/lift agar terasa hidup.
 - Landing page memakai reveal animation ringan berbasis `framer-motion` pada hero, heading section, dan card penting; dashboard sengaja tidak diberi animasi scroll agar tetap ringan dipakai admin.
-- Copywriting public dirapikan menjadi lebih singkat, elegan, dan konsisten dalam Bahasa Indonesia pada homepage, card tournament, footer, serta halaman tournament publik.`r`n- Halaman auth publik kini memakai panel tunggal yang lebih minimal, tanpa hero samping atau kartu penjelasan tambahan agar fokus user tetap ke form login/registrasi. Tombol Google juga dipoles dengan tampilan yang lebih premium dan spacing mobile dibuat lebih rapat.
+- Copywriting public dirapikan menjadi lebih singkat, elegan, dan konsisten dalam Bahasa Indonesia pada homepage, card tournament, footer, serta halaman tournament publik.`r`n- Halaman auth publik kini memakai panel tunggal yang lebih minimal, tanpa hero samping atau kartu penjelasan tambahan agar fokus user tetap ke form login/registrasi. Tombol Google/Discord juga dipoles dengan tampilan yang lebih premium dan spacing mobile dibuat lebih rapat.
 - Navbar public:
   - Belum login: `Sign In` + `Sign Up`.
   - Sudah login admin/founder: profile menu -> `Dashboard`, `Logout`.
@@ -121,6 +124,7 @@ Variabel penting:
 - `DATABASE_URL`: koneksi utama Prisma ke MySQL.
 - `AUTH_SECRET`: secret utama Auth.js untuk sesi aplikasi.
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`: kredensial Google OAuth untuk Auth.js.
+- `AUTH_DISCORD_ID` / `AUTH_DISCORD_SECRET`: kredensial Discord OAuth untuk Auth.js.
 - `DATA_ENCRYPTION_KEY`: kunci enkripsi data sensitif at-rest (`phoneWhatsapp`, `accountNumber`, `twoFactorSecret`).
 - `NEXT_PUBLIC_APP_URL`: base URL app (dipakai URL hasil upload).
 - `NEXT_PUBLIC_SOCIAL_DISCORD` / `NEXT_PUBLIC_SOCIAL_YOUTUBE` / `NEXT_PUBLIC_SOCIAL_INSTAGRAM`: link sosial publik untuk footer + landing page (opsional).
@@ -129,6 +133,11 @@ Variabel penting:
 - `REGION_CACHE_DIR`: lokasi cache lokal dataset wilayah Indonesia (default `./data/regions-cache`).
 - `REGION_CACHE_TTL_HOURS`: TTL cache wilayah lokal dalam jam (default 720 / 30 hari).
 - `EMSIFA_API_BASE_URL`: base URL dataset wilayah Indonesia Emsifa.
+- `RATE_LIMIT_ENABLED`: aktif/nonaktif rate limit API (default `true`).
+- `RATE_LIMIT_TOURNAMENT_REGISTER_MAX`: batas request register turnamen per window (default `5`).
+- `RATE_LIMIT_TOURNAMENT_REGISTER_WINDOW_SECONDS`: window rate limit register turnamen dalam detik (default `600`).
+- `RATE_LIMIT_MATCH_REPORT_MAX`: batas request report match per window (default `10`).
+- `RATE_LIMIT_MATCH_REPORT_WINDOW_SECONDS`: window rate limit report match dalam detik (default `300`).
 - `ALLOW_DEV_SEED_ENDPOINT`: aktifkan `/api/seed` hanya untuk dev lokal yang memang membutuhkan seed admin cepat.
 - `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD`: kredensial seed admin untuk script dan endpoint seed.
 - `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS`: kredensial SMTP provider email.
@@ -137,16 +146,17 @@ Variabel penting:
 
 ## Auth.js Migration (Phase 4)
 
-- Auth.js kini menjadi satu-satunya jalur login utama: Google OAuth dan credentials (`username/email + password`).
+- Auth.js kini menjadi satu-satunya jalur login utama: Google OAuth, Discord OAuth, dan credentials (`username/email + password`).
 - Halaman login menampilkan helper copy singkat agar user paham role komunitas, team, dan akses dashboard tetap mengikuti akun internal Duel Standby.
-- Route `POST /api/auth/finalize` kini menyelesaikan finalisasi akun internal setelah login Auth.js sukses: update jejak login, sentuh `lastActiveAt`, dan tulis audit log.
+- Route `POST /api/auth/finalize` kini menyelesaikan finalisasi akun internal setelah login Auth.js sukses: update jejak login, sentuh `lastActiveAt`, tulis audit log, serta membuat notifikasi in-app jika email belum terverifikasi.
+- Default redirect login tanpa parameter kini bersifat role-aware: email belum verifikasi diarahkan ke `/dashboard/settings`, Admin/Founder ke `/dashboard`, dan user biasa ke `/dashboard/profile`.
 - Route `GET /api/auth/finalize` tidak lagi melakukan side effect. Route ini hanya mengalihkan browser ke halaman transisi `/oauth-finalize`, lalu finalisasi aktual dilakukan lewat `POST` dari client.
 - Pembacaan sesi server kini murni mengutamakan Auth.js melalui helper server-side yang memuat user internal berdasarkan `session.user.id` (fallback ke email sesi bila perlu).
 - Invalidasi sesi aplikasi kini memakai `authVersion` pada model `User`, sehingga reset/ganti password bisa memutus sesi Auth.js lama tanpa refresh token legacy.
-- Linking akun dilakukan berdasarkan email. Jika email sudah ada, akun lama akan di-link ke `googleId`. Jika belum ada, user publik baru dibuat dengan `role=USER` dan `status=ACTIVE`.
+- Linking akun dilakukan berdasarkan email. Jika email sudah ada, akun lama akan di-link ke `googleId` atau `discordId`. Jika belum ada, user publik baru dibuat dengan `role=USER` dan `status=ACTIVE`.
 - Jalur Google lama `/api/auth/oauth/finalize` tetap hidup sebagai alias kompatibilitas ke route transisi finalisasi yang baru.
 - Endpoint `POST /api/auth/login` dan `POST /api/auth/refresh` sudah dipensiunkan; UI login utama sepenuhnya memakai Auth.js Credentials provider.
-- Logout client kini membersihkan sesi Auth.js, dan route logout hanya melakukan audit + best-effort cleanup cookie legacy yang tersisa. Audit log dashboard juga sudah punya filter khusus untuk event OAuth Google.
+- Logout client kini membersihkan sesi Auth.js, dan route logout hanya melakukan audit + best-effort cleanup cookie legacy yang tersisa. Audit log dashboard juga sudah punya filter khusus untuk event OAuth Google/Discord.
 ## Instalasi & Menjalankan Lokal
 
 ```bash
@@ -252,7 +262,7 @@ Isi:
 
 Auth:
 
-- `POST /api/auth/register` (wajib `provinceCode` + `cityCode`; nama wilayah diselesaikan server-side dari kode)
+- `POST /api/auth/register`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
 - `GET/POST /api/auth/finalize` (`GET` hanya redirect aman ke halaman transisi, `POST` menyelesaikan finalisasi login Auth.js + audit)
@@ -265,14 +275,16 @@ Auth:
 - `GET /api/profile/stats` (statistik profil user)
 - `GET /api/dashboard/summary`
 
-Tournament:
-
-- `GET /api/tournaments` (`search`, `status`, `gameType`, `page`, `limit`)
-- `POST /api/tournaments` (min role OFFICER)
-- `GET /api/tournaments/:id`
-- `PUT /api/tournaments/:id` (min role OFFICER, support update field tournament)
-- `DELETE /api/tournaments/:id` (min role OFFICER)
-- `POST /api/tournaments/:id/register`
+  Tournament:
+  
+  - `GET /api/tournaments` (`search`, `status`, `gameType`, `page`, `limit`)
+  - `POST /api/tournaments` (min role OFFICER)
+  - `GET /api/tournaments/:id`
+  - `GET /api/tournaments/:id/bracket` (public, tanpa login)
+  - `PUT /api/tournaments/:id` (min role OFFICER, support update field tournament)
+  - `DELETE /api/tournaments/:id` (min role OFFICER)
+  - `POST /api/tournaments/:id/register`
+  - `POST /api/matches/:id/report` (rate limit per user)
 
 Lainnya:
 
@@ -303,8 +315,8 @@ Lainnya:
 - `GET /api/admin/users` dan `PUT /api/admin/users/:id/status` tetap tersedia sebagai alias kompatibilitas
 - `GET /api/treasury` mendukung `page`, `limit`, `month`, `year`, `type`, `userId`
 - `POST /api/upload`
-- `POST /api/upload/public` (membuat temp upload screenshot registrasi, rate limit 5/jam/IP)
-- `GET /api/upload/public/:id` (preview temp upload milik IP yang sama)
+- `POST /api/upload/public` (membuat temp upload publik non-auth, rate limit 5/jam/IP)
+- `GET /api/upload/public/:id` (preview temp upload publik milik IP yang sama)
 - `GET /api/audit-logs`
 - `GET /api/audit-logs/export`
 - `GET /api/regions/provinces`
@@ -365,13 +377,11 @@ Referensi implementasi: `lib/prisma.ts`.
 
 ### `api/upload` 401 saat registrasi
 
-Form registrasi sekarang memakai endpoint publik `POST /api/upload/public` untuk upload screenshot sebelum user login.
-Endpoint ini tidak lagi langsung memberi URL permanen. Response-nya berisi `uploadId`, `previewUrl`, dan `expiresAt`, lalu file akan di-claim ke user saat registrasi berhasil.
-Endpoint `POST /api/upload` tetap dipakai untuk area yang membutuhkan user terautentikasi.
+Registrasi sekarang hanya membutuhkan nama, email, dan password. Jika Anda masih memanggil `/api/upload` dari form registrasi lama, pindahkan kebutuhan upload ke area dashboard (auth) atau gunakan endpoint publik jika benar-benar dibutuhkan.
 
 ### `api/auth/register` 409 (Conflict)
 
-`409` berarti data bentrok (email/nomor WhatsApp/gameId sudah terdaftar).  
+`409` berarti data bentrok (email sudah terdaftar).  
 Jika sebelumnya sempat muncul `500` lalu percobaan berikutnya `409`, biasanya akun sudah sempat tersimpan di percobaan awal.
 
 ### Login/Register 500 setelah update fitur session/token
@@ -407,11 +417,11 @@ cmd /c npm run dev
 
 ## Deploy Notes
 
-- Pastikan `DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `DATA_ENCRYPTION_KEY`, `NEXT_PUBLIC_APP_URL`, `UPLOAD_DIR` terpasang di server.
+- Pastikan `DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_DISCORD_ID`, `AUTH_DISCORD_SECRET`, `DATA_ENCRYPTION_KEY`, `NEXT_PUBLIC_APP_URL`, `UPLOAD_DIR` terpasang di server.
 - Untuk production, gunakan nilai `AUTH_SECRET` acak yang panjang dan jangan pernah reuse secret dari environment lain.
-- Di Google Cloud Console, daftarkan callback URL Auth.js yang tepat:
-  - Dev lokal: `http://localhost:3000/api/auth/callback/google`
-  - Production: `https://YOUR_DOMAIN/api/auth/callback/google`
+- Di Google/Discord Console, daftarkan callback URL Auth.js yang tepat:
+  - Dev lokal: `http://localhost:3000/api/auth/callback/google` dan `http://localhost:3000/api/auth/callback/discord`
+  - Production: `https://YOUR_DOMAIN/api/auth/callback/google` dan `https://YOUR_DOMAIN/api/auth/callback/discord`
 - Pastikan `NEXT_PUBLIC_APP_URL` memakai HTTPS domain production yang sama dengan callback Google dan link email.
 - Untuk Pterodactyl, isi `DATABASE_URL` di server variables. Jangan mengandalkan `prisma db push` tanpa env ini.
 - Jika password DB memakai karakter khusus, gunakan versi URL-encoded pada `DATABASE_URL`.
@@ -420,10 +430,10 @@ cmd /c npm run dev
 
 ### Checklist Deploy Auth.js Production
 
-1. Pastikan `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, dan `NEXT_PUBLIC_APP_URL` sudah terisi benar.
-2. Verifikasi callback Google production menunjuk ke `/api/auth/callback/google`.
-3. Pastikan login Google, login credentials, logout, forgot password, reset password, dan change password lolos smoke test.
-4. Pastikan akun `BANNED` tetap ditolak di credentials login maupun Google login.
+1. Pastikan `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_DISCORD_ID`, `AUTH_DISCORD_SECRET`, dan `NEXT_PUBLIC_APP_URL` sudah terisi benar.
+2. Verifikasi callback Google/Discord production menunjuk ke `/api/auth/callback/google` dan `/api/auth/callback/discord`.
+3. Pastikan login Google, login Discord, login credentials, logout, forgot password, reset password, dan change password lolos smoke test.
+4. Pastikan akun `BANNED` tetap ditolak di credentials login maupun Google/Discord login.
 5. Pastikan email verifikasi dan reset password memakai domain production yang benar.
 6. Pastikan cookie/session diuji di HTTPS production, bukan hanya lokal.
 

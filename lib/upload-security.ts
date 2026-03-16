@@ -2,7 +2,7 @@
 import os from "os";
 import path from "path";
 import crypto from "crypto";
-import type { PrismaClient, GameType } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { getPermanentUploadTargets } from "@/lib/runtime-config";
 
 const REGISTER_UPLOAD_LIMIT_PER_HOUR = 5;
@@ -253,7 +253,7 @@ export async function claimRegisterUploads(params: {
     prisma: PrismaClient;
     userId: string;
     ipAddress: string;
-    uploads: Partial<Record<GameType, string>>;
+    uploads: Partial<Record<string, string>>;
 }) {
     const uploadIds = Object.values(params.uploads).filter((value): value is string => Boolean(value));
     if (uploadIds.length === 0) return;
@@ -275,7 +275,7 @@ export async function claimRegisterUploads(params: {
         },
     });
 
-    for (const [gameType, uploadId] of Object.entries(params.uploads) as Array<[GameType, string | undefined]>) {
+    for (const [gameCode, uploadId] of Object.entries(params.uploads) as Array<[string, string | undefined]>) {
         if (!uploadId) continue;
 
         const pendingUpload = pendingUploads.find((upload) => upload.id === uploadId);
@@ -285,10 +285,18 @@ export async function claimRegisterUploads(params: {
 
         const permanentUrl = await writePermanentUpload(pendingUpload.storageKey);
 
-        await params.prisma.gameProfile.updateMany({
+        const game = await params.prisma.game.findFirst({
+            where: { code: gameCode },
+            select: { id: true },
+        });
+        if (!game) {
+            throw new Error(`Game ${gameCode} tidak ditemukan`);
+        }
+
+        await params.prisma.playerGameAccount.updateMany({
             where: {
                 userId: params.userId,
-                gameType,
+                gameId: game.id,
             },
             data: {
                 screenshotUrl: permanentUrl,

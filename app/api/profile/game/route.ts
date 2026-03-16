@@ -4,6 +4,7 @@ import { logAudit } from "@/lib/audit-logger";
 import { updateGameProfileSchema } from "@/lib/validators";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { normalizeGameIdDigits } from "@/lib/game-id";
+import { resolveGameByCodeOrId } from "@/lib/game";
 
 // POST /api/profile/game - Create or Update Game Profile
 export async function POST(request: NextRequest) {
@@ -23,20 +24,25 @@ export async function POST(request: NextRequest) {
         }
 
         const { gameType, ign, gameId } = validBody.data;
+        const game = await resolveGameByCodeOrId(prisma, gameType);
+        if (!game) {
+            return NextResponse.json({ success: false, message: "Game tidak ditemukan" }, { status: 400 });
+        }
 
         // Cek apakah profile dengan gameType ini sudah ada untuk user tersebut
-        const existingProfile = await prisma.gameProfile.findFirst({
+        const existingProfile = await prisma.playerGameAccount.findFirst({
             where: {
                 userId,
-                gameType,
+                gameId: game.id,
             }
         });
 
         const gameIdCandidates = Array.from(new Set([gameId, normalizeGameIdDigits(gameId)].filter(Boolean)));
 
-        const duplicateGameId = await prisma.gameProfile.findFirst({
+        const duplicateGameId = await prisma.playerGameAccount.findFirst({
             where: {
-                gameId: { in: gameIdCandidates },
+                gamePlayerId: { in: gameIdCandidates },
+                gameId: game.id,
                 NOT: existingProfile ? { id: existingProfile.id } : undefined,
             },
             select: { id: true },
@@ -49,18 +55,18 @@ export async function POST(request: NextRequest) {
         let profile;
         if (existingProfile) {
             // Update
-            profile = await prisma.gameProfile.update({
+            profile = await prisma.playerGameAccount.update({
                 where: { id: existingProfile.id },
-                data: { ign, gameId }
+                data: { ign, gamePlayerId: gameId }
             });
         } else {
             // Insert
-            profile = await prisma.gameProfile.create({
+            profile = await prisma.playerGameAccount.create({
                 data: {
                     userId,
-                    gameType,
+                    gameId: game.id,
+                    gamePlayerId: gameId,
                     ign,
-                    gameId
                 }
             });
         }
@@ -70,8 +76,8 @@ export async function POST(request: NextRequest) {
             userId,
             action: "GAME_PROFILE_UPDATED",
             targetId: profile.id,
-            targetType: "GameProfile",
-            details: { gameType, ign, gameId, isNew: !existingProfile }
+            targetType: "PlayerGameAccount",
+            details: { gameCode: game.code, ign, gameId, isNew: !existingProfile }
         });
 
         return NextResponse.json({ success: true, profile }, { status: 200 });

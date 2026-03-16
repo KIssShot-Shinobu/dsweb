@@ -1,13 +1,15 @@
 import NextAuth from "next-auth";
 import { CredentialsSignin } from "next-auth";
+import type { Provider } from "next-auth/providers";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import Discord from "next-auth/providers/discord";
 import { prisma } from "@/lib/prisma";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import { logAudit } from "@/lib/audit-logger";
 import { comparePassword, generateSecureToken, hashPassword } from "@/lib/auth";
 import { authenticateUser } from "@/lib/services/auth-service";
-import { syncGoogleUser } from "@/lib/services/auth-oauth-service";
+import { syncDiscordUser, syncGoogleUser } from "@/lib/services/auth-oauth-service";
 import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
 
 type AuthAppUser = {
@@ -32,13 +34,15 @@ type AuthAppUser = {
     authVersion: number;
 };
 
-async function resolveAppUser(googleId?: string | null, email?: string | null) {
-    if (!googleId && !email) {
+async function resolveAppUser(params: { googleId?: string | null; discordId?: string | null; email?: string | null }) {
+    const { googleId, discordId, email } = params;
+    if (!googleId && !discordId && !email) {
         return null;
     }
 
     const whereClauses: Array<Record<string, string>> = [
         ...(googleId ? [{ googleId }] : []),
+        ...(discordId ? [{ discordId }] : []),
         ...(email ? [{ email: email.toLowerCase() }] : []),
     ];
 
@@ -72,6 +76,8 @@ async function resolveAppUser(googleId?: string | null, email?: string | null) {
 
 const googleClientId = process.env.AUTH_GOOGLE_ID;
 const googleClientSecret = process.env.AUTH_GOOGLE_SECRET;
+const discordClientId = process.env.AUTH_DISCORD_ID;
+const discordClientSecret = process.env.AUTH_DISCORD_SECRET;
 
 class InvalidCredentialsAuthError extends CredentialsSignin {
     code = "invalid_credentials";
@@ -85,7 +91,7 @@ class AccessDeniedCredentialsAuthError extends CredentialsSignin {
     code = "access_denied";
 }
 
-const providers: Array<ReturnType<typeof Credentials> | ReturnType<typeof Google>> = [
+const providers: Provider[] = [
     Credentials({
         name: "Credentials",
         credentials: {
@@ -147,6 +153,15 @@ if (googleClientId && googleClientSecret) {
     );
 }
 
+if (discordClientId && discordClientSecret) {
+    providers.push(
+        Discord({
+            clientId: discordClientId,
+            clientSecret: discordClientSecret,
+        })
+    );
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
     secret: process.env.AUTH_SECRET,
     trustHost: true,
@@ -163,32 +178,51 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 return true;
             }
 
-            if (account?.provider !== "google") {
+            if (account?.provider !== "google" && account?.provider !== "discord") {
                 return false;
             }
 
-            const googleProfile = profile as Record<string, unknown> | undefined;
-            const result = await syncGoogleUser(
-                {
-                    prisma: prisma as never,
-                    hashPassword,
-                    generateSecureToken,
-                },
-                {
-                    googleId: account.providerAccountId,
-                    email: typeof googleProfile?.email === "string" ? googleProfile.email : null,
-                    name: typeof googleProfile?.name === "string" ? googleProfile.name : null,
-                    image: typeof googleProfile?.picture === "string" ? googleProfile.picture : null,
-                    emailVerified: Boolean(googleProfile?.email_verified),
-                }
-            );
+            const oauthProfile = profile as Record<string, unknown> | undefined;
+            const result = account.provider === "google"
+                ? await syncGoogleUser(
+                    {
+                        prisma: prisma as never,
+                        hashPassword,
+                        generateSecureToken,
+                    },
+                    {
+                        googleId: account.providerAccountId,
+                        email: typeof oauthProfile?.email === "string" ? oauthProfile.email : null,
+                        name: typeof oauthProfile?.name === "string" ? oauthProfile.name : null,
+                        image: typeof oauthProfile?.picture === "string" ? oauthProfile.picture : null,
+                        emailVerified: Boolean(oauthProfile?.email_verified),
+                    }
+                )
+                : await syncDiscordUser(
+                    {
+                        prisma: prisma as never,
+                        hashPassword,
+                        generateSecureToken,
+                    },
+                    {
+                        discordId: account.providerAccountId,
+                        email: typeof oauthProfile?.email === "string" ? oauthProfile.email : null,
+                        name: typeof oauthProfile?.global_name === "string"
+                            ? oauthProfile.global_name
+                            : typeof oauthProfile?.username === "string"
+                                ? oauthProfile.username
+                                : null,
+                        image: typeof oauthProfile?.image === "string" ? oauthProfile.image : null,
+                        emailVerified: Boolean(oauthProfile?.verified),
+                    }
+                );
 
             if (!result.ok) {
                 if (result.code === "BANNED") {
                     await logAudit({
                         action: AUDIT_ACTIONS.LOGIN_FAILED,
                         userId: result.user?.id,
-                        details: { provider: "google", reason: "User is banned" },
+                        details: { provider: account.provider, reason: "User is banned" },
                     });
                     return "/login?error=banned";
                 }
@@ -198,21 +232,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
             if (result.outcome === "created") {
                 await logAudit({
-                    action: AUDIT_ACTIONS.OAUTH_GOOGLE_ACCOUNT_CREATED,
+                    action: account.provider === "google"
+                        ? AUDIT_ACTIONS.OAUTH_GOOGLE_ACCOUNT_CREATED
+                        : AUDIT_ACTIONS.OAUTH_DISCORD_ACCOUNT_CREATED,
                     userId: result.user.id,
                     targetId: result.user.id,
                     targetType: "User",
-                    details: { provider: "google", email: result.user.email },
+                    details: { provider: account.provider, email: result.user.email },
                 });
             }
 
             if (result.outcome === "linked") {
                 await logAudit({
-                    action: AUDIT_ACTIONS.OAUTH_GOOGLE_ACCOUNT_LINKED,
+                    action: account.provider === "google"
+                        ? AUDIT_ACTIONS.OAUTH_GOOGLE_ACCOUNT_LINKED
+                        : AUDIT_ACTIONS.OAUTH_DISCORD_ACCOUNT_LINKED,
                     userId: result.user.id,
                     targetId: result.user.id,
                     targetType: "User",
-                    details: { provider: "google", email: result.user.email },
+                    details: { provider: account.provider, email: result.user.email },
                 });
             }
 
@@ -248,10 +286,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             }
 
             if (account?.provider === "google") {
-                const appUser = await resolveAppUser(
-                    account.providerAccountId,
-                    typeof token.email === "string" ? token.email : null
-                );
+                const appUser = await resolveAppUser({
+                    googleId: account.providerAccountId,
+                    email: typeof token.email === "string" ? token.email : null,
+                });
+
+                if (appUser) {
+                    token.appUserId = appUser.id;
+                    token.role = appUser.role;
+                    token.status = appUser.status;
+                    token.teamId = appUser.teamId;
+                    token.username = appUser.username;
+                    token.fullName = appUser.fullName;
+                    token.isEmailVerified = Boolean(appUser.emailVerifiedAt);
+                    token.authVersion = appUser.authVersion;
+                }
+            }
+
+            if (account?.provider === "discord") {
+                const appUser = await resolveAppUser({
+                    discordId: account.providerAccountId,
+                    email: typeof token.email === "string" ? token.email : null,
+                });
 
                 if (appUser) {
                     token.appUserId = appUser.id;
@@ -266,7 +322,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             }
 
             if (!token.appUserId && typeof token.email === "string") {
-                const appUser = await resolveAppUser(null, token.email);
+                const appUser = await resolveAppUser({ email: token.email });
                 if (appUser) {
                     token.appUserId = appUser.id;
                     token.role = appUser.role;

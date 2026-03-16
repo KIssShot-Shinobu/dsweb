@@ -12,7 +12,7 @@ type SummaryResponse = {
         title: string;
         gameType: string;
         status: string;
-        startDate: string;
+        startAt: string;
         format: string;
         structure: string;
     };
@@ -116,7 +116,7 @@ export function TournamentOverviewClient({ tournamentId }: { tournamentId: strin
                             <div className="rounded-box border border-base-300 bg-base-200/40 p-4">
                                 <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">Start Date</div>
                                 <div className="mt-2 text-base font-bold text-base-content">
-                                    {new Date(summary.tournament.startDate).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                                    {new Date(summary.tournament.startAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
                                 </div>
                             </div>
                             <div className="rounded-box border border-base-300 bg-base-200/40 p-4">
