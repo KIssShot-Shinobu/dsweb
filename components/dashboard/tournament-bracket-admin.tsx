@@ -16,7 +16,6 @@ import {
     buildBracketOptions,
     buildBracketTheme,
     buildBracketViewerColors,
-    readBracketPalette,
     DEFAULT_PALETTE,
 } from "@/lib/bracket-theme";
 import { BracketMatchCard } from "@/components/bracket/bracket-match-card";
@@ -116,10 +115,10 @@ export function TournamentBracketAdmin({
     const [error, setError] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [viewerSize, setViewerSize] = useState<ViewerSize>({ width: 980, height: 520 });
-    const [palette, setPalette] = useState(DEFAULT_PALETTE);
-    const bracketTheme = useMemo(() => buildBracketTheme(palette), [palette]);
-    const bracketOptions = useMemo(() => buildBracketOptions(palette), [palette]);
-    const bracketViewerColors = useMemo(() => buildBracketViewerColors(palette), [palette]);
+    const palette = DEFAULT_PALETTE;
+    const bracketTheme = useMemo(() => buildBracketTheme(palette), []);
+    const bracketOptions = useMemo(() => buildBracketOptions(palette), []);
+    const bracketViewerColors = useMemo(() => buildBracketViewerColors(palette), []);
     const [isCompact, setIsCompact] = useState(false);
     const [scaleFactor, setScaleFactor] = useState(1);
     const [startAt, setStartAt] = useState<[number, number]>([0, 0]);
@@ -202,35 +201,7 @@ export function TournamentBracketAdmin({
         return () => window.removeEventListener("resize", updateSize);
     }, []);
 
-    useEffect(() => {
-        if (!containerRef.current) return;
-        const container = containerRef.current;
-        let frame = requestAnimationFrame(() => {
-            setPalette(readBracketPalette(container));
-        });
-
-        const handleThemeChange = () => {
-            cancelAnimationFrame(frame);
-            frame = requestAnimationFrame(() => {
-                setPalette(readBracketPalette(container));
-            });
-        };
-
-        const observer = new MutationObserver(handleThemeChange);
-        const themeRoot = container.closest("[data-theme]") ?? document.documentElement;
-        observer.observe(themeRoot, { attributes: true, attributeFilter: ["data-theme", "class"] });
-        if (themeRoot !== document.documentElement) {
-            observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
-        }
-        if (document.body && themeRoot !== document.body) {
-            observer.observe(document.body, { attributes: true, attributeFilter: ["data-theme", "class"] });
-        }
-
-        return () => {
-            cancelAnimationFrame(frame);
-            observer.disconnect();
-        };
-    }, []);
+    // Theme colors are driven by CSS variables directly (no JS sync needed).
 
     const { singleMatches, upperMatches, lowerMatches, matchIndex } = useMemo(() => {
         const single: MatchType[] = [];
