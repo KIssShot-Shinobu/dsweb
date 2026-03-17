@@ -158,7 +158,7 @@ export function TournamentBracketAdmin({
                         lostColor: "hsl(var(--b3))",
                     },
                 },
-                canvasBackground: "hsl(var(--b1) / 0.25)",
+                canvasBackground: "hsl(var(--b1))",
             }),
         []
     );
@@ -371,7 +371,20 @@ export function TournamentBracketAdmin({
 
     const renderBracket = (size: ViewerSize) => {
         const svgWrapper = ({ children, ...props }: { children: ReactElement }) => (
-            <SVGViewer width={size.width} height={size.height} scaleFactor={scaleFactor} startAt={startAt} {...props}>
+            <SVGViewer
+                width={size.width}
+                height={size.height}
+                scaleFactor={scaleFactor}
+                startAt={startAt}
+                background="hsl(var(--b2))"
+                SVGBackground="hsl(var(--b1))"
+                miniatureProps={{
+                    position: "right",
+                    background: "hsl(var(--b2))",
+                    SVGBackground: "hsl(var(--b1))",
+                }}
+                {...props}
+            >
                 {children}
             </SVGViewer>
         );

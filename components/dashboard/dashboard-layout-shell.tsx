@@ -22,12 +22,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const { isOpen, toggle } = useSidebar();
 
     return (
-        <div className="drawer lg:drawer-open">
+        <div className="drawer lg:drawer-open h-screen">
             <input id="dashboard-drawer" type="checkbox" className="drawer-toggle" checked={isOpen} onChange={toggle} />
-            <div className={`drawer-content min-h-screen bg-transparent ${isOpen ? "overflow-hidden lg:overflow-visible" : ""}`}>
-                <div className="flex min-h-screen flex-col">
+            <div className={`drawer-content h-screen overflow-hidden bg-transparent ${isOpen ? "overflow-hidden lg:overflow-hidden" : ""}`}>
+                <div className="flex h-screen flex-col">
                     <Header />
-                    <main className="flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-5">
+                    <main className="flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-5">
                         {children}
                     </main>
                 </div>
