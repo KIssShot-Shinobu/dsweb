@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { DashboardMetricCard, DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { btnOutline, btnPrimary } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
+import { DateTimePickerInput } from "@/components/ui/date-time-picker";
 
 type SummaryResponse = {
     tournament: {
@@ -157,12 +158,11 @@ export function TournamentCheckInClient({ tournamentId }: { tournamentId: string
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                         <div className="space-y-2">
                             <label className="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/60">Waktu Check-In</label>
-                            <input
-                                type="datetime-local"
-                                className="input input-bordered w-full"
+                            <DateTimePickerInput
                                 value={scheduleValue}
-                                onChange={(event) => setScheduleValue(event.target.value)}
+                                onChange={setScheduleValue}
                                 disabled={updating || !checkinRequired}
+                                className="w-full"
                             />
                             <p className="text-xs text-base-content/55">{scheduleLabel}</p>
                         </div>

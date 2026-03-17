@@ -4,6 +4,8 @@ import { useState, type Dispatch, type ReactNode, type SetStateAction } from "re
 import { FormSelect } from "@/components/dashboard/form-select";
 import { btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { normalizeAssetUrl } from "@/lib/asset-url";
+import { ImageCropModal } from "@/components/ui/image-crop-modal";
+import { DateTimePickerInput } from "@/components/ui/date-time-picker";
 
 export const tournamentFormSelectOptions = {
     gameType: [
@@ -154,6 +156,21 @@ export function TournamentForm({
 }) {
     const [confirmPublishOpen, setConfirmPublishOpen] = useState(false);
     const [pendingSubmit, setPendingSubmit] = useState(false);
+    const [cropState, setCropState] = useState<{
+        open: boolean;
+        imageSrc: string | null;
+        fieldKey: keyof TournamentFormState;
+        fileName: string;
+        fileType: string;
+        aspect: number;
+    }>({
+        open: false,
+        imageSrc: null,
+        fieldKey: "image",
+        fileName: "tournament.jpg",
+        fileType: "image/jpeg",
+        aspect: 16 / 9,
+    });
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -178,6 +195,30 @@ export function TournamentForm({
         setFormData((prev) => ({ ...prev, [key]: url }));
     };
 
+    const readFileAsDataUrl = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(new Error("Gagal membaca file."));
+            reader.readAsDataURL(file);
+        });
+
+    const openCropper = async (file: File, fieldKey: keyof TournamentFormState, aspect: number) => {
+        try {
+            const previewUrl = await readFileAsDataUrl(file);
+            setCropState({
+                open: true,
+                imageSrc: previewUrl,
+                fieldKey,
+                fileName: file.name || "tournament.jpg",
+                fileType: file.type || "image/jpeg",
+                aspect,
+            });
+        } catch (error) {
+            console.error("Gagal memuat gambar untuk crop.", error);
+        }
+    };
+
     const updateCustomField = (index: number, value: string) => {
         setFormData((prev) => ({
             ...prev,
@@ -200,10 +241,7 @@ export function TournamentForm({
                                     const inputEl = e.currentTarget;
                                     const file = e.target.files?.[0];
                                     if (!file) return;
-                                    const url = await onUploadImage(file);
-                                    if (url) {
-                                        setFormData((prev) => ({ ...prev, image: url }));
-                                    }
+                                    await openCropper(file, "image", 16 / 9);
                                     inputEl.value = "";
                                 }}
                                 disabled={uploadingImage}
@@ -230,7 +268,12 @@ export function TournamentForm({
                             </div>
                             <div>
                                 <label className={labelCls}>Start Time</label>
-                                <input type="datetime-local" className={inputCls} required value={formData.startAt} onChange={(e) => setFormData((prev) => ({ ...prev, startAt: e.target.value }))} />
+                                <DateTimePickerInput
+                                    value={formData.startAt}
+                                    onChange={(value) => setFormData((prev) => ({ ...prev, startAt: value }))}
+                                    required
+                                    className="w-full"
+                                />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -312,7 +355,7 @@ export function TournamentForm({
                                     const inputEl = e.currentTarget;
                                     const file = e.target.files?.[0];
                                     if (!file) return;
-                                    await handleUploadAsset(file, "matchGuideImage");
+                                    await openCropper(file, "matchGuideImage", 16 / 9);
                                     inputEl.value = "";
                                 }}
                             />
@@ -369,7 +412,7 @@ export function TournamentForm({
                                     const inputEl = e.currentTarget;
                                     const file = e.target.files?.[0];
                                     if (!file) return;
-                                    await handleUploadAsset(file, "bannerImage");
+                                    await openCropper(file, "bannerImage", 16 / 9);
                                     inputEl.value = "";
                                 }}
                             />
@@ -410,7 +453,7 @@ export function TournamentForm({
                                     const inputEl = e.currentTarget;
                                     const file = e.target.files?.[0];
                                     if (!file) return;
-                                    await handleUploadAsset(file, "backgroundImage");
+                                    await openCropper(file, "backgroundImage", 16 / 9);
                                     inputEl.value = "";
                                 }}
                             />
@@ -511,15 +554,27 @@ export function TournamentForm({
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label className={labelCls}>Registration Start</label>
-                            <input type="datetime-local" className={inputCls} value={formData.registrationStart} onChange={(e) => setFormData((prev) => ({ ...prev, registrationStart: e.target.value }))} />
+                            <DateTimePickerInput
+                                value={formData.registrationStart}
+                                onChange={(value) => setFormData((prev) => ({ ...prev, registrationStart: value }))}
+                                className="w-full"
+                            />
                         </div>
                         <div>
                             <label className={labelCls}>Registration End</label>
-                            <input type="datetime-local" className={inputCls} value={formData.registrationEnd} onChange={(e) => setFormData((prev) => ({ ...prev, registrationEnd: e.target.value }))} />
+                            <DateTimePickerInput
+                                value={formData.registrationEnd}
+                                onChange={(value) => setFormData((prev) => ({ ...prev, registrationEnd: value }))}
+                                className="w-full"
+                            />
                         </div>
                         <div className="sm:col-span-2">
                             <label className={labelCls}>Late Cancellation Deadline</label>
-                            <input type="datetime-local" className={inputCls} value={formData.lateCancelDeadline} onChange={(e) => setFormData((prev) => ({ ...prev, lateCancelDeadline: e.target.value }))} />
+                            <DateTimePickerInput
+                                value={formData.lateCancelDeadline}
+                                onChange={(value) => setFormData((prev) => ({ ...prev, lateCancelDeadline: value }))}
+                                className="w-full"
+                            />
                         </div>
                     </div>
                 </FormSection>
@@ -627,6 +682,30 @@ export function TournamentForm({
                     <div className="modal-backdrop" />
                 </div>
             ) : null}
+
+            <ImageCropModal
+                open={cropState.open}
+                imageSrc={cropState.imageSrc}
+                title="Crop Gambar"
+                aspect={cropState.aspect}
+                outputType={cropState.fileType}
+                onCancel={() =>
+                    setCropState((prev) => ({
+                        ...prev,
+                        open: false,
+                        imageSrc: null,
+                    }))
+                }
+                onComplete={async (blob) => {
+                    const croppedFile = new File([blob], cropState.fileName, { type: cropState.fileType });
+                    await handleUploadAsset(croppedFile, cropState.fieldKey);
+                    setCropState((prev) => ({
+                        ...prev,
+                        open: false,
+                        imageSrc: null,
+                    }));
+                }}
+            />
         </form>
     );
 }

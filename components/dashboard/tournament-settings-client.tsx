@@ -5,6 +5,7 @@ import { FormSelect } from "@/components/dashboard/form-select";
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
+import { DateTimePickerInput } from "@/components/ui/date-time-picker";
 
 const GAME_OPTIONS = [
     { value: "DUEL_LINKS", label: "Duel Links" },
@@ -183,15 +184,27 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                         </div>
                         <div>
                             <label className={labelCls}>Start Time</label>
-                            <input type="datetime-local" className={inputCls} value={form.startAt} onChange={(event) => setForm((prev) => ({ ...prev, startAt: event.target.value }))} />
+                            <DateTimePickerInput
+                                value={form.startAt}
+                                onChange={(value) => setForm((prev) => ({ ...prev, startAt: value }))}
+                                className="w-full"
+                            />
                         </div>
                         <div>
                             <label className={labelCls}>Registration Open</label>
-                            <input type="datetime-local" className={inputCls} value={form.registrationOpen} onChange={(event) => setForm((prev) => ({ ...prev, registrationOpen: event.target.value }))} />
+                            <DateTimePickerInput
+                                value={form.registrationOpen}
+                                onChange={(value) => setForm((prev) => ({ ...prev, registrationOpen: value }))}
+                                className="w-full"
+                            />
                         </div>
                         <div>
                             <label className={labelCls}>Registration Close</label>
-                            <input type="datetime-local" className={inputCls} value={form.registrationClose} onChange={(event) => setForm((prev) => ({ ...prev, registrationClose: event.target.value }))} />
+                            <DateTimePickerInput
+                                value={form.registrationClose}
+                                onChange={(value) => setForm((prev) => ({ ...prev, registrationClose: value }))}
+                                className="w-full"
+                            />
                         </div>
                         <div className="lg:col-span-2">
                             <label className={labelCls}>Description</label>

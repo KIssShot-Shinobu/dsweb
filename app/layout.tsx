@@ -1,7 +1,10 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
+import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/dashboard/toast";
+import { MantineThemeProvider } from "@/components/providers/mantine-provider";
 
 export const metadata: Metadata = {
   title: "Duel Standby | Komunitas Gaming untuk Duelist Kompetitif",
@@ -23,7 +26,9 @@ export default function RootLayout({
         className="antialiased"
       >
         <ThemeProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <MantineThemeProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </MantineThemeProvider>
         </ThemeProvider>
       </body>
     </html>
