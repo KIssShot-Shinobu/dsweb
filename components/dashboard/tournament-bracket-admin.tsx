@@ -121,7 +121,7 @@ export function TournamentBracketAdmin({
     const bracketViewerColors = useMemo(() => buildBracketViewerColors(palette), []);
     const [isCompact, setIsCompact] = useState(false);
     const [scaleFactor, setScaleFactor] = useState(1);
-    const [startAt, setStartAt] = useState<[number, number]>([0, 0]);
+    const [viewerKey, setViewerKey] = useState(0);
     const [activeMatch, setActiveMatch] = useState<BracketMatch | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [seeds, setSeeds] = useState<SeedEntry[]>([]);
@@ -322,14 +322,23 @@ export function TournamentBracketAdmin({
     const zoomOut = () => setScaleFactor((prev) => clampScale(prev - 0.15));
     const resetZoom = () => {
         setScaleFactor(1);
-        setStartAt([0, 0]);
+        setViewerKey((prev) => prev + 1);
     };
 
     const canRenderDoubleElim = structure === "DOUBLE_ELIM" ? upperMatches.length > 0 && lowerMatches.length > 0 : true;
     const forceCompact = structure === "DOUBLE_ELIM" && !canRenderDoubleElim;
 
     const renderBracket = (size: ViewerSize) => {
-        const svgWrapper = ({ children, ...props }: { children: ReactElement }) => {
+        const svgWrapper = ({
+            children,
+            bracketWidth,
+            bracketHeight,
+            ...props
+        }: {
+            children: ReactElement;
+            bracketWidth: number;
+            bracketHeight: number;
+        }) => {
             const decorated = isValidElement(children)
                 ? cloneElement(children, {
                       children: (
@@ -340,13 +349,16 @@ export function TournamentBracketAdmin({
                       ),
                   })
                 : children;
+            const centerX = Math.max(0, (size.width - bracketWidth) / 2);
+            const centerY = Math.max(0, (size.height - bracketHeight) / 2);
 
             return (
                 <SVGViewer
+                    key={viewerKey}
                     width={size.width}
                     height={size.height}
                     scaleFactor={scaleFactor}
-                    startAt={startAt}
+                    startAt={[centerX, centerY]}
                     background={bracketViewerColors.background}
                     SVGBackground={bracketViewerColors.svgBackground}
                     miniatureProps={{
