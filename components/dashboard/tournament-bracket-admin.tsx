@@ -6,7 +6,6 @@ import {
     DoubleEliminationBracket,
     Match,
     SVGViewer,
-    createTheme,
     type MatchType,
 } from "react-tournament-brackets";
 import { StyleSheetManager } from "styled-components";
@@ -14,6 +13,14 @@ import { useToast } from "@/components/dashboard/toast";
 import { Modal } from "@/components/dashboard/modal";
 import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
+import { useTheme } from "@/context/ThemeContext";
+import {
+    buildBracketOptions,
+    buildBracketTheme,
+    buildBracketViewerColors,
+    readBracketPalette,
+    DEFAULT_PALETTE,
+} from "@/lib/bracket-theme";
 
 type BracketParticipant = {
     id?: string;
@@ -65,26 +72,6 @@ type ViewerSize = {
     height: number;
 };
 
-const bracketOptions = {
-    style: {
-        boxHeight: 84,
-        canvasPadding: 28,
-        spaceBetweenRows: 24,
-        spaceBetweenColumns: 42,
-        roundHeader: {
-            isShown: true,
-            height: 26,
-            marginBottom: 10,
-            fontSize: 12,
-            fontColor: "hsl(var(--bc))",
-            backgroundColor: "hsl(var(--b2))",
-            fontFamily: "inherit",
-        },
-        connectorColor: "hsl(var(--b3))",
-        connectorColorHighlight: "hsl(var(--p))",
-    },
-};
-
 const shouldForwardProp = (prop: string) => !["won", "hovered", "highlighted"].includes(prop);
 
 function mapMatch(match: BracketMatch, roundName: string): MatchType {
@@ -130,38 +117,13 @@ export function TournamentBracketAdmin({
     const [error, setError] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [viewerSize, setViewerSize] = useState<ViewerSize>({ width: 980, height: 520 });
-    const bracketTheme = useMemo(
-        () =>
-            createTheme({
-                fontFamily: "inherit",
-                textColor: {
-                    main: "hsl(var(--bc))",
-                    highlighted: "hsl(var(--bc))",
-                    dark: "hsl(var(--bc) / 0.7)",
-                    disabled: "hsl(var(--bc) / 0.45)",
-                },
-                matchBackground: {
-                    wonColor: "hsl(var(--su) / 0.18)",
-                    lostColor: "hsl(var(--b2))",
-                },
-                border: {
-                    color: "hsl(var(--b3))",
-                    highlightedColor: "hsl(var(--p))",
-                },
-                score: {
-                    text: {
-                        highlightedWonColor: "hsl(var(--su))",
-                        highlightedLostColor: "hsl(var(--er))",
-                    },
-                    background: {
-                        wonColor: "hsl(var(--su) / 0.22)",
-                        lostColor: "hsl(var(--b3))",
-                    },
-                },
-                canvasBackground: "hsl(var(--b1))",
-            }),
-        []
+    const { theme } = useTheme();
+    const [palette, setPalette] = useState(() =>
+        typeof window === "undefined" ? DEFAULT_PALETTE : readBracketPalette()
     );
+    const bracketTheme = useMemo(() => buildBracketTheme(palette), [palette]);
+    const bracketOptions = useMemo(() => buildBracketOptions(palette), [palette]);
+    const bracketViewerColors = useMemo(() => buildBracketViewerColors(palette), [palette]);
     const [isCompact, setIsCompact] = useState(false);
     const [scaleFactor, setScaleFactor] = useState(1);
     const [startAt, setStartAt] = useState<[number, number]>([0, 0]);
@@ -243,6 +205,10 @@ export function TournamentBracketAdmin({
         window.addEventListener("resize", updateSize);
         return () => window.removeEventListener("resize", updateSize);
     }, []);
+
+    useEffect(() => {
+        setPalette(readBracketPalette());
+    }, [theme]);
 
     const { singleMatches, upperMatches, lowerMatches, matchIndex } = useMemo(() => {
         const single: MatchType[] = [];
@@ -376,12 +342,12 @@ export function TournamentBracketAdmin({
                 height={size.height}
                 scaleFactor={scaleFactor}
                 startAt={startAt}
-                background="hsl(var(--b2))"
-                SVGBackground="hsl(var(--b1))"
+                background={bracketViewerColors.background}
+                SVGBackground={bracketViewerColors.svgBackground}
                 miniatureProps={{
                     position: "right",
-                    background: "hsl(var(--b2))",
-                    SVGBackground: "hsl(var(--b1))",
+                    background: bracketViewerColors.miniatureBackground,
+                    SVGBackground: bracketViewerColors.miniatureSvgBackground,
                 }}
                 {...props}
             >
