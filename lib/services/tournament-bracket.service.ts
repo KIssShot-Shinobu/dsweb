@@ -755,7 +755,7 @@ export async function syncTournamentRosterToBracket(prisma: PrismaClient, tourna
     return prisma.$transaction(async (tx) => {
         const tournament = await tx.tournament.findUnique({
             where: { id: tournamentId },
-            select: { id: true, structure: true, checkinRequired: true },
+            select: { id: true, structure: true, checkinRequired: true, entryFee: true },
         });
 
         if (!tournament) {
@@ -792,6 +792,7 @@ export async function syncTournamentRosterToBracket(prisma: PrismaClient, tourna
             where: {
                 tournamentId,
                 ...(tournament.checkinRequired ? { status: "CHECKED_IN" } : {}),
+                ...(tournament.entryFee > 0 ? { paymentStatus: "VERIFIED" } : {}),
                 ...(participantIds?.length ? { id: { in: participantIds } } : {}),
             },
             select: { id: true, seed: true, joinedAt: true },
@@ -838,7 +839,7 @@ export async function syncOrCreateTournamentBracket(
 ): Promise<BracketSyncSummary> {
     const tournament = await prisma.tournament.findUnique({
         where: { id: tournamentId },
-        select: { id: true, structure: true, maxPlayers: true, checkinRequired: true },
+        select: { id: true, structure: true, maxPlayers: true, checkinRequired: true, entryFee: true },
     });
 
     if (!tournament) {
@@ -852,6 +853,7 @@ export async function syncOrCreateTournamentBracket(
             where: {
                 tournamentId,
                 ...(tournament.checkinRequired ? { status: "CHECKED_IN" } : {}),
+                ...(tournament.entryFee > 0 ? { paymentStatus: "VERIFIED" } : {}),
             },
             select: { id: true },
         });

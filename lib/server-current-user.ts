@@ -49,6 +49,7 @@ function mapCurrentUser(user: CurrentUserRecord) {
         teamId: activeTeam.teamId,
         teamJoinedAt: activeTeam.teamJoinedAt,
         team: activeTeam.team,
+        teamMembershipRole: activeTeam.teamMembershipRole,
         createdAt: user.createdAt,
         lastActiveAt: user.lastActiveAt ?? user.updatedAt,
         emailVerified: !user.emailVerificationToken,

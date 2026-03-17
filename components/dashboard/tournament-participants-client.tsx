@@ -24,7 +24,15 @@ type ParticipantRow = {
     gameId: string;
     joinedAt: string;
     checkedInAt: string | null;
+    paymentStatus: "PENDING" | "VERIFIED" | "REJECTED";
+    paymentProofUrl: string | null;
     guestName: string | null;
+    team: {
+        id: string;
+        name: string;
+        slug: string;
+        logoUrl: string | null;
+    } | null;
     user: {
         id: string;
         fullName: string;
@@ -57,7 +65,15 @@ type CandidateUser = {
     avatarUrl: string | null;
 };
 
-export function TournamentParticipantsClient({ tournamentId }: { tournamentId: string }) {
+export function TournamentParticipantsClient({
+    tournamentId,
+    isTeamTournament = false,
+    entryFee = 0,
+}: {
+    tournamentId: string;
+    isTeamTournament?: boolean;
+    entryFee?: number;
+}) {
     const { success, error } = useToast();
     const [participants, setParticipants] = useState<ParticipantRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -84,6 +100,7 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
     const candidateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+    const isPaidTournament = entryFee > 0;
 
     const toastSyncInfo = (fallback: string, data?: SyncInfo) => {
         if (typeof data?.syncedCount === "number" && typeof data?.pendingCount === "number") {
@@ -328,6 +345,37 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
         return lines.join("\n");
     };
 
+    const renderPaymentBadge = (status: ParticipantRow["paymentStatus"]) => {
+        if (status === "VERIFIED") return "badge-success";
+        if (status === "REJECTED") return "badge-error";
+        return "badge-warning";
+    };
+
+    const renderPaymentLabel = (status: ParticipantRow["paymentStatus"]) => {
+        if (status === "VERIFIED") return "Verified";
+        if (status === "REJECTED") return "Rejected";
+        return "Pending";
+    };
+
+    const handlePaymentDecision = async (participant: ParticipantRow, status: "VERIFIED" | "REJECTED") => {
+        try {
+            const res = await fetch(`/api/tournaments/${tournamentId}/participants/${participant.id}/payment`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                success("Status pembayaran diperbarui.");
+                fetchParticipants();
+            } else {
+                error(data.message || "Gagal memperbarui pembayaran.");
+            }
+        } catch {
+            error("Kesalahan jaringan.");
+        }
+    };
+
     const hasData = participants.length > 0;
 
     return (
@@ -338,14 +386,18 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                     title="Daftar Peserta"
                     description="Kelola data peserta, update in-game name, dan pantau status check-in."
                     actions={
-                        <>
-                            <button className={btnOutline} onClick={() => setShowBulkModal(true)}>
-                                Bulk Add
-                            </button>
-                            <button className={btnPrimary} onClick={() => setShowAddModal(true)}>
-                                Tambah Peserta
-                            </button>
-                        </>
+                        isTeamTournament ? (
+                            <span className="badge badge-outline">Team Tournament</span>
+                        ) : (
+                            <>
+                                <button className={btnOutline} onClick={() => setShowBulkModal(true)}>
+                                    Bulk Add
+                                </button>
+                                <button className={btnPrimary} onClick={() => setShowAddModal(true)}>
+                                    Tambah Peserta
+                                </button>
+                            </>
+                        )
                     }
                 />
 
@@ -370,6 +422,11 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                         />
                     }
                 >
+                    {isTeamTournament ? (
+                        <div className="mb-4 rounded-box border border-base-300 bg-base-200/40 px-3 py-3 text-xs text-base-content/60">
+                            Turnamen team: pendaftaran hanya lewat registrasi team (captain/vice/manager).
+                        </div>
+                    ) : null}
                     {loading ? (
                         <div className="space-y-3">
                             {[1, 2, 3].map((row) => (
@@ -386,47 +443,66 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                             <table className="table">
                                 <thead>
                                     <tr>
-                                        <th>Player</th>
-                                        <th>In-game Name</th>
+                                        <th>{isTeamTournament ? "Team" : "Player"}</th>
+                                        <th>{isTeamTournament ? "Team Name" : "In-game Name"}</th>
                                         <th>Discord ID</th>
                                         <th>Registrasi</th>
                                         <th>Check-in</th>
+                                        {isPaidTournament ? <th>Payment</th> : null}
                                         <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {participants.map((participant) => (
+                                    {participants.map((participant) => {
+                                        const displayName =
+                                            participant.team?.name ||
+                                            participant.user?.fullName ||
+                                            participant.user?.username ||
+                                            participant.guestName ||
+                                            "Guest";
+                                        const avatarUrl = normalizeAssetUrl(participant.team?.logoUrl || participant.user?.avatarUrl || "");
+
+                                        return (
                                         <tr key={participant.id}>
                                             <td>
                                                 <div className="flex items-center gap-3">
-                                                    {participant.user?.avatarUrl && normalizeAssetUrl(participant.user.avatarUrl) ? (
+                                                    {avatarUrl ? (
                                                         <Image
                                                             unoptimized
-                                                            src={normalizeAssetUrl(participant.user.avatarUrl) || ""}
-                                                            alt={participant.user.fullName}
+                                                            src={avatarUrl}
+                                                            alt={displayName}
                                                             width={36}
                                                             height={36}
                                                             className="h-9 w-9 rounded-full border border-base-300 object-cover"
                                                         />
                                                     ) : (
                                                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                                                            {getInitials(participant.user?.fullName || participant.guestName || "Guest")}
+                                                            {getInitials(displayName)}
                                                         </div>
                                                     )}
                                                     <div>
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             <div className="text-sm font-semibold text-base-content">
-                                                                {participant.user?.fullName || participant.guestName || "Guest"}
+                                                                {displayName}
                                                             </div>
-                                                            {!participant.user ? <span className="badge badge-outline badge-xs">Guest</span> : null}
+                                                            {!participant.user && !participant.team ? (
+                                                                <span className="badge badge-outline badge-xs">Guest</span>
+                                                            ) : null}
+                                                            {participant.team ? <span className="badge badge-outline badge-xs">Team</span> : null}
                                                         </div>
                                                         <div className="text-xs text-base-content/50">
-                                                            {participant.user ? `@${participant.user.username}` : "Peserta non-user"}
+                                                            {participant.team
+                                                                ? participant.team.slug
+                                                                : participant.user
+                                                                  ? `@${participant.user.username}`
+                                                                  : "Peserta non-user"}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="text-sm text-base-content/70">{participant.gameId}</td>
+                                            <td className="text-sm text-base-content/70">
+                                                {isTeamTournament ? participant.team?.name || "-" : participant.gameId}
+                                            </td>
                                             <td className="text-sm text-base-content/70">{participant.user?.discordId || "-"}</td>
                                             <td className="text-sm text-base-content/70">
                                                 {new Date(participant.joinedAt).toLocaleDateString("id-ID")}
@@ -436,6 +512,45 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                                                     {participant.checkedInAt ? "Checked In" : "Belum"}
                                                 </span>
                                             </td>
+                                            {isPaidTournament ? (
+                                                <td>
+                                                    <div className="flex flex-col gap-2">
+                                                        <span className={`badge ${renderPaymentBadge(participant.paymentStatus)}`}>
+                                                            {renderPaymentLabel(participant.paymentStatus)}
+                                                        </span>
+                                                        {participant.paymentProofUrl ? (
+                                                            <a
+                                                                href={normalizeAssetUrl(participant.paymentProofUrl) || "#"}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="btn btn-outline btn-xs"
+                                                            >
+                                                                Lihat Bukti
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-xs text-base-content/50">-</span>
+                                                        )}
+                                                        {participant.paymentStatus !== "VERIFIED" ? (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-success btn-outline btn-xs"
+                                                                    onClick={() => handlePaymentDecision(participant, "VERIFIED")}
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-error btn-outline btn-xs"
+                                                                    onClick={() => handlePaymentDecision(participant, "REJECTED")}
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                </td>
+                                            ) : null}
                                             <td className="text-right">
                                                 <div className="flex flex-wrap justify-end gap-2">
                                                     <button
@@ -445,16 +560,19 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                                                     >
                                                         {participant.checkedInAt ? "Uncheck" : "Check-in"}
                                                     </button>
-                                                    <button type="button" className={`${btnOutline} btn-xs`} onClick={() => openEdit(participant)}>
-                                                        Edit
-                                                    </button>
+                                                    {!isTeamTournament ? (
+                                                        <button type="button" className={`${btnOutline} btn-xs`} onClick={() => openEdit(participant)}>
+                                                            Edit
+                                                        </button>
+                                                    ) : null}
                                                     <button type="button" className="btn btn-error btn-outline btn-xs" onClick={() => setConfirmRemove(participant)}>
                                                         Remove
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -468,6 +586,7 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                 </DashboardPanel>
             </div>
 
+            {!isTeamTournament ? (
             <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title="Edit Peserta">
                 <div className="space-y-4">
                     <div>
@@ -484,7 +603,9 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                     </div>
                 </div>
             </Modal>
+            ) : null}
 
+            {!isTeamTournament ? (
             <Modal open={showAddModal} onClose={resetAddModal} title="Tambah Peserta" size="lg">
                 <div className="space-y-5">
                     <div className="tabs tabs-boxed">
@@ -583,7 +704,9 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                     )}
                 </div>
             </Modal>
+            ) : null}
 
+            {!isTeamTournament ? (
             <Modal open={showBulkModal} onClose={() => setShowBulkModal(false)} title="Bulk Add Peserta" size="lg">
                 <div className="space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/60">
@@ -627,6 +750,7 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
                     </div>
                 </div>
             </Modal>
+            ) : null}
 
             <ConfirmModal
                 open={Boolean(confirmRemove)}

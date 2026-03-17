@@ -110,6 +110,13 @@ export async function POST(request: NextRequest) {
         }
         const registrationOpen = data.registrationOpen ? new Date(data.registrationOpen) : null;
         const registrationClose = data.registrationClose ? new Date(data.registrationClose) : null;
+        const mode = data.mode || "INDIVIDUAL";
+        const isTeamTournament =
+            typeof data.isTeamTournament === "boolean"
+                ? data.isTeamTournament
+                : data.mode
+                  ? data.mode !== "INDIVIDUAL"
+                  : false;
 
         const tournament = await prisma.tournament.create({
             data: {
@@ -119,8 +126,8 @@ export async function POST(request: NextRequest) {
                 gameId: game.id,
                 status: data.status || "OPEN",
                 structure: data.structure || "SINGLE_ELIM",
-                mode: data.mode || "INDIVIDUAL",
-                isTeamTournament: data.isTeamTournament ?? false,
+                mode,
+                isTeamTournament,
                 entryFee: data.entryFee,
                 prizePool: data.prizePool,
                 maxPlayers: data.maxPlayers ?? null,

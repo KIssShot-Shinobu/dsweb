@@ -22,6 +22,10 @@ export const tournamentFormSelectOptions = {
         { value: "DOUBLE_ELIM", label: "Double Elimination (Soon)" },
         { value: "SWISS", label: "Swiss (Soon)" },
     ],
+    teamMode: [
+        { value: "TEAM_BOARD", label: "Team Board" },
+        { value: "TEAM_KOTH", label: "Team KOTH" },
+    ],
     visibility: [
         { value: "PUBLIC", label: "Public" },
         { value: "PRIVATE", label: "Private" },
@@ -60,6 +64,8 @@ export function getDefaultTournamentForm() {
         format: "BO3",
         status: "OPEN",
         structure: "SINGLE_ELIM",
+        mode: "INDIVIDUAL",
+        isTeamTournament: false,
         entryFee: 0,
         prizePool: 0,
         startAt: "",
@@ -101,6 +107,8 @@ export function buildTournamentPayload(formData: TournamentFormState) {
         gameType: formData.gameType,
         format: formData.format,
         structure: formData.structure,
+        mode: formData.isTeamTournament ? formData.mode : "INDIVIDUAL",
+        isTeamTournament: formData.isTeamTournament,
         status: formData.status,
         entryFee: formData.entryFee,
         prizePool: formData.prizePool,
@@ -491,6 +499,35 @@ export function TournamentForm({
                             </div>
                         </div>
                         <label className="flex items-center justify-between rounded-box border border-base-300 bg-base-200/40 px-3 py-3 text-sm font-semibold text-base-content">
+                            Team Tournament
+                            <input
+                                type="checkbox"
+                                className="toggle toggle-primary"
+                                checked={formData.isTeamTournament}
+                                onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        isTeamTournament: checked,
+                                        mode: checked ? (prev.mode === "INDIVIDUAL" ? "TEAM_BOARD" : prev.mode) : "INDIVIDUAL",
+                                    }));
+                                }}
+                            />
+                        </label>
+                        {formData.isTeamTournament ? (
+                            <div>
+                                <label className={labelCls}>Team Mode</label>
+                                <FormSelect
+                                    value={formData.mode}
+                                    onChange={(value) => setFormData((prev) => ({ ...prev, mode: value }))}
+                                    options={tournamentFormSelectOptions.teamMode}
+                                />
+                                <p className="mt-2 text-xs text-base-content/50">
+                                    Pendaftaran hanya untuk captain, vice captain, dan manager.
+                                </p>
+                            </div>
+                        ) : null}
+                        <label className="flex items-center justify-between rounded-box border border-base-300 bg-base-200/40 px-3 py-3 text-sm font-semibold text-base-content">
                             Third Place Match
                             <input type="checkbox" className="toggle toggle-primary" checked={formData.thirdPlaceMatch} onChange={(e) => setFormData((prev) => ({ ...prev, thirdPlaceMatch: e.target.checked }))} />
                         </label>
@@ -516,9 +553,19 @@ export function TournamentForm({
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
-                                <label className={labelCls}>Maximum Players</label>
-                                <FormSelect value={formData.maxPlayers} onChange={(value) => setFormData((prev) => ({ ...prev, maxPlayers: value }))} options={tournamentFormSelectOptions.maxPlayers} />
-                                <p className="mt-2 text-xs text-base-content/45">Maximum players harus sesuai ukuran bracket.</p>
+                                <label className={labelCls}>{formData.isTeamTournament ? "Maximum Teams" : "Maximum Players"}</label>
+                                <input
+                                    type="number"
+                                    min={2}
+                                    step={1}
+                                    className={inputCls}
+                                    value={formData.maxPlayers}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, maxPlayers: event.target.value }))}
+                                    placeholder="Contoh: 32"
+                                />
+                                <p className="mt-2 text-xs text-base-content/45">
+                                    Bracket akan menyesuaikan ke ukuran power-of-two terdekat.
+                                </p>
                             </div>
                             <div>
                                 <label className={labelCls}>Entry Fee (Rp)</label>

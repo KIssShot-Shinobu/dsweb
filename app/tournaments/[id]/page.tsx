@@ -68,12 +68,22 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
     if (!tournament) notFound();
     const imageUrl = resolveTournamentImage(tournament.image);
-    const isRegistered = currentUser
-        ? tournament.participants.some((participant) => participant.userId === currentUser.id)
-        : false;
+    const isTeamTournament = Boolean(tournament.isTeamTournament || tournament.mode !== "INDIVIDUAL");
+    const participantForUser = currentUser
+        ? tournament.participants.find((participant) =>
+              isTeamTournament
+                  ? participant.teamId && currentUser.teamId && participant.teamId === currentUser.teamId
+                  : participant.userId === currentUser.id
+          )
+        : null;
+    const isRegistered = Boolean(participantForUser);
     const participantCount = tournament.participants.length;
     const maxPlayers = tournament.maxPlayers ?? null;
     const isFull = Boolean(maxPlayers && participantCount >= maxPlayers);
+    const rosterParticipants =
+        tournament.entryFee > 0
+            ? tournament.participants.filter((participant) => participant.paymentStatus === "VERIFIED")
+            : tournament.participants;
 
     return (
         <main className="min-h-screen bg-transparent text-base-content">
@@ -149,6 +159,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                             disabled={tournament.status !== "OPEN" || isFull}
                                             isFull={isFull}
                                             isRegistered={isRegistered}
+                                            entryFee={tournament.entryFee}
+                                            paymentStatus={participantForUser?.paymentStatus ?? null}
                                         />
                                     </div>
 
@@ -156,11 +168,11 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
                                     <div>
                                         <div className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-primary">Roster Peserta</div>
-                                        {tournament.participants.length === 0 ? (
+                                        {rosterParticipants.length === 0 ? (
                                             <p className="text-sm text-base-content/60">Belum ada peserta terdaftar. Jadilah yang pertama mengisi bracket ini.</p>
                                         ) : (
                                             <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                                                {tournament.participants.map((participant, index) => {
+                                                {rosterParticipants.map((participant, index) => {
                                                     const displayName = participant.user?.fullName || participant.guestName || "Guest";
                                                     const roleLabel = participant.user?.role || "Guest";
                                                     const avatarUrl = participant.user?.avatarUrl ? normalizeAssetUrl(participant.user.avatarUrl) : null;

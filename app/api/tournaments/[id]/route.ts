@@ -66,6 +66,27 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ success: false, message: "Tidak ada data untuk diupdate" }, { status: 400 });
         }
 
+        if (typeof updateData.isTeamTournament === "boolean" || typeof updateData.mode === "string") {
+            const currentTournament = await prisma.tournament.findUnique({
+                where: { id },
+                select: { isTeamTournament: true, mode: true },
+            });
+
+            if (!currentTournament) {
+                return NextResponse.json({ success: false, message: "Turnamen tidak ditemukan" }, { status: 404 });
+            }
+
+            const nextIsTeam =
+                typeof updateData.isTeamTournament === "boolean"
+                    ? updateData.isTeamTournament
+                    : currentTournament.isTeamTournament;
+            const nextMode = typeof updateData.mode === "string" ? updateData.mode : currentTournament.mode;
+
+            if (nextIsTeam && nextMode === "INDIVIDUAL") {
+                return NextResponse.json({ success: false, message: "Mode team wajib dipilih" }, { status: 400 });
+            }
+        }
+
         if (typeof updateData.startAt === "string") {
             updateData.startAt = new Date(updateData.startAt);
         }

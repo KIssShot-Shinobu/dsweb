@@ -29,6 +29,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 createdById: true,
                 title: true,
                 maxPlayers: true,
+                mode: true,
+                isTeamTournament: true,
                 _count: { select: { participants: true } },
             },
         });
@@ -43,6 +45,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         if (tournament.status !== "OPEN") {
             return NextResponse.json({ success: false, message: "Pendaftaran turnamen sudah ditutup" }, { status: 400 });
+        }
+
+        const isTeamTournament = tournament.isTeamTournament || tournament.mode !== "INDIVIDUAL";
+        if (isTeamTournament) {
+            return NextResponse.json({ success: false, message: "Turnamen team tidak menerima bulk add." }, { status: 400 });
         }
 
         const body = await request.json();

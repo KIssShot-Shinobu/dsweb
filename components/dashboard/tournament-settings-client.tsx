@@ -31,16 +31,6 @@ const STATUS_OPTIONS = [
     { value: "CANCELLED", label: "CANCELLED" },
 ];
 
-const MAX_PLAYERS_OPTIONS = [
-    { value: "", label: "Tanpa batas" },
-    { value: "8", label: "8 pemain" },
-    { value: "16", label: "16 pemain" },
-    { value: "32", label: "32 pemain" },
-    { value: "64", label: "64 pemain" },
-    { value: "128", label: "128 pemain" },
-    { value: "256", label: "256 pemain" },
-];
-
 const formatIdrInput = (value: number) => new Intl.NumberFormat("id-ID").format(value);
 const parseIdrInput = (value: string) => {
     const numeric = Number(value.replace(/[^0-9]/g, ""));
@@ -61,6 +51,7 @@ type TournamentForm = {
     prizePool: number;
     status: string;
     maxPlayers: string;
+    isTeamTournament: boolean;
 };
 
 export function TournamentSettingsClient({ tournamentId }: { tournamentId: string }) {
@@ -81,6 +72,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
         prizePool: 0,
         status: "OPEN",
         maxPlayers: "",
+        isTeamTournament: false,
     });
 
     useEffect(() => {
@@ -109,6 +101,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                         prizePool: tournament.prizePool ?? 0,
                         status: tournament.status,
                         maxPlayers: tournament.maxPlayers ? String(tournament.maxPlayers) : "",
+                        isTeamTournament: Boolean(tournament.isTeamTournament || (tournament.mode && tournament.mode !== "INDIVIDUAL")),
                     });
                 } else {
                     error(data.message || "Gagal memuat turnamen.");
@@ -236,8 +229,19 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                             <input type="checkbox" className="toggle toggle-primary" checked={form.checkinRequired} onChange={(event) => setForm((prev) => ({ ...prev, checkinRequired: event.target.checked }))} />
                         </label>
                         <div>
-                            <label className={labelCls}>Max Players</label>
-                            <FormSelect value={form.maxPlayers} onChange={(value) => setForm((prev) => ({ ...prev, maxPlayers: value }))} options={MAX_PLAYERS_OPTIONS} />
+                            <label className={labelCls}>{form.isTeamTournament ? "Max Teams" : "Max Players"}</label>
+                            <input
+                                type="number"
+                                min={2}
+                                step={1}
+                                className={inputCls}
+                                value={form.maxPlayers}
+                                onChange={(event) => setForm((prev) => ({ ...prev, maxPlayers: event.target.value }))}
+                                placeholder="Contoh: 32"
+                            />
+                            <p className="mt-2 text-xs text-base-content/45">
+                                Bracket akan menyesuaikan ke ukuran power-of-two terdekat.
+                            </p>
                         </div>
                         <div>
                             <label className={labelCls}>Entry Fee (Rp)</label>

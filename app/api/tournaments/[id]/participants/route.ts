@@ -40,6 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                       OR: [
                           { gameId: { contains: search } },
                           { guestName: { contains: search } },
+                          { team: { name: { contains: search } } },
                           { user: { fullName: { contains: search } } },
                           { user: { username: { contains: search } } },
                           { user: { email: { contains: search } } },
@@ -60,6 +61,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                             email: true,
                             discordId: true,
                             avatarUrl: true,
+                        },
+                    },
+                    team: {
+                        select: {
+                            id: true,
+                            name: true,
+                            slug: true,
+                            logoUrl: true,
                         },
                     },
                 },
@@ -93,6 +102,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 createdById: true,
                 title: true,
                 maxPlayers: true,
+                mode: true,
+                isTeamTournament: true,
                 _count: { select: { participants: true } },
             },
         });
@@ -107,6 +118,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         if (tournament.status !== "OPEN") {
             return NextResponse.json({ success: false, message: "Pendaftaran turnamen sudah ditutup" }, { status: 400 });
+        }
+
+        const isTeamTournament = tournament.isTeamTournament || tournament.mode !== "INDIVIDUAL";
+        if (isTeamTournament) {
+            return NextResponse.json({ success: false, message: "Turnamen team tidak menerima penambahan peserta manual." }, { status: 400 });
         }
 
         const body = await request.json();

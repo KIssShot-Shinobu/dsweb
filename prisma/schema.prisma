@@ -145,6 +145,12 @@ enum TournamentParticipantStatus {
   PLAYING
 }
 
+enum TournamentPaymentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 model Team {
   id          String   @id @default(cuid())
   name        String   @db.VarChar(191)
@@ -155,9 +161,10 @@ model Team {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  memberships  TeamMember[]
-  invites      TeamInvite[]
-  joinRequests TeamJoinRequest[]
+  memberships           TeamMember[]
+  invites               TeamInvite[]
+  joinRequests          TeamJoinRequest[]
+  tournamentParticipants TournamentParticipant[]
 }
 
 model Tournament {
@@ -206,9 +213,14 @@ model TournamentParticipant {
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   userId       String?
   user         User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamId       String?
+  team         Team?      @relation(fields: [teamId], references: [id], onDelete: SetNull)
   guestName    String?    @db.VarChar(191)
   gameId       String // Snapshot of IGN or Game ID used at registration
   status       TournamentParticipantStatus @default(REGISTERED)
+  paymentStatus TournamentPaymentStatus @default(VERIFIED)
+  paymentProofUrl String? @db.VarChar(191)
+  paymentVerifiedAt DateTime?
   checkedInAt  DateTime?
   seed         Int?
   seededAt     DateTime?
@@ -221,6 +233,7 @@ model TournamentParticipant {
   matchResultsWon  MatchResult[] @relation("MatchResultWinner")
 
   @@unique([tournamentId, userId])
+  @@unique([tournamentId, teamId])
   @@unique([tournamentId, guestName])
   @@index([tournamentId])
   @@index([userId])

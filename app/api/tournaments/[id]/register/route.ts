@@ -6,6 +6,7 @@ import { syncOrCreateTournamentBracket } from "@/lib/services/tournament-bracket
 import { checkRateLimit } from "@/lib/rate-limit";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import { getRateLimitEnabled, getRateLimitTournamentRegister } from "@/lib/runtime-config";
+import { tournamentRegisterSchema } from "@/lib/validators";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -66,6 +67,112 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             return NextResponse.json({ success: false, message: "Pendaftaran sudah ditutup" }, { status: 400 });
         }
 
+        const contentType = request.headers.get("content-type") ?? "";
+        const rawBody = contentType.includes("application/json") ? await request.json().catch(() => ({})) : {};
+        const parsedBody = tournamentRegisterSchema.safeParse(rawBody);
+        if (!parsedBody.success) {
+            return NextResponse.json(
+                { success: false, message: parsedBody.error.issues[0]?.message || "Input tidak valid" },
+                { status: 400 }
+            );
+        }
+        const paymentProofUrl = parsedBody.data.paymentProofUrl;
+        const requiresPayment = tournament.entryFee > 0;
+
+        const isTeamTournament = tournament.isTeamTournament || tournament.mode !== "INDIVIDUAL";
+        if (isTeamTournament) {
+            const allowedRoles = ["CAPTAIN", "VICE_CAPTAIN", "MANAGER"];
+            if (!currentUser.teamId || !currentUser.teamMembershipRole || !allowedRoles.includes(currentUser.teamMembershipRole)) {
+                return NextResponse.json(
+                    { success: false, message: "Pendaftaran team hanya untuk captain, vice captain, atau manager." },
+                    { status: 403 }
+                );
+            }
+
+            const team = await prisma.team.findUnique({
+                where: { id: currentUser.teamId },
+                select: { id: true, name: true, isActive: true },
+            });
+
+            if (!team || !team.isActive) {
+                return NextResponse.json({ success: false, message: "Team tidak aktif atau tidak ditemukan." }, { status: 400 });
+            }
+
+            const existingTeam = await prisma.tournamentParticipant.findUnique({
+                where: { tournamentId_teamId: { tournamentId, teamId: team.id } },
+            });
+
+            if (existingTeam) {
+                if (requiresPayment) {
+                    if (existingTeam.paymentStatus === "REJECTED" && paymentProofUrl) {
+                        const updated = await prisma.tournamentParticipant.update({
+                            where: { id: existingTeam.id },
+                            data: {
+                                paymentStatus: "PENDING",
+                                paymentProofUrl,
+                                paymentVerifiedAt: null,
+                            },
+                        });
+                        return NextResponse.json(
+                            { success: true, participant: updated, message: "Bukti pembayaran diperbarui. Menunggu verifikasi admin." },
+                            { status: 200 }
+                        );
+                    }
+                    if (existingTeam.paymentStatus === "PENDING") {
+                        return NextResponse.json({ success: true, participant: existingTeam, message: "Pendaftaran menunggu verifikasi admin." }, { status: 200 });
+                    }
+                }
+                return NextResponse.json({ success: true, participant: existingTeam, message: "Team sudah terdaftar di turnamen ini" }, { status: 200 });
+            }
+
+            if (tournament.maxPlayers && tournament._count.participants >= tournament.maxPlayers) {
+                return NextResponse.json({ success: false, message: "Slot peserta sudah penuh" }, { status: 409 });
+            }
+
+            if (requiresPayment && !paymentProofUrl) {
+                return NextResponse.json({ success: false, message: "Bukti pembayaran wajib diunggah." }, { status: 400 });
+            }
+
+            const participant = await prisma.tournamentParticipant.create({
+                data: {
+                    tournamentId,
+                    teamId: team.id,
+                    guestName: team.name,
+                    gameId: team.name,
+                    paymentStatus: requiresPayment ? "PENDING" : "VERIFIED",
+                    ...(paymentProofUrl ? { paymentProofUrl } : {}),
+                },
+            });
+
+            await logAudit({
+                userId,
+                action: AUDIT_ACTIONS.TOURNAMENT_REGISTERED,
+                targetId: tournamentId,
+                targetType: "Tournament",
+                details: {
+                    teamId: team.id,
+                    teamName: team.name,
+                    gameCode: tournament.game?.code ?? "",
+                    tournamentTitle: tournament.title,
+                },
+            });
+
+            if (!requiresPayment) {
+                await syncOrCreateTournamentBracket(prisma, tournamentId, [participant.id]);
+            }
+
+            return NextResponse.json(
+                {
+                    success: true,
+                    participant,
+                    message: requiresPayment
+                        ? "Team terdaftar. Menunggu verifikasi pembayaran."
+                        : "Team berhasil terdaftar di turnamen.",
+                },
+                { status: 201 }
+            );
+        }
+
         // Check if already registered
         const existingParticipant = await prisma.tournamentParticipant.findUnique({
             where: {
@@ -74,7 +181,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         });
 
         if (existingParticipant) {
-            return NextResponse.json({ success: false, message: "Anda sudah terdaftar di turnamen ini" }, { status: 400 });
+            if (requiresPayment) {
+                if (existingParticipant.paymentStatus === "REJECTED" && paymentProofUrl) {
+                    const updated = await prisma.tournamentParticipant.update({
+                        where: { id: existingParticipant.id },
+                        data: {
+                            paymentStatus: "PENDING",
+                            paymentProofUrl,
+                            paymentVerifiedAt: null,
+                        },
+                    });
+                    return NextResponse.json(
+                        { success: true, participant: updated, message: "Bukti pembayaran diperbarui. Menunggu verifikasi admin." },
+                        { status: 200 }
+                    );
+                }
+                if (existingParticipant.paymentStatus === "PENDING") {
+                    return NextResponse.json({ success: true, participant: existingParticipant, message: "Pendaftaran menunggu verifikasi admin." }, { status: 200 });
+                }
+            }
+            return NextResponse.json({ success: true, participant: existingParticipant, message: "Anda sudah terdaftar di turnamen ini" }, { status: 200 });
         }
 
         if (tournament.maxPlayers && tournament._count.participants >= tournament.maxPlayers) {
@@ -94,11 +220,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             return NextResponse.json({ success: false, message: `Harap lengkapi Profil Game ${gameLabel} di Pengaturan Profil Anda terlebih dahulu` }, { status: 400 });
         }
 
+        if (requiresPayment && !paymentProofUrl) {
+            return NextResponse.json({ success: false, message: "Bukti pembayaran wajib diunggah." }, { status: 400 });
+        }
+
         const participant = await prisma.tournamentParticipant.create({
             data: {
                 tournamentId,
                 userId,
-                gameId: gameProfile.ign // snapshot IGN
+                gameId: gameProfile.ign, // snapshot IGN
+                paymentStatus: requiresPayment ? "PENDING" : "VERIFIED",
+                ...(paymentProofUrl ? { paymentProofUrl } : {}),
             }
         });
 
@@ -114,9 +246,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             },
         });
 
-        await syncOrCreateTournamentBracket(prisma, tournamentId, [participant.id]);
+        if (!requiresPayment) {
+            await syncOrCreateTournamentBracket(prisma, tournamentId, [participant.id]);
+        }
 
-        return NextResponse.json({ success: true, participant, message: "Berhasil mendaftar turnamen!" }, { status: 201 });
+        return NextResponse.json(
+            {
+                success: true,
+                participant,
+                message: requiresPayment
+                    ? "Pendaftaran berhasil. Menunggu verifikasi pembayaran."
+                    : "Berhasil mendaftar turnamen!",
+            },
+            { status: 201 }
+        );
 
     } catch (error) {
         console.error("Error registering to tournament:", error);

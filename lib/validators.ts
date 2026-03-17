@@ -23,6 +23,7 @@ export const TOURNAMENT_STRUCTURE_VALUES = ["SINGLE_ELIM", "DOUBLE_ELIM", "SWISS
 export const TOURNAMENT_FORMAT_VALUES = ["BO1", "BO3", "BO5"] as const;
 export const TOURNAMENT_MODE_VALUES = ["INDIVIDUAL", "TEAM_BOARD", "TEAM_KOTH"] as const;
 export const TOURNAMENT_MAX_PLAYERS_VALUES = [8, 16, 32, 64, 128, 256] as const;
+export const TOURNAMENT_PAYMENT_STATUS_VALUES = ["PENDING", "VERIFIED", "REJECTED"] as const;
 export const MATCH_STATUS_VALUES = ["PENDING", "READY", "ONGOING", "RESULT_SUBMITTED", "CONFIRMED", "DISPUTED", "COMPLETED"] as const;
 
 export const registerSchema = z
@@ -330,7 +331,7 @@ export const profileUpdateSchema = z.object({
 
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
-export const tournamentSchema = z.object({
+const tournamentBaseSchema = z.object({
     title: z.string().trim().min(3, "Judul turnamen minimal 3 karakter").max(191, "Judul turnamen terlalu panjang"),
     description: z.string().trim().max(1000, "Deskripsi terlalu panjang").optional().or(z.literal("")),
     format: z.enum(TOURNAMENT_FORMAT_VALUES, { message: "Format tidak valid" }),
@@ -343,13 +344,7 @@ export const tournamentSchema = z.object({
     prizePool: z.coerce.number().min(0, "Prize pool tidak boleh negatif"),
     minPlayers: z.coerce.number().int().min(2, "Min players minimal 2").optional(),
     bracketSize: z.coerce.number().int().min(2, "Bracket size minimal 2").optional(),
-    maxPlayers: z.coerce
-        .number()
-        .int()
-        .refine((value) => TOURNAMENT_MAX_PLAYERS_VALUES.includes(value), {
-            message: "Max players harus 8/16/32/64/128/256",
-        })
-        .optional(),
+    maxPlayers: z.coerce.number().int().min(2, "Max players minimal 2").optional(),
     startAt: z.string().refine((date) => !isNaN(Date.parse(date)), { message: "Tanggal tidak valid" }),
     registrationOpen: z
         .string()
@@ -365,9 +360,33 @@ export const tournamentSchema = z.object({
     image: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload lokal").optional().or(z.literal("")),
 });
 
+export const tournamentSchema = tournamentBaseSchema.superRefine((data, ctx) => {
+    if (data.isTeamTournament) {
+        if (!data.mode || data.mode === "INDIVIDUAL") {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Mode team wajib dipilih",
+                path: ["mode"],
+            });
+        }
+    }
+});
+
 export type TournamentInput = z.infer<typeof tournamentSchema>;
-export const tournamentUpdateSchema = tournamentSchema.partial();
+export const tournamentUpdateSchema = tournamentBaseSchema.partial();
 export type TournamentUpdateInput = z.infer<typeof tournamentUpdateSchema>;
+
+export const tournamentRegisterSchema = z.object({
+    paymentProofUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan bukti pembayaran hasil upload").optional(),
+});
+
+export type TournamentRegisterInput = z.infer<typeof tournamentRegisterSchema>;
+
+export const tournamentPaymentDecisionSchema = z.object({
+    status: z.enum(["VERIFIED", "REJECTED"] as const),
+});
+
+export type TournamentPaymentDecisionInput = z.infer<typeof tournamentPaymentDecisionSchema>;
 
 export const matchReportSchema = z.object({
     scoreA: z.coerce.number().int().min(0).max(2),

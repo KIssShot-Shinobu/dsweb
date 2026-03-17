@@ -16,7 +16,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
         const { id } = await params;
         const tournament = await prisma.tournament.findUnique({
             where: { id },
-            select: { id: true, status: true, createdById: true, structure: true, title: true, maxPlayers: true, checkinRequired: true },
+            select: { id: true, status: true, createdById: true, structure: true, title: true, maxPlayers: true, checkinRequired: true, entryFee: true },
         });
 
         if (!tournament) {
@@ -35,6 +35,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
             where: {
                 tournamentId: tournament.id,
                 ...(tournament.checkinRequired ? { status: "CHECKED_IN" } : {}),
+                ...(tournament.entryFee > 0 ? { paymentStatus: "VERIFIED" } : {}),
             },
             select: { id: true },
         });

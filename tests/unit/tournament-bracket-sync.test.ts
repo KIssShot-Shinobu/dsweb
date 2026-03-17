@@ -18,15 +18,20 @@ function buildPrismaMock(options: {
     matches: MatchRecord[];
     participants: Array<{ id: string; seed: number | null; joinedAt: Date }>;
     roundsCount?: number;
+    entryFee?: number;
+    checkinRequired?: boolean;
 }) {
     const roundsCount = options.roundsCount ?? (options.matches.length > 0 ? 1 : 0);
     const matchStore = new Map(options.matches.map((match) => [match.id, { ...match }]));
+    let lastParticipantWhere: Record<string, unknown> | null = null;
 
     const prisma = {
         tournament: {
             findUnique: async () => ({
                 id: "tournament_1",
                 structure: options.structure ?? "SINGLE_ELIM",
+                checkinRequired: options.checkinRequired ?? false,
+                entryFee: options.entryFee ?? 0,
             }),
         },
         tournamentRound: {
@@ -50,12 +55,15 @@ function buildPrismaMock(options: {
             create: async () => null,
         },
         tournamentParticipant: {
-            findMany: async () => options.participants,
+            findMany: async ({ where }: { where: Record<string, unknown> }) => {
+                lastParticipantWhere = where;
+                return options.participants;
+            },
         },
         $transaction: async (callback: (tx: PrismaClient) => unknown) => callback(prisma as unknown as PrismaClient),
     } as unknown as PrismaClient;
 
-    return { prisma, matchStore };
+    return { prisma, matchStore, lastParticipantWhere: () => lastParticipantWhere };
 }
 
 test("syncTournamentRosterToBracket fills empty round one slots and marks READY", async () => {
@@ -105,6 +113,22 @@ test("syncTournamentRosterToBracket skips completed matches and keeps existing p
     assert.equal(filled?.playerAId, "participant_c");
     assert.equal(result.syncedCount, 1);
     assert.equal(result.pendingCount, 0);
+});
+
+test("syncTournamentRosterToBracket filters verified payment when entry fee is set", async () => {
+    const { syncTournamentRosterToBracket } = await import("@/lib/services/tournament-bracket.service");
+    const { prisma, lastParticipantWhere } = buildPrismaMock({
+        matches: [
+            { id: "match_1", playerAId: null, playerBId: null, status: "PENDING", winnerId: null, bracketIndex: 1 },
+        ],
+        participants: [{ id: "participant_a", seed: null, joinedAt: new Date("2026-03-10T10:00:00.000Z") }],
+        entryFee: 10000,
+    });
+
+    await syncTournamentRosterToBracket(prisma, "tournament_1", ["participant_a"]);
+
+    const where = lastParticipantWhere();
+    assert.equal(where?.paymentStatus, "VERIFIED");
 });
 
 test("syncOrCreateTournamentBracket returns pending when participants are below minimum", async () => {
