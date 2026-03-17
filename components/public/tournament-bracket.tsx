@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, cloneElement, isValidElement, type ReactElement } from "react";
 import {
     SingleEliminationBracket,
     DoubleEliminationBracket,
@@ -283,24 +283,38 @@ export function TournamentBracket({
     };
 
     const renderBracket = (size: ViewerSize) => {
-        const svgWrapper = ({ children, ...props }: { children: ReactElement }) => (
-            <SVGViewer
-                width={size.width}
-                height={size.height}
-                scaleFactor={scaleFactor}
-                startAt={startAt}
-                background={bracketViewerColors.background}
-                SVGBackground={bracketViewerColors.svgBackground}
-                miniatureProps={{
-                    position: "right",
-                    background: bracketViewerColors.miniatureBackground,
-                    SVGBackground: bracketViewerColors.miniatureSvgBackground,
-                }}
-                {...props}
-            >
-                {children}
-            </SVGViewer>
-        );
+        const svgWrapper = ({ children, ...props }: { children: ReactElement }) => {
+            const decorated = isValidElement(children)
+                ? cloneElement(children, {
+                      children: (
+                          <>
+                              <rect width="100%" height="100%" fill={bracketViewerColors.svgBackground} />
+                              {children.props.children}
+                          </>
+                      ),
+                  })
+                : children;
+
+            return (
+                <SVGViewer
+                    width={size.width}
+                    height={size.height}
+                    scaleFactor={scaleFactor}
+                    startAt={startAt}
+                    background={bracketViewerColors.background}
+                    SVGBackground={bracketViewerColors.svgBackground}
+                    miniatureProps={{
+                        position: "right",
+                        background: bracketViewerColors.miniatureBackground,
+                        SVGBackground: bracketViewerColors.miniatureSvgBackground,
+                    }}
+                    style={{ background: bracketViewerColors.background, borderRadius: 12 }}
+                    {...props}
+                >
+                    {decorated}
+                </SVGViewer>
+            );
+        };
 
         if (structure === "DOUBLE_ELIM") {
             return (

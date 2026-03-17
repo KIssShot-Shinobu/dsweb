@@ -57,6 +57,41 @@ const resolveColorValue = (value: string) => {
     return resolved || inputColor;
 };
 
+const readColorFromClass = (host: Element, className: string, property: "color" | "backgroundColor") => {
+    const sample = document.createElement("span");
+    sample.className = className;
+    sample.style.position = "absolute";
+    sample.style.opacity = "0";
+    sample.style.pointerEvents = "none";
+    sample.style.left = "-9999px";
+    sample.style.top = "-9999px";
+    host.appendChild(sample);
+    const value = getComputedStyle(sample)[property];
+    sample.remove();
+    if (!value) return "";
+    const normalized = value.trim();
+    if (!normalized || normalized === "transparent" || normalized === "rgba(0, 0, 0, 0)") return "";
+    return normalized;
+};
+
+const readPaletteFromClasses = (scope?: Element | null): BracketPalette | null => {
+    if (typeof window === "undefined" || typeof document === "undefined") return null;
+    const host = scope ?? document.body ?? document.documentElement;
+    if (!host) return null;
+    const b1 = readColorFromClass(host, "bg-base-100", "backgroundColor");
+    const b2 = readColorFromClass(host, "bg-base-200", "backgroundColor");
+    const b3 = readColorFromClass(host, "bg-base-300", "backgroundColor");
+    const bc = readColorFromClass(host, "text-base-content", "color");
+    const p = readColorFromClass(host, "bg-primary", "backgroundColor");
+    const su = readColorFromClass(host, "bg-success", "backgroundColor");
+    const er = readColorFromClass(host, "bg-error", "backgroundColor");
+
+    if ([b1, b2, b3, bc, p, su, er].every(Boolean)) {
+        return { b1, b2, b3, bc, p, su, er };
+    }
+    return null;
+};
+
 const applyAlpha = (value: string, alpha?: number) => {
     if (alpha === undefined) return value;
     const normalized = value.trim();
@@ -68,6 +103,8 @@ const applyAlpha = (value: string, alpha?: number) => {
 };
 
 export function readBracketPalette(scope?: Element | null): BracketPalette {
+    const classPalette = readPaletteFromClasses(scope);
+    if (classPalette) return classPalette;
     return {
         b1: resolveColorValue(readCssVar("--color-base-100", DEFAULT_PALETTE.b1, scope)),
         b2: resolveColorValue(readCssVar("--color-base-200", DEFAULT_PALETTE.b2, scope)),
