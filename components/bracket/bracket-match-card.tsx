@@ -64,33 +64,50 @@ export function BracketMatchCard({
                     isClickable && "hover:border-primary/50 hover:bg-base-200"
                 )}
             >
-                <span className="min-w-0 flex-1 truncate">{name}</span>
-                <span className={cn("min-w-[26px] text-right text-[10px] font-bold", won ? "text-success" : "text-base-content/70")}>
+                <span className="min-w-0 flex-1 truncate leading-none">{name}</span>
+                <span
+                    className={cn(
+                        "min-w-[26px] text-right text-[10px] font-bold leading-none",
+                        won ? "text-success" : "text-base-content/70"
+                    )}
+                >
                     {result}
                 </span>
             </button>
         );
     };
 
+    const hasTopRow = Boolean(topText || hasMatchAction);
+    const hasBottomRow = Boolean(bottomText);
+
     return (
-        <div className="flex h-full w-full flex-col gap-2 rounded-lg border border-base-300/80 bg-base-100 p-2 text-[11px] text-base-content shadow-sm">
-            <div className="flex items-center justify-between gap-2 text-[10px] font-medium text-base-content/60">
-                <span className="truncate">{topText || ""}</span>
-                {hasMatchAction ? (
-                    <a href={match?.href || "#"} className="text-[10px] font-semibold text-primary hover:underline" onClick={handleMatchClick}>
-                        Match Details
-                    </a>
-                ) : null}
-            </div>
-            <div className="flex flex-col gap-2">
+        <div
+            className={cn(
+                "flex h-full w-full flex-col rounded-lg border border-base-300/80 bg-base-100 p-2 text-[11px] text-base-content shadow-sm",
+                hasTopRow || hasBottomRow ? "gap-2" : "justify-center gap-2"
+            )}
+        >
+            {hasTopRow ? (
+                <div className="flex items-center justify-between gap-2 text-[10px] font-medium text-base-content/60">
+                    <span className="truncate">{topText || ""}</span>
+                    {hasMatchAction ? (
+                        <a
+                            href={match?.href || "#"}
+                            className="text-[10px] font-semibold text-primary hover:underline"
+                            onClick={handleMatchClick}
+                        >
+                            Match Details
+                        </a>
+                    ) : null}
+                </div>
+            ) : null}
+            <div className={cn("flex flex-col gap-2", hasTopRow || hasBottomRow ? "" : "py-1")}>
                 {renderParty(topParty, topWon, topHovered)}
                 {renderParty(bottomParty, bottomWon, bottomHovered)}
             </div>
-            {bottomText ? (
+            {hasBottomRow ? (
                 <div className="text-center text-[10px] font-semibold text-base-content/50">{bottomText}</div>
-            ) : (
-                <div className="text-[10px] text-transparent">.</div>
-            )}
+            ) : null}
         </div>
     );
 }
