@@ -349,8 +349,10 @@ export function TournamentBracketAdmin({
                       ),
                   })
                 : children;
-            const centerX = Math.max(0, (size.width - bracketWidth) / 2);
-            const centerY = Math.max(0, (size.height - bracketHeight) / 2);
+            const safeBracketWidth = Number.isFinite(bracketWidth) ? bracketWidth : size.width;
+            const safeBracketHeight = Number.isFinite(bracketHeight) ? bracketHeight : size.height;
+            const centerX = Math.max(0, (size.width - safeBracketWidth) / 2);
+            const centerY = Math.max(0, (size.height - safeBracketHeight) / 2);
 
             return (
                 <SVGViewer
