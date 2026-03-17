@@ -65,7 +65,7 @@ type ViewerSize = {
     height: number;
 };
 
-const bracketOptionsDark = {
+const bracketOptions = {
     style: {
         boxHeight: 84,
         canvasPadding: 28,
@@ -76,32 +76,12 @@ const bracketOptionsDark = {
             height: 26,
             marginBottom: 10,
             fontSize: 12,
-            fontColor: "#FFFFFF",
-            backgroundColor: "#1f2937",
+            fontColor: "hsl(var(--bc))",
+            backgroundColor: "hsl(var(--b2))",
             fontFamily: "inherit",
         },
-        connectorColor: "#334155",
-        connectorColorHighlight: "#facc15",
-    },
-};
-
-const bracketOptionsLight = {
-    style: {
-        boxHeight: 84,
-        canvasPadding: 28,
-        spaceBetweenRows: 24,
-        spaceBetweenColumns: 42,
-        roundHeader: {
-            isShown: true,
-            height: 26,
-            marginBottom: 10,
-            fontSize: 12,
-            fontColor: "#111827",
-            backgroundColor: "#e2e8f0",
-            fontFamily: "inherit",
-        },
-        connectorColor: "#94a3b8",
-        connectorColorHighlight: "#f59e0b",
+        connectorColor: "hsl(var(--b3))",
+        connectorColorHighlight: "hsl(var(--p))",
     },
 };
 
@@ -150,35 +130,38 @@ export function TournamentBracketAdmin({
     const [error, setError] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [viewerSize, setViewerSize] = useState<ViewerSize>({ width: 980, height: 520 });
-    const [bracketTheme, setBracketTheme] = useState(() => createTheme({
-        fontFamily: "inherit",
-        textColor: {
-            main: "#e2e8f0",
-            highlighted: "#f8fafc",
-            dark: "#cbd5f5",
-            disabled: "rgba(148, 163, 184, 0.5)",
-        },
-        matchBackground: {
-            wonColor: "rgba(34, 197, 94, 0.16)",
-            lostColor: "rgba(15, 23, 42, 0.85)",
-        },
-        border: {
-            color: "rgba(51, 65, 85, 0.8)",
-            highlightedColor: "rgba(250, 204, 21, 0.8)",
-        },
-        score: {
-            text: {
-                highlightedWonColor: "#22c55e",
-                highlightedLostColor: "#ef4444",
-            },
-            background: {
-                wonColor: "rgba(34, 197, 94, 0.2)",
-                lostColor: "rgba(51, 65, 85, 0.7)",
-            },
-        },
-        canvasBackground: "rgba(15, 23, 42, 0.2)",
-    }));
-    const [isDarkTheme, setIsDarkTheme] = useState(true);
+    const bracketTheme = useMemo(
+        () =>
+            createTheme({
+                fontFamily: "inherit",
+                textColor: {
+                    main: "hsl(var(--bc))",
+                    highlighted: "hsl(var(--bc))",
+                    dark: "hsl(var(--bc) / 0.7)",
+                    disabled: "hsl(var(--bc) / 0.45)",
+                },
+                matchBackground: {
+                    wonColor: "hsl(var(--su) / 0.18)",
+                    lostColor: "hsl(var(--b2))",
+                },
+                border: {
+                    color: "hsl(var(--b3))",
+                    highlightedColor: "hsl(var(--p))",
+                },
+                score: {
+                    text: {
+                        highlightedWonColor: "hsl(var(--su))",
+                        highlightedLostColor: "hsl(var(--er))",
+                    },
+                    background: {
+                        wonColor: "hsl(var(--su) / 0.22)",
+                        lostColor: "hsl(var(--b3))",
+                    },
+                },
+                canvasBackground: "hsl(var(--b1) / 0.25)",
+            }),
+        []
+    );
     const [isCompact, setIsCompact] = useState(false);
     const [scaleFactor, setScaleFactor] = useState(1);
     const [startAt, setStartAt] = useState<[number, number]>([0, 0]);
@@ -261,78 +244,6 @@ export function TournamentBracketAdmin({
         return () => window.removeEventListener("resize", updateSize);
     }, []);
 
-    useEffect(() => {
-        const root = document.documentElement;
-        const updateTheme = () => {
-            const isDark = root.getAttribute("data-theme") === "dark";
-            setIsDarkTheme(isDark);
-            setBracketTheme(
-                isDark
-                    ? createTheme({
-                        fontFamily: "inherit",
-                        textColor: {
-                            main: "#e2e8f0",
-                            highlighted: "#f8fafc",
-                            dark: "#cbd5f5",
-                            disabled: "rgba(148, 163, 184, 0.5)",
-                        },
-                        matchBackground: {
-                            wonColor: "rgba(34, 197, 94, 0.16)",
-                            lostColor: "rgba(15, 23, 42, 0.85)",
-                        },
-                        border: {
-                            color: "rgba(51, 65, 85, 0.8)",
-                            highlightedColor: "rgba(250, 204, 21, 0.8)",
-                        },
-                        score: {
-                            text: {
-                                highlightedWonColor: "#22c55e",
-                                highlightedLostColor: "#ef4444",
-                            },
-                            background: {
-                                wonColor: "rgba(34, 197, 94, 0.2)",
-                                lostColor: "rgba(51, 65, 85, 0.7)",
-                            },
-                        },
-                        canvasBackground: "rgba(15, 23, 42, 0.2)",
-                    })
-                    : createTheme({
-                        fontFamily: "inherit",
-                        textColor: {
-                            main: "#1f2937",
-                            highlighted: "#111827",
-                            dark: "#334155",
-                            disabled: "rgba(107, 114, 128, 0.5)",
-                        },
-                        matchBackground: {
-                            wonColor: "rgba(34, 197, 94, 0.14)",
-                            lostColor: "rgba(248, 250, 252, 0.9)",
-                        },
-                        border: {
-                            color: "rgba(148, 163, 184, 0.5)",
-                            highlightedColor: "rgba(250, 204, 21, 0.8)",
-                        },
-                        score: {
-                            text: {
-                                highlightedWonColor: "#15803d",
-                                highlightedLostColor: "#b91c1c",
-                            },
-                            background: {
-                                wonColor: "rgba(34, 197, 94, 0.15)",
-                                lostColor: "rgba(226, 232, 240, 0.7)",
-                            },
-                        },
-                        canvasBackground: "rgba(248, 250, 252, 0.8)",
-                    })
-            );
-        };
-
-        updateTheme();
-        const observer = new MutationObserver(updateTheme);
-        observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
-        return () => observer.disconnect();
-    }, []);
-
     const { singleMatches, upperMatches, lowerMatches, matchIndex } = useMemo(() => {
         const single: MatchType[] = [];
         const upper: MatchType[] = [];
@@ -340,8 +251,9 @@ export function TournamentBracketAdmin({
         const index = new Map<string, BracketMatch>();
 
         data.forEach((round) => {
-            round.matches.forEach((match) => index.set(match.id, match));
-            const mapped = round.matches.map((match) => mapMatch(match, round.name));
+            const safeMatches = (round.matches || []).filter((match): match is BracketMatch => Boolean(match && match.id));
+            safeMatches.forEach((match) => index.set(match.id, match));
+            const mapped = safeMatches.map((match) => mapMatch(match, round.name));
             if (round.roundType === "LOWER") {
                 lower.push(...mapped);
             } else {
@@ -350,7 +262,24 @@ export function TournamentBracketAdmin({
             single.push(...mapped);
         });
 
-        return { singleMatches: single, upperMatches: upper, lowerMatches: lower, matchIndex: index };
+        if (upper.length === 0 && lower.length === 0) {
+            return { singleMatches: single, upperMatches: upper, lowerMatches: lower, matchIndex: index };
+        }
+
+        const allIds = new Set([...upper, ...lower].map((match) => match.id));
+        const sanitize = (matches: MatchType[]) =>
+            matches.map((match) => ({
+                ...match,
+                nextMatchId: match.nextMatchId && allIds.has(match.nextMatchId) ? match.nextMatchId : null,
+                nextLooserMatchId: match.nextLooserMatchId && allIds.has(match.nextLooserMatchId) ? match.nextLooserMatchId : undefined,
+            }));
+
+        return {
+            singleMatches: single,
+            upperMatches: sanitize(upper),
+            lowerMatches: sanitize(lower),
+            matchIndex: index,
+        };
     }, [data]);
 
     const openMatchModal = (matchId: string | number) => {
@@ -437,6 +366,9 @@ export function TournamentBracketAdmin({
         setStartAt([0, 0]);
     };
 
+    const canRenderDoubleElim = structure === "DOUBLE_ELIM" ? upperMatches.length > 0 && lowerMatches.length > 0 : true;
+    const forceCompact = structure === "DOUBLE_ELIM" && !canRenderDoubleElim;
+
     const renderBracket = (size: ViewerSize) => {
         const svgWrapper = ({ children, ...props }: { children: ReactElement }) => (
             <SVGViewer width={size.width} height={size.height} scaleFactor={scaleFactor} startAt={startAt} {...props}>
@@ -445,17 +377,20 @@ export function TournamentBracketAdmin({
         );
 
         const onMatchClick = ({ match }: { match: MatchType; topWon: boolean; bottomWon: boolean }) => openMatchModal(match.id);
+        const safeUpperMatches = upperMatches.filter((match) => Boolean(match && match.id));
+        const safeLowerMatches = lowerMatches.filter((match) => Boolean(match && match.id));
+        const safeSingleMatches = singleMatches.filter((match) => Boolean(match && match.id));
 
         if (structure === "DOUBLE_ELIM") {
             return (
                 <StyleSheetManager shouldForwardProp={shouldForwardProp}>
                     <DoubleEliminationBracket
-                        matches={{ upper: upperMatches, lower: lowerMatches }}
+                        matches={{ upper: safeUpperMatches, lower: safeLowerMatches }}
                         matchComponent={Match}
                         onMatchClick={onMatchClick}
                         svgWrapper={svgWrapper}
                         theme={bracketTheme}
-                        options={isDarkTheme ? bracketOptionsDark : bracketOptionsLight}
+                        options={bracketOptions}
                     />
                 </StyleSheetManager>
             );
@@ -464,12 +399,12 @@ export function TournamentBracketAdmin({
         return (
             <StyleSheetManager shouldForwardProp={shouldForwardProp}>
                 <SingleEliminationBracket
-                    matches={singleMatches}
+                    matches={safeSingleMatches}
                     matchComponent={Match}
                     onMatchClick={onMatchClick}
                     svgWrapper={svgWrapper}
                     theme={bracketTheme}
-                    options={isDarkTheme ? bracketOptionsDark : bracketOptionsLight}
+                    options={bracketOptions}
                 />
             </StyleSheetManager>
         );
@@ -493,18 +428,53 @@ export function TournamentBracketAdmin({
 
     if (data.length === 0) {
         return (
-            <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 p-6 text-sm text-base-content/60">
-                Bracket belum dibuat.
+            <div className="space-y-4">
+                <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 p-6 text-sm text-base-content/60">
+                    <div>Bracket belum dibuat.</div>
+                    {canShuffle ? (
+                        <button
+                            type="button"
+                            className={`${btnOutline} btn-sm mt-4`}
+                            onClick={() => setShuffleConfirmOpen(true)}
+                            disabled={shuffling}
+                        >
+                            {shuffling ? "Membuat..." : "Generate Bracket"}
+                        </button>
+                    ) : (
+                        <div className="mt-3 text-xs text-base-content/50">Generate hanya bisa saat turnamen masih OPEN.</div>
+                    )}
+                </div>
+                <ConfirmModal
+                    open={shuffleConfirmOpen}
+                    title="Generate bracket?"
+                    description="Bracket akan dibuat ulang dari peserta yang tersedia. Hanya bisa dilakukan saat turnamen masih OPEN."
+                    confirmLabel="Generate"
+                    onConfirm={handleShuffle}
+                    onClose={() => setShuffleConfirmOpen(false)}
+                />
             </div>
         );
     }
 
-    if (structure === "SWISS" || isCompact) {
+    if (structure === "SWISS" || isCompact || forceCompact) {
         const limit = 8;
         const visibleSeeds = showAllSeeds ? seeds : seeds.slice(0, limit);
 
         return (
             <div className="space-y-4">
+                {forceCompact ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-box border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
+                        <div>Data double elimination belum lengkap. Menampilkan daftar match sementara.</div>
+                        <button
+                            type="button"
+                            className={`${btnOutline} btn-xs`}
+                            onClick={() => setShuffleConfirmOpen(true)}
+                            disabled={!canShuffle}
+                        >
+                            Rebuild Bracket
+                        </button>
+                    </div>
+                ) : null}
                 {canShuffle ? (
                     <div className="flex justify-end">
                         <button
