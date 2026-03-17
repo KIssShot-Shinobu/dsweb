@@ -9,6 +9,13 @@ type ActionEmailInput = {
     fallbackLabel?: string;
 };
 
+type PaymentStatusEmailInput = {
+    recipientName: string;
+    tournamentTitle: string;
+    status: "VERIFIED" | "REJECTED";
+    actionUrl: string;
+};
+
 function getAppName() {
     return process.env.APP_NAME?.trim() || "Duel Standby";
 }
@@ -90,4 +97,23 @@ export function buildActionEmail(input: ActionEmailInput) {
     `.trim();
 
     return { text, html };
+}
+
+export function buildPaymentStatusEmail(input: PaymentStatusEmailInput) {
+    const statusLabel = input.status === "VERIFIED" ? "terverifikasi" : "ditolak";
+    const preheader = "Status Pembayaran Turnamen";
+    const title = `Pembayaran ${statusLabel}`;
+    const body =
+        input.status === "VERIFIED"
+            ? `Pembayaran untuk turnamen ${input.tournamentTitle} sudah diverifikasi. Kamu sudah resmi terdaftar sebagai peserta.`
+            : `Pembayaran untuk turnamen ${input.tournamentTitle} ditolak. Silakan upload ulang bukti pembayaran agar pendaftaran dapat diproses.`;
+
+    return buildActionEmail({
+        recipientName: input.recipientName,
+        preheader,
+        title,
+        body,
+        actionLabel: "Lihat Turnamen",
+        actionUrl: input.actionUrl,
+    });
 }

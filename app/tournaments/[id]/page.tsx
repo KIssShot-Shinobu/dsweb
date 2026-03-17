@@ -102,6 +102,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             status === "VERIFIED" ? "badge-success" : status === "REJECTED" ? "badge-error" : "badge-warning";
         const label =
             status === "VERIFIED" ? "Terverifikasi" : status === "REJECTED" ? "Ditolak" : "Menunggu Verifikasi";
+        const verifiedAtLabel = participantForUser.paymentVerifiedAt
+            ? new Date(participantForUser.paymentVerifiedAt).toLocaleString("id-ID")
+            : null;
         return (
             <div className="rounded-box border border-base-300 bg-base-200/50 p-4 text-sm">
                 <div className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">
@@ -120,6 +123,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                         </a>
                     ) : null}
                 </div>
+                {verifiedAtLabel && status === "VERIFIED" ? (
+                    <p className="mt-2 text-xs text-base-content/60">Terverifikasi pada {verifiedAtLabel}</p>
+                ) : null}
                 {status === "REJECTED" ? (
                     <p className="mt-2 text-xs text-base-content/60">
                         Bukti pembayaran ditolak. Silakan upload ulang bukti pembayaran di tombol registrasi.

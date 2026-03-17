@@ -26,6 +26,7 @@ type ParticipantRow = {
     checkedInAt: string | null;
     paymentStatus: "PENDING" | "VERIFIED" | "REJECTED";
     paymentProofUrl: string | null;
+    paymentVerifiedAt: string | null;
     guestName: string | null;
     team: {
         id: string;
@@ -518,6 +519,11 @@ export function TournamentParticipantsClient({
                                                         <span className={`badge ${renderPaymentBadge(participant.paymentStatus)}`}>
                                                             {renderPaymentLabel(participant.paymentStatus)}
                                                         </span>
+                                                        {participant.paymentStatus === "VERIFIED" && participant.paymentVerifiedAt ? (
+                                                            <span className="text-[11px] text-base-content/55">
+                                                                {new Date(participant.paymentVerifiedAt).toLocaleString("id-ID")}
+                                                            </span>
+                                                        ) : null}
                                                         {participant.paymentProofUrl ? (
                                                             <a
                                                                 href={normalizeAssetUrl(participant.paymentProofUrl) || "#"}

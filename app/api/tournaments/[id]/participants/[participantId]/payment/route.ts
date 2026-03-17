@@ -8,7 +8,7 @@ import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import { syncOrCreateTournamentBracket } from "@/lib/services/tournament-bracket.service";
 import { createNotificationService } from "@/lib/services/notification.service";
 import { sendEmail } from "@/lib/email";
-import { buildActionEmail } from "@/lib/email-templates";
+import { buildPaymentStatusEmail } from "@/lib/email-templates";
 import { getAppUrl } from "@/lib/runtime-config";
 
 export async function POST(
@@ -105,12 +105,10 @@ export async function POST(
                     select: { email: true, fullName: true },
                 });
                 if (user?.email) {
-                    const emailContent = buildActionEmail({
+                    const emailContent = buildPaymentStatusEmail({
                         recipientName: user.fullName || "Peserta",
-                        preheader: "Status Pembayaran",
-                        title,
-                        body: message,
-                        actionLabel: "Lihat Turnamen",
+                        tournamentTitle: tournament.title,
+                        status: nextStatus,
                         actionUrl,
                     });
                     await sendEmail({
@@ -141,12 +139,10 @@ export async function POST(
                 await Promise.all(
                     teamMembers.map(async (member) => {
                         if (member.user?.email) {
-                            const emailContent = buildActionEmail({
+                            const emailContent = buildPaymentStatusEmail({
                                 recipientName: member.user.fullName || "Peserta",
-                                preheader: "Status Pembayaran",
-                                title,
-                                body: message,
-                                actionLabel: "Lihat Turnamen",
+                                tournamentTitle: tournament.title,
+                                status: nextStatus,
                                 actionUrl,
                             });
                             await sendEmail({
