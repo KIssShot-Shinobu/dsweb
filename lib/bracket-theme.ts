@@ -11,13 +11,13 @@ export type BracketPalette = {
 };
 
 const DEFAULT_PALETTE: BracketPalette = {
-    b1: "0 0% 100%",
-    b2: "0 0% 97%",
-    b3: "0 0% 90%",
-    bc: "215 20% 12%",
-    p: "230 96% 62%",
-    su: "142 71% 45%",
-    er: "0 75% 55%",
+    b1: "100% 0 0",
+    b2: "98% 0 0",
+    b3: "95% 0 0",
+    bc: "21% 0.006 285.885",
+    p: "45% 0.24 277.023",
+    su: "76% 0.177 163.223",
+    er: "71% 0.194 13.428",
 };
 
 const readCssVar = (name: string, fallback: string) => {
@@ -26,23 +26,33 @@ const readCssVar = (name: string, fallback: string) => {
     return value || fallback;
 };
 
-const toHsl = (value: string, alpha?: number) => {
-    if (value.includes("hsl(")) return value;
-    if (alpha !== undefined) {
-        return `hsl(${value} / ${alpha})`;
+const toColor = (value: string, alpha?: number) => {
+    const normalized = value.trim();
+    if (
+        normalized.startsWith("#") ||
+        normalized.startsWith("rgb(") ||
+        normalized.startsWith("rgba(") ||
+        normalized.startsWith("hsl(") ||
+        normalized.startsWith("hsla(") ||
+        normalized.startsWith("oklch(")
+    ) {
+        return normalized;
     }
-    return `hsl(${value})`;
+    if (alpha !== undefined) {
+        return `oklch(${normalized} / ${alpha})`;
+    }
+    return `oklch(${normalized})`;
 };
 
 export function readBracketPalette(): BracketPalette {
     return {
-        b1: readCssVar("--b1", DEFAULT_PALETTE.b1),
-        b2: readCssVar("--b2", DEFAULT_PALETTE.b2),
-        b3: readCssVar("--b3", DEFAULT_PALETTE.b3),
-        bc: readCssVar("--bc", DEFAULT_PALETTE.bc),
-        p: readCssVar("--p", DEFAULT_PALETTE.p),
-        su: readCssVar("--su", DEFAULT_PALETTE.su),
-        er: readCssVar("--er", DEFAULT_PALETTE.er),
+        b1: readCssVar("--color-base-100", DEFAULT_PALETTE.b1),
+        b2: readCssVar("--color-base-200", DEFAULT_PALETTE.b2),
+        b3: readCssVar("--color-base-300", DEFAULT_PALETTE.b3),
+        bc: readCssVar("--color-base-content", DEFAULT_PALETTE.bc),
+        p: readCssVar("--color-primary", DEFAULT_PALETTE.p),
+        su: readCssVar("--color-success", DEFAULT_PALETTE.su),
+        er: readCssVar("--color-error", DEFAULT_PALETTE.er),
     };
 }
 
@@ -50,30 +60,30 @@ export function buildBracketTheme(palette: BracketPalette) {
     return createTheme({
         fontFamily: "inherit",
         textColor: {
-            main: toHsl(palette.bc),
-            highlighted: toHsl(palette.bc),
-            dark: toHsl(palette.bc, 0.7),
-            disabled: toHsl(palette.bc, 0.45),
+            main: toColor(palette.bc),
+            highlighted: toColor(palette.bc),
+            dark: toColor(palette.bc, 0.7),
+            disabled: toColor(palette.bc, 0.45),
         },
         matchBackground: {
-            wonColor: toHsl(palette.su, 0.18),
-            lostColor: toHsl(palette.b2),
+            wonColor: toColor(palette.su, 0.18),
+            lostColor: toColor(palette.b2),
         },
         border: {
-            color: toHsl(palette.bc, 0.35),
-            highlightedColor: toHsl(palette.p),
+            color: toColor(palette.bc, 0.45),
+            highlightedColor: toColor(palette.p),
         },
         score: {
             text: {
-                highlightedWonColor: toHsl(palette.su),
-                highlightedLostColor: toHsl(palette.er),
+                highlightedWonColor: toColor(palette.su),
+                highlightedLostColor: toColor(palette.er),
             },
             background: {
-                wonColor: toHsl(palette.su, 0.22),
-                lostColor: toHsl(palette.b1),
+                wonColor: toColor(palette.su, 0.22),
+                lostColor: toColor(palette.b1),
             },
         },
-        canvasBackground: toHsl(palette.b1),
+        canvasBackground: toColor(palette.b1),
     });
 }
 
@@ -89,22 +99,22 @@ export function buildBracketOptions(palette: BracketPalette) {
                 height: 26,
                 marginBottom: 10,
                 fontSize: 12,
-                fontColor: toHsl(palette.bc),
-                backgroundColor: toHsl(palette.b2),
+                fontColor: toColor(palette.bc),
+                backgroundColor: toColor(palette.b2),
                 fontFamily: "inherit",
             },
-            connectorColor: toHsl(palette.b3),
-            connectorColorHighlight: toHsl(palette.p),
+            connectorColor: toColor(palette.b3),
+            connectorColorHighlight: toColor(palette.p),
         },
     };
 }
 
 export function buildBracketViewerColors(palette: BracketPalette) {
     return {
-        background: toHsl(palette.b2),
-        svgBackground: toHsl(palette.b1),
-        miniatureBackground: toHsl(palette.b2),
-        miniatureSvgBackground: toHsl(palette.b1),
+        background: toColor(palette.b2),
+        svgBackground: toColor(palette.b1),
+        miniatureBackground: toColor(palette.b2),
+        miniatureSvgBackground: toColor(palette.b1),
     };
 }
 

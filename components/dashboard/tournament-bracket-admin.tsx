@@ -13,7 +13,6 @@ import { useToast } from "@/components/dashboard/toast";
 import { Modal } from "@/components/dashboard/modal";
 import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
-import { useTheme } from "@/context/ThemeContext";
 import {
     buildBracketOptions,
     buildBracketTheme,
@@ -117,7 +116,6 @@ export function TournamentBracketAdmin({
     const [error, setError] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [viewerSize, setViewerSize] = useState<ViewerSize>({ width: 980, height: 520 });
-    const { theme } = useTheme();
     const [palette, setPalette] = useState(() =>
         typeof window === "undefined" ? DEFAULT_PALETTE : readBracketPalette()
     );
@@ -207,8 +205,26 @@ export function TournamentBracketAdmin({
     }, []);
 
     useEffect(() => {
-        setPalette(readBracketPalette());
-    }, [theme]);
+        const root = document.documentElement;
+        let frame = requestAnimationFrame(() => {
+            setPalette(readBracketPalette());
+        });
+
+        const handleThemeChange = () => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => {
+                setPalette(readBracketPalette());
+            });
+        };
+
+        const observer = new MutationObserver(handleThemeChange);
+        observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+        return () => {
+            cancelAnimationFrame(frame);
+            observer.disconnect();
+        };
+    }, []);
 
     const { singleMatches, upperMatches, lowerMatches, matchIndex } = useMemo(() => {
         const single: MatchType[] = [];

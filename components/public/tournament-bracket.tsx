@@ -9,7 +9,6 @@ import {
     type MatchType,
 } from "react-tournament-brackets";
 import { StyleSheetManager } from "styled-components";
-import { useTheme } from "@/context/ThemeContext";
 import {
     buildBracketOptions,
     buildBracketTheme,
@@ -87,7 +86,6 @@ export function TournamentBracket({
     const [error, setError] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [viewerSize, setViewerSize] = useState<ViewerSize>({ width: 980, height: 520 });
-    const { theme } = useTheme();
     const [palette, setPalette] = useState(() =>
         typeof window === "undefined" ? DEFAULT_PALETTE : readBracketPalette()
     );
@@ -143,8 +141,26 @@ export function TournamentBracket({
     }, []);
 
     useEffect(() => {
-        setPalette(readBracketPalette());
-    }, [theme]);
+        const root = document.documentElement;
+        let frame = requestAnimationFrame(() => {
+            setPalette(readBracketPalette());
+        });
+
+        const handleThemeChange = () => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => {
+                setPalette(readBracketPalette());
+            });
+        };
+
+        const observer = new MutationObserver(handleThemeChange);
+        observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+        return () => {
+            cancelAnimationFrame(frame);
+            observer.disconnect();
+        };
+    }, []);
 
     const { singleMatches, upperMatches, lowerMatches } = useMemo(() => {
         const single: MatchType[] = [];
