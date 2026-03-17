@@ -18,9 +18,11 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Login/logout + cek sesi user (`/api/auth/me`), termasuk payload role komunitas dan team aktif jika ada. Login Google, Discord, dan login username/email+password kini sama-sama melewati Auth.js, lalu difinalisasi ke state internal aplikasi untuk audit, role, dan sinkronisasi profil.
 - Manajemen role dan status akun user.
 - CRUD tournament + register participant tournament.
+- Tournament kini mendukung mode **Team** (TEAM_BOARD / TEAM_KOTH). Pendaftaran team hanya untuk captain/vice/manager.
 - Bracket tournament dapat diakses publik (tanpa login) untuk halaman public.
-- Tournament sekarang punya `maxPlayers` untuk batas kapasitas. Registrasi publik/admin akan menolak jika slot penuh.
+- Tournament sekarang punya `maxPlayers` untuk batas kapasitas (input angka bebas). Bracket otomatis menyesuaikan ke power‑of‑two terdekat. Registrasi publik/admin akan menolak jika slot penuh.
 - Tournament kini menyimpan `startAt` serta window pendaftaran (`registrationOpen`/`registrationClose`) dan toggle `checkinRequired` per event.
+- Untuk turnamen berbayar (entry fee > 0), registrasi wajib upload **bukti pembayaran**. Peserta masuk status **PENDING** sampai admin verifikasi (**VERIFIED/REJECTED**). Hanya peserta VERIFIED yang tampil di roster publik dan masuk bracket. Notifikasi + email dikirim saat verifikasi.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
 - Panel operasional disatukan ke halaman `/dashboard`, termasuk summary users, teams, tournament, treasury, dan quick actions.
 - Hapus tournament di dashboard memakai confirm modal + undo 5 detik.
