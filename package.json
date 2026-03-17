@@ -19,6 +19,7 @@
   "dependencies": {
     "@mantine/core": "^8.3.17",
     "@mantine/dates": "^8.3.17",
+    "@mantine/hooks": "^8.3.17",
     "@prisma/adapter-better-sqlite3": "^7.4.2",
     "@prisma/adapter-mariadb": "^7.4.2",
     "@prisma/client": "^7.3.0",
