@@ -70,7 +70,7 @@ export function buildBracketOptions(palette: BracketPalette) {
                 height: 26,
                 marginBottom: 10,
                 fontSize: 12,
-                fontColor: palette.bc,
+                fontColor: "#FFFFFF",
                 backgroundColor: palette.b2,
                 fontFamily: "inherit",
             },
