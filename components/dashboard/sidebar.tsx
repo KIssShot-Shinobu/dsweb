@@ -131,7 +131,7 @@ export function Sidebar() {
                                     <div className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.28em] text-base-content/45">
                                         {section.section}
                                     </div>
-                                    <ul className="menu gap-1 rounded-box bg-base-200/40 p-2">
+                                    <ul className="menu gap-2 rounded-box bg-base-200/40 p-2.5">
                                         {visibleItems.map((item) => {
                                             const isActive = item.href === bestMatch || (item.href === "/dashboard" && pathname === "/dashboard");
                                             const ItemIcon = ICONS[item.icon];
@@ -156,7 +156,7 @@ export function Sidebar() {
                     </nav>
 
                     <div className="border-t border-base-300 px-3 py-4">
-                        <ul className="menu rounded-box bg-base-200/40 p-2">
+                        <ul className="menu gap-2 rounded-box bg-base-200/40 p-2.5">
                             <li>
                                 <button
                                     onClick={async () => {

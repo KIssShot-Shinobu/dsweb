@@ -105,7 +105,7 @@ export function TournamentAdminShell({ tournamentId, children }: TournamentShell
                         </button>
                     </div>
                     <nav className="px-3 py-4">
-                        <ul className="menu rounded-box bg-base-200/40 p-2">
+                        <ul className="menu gap-2 rounded-box bg-base-200/40 p-2.5">
                             {navLinks.map((item) => {
                                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                                 const Icon = item.icon;

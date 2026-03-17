@@ -4,13 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pagination } from "@/components/dashboard/pagination";
-import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
 import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { RowActions } from "@/components/dashboard/row-actions";
-import { TournamentBracketAdmin } from "@/components/dashboard/tournament-bracket-admin";
 import { btnOutline, btnPrimary, dashboardStackCls, searchInputCls } from "@/components/dashboard/form-styles";
 import {
     DashboardEmptyState,
@@ -71,13 +69,6 @@ const EMPTY_SUMMARY = { open: 0, ongoing: 0, completed: 0, cancelled: 0 };
 export default function AdminTournamentsPage() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showBracketModal, setShowBracketModal] = useState(false);
-    const [activeBracketTournament, setActiveBracketTournament] = useState<{
-        id: string;
-        title: string;
-        structure: "SINGLE_ELIM" | "DOUBLE_ELIM" | "SWISS";
-        status: "OPEN" | "ONGOING" | "COMPLETED" | "CANCELLED";
-    } | null>(null);
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
@@ -182,11 +173,6 @@ export default function AdminTournamentsPage() {
         }
     };
 
-    const openBracketModal = (tournament: Tournament) => {
-        const structure = tournament.structure || "SINGLE_ELIM";
-        setActiveBracketTournament({ id: tournament.id, title: tournament.title, structure, status: tournament.status });
-        setShowBracketModal(true);
-    };
 
     const executePermanentDelete = async (id: string) => {
         setPendingDelete(null);
@@ -363,12 +349,6 @@ export default function AdminTournamentsPage() {
                                                             >
                                                                 Next Status
                                                             </button>
-                                                            <button
-                                                                onClick={() => openBracketModal(tournament)}
-                                                                className={`${btnOutline} btn-sm`}
-                                                            >
-                                                                Manage Bracket
-                                                            </button>
                                                             <Link href={`/dashboard/tournaments/${tournament.id}`} className={`${btnOutline} btn-sm`}>
                                                                 Admin Dashboard
                                                             </Link>
@@ -402,21 +382,6 @@ export default function AdminTournamentsPage() {
 
             <UndoSnackbar open={!!pendingDelete} message={`"${pendingDelete?.title}" akan dihapus`} duration={UNDO_DURATION} onUndo={handleUndo} />
 
-            <Modal
-                open={showBracketModal}
-                onClose={() => { setShowBracketModal(false); setActiveBracketTournament(null); }}
-                title={activeBracketTournament ? `Bracket: ${activeBracketTournament.title}` : "Bracket"}
-                size="xl"
-            >
-                {activeBracketTournament ? (
-                    <TournamentBracketAdmin
-                        tournamentId={activeBracketTournament.id}
-                        structure={activeBracketTournament.structure}
-                        status={activeBracketTournament.status}
-                        onUpdated={fetchTournaments}
-                    />
-                ) : null}
-            </Modal>
         </DashboardPageShell>
     );
 }
