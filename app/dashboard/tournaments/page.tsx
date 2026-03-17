@@ -122,32 +122,6 @@ export default function AdminTournamentsPage() {
         []
     );
 
-    const updateStatus = async (tournament: Tournament) => {
-        const statusOrder = ["OPEN", "ONGOING", "COMPLETED"];
-        const currentIndex = statusOrder.indexOf(tournament.status);
-        const nextStatus = statusOrder[currentIndex + 1] || "COMPLETED";
-
-        if (tournament.status === "COMPLETED" || tournament.status === "CANCELLED") return;
-
-        try {
-            const res = await fetch(`/api/tournaments/${tournament.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: nextStatus }),
-            });
-
-            const data = await res.json();
-            if (res.ok) {
-                success(`Status diubah ke ${nextStatus}.`);
-                fetchTournaments();
-            } else {
-                error(data.message || "Gagal mengubah status.");
-            }
-        } catch {
-            error("Kesalahan jaringan.");
-        }
-    };
-
     const handleStartBracket = async (tournament: Tournament) => {
         const participantCount = tournament._count?.participants ?? 0;
         if (tournament.status !== "OPEN") {
@@ -341,13 +315,6 @@ export default function AdminTournamentsPage() {
                                                                 className={`${btnPrimary} btn-sm disabled:opacity-40`}
                                                             >
                                                                 Start Bracket
-                                                            </button>
-                                                            <button
-                                                                onClick={() => updateStatus(tournament)}
-                                                                disabled={tournament.status === "COMPLETED" || tournament.status === "CANCELLED"}
-                                                                className={`${btnOutline} btn-sm disabled:opacity-40`}
-                                                            >
-                                                                Next Status
                                                             </button>
                                                             <Link href={`/dashboard/tournaments/${tournament.id}`} className={`${btnOutline} btn-sm`}>
                                                                 Admin Dashboard
