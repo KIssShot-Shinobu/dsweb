@@ -6,6 +6,7 @@ import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { normalizeAssetUrl } from "@/lib/asset-url";
+import { ImageCropModal } from "@/components/ui/image-crop-modal";
 
 type TeamRequest = {
     id: string;
@@ -52,6 +53,17 @@ export function TeamRequestPanel() {
     const [form, setForm] = useState(emptyForm);
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [cropState, setCropState] = useState<{
+        open: boolean;
+        imageSrc: string | null;
+        fileName: string;
+        fileType: string;
+    }>({
+        open: false,
+        imageSrc: null,
+        fileName: "logo.jpg",
+        fileType: "image/jpeg",
+    });
     const { success, error: toastError } = useToast();
 
     const latestRequest = useMemo(() => requests[0] ?? null, [requests]);
@@ -104,6 +116,14 @@ export function TeamRequestPanel() {
             setUploadingLogo(false);
         }
     };
+
+    const readFileAsDataUrl = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(new Error("Gagal membaca file."));
+            reader.readAsDataURL(file);
+        });
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -205,7 +225,17 @@ export function TeamRequestPanel() {
                                 const inputEl = event.currentTarget;
                                 const file = event.target.files?.[0];
                                 if (!file) return;
-                                await handleLogoUpload(file);
+                                try {
+                                    const previewUrl = await readFileAsDataUrl(file);
+                                    setCropState({
+                                        open: true,
+                                        imageSrc: previewUrl,
+                                        fileName: file.name || "logo.jpg",
+                                        fileType: file.type || "image/jpeg",
+                                    });
+                                } catch {
+                                    toastError("Gagal memuat gambar untuk crop.");
+                                }
                                 inputEl.value = "";
                             }}
                             disabled={uploadingLogo}
@@ -239,6 +269,30 @@ export function TeamRequestPanel() {
                     </div>
                 </form>
             </Modal>
+
+            <ImageCropModal
+                open={cropState.open}
+                imageSrc={cropState.imageSrc}
+                title="Crop Logo Team"
+                aspect={1}
+                outputType={cropState.fileType}
+                onCancel={() =>
+                    setCropState((prev) => ({
+                        ...prev,
+                        open: false,
+                        imageSrc: null,
+                    }))
+                }
+                onComplete={async (blob) => {
+                    const croppedFile = new File([blob], cropState.fileName, { type: cropState.fileType });
+                    await handleLogoUpload(croppedFile);
+                    setCropState((prev) => ({
+                        ...prev,
+                        open: false,
+                        imageSrc: null,
+                    }));
+                }}
+            />
         </div>
     );
 }

@@ -157,94 +157,6 @@ export function TournamentBracket({
         return { singleMatches: single, upperMatches: upper, lowerMatches: lower };
     }, [data]);
 
-    if (loading) {
-        return (
-            <div className="rounded-box border border-base-300 bg-base-200/40 p-6 text-sm text-base-content/60">
-                Memuat bracket...
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="rounded-box border border-error/30 bg-error/10 p-6 text-sm text-error">
-                {error}
-            </div>
-        );
-    }
-
-    if (data.length === 0) {
-        return (
-            <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 p-6 text-sm text-base-content/60">
-                Bracket belum dibuat.
-            </div>
-        );
-    }
-
-    if (structure === "SWISS") {
-        return (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {data.map((round) => (
-                    <div key={round.id} className="rounded-box border border-base-300 bg-base-200/40 p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <div className="text-xs font-bold uppercase tracking-[0.22em] text-base-content/60">
-                                {round.name}
-                            </div>
-                            <span className="badge badge-outline text-[10px]">{round.matches.length} match</span>
-                        </div>
-                        <div className="space-y-3">
-                            {round.matches.map((match) => (
-                                <div key={match.id} className="rounded-box border border-base-300 bg-base-100/70 p-3">
-                                    <div className="text-[11px] text-base-content/50">{match.name || "Match"}</div>
-                                    <div className="mt-2 space-y-1 text-sm">
-                                        {match.participants.map((participant, index) => (
-                                            <div key={`${match.id}-${index}`} className="flex items-center justify-between text-base-content/70">
-                                                <span className="font-semibold">{participant.name || "TBD"}</span>
-                                                <span className="text-xs font-semibold">{participant.resultText || "-"}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
-    }
-
-    if (isCompact) {
-        return (
-            <div className="space-y-4">
-                {data.map((round) => (
-                    <div key={round.id} className="rounded-box border border-base-300 bg-base-200/40 p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <div className="text-xs font-bold uppercase tracking-[0.22em] text-base-content/60">
-                                {round.name}
-                            </div>
-                            <span className="badge badge-outline text-[10px]">{round.matches.length} match</span>
-                        </div>
-                        <div className="space-y-3">
-                            {round.matches.map((match) => (
-                                <div key={match.id} className="rounded-box border border-base-300 bg-base-100/70 p-3">
-                                    <div className="text-[11px] text-base-content/50">{match.name || "Match"}</div>
-                                    <div className="mt-2 space-y-1 text-sm">
-                                        {match.participants.map((participant, index) => (
-                                            <div key={`${match.id}-${index}`} className="flex items-center justify-between text-base-content/70">
-                                                <span className="font-semibold">{participant.name || "TBD"}</span>
-                                                <span className="text-xs font-semibold">{participant.resultText || "-"}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
-    }
-
     const clampScale = (value: number) => Math.min(1.8, Math.max(0.6, value));
     const zoomIn = () => setScaleFactor((prev) => clampScale(prev + 0.15));
     const zoomOut = () => setScaleFactor((prev) => clampScale(prev - 0.15));
@@ -329,6 +241,118 @@ export function TournamentBracket({
             </StyleSheetManager>
         );
     };
+
+    if (loading) {
+        return (
+            <div className="rounded-box border border-base-300 bg-base-200/40 p-6 text-sm text-base-content/60">
+                Memuat bracket...
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="rounded-box border border-error/30 bg-error/10 p-6 text-sm text-error">
+                {error}
+            </div>
+        );
+    }
+
+    if (data.length === 0) {
+        return (
+            <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 p-6 text-sm text-base-content/60">
+                Bracket belum dibuat.
+            </div>
+        );
+    }
+
+    if (structure === "SWISS") {
+        return (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {data.map((round) => (
+                    <div key={round.id} className="rounded-box border border-base-300 bg-base-200/40 p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                            <div className="text-xs font-bold uppercase tracking-[0.22em] text-base-content/60">
+                                {round.name}
+                            </div>
+                            <span className="badge badge-outline text-[10px]">{round.matches.length} match</span>
+                        </div>
+                        <div className="space-y-3">
+                            {round.matches.map((match) => (
+                                <div key={match.id} className="rounded-box border border-base-300 bg-base-100/70 p-3">
+                                    <div className="text-[11px] text-base-content/50">{match.name || "Match"}</div>
+                                    <div className="mt-2 space-y-1 text-sm">
+                                        {match.participants.map((participant, index) => (
+                                            <div key={`${match.id}-${index}`} className="flex items-center justify-between text-base-content/70">
+                                                <span className="font-semibold">{participant.name || "TBD"}</span>
+                                                <span className="text-xs font-semibold">{participant.resultText || "-"}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    if (isCompact) {
+        return (
+            <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-box border border-base-300 bg-base-200/40 p-3 text-xs text-base-content/60">
+                    <div>Mode mobile aktif. Gunakan daftar match atau buka tampilan bracket.</div>
+                    <button className="btn btn-xs btn-outline" onClick={() => setIsFullscreen(true)}>
+                        Lihat Bracket
+                    </button>
+                </div>
+                {data.map((round) => (
+                    <div key={round.id} className="rounded-box border border-base-300 bg-base-200/40 p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                            <div className="text-xs font-bold uppercase tracking-[0.22em] text-base-content/60">
+                                {round.name}
+                            </div>
+                            <span className="badge badge-outline text-[10px]">{round.matches.length} match</span>
+                        </div>
+                        <div className="space-y-3">
+                            {round.matches.map((match) => (
+                                <div key={match.id} className="rounded-box border border-base-300 bg-base-100/70 p-3">
+                                    <div className="text-[11px] text-base-content/50">{match.name || "Match"}</div>
+                                    <div className="mt-2 space-y-1 text-sm">
+                                        {match.participants.map((participant, index) => (
+                                            <div key={`${match.id}-${index}`} className="flex items-center justify-between text-base-content/70">
+                                                <span className="font-semibold">{participant.name || "TBD"}</span>
+                                                <span className="text-xs font-semibold">{participant.resultText || "-"}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+
+                {isFullscreen ? (
+                    <div className="modal modal-open">
+                        <div className="modal-box max-w-6xl border border-base-300 bg-base-100">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold">Bracket Fullscreen</h3>
+                                <button className="btn btn-sm btn-ghost" onClick={() => setIsFullscreen(false)}>Close</button>
+                            </div>
+                            <div className="mt-4">
+                                {renderBracket({
+                                    width: Math.min(1200, window.innerWidth - 32),
+                                    height: Math.min(720, window.innerHeight - 180),
+                                })}
+                            </div>
+                        </div>
+                        <div className="modal-backdrop" onClick={() => setIsFullscreen(false)} />
+                    </div>
+                ) : null}
+            </div>
+        );
+    }
 
     return (
         <div ref={containerRef} className="mx-auto w-full max-w-[1200px] overflow-hidden rounded-box border border-base-300 bg-base-100 shadow-lg">

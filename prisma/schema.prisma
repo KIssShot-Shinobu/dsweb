@@ -163,7 +163,7 @@ model Team {
 model Tournament {
   id          String              @id @default(cuid())
   title       String
-  description String?
+  description String?           @db.VarChar(1000)
   format      TournamentFormat    @default(BO3)
   gameId      String
   game        Game                @relation(fields: [gameId], references: [id], onDelete: Restrict)

@@ -122,6 +122,7 @@ export function TournamentBracketAdmin({
     const [isCompact, setIsCompact] = useState(false);
     const [scaleFactor, setScaleFactor] = useState(1);
     const [viewerKey, setViewerKey] = useState(0);
+    const [mobileBracketOpen, setMobileBracketOpen] = useState(false);
     const [activeMatch, setActiveMatch] = useState<BracketMatch | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [seeds, setSeeds] = useState<SeedEntry[]>([]);
@@ -461,6 +462,7 @@ export function TournamentBracketAdmin({
     if (structure === "SWISS" || isCompact || forceCompact) {
         const limit = 8;
         const visibleSeeds = showAllSeeds ? seeds : seeds.slice(0, limit);
+        const showCompactBracket = structure !== "SWISS" && !forceCompact;
 
         return (
             <div className="space-y-4">
@@ -474,6 +476,14 @@ export function TournamentBracketAdmin({
                             disabled={!canShuffle}
                         >
                             Rebuild Bracket
+                        </button>
+                    </div>
+                ) : null}
+                {showCompactBracket ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-box border border-base-300 bg-base-200/40 p-3 text-xs text-base-content/60">
+                        <div>Mode mobile aktif. Gunakan daftar match atau buka tampilan bracket.</div>
+                        <button className="btn btn-xs btn-outline" onClick={() => setMobileBracketOpen(true)}>
+                            Lihat Bracket
                         </button>
                     </div>
                 ) : null}
@@ -537,6 +547,25 @@ export function TournamentBracketAdmin({
                     onClose={() => setModalOpen(false)}
                     onSave={handleSaveResult}
                 />
+                {showCompactBracket && mobileBracketOpen ? (
+                    <div className="modal modal-open">
+                        <div className="modal-box max-w-6xl border border-base-300 bg-base-100">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold">Bracket Fullscreen</h3>
+                                <button className="btn btn-sm btn-ghost" onClick={() => setMobileBracketOpen(false)}>
+                                    Close
+                                </button>
+                            </div>
+                            <div className="mt-4">
+                                {renderBracket({
+                                    width: Math.min(1200, window.innerWidth - 32),
+                                    height: Math.min(720, window.innerHeight - 200),
+                                })}
+                            </div>
+                        </div>
+                        <div className="modal-backdrop" onClick={() => setMobileBracketOpen(false)} />
+                    </div>
+                ) : null}
                 <ConfirmModal
                     open={shuffleConfirmOpen}
                     title="Acak ulang bracket?"
@@ -681,6 +710,13 @@ function MatchAdminModal({
 }) {
     const playerA = match?.participants[0];
     const playerB = match?.participants[1];
+    const canAutoPickWinner = Boolean(match?.playerAId && match?.playerBId);
+
+    const getAutoWinnerId = (scoreA: number, scoreB: number) => {
+        if (!canAutoPickWinner) return "";
+        if (scoreA === scoreB) return "";
+        return scoreA > scoreB ? match!.playerAId! : match!.playerBId!;
+    };
 
     return (
         <Modal open={open} onClose={onClose} title={match ? `${match.name || "Match"} - Admin Result` : "Match Result"} size="md">
@@ -706,7 +742,14 @@ function MatchAdminModal({
                             min={0}
                             max={5}
                             value={formState.scoreA}
-                            onChange={(event) => setFormState((prev) => ({ ...prev, scoreA: Number(event.target.value) }))}
+                            onChange={(event) => {
+                                const nextScoreA = Number(event.target.value);
+                                setFormState((prev) => ({
+                                    ...prev,
+                                    scoreA: nextScoreA,
+                                    winnerId: getAutoWinnerId(nextScoreA, prev.scoreB),
+                                }));
+                            }}
                         />
                     </div>
                     <div>
@@ -717,7 +760,14 @@ function MatchAdminModal({
                             min={0}
                             max={5}
                             value={formState.scoreB}
-                            onChange={(event) => setFormState((prev) => ({ ...prev, scoreB: Number(event.target.value) }))}
+                            onChange={(event) => {
+                                const nextScoreB = Number(event.target.value);
+                                setFormState((prev) => ({
+                                    ...prev,
+                                    scoreB: nextScoreB,
+                                    winnerId: getAutoWinnerId(prev.scoreA, nextScoreB),
+                                }));
+                            }}
                         />
                     </div>
                 </div>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { useToast } from "@/components/dashboard/toast";
 import { ConfirmModal } from "@/components/dashboard/confirm-modal";
+import { ImageCropModal } from "@/components/ui/image-crop-modal";
 
 function getInitials(name: string) {
     return (
@@ -34,6 +35,17 @@ export function ProfileAvatarForm({
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+    const [cropState, setCropState] = useState<{
+        open: boolean;
+        imageSrc: string | null;
+        fileName: string;
+        fileType: string;
+    }>({
+        open: false,
+        imageSrc: null,
+        fileName: "avatar.jpg",
+        fileType: "image/jpeg",
+    });
 
     const displayName = username || fullName;
     const previewUrl = normalizeAssetUrl(avatarUrl);
@@ -70,12 +82,7 @@ export function ProfileAvatarForm({
         }
     };
 
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) {
-            return;
-        }
-
+    const uploadAvatarFile = async (file: File) => {
         const formData = new FormData();
         formData.append("file", file);
 
@@ -97,6 +104,32 @@ export function ProfileAvatarForm({
             error("Terjadi gangguan jaringan saat upload avatar.");
         } finally {
             setUploading(false);
+        }
+    };
+
+    const readFileAsDataUrl = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(new Error("Gagal membaca file."));
+            reader.readAsDataURL(file);
+        });
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const previewUrl = await readFileAsDataUrl(file);
+            setCropState({
+                open: true,
+                imageSrc: previewUrl,
+                fileName: file.name || "avatar.jpg",
+                fileType: file.type || "image/jpeg",
+            });
+        } catch {
+            error("Gagal memuat gambar untuk crop.");
+        } finally {
             if (fileInputRef.current) {
                 fileInputRef.current.value = "";
             }
@@ -189,6 +222,30 @@ export function ProfileAvatarForm({
                 danger
                 onConfirm={handleRemoveAvatar}
                 onCancel={() => (saving ? null : setShowRemoveConfirm(false))}
+            />
+
+            <ImageCropModal
+                open={cropState.open}
+                imageSrc={cropState.imageSrc}
+                title="Crop Foto Profil"
+                aspect={1}
+                outputType={cropState.fileType}
+                onCancel={() =>
+                    setCropState((prev) => ({
+                        ...prev,
+                        open: false,
+                        imageSrc: null,
+                    }))
+                }
+                onComplete={async (blob) => {
+                    const croppedFile = new File([blob], cropState.fileName, { type: cropState.fileType });
+                    await uploadAvatarFile(croppedFile);
+                    setCropState((prev) => ({
+                        ...prev,
+                        open: false,
+                        imageSrc: null,
+                    }));
+                }}
             />
         </>
     );

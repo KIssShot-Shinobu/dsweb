@@ -320,6 +320,14 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
         }
     };
 
+    const buildBulkTemplate = (count: number) => {
+        const lines = Array.from({ length: count }, (_, index) => {
+            const number = String(index + 1).padStart(2, "0");
+            return `Player ${number} | IGN${number}`;
+        });
+        return lines.join("\n");
+    };
+
     const hasData = participants.length > 0;
 
     return (
@@ -578,6 +586,25 @@ export function TournamentParticipantsClient({ tournamentId }: { tournamentId: s
 
             <Modal open={showBulkModal} onClose={() => setShowBulkModal(false)} title="Bulk Add Peserta" size="lg">
                 <div className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/60">
+                        <div>Quick fill untuk testing atau seed cepat.</div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                className="btn btn-ghost btn-xs"
+                                onClick={() => setBulkText(buildBulkTemplate(32))}
+                            >
+                                Generate 32
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-ghost btn-xs"
+                                onClick={() => setBulkText("")}
+                            >
+                                Clear
+                            </button>
+                        </div>
+                    </div>
                     <div>
                         <label className={labelCls}>Format (Nama | Game ID)</label>
                         <textarea

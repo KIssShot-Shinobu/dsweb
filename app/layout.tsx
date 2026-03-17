@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "./globals.css";
@@ -9,6 +9,11 @@ import { MantineThemeProvider } from "@/components/providers/mantine-provider";
 export const metadata: Metadata = {
   title: "Duel Standby | Komunitas Gaming untuk Duelist Kompetitif",
   description: "Duel Standby adalah komunitas gaming untuk pemain Duel Links dan Master Duel yang mencari turnamen terstruktur, diskusi strategis, dan pengalaman bermain yang lebih profesional.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

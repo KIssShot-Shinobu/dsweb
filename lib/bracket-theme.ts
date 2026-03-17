@@ -61,7 +61,7 @@ export function buildBracketTheme(palette: BracketPalette) {
 export function buildBracketOptions(palette: BracketPalette) {
     return {
         style: {
-            boxHeight: 96,
+            boxHeight: 104,
             canvasPadding: 28,
             spaceBetweenRows: 26,
             spaceBetweenColumns: 42,

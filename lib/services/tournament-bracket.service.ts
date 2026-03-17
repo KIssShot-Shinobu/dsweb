@@ -39,6 +39,11 @@ type BracketSyncSummary = SyncResult & {
     created: boolean;
 };
 
+const INTERACTIVE_TX_OPTIONS = {
+    maxWait: 5000,
+    timeout: 20000,
+};
+
 function shuffleArray<T>(items: T[]) {
     const array = [...items];
     for (let i = array.length - 1; i > 0; i -= 1) {
@@ -399,7 +404,7 @@ async function persistSeeding(tx: PrismaClient, tournamentId: string, assignment
                 ipAddress: "0.0.0.0",
                 userAgent: "bracket-engine",
                 details: JSON.stringify({
-                    seeds: assignments,
+                    seedCount: assignments.length,
                 }),
             },
         });
@@ -631,10 +636,15 @@ async function generateDoubleElim(
             }
 
             const nextMatches = lowerMatches[nextRound];
-            if (!nextMatches) continue;
-            const nextIndex = roundNumber % 2 === 1 ? i : Math.floor(i / 2);
+            if (!nextMatches || nextMatches.length === 0) continue;
+            const isOddRound = roundNumber % 2 === 1;
+            let nextIndex = isOddRound ? i : Math.floor(i / 2);
+            if (nextIndex >= nextMatches.length) {
+                nextIndex = Math.floor(i / 2);
+            }
             const nextMatch = nextMatches[nextIndex];
-            const nextSide: MatchPlayerSide = roundNumber % 2 === 1 ? "A" : (i % 2 === 0 ? "A" : "B");
+            if (!nextMatch) continue;
+            const nextSide: MatchPlayerSide = isOddRound ? "A" : (i % 2 === 0 ? "A" : "B");
 
             await tx.match.update({
                 where: { id: currentMatch.id },
@@ -710,7 +720,7 @@ export async function generateTournamentBracket(
 
     await prisma.$transaction(async (tx) => {
         await generateTournamentBracketWithTx(tx as PrismaClient, tournamentId, structure, participants, maxPlayers);
-    });
+    }, INTERACTIVE_TX_OPTIONS);
 }
 
 export async function rebuildTournamentBracket(
@@ -738,7 +748,7 @@ export async function rebuildTournamentBracket(
         });
 
         await generateTournamentBracketWithTx(tx as PrismaClient, tournamentId, structure, participants, maxPlayers);
-    });
+    }, INTERACTIVE_TX_OPTIONS);
 }
 
 export async function syncTournamentRosterToBracket(prisma: PrismaClient, tournamentId: string, participantIds?: string[]): Promise<SyncResult> {
@@ -818,7 +828,7 @@ export async function syncTournamentRosterToBracket(prisma: PrismaClient, tourna
         }
 
         return { syncedCount, pendingCount: candidates.length - syncedCount };
-    });
+    }, INTERACTIVE_TX_OPTIONS);
 }
 
 export async function syncOrCreateTournamentBracket(

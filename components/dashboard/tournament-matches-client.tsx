@@ -92,6 +92,13 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
         setWinnerId(match.winner?.id ?? "");
     };
 
+    const canAutoPickWinner = Boolean(activeMatch?.playerA && activeMatch?.playerB);
+    const getAutoWinnerId = (nextScoreA: number, nextScoreB: number) => {
+        if (!canAutoPickWinner) return "";
+        if (nextScoreA === nextScoreB) return "";
+        return nextScoreA > nextScoreB ? activeMatch!.playerA!.id : activeMatch!.playerB!.id;
+    };
+
     const winnerOptions = useMemo(() => {
         if (!activeMatch) return [];
         const options = [];
@@ -218,7 +225,11 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                     min={0}
                                     className={inputCls}
                                     value={scoreA}
-                                    onChange={(event) => setScoreA(Number(event.target.value))}
+                                    onChange={(event) => {
+                                        const nextScoreA = Number(event.target.value);
+                                        setScoreA(nextScoreA);
+                                        setWinnerId(getAutoWinnerId(nextScoreA, scoreB));
+                                    }}
                                 />
                             </div>
                             <div>
@@ -228,7 +239,11 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                     min={0}
                                     className={inputCls}
                                     value={scoreB}
-                                    onChange={(event) => setScoreB(Number(event.target.value))}
+                                    onChange={(event) => {
+                                        const nextScoreB = Number(event.target.value);
+                                        setScoreB(nextScoreB);
+                                        setWinnerId(getAutoWinnerId(scoreA, nextScoreB));
+                                    }}
                                 />
                             </div>
                         </div>

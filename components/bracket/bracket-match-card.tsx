@@ -77,7 +77,9 @@ export function BracketMatchCard({
         );
     };
 
-    const hasTopRow = Boolean(topText || hasMatchAction);
+    const normalizedTopText = typeof topText === "string" ? topText.trim() : topText;
+    const hasTopRow = Boolean(normalizedTopText || hasMatchAction);
+    const showTopText = Boolean(normalizedTopText);
     const hasBottomRow = Boolean(bottomText);
 
     return (
@@ -88,12 +90,20 @@ export function BracketMatchCard({
             )}
         >
             {hasTopRow ? (
-                <div className="flex items-center justify-between gap-2 text-[10px] font-medium text-base-content/60">
-                    <span className="truncate">{topText || ""}</span>
+                <div
+                    className={cn(
+                        "flex items-center gap-2 text-[10px] font-medium text-base-content/60",
+                        showTopText ? "justify-between" : "justify-center"
+                    )}
+                >
+                    {showTopText ? <span className="truncate">{normalizedTopText}</span> : null}
                     {hasMatchAction ? (
                         <a
                             href={match?.href || "#"}
-                            className="text-[10px] font-semibold text-primary hover:underline"
+                            className={cn(
+                                "text-[10px] font-semibold text-primary hover:underline",
+                                showTopText ? "" : "block w-full text-center"
+                            )}
                             onClick={handleMatchClick}
                         >
                             Match Details
