@@ -286,6 +286,8 @@ export function TournamentBracket({
                     height={size.height}
                     scaleFactor={scaleFactor}
                     startAt={[centerX, centerY]}
+                    bracketWidth={safeBracketWidth}
+                    bracketHeight={safeBracketHeight}
                     background={bracketViewerColors.background}
                     SVGBackground={bracketViewerColors.svgBackground}
                     miniatureProps={{
