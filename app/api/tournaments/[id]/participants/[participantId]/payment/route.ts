@@ -7,6 +7,9 @@ import { logAudit } from "@/lib/audit-logger";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import { syncOrCreateTournamentBracket } from "@/lib/services/tournament-bracket.service";
 import { createNotificationService } from "@/lib/services/notification.service";
+import { sendEmail } from "@/lib/email";
+import { buildActionEmail } from "@/lib/email-templates";
+import { getAppUrl } from "@/lib/runtime-config";
 
 export async function POST(
     request: Request,
@@ -93,9 +96,32 @@ export async function POST(
             nextStatus === "VERIFIED"
                 ? `Pembayaran untuk turnamen ${tournament.title} sudah diverifikasi.`
                 : `Pembayaran untuk turnamen ${tournament.title} ditolak. Silakan upload ulang bukti pembayaran.`;
+        const actionUrl = `${getAppUrl()}/tournaments/${tournament.id}`;
 
         try {
             if (participant.userId) {
+                const user = await prisma.user.findUnique({
+                    where: { id: participant.userId },
+                    select: { email: true, fullName: true },
+                });
+                if (user?.email) {
+                    const emailContent = buildActionEmail({
+                        recipientName: user.fullName || "Peserta",
+                        preheader: "Status Pembayaran",
+                        title,
+                        body: message,
+                        actionLabel: "Lihat Turnamen",
+                        actionUrl,
+                    });
+                    await sendEmail({
+                        to: user.email,
+                        subject: title,
+                        text: emailContent.text,
+                        html: emailContent.html,
+                        debugTag: "Tournament][PaymentStatus",
+                    });
+                }
+
                 await notifications.createNotification({
                     userId: participant.userId,
                     type: "SYSTEM_ALERT",
@@ -110,18 +136,36 @@ export async function POST(
                         leftAt: null,
                         role: { in: ["CAPTAIN", "VICE_CAPTAIN", "MANAGER"] },
                     },
-                    select: { userId: true },
+                    select: { userId: true, user: { select: { email: true, fullName: true } } },
                 });
                 await Promise.all(
-                    teamMembers.map((member) =>
-                        notifications.createNotification({
+                    teamMembers.map(async (member) => {
+                        if (member.user?.email) {
+                            const emailContent = buildActionEmail({
+                                recipientName: member.user.fullName || "Peserta",
+                                preheader: "Status Pembayaran",
+                                title,
+                                body: message,
+                                actionLabel: "Lihat Turnamen",
+                                actionUrl,
+                            });
+                            await sendEmail({
+                                to: member.user.email,
+                                subject: title,
+                                text: emailContent.text,
+                                html: emailContent.html,
+                                debugTag: "Tournament][PaymentStatus",
+                            });
+                        }
+
+                        await notifications.createNotification({
                             userId: member.userId,
                             type: "SYSTEM_ALERT",
                             title,
                             message,
                             link: `/tournaments/${tournament.id}`,
-                        })
-                    )
+                        });
+                    })
                 );
             }
         } catch (notifyError) {

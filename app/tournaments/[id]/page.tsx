@@ -84,6 +84,50 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         tournament.entryFee > 0
             ? tournament.participants.filter((participant) => participant.paymentStatus === "VERIFIED")
             : tournament.participants;
+    const paymentNotifications = currentUser
+        ? await prisma.notification.findMany({
+              where: {
+                  userId: currentUser.id,
+                  link: `/tournaments/${tournament.id}`,
+              },
+              orderBy: { createdAt: "desc" },
+              take: 3,
+          })
+        : [];
+
+    const renderPaymentStatus = () => {
+        if (!participantForUser || tournament.entryFee <= 0) return null;
+        const status = participantForUser.paymentStatus;
+        const badgeClass =
+            status === "VERIFIED" ? "badge-success" : status === "REJECTED" ? "badge-error" : "badge-warning";
+        const label =
+            status === "VERIFIED" ? "Terverifikasi" : status === "REJECTED" ? "Ditolak" : "Menunggu Verifikasi";
+        return (
+            <div className="rounded-box border border-base-300 bg-base-200/50 p-4 text-sm">
+                <div className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">
+                    Status Pembayaran
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                    <span className={`badge ${badgeClass}`}>{label}</span>
+                    {participantForUser.paymentProofUrl ? (
+                        <a
+                            className="btn btn-outline btn-xs"
+                            href={normalizeAssetUrl(participantForUser.paymentProofUrl) || "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Lihat Bukti
+                        </a>
+                    ) : null}
+                </div>
+                {status === "REJECTED" ? (
+                    <p className="mt-2 text-xs text-base-content/60">
+                        Bukti pembayaran ditolak. Silakan upload ulang bukti pembayaran di tombol registrasi.
+                    </p>
+                ) : null}
+            </div>
+        );
+    };
 
     return (
         <main className="min-h-screen bg-transparent text-base-content">
@@ -162,6 +206,22 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                             entryFee={tournament.entryFee}
                                             paymentStatus={participantForUser?.paymentStatus ?? null}
                                         />
+                                        {renderPaymentStatus()}
+                                        {paymentNotifications.length > 0 ? (
+                                            <div className="rounded-box border border-base-300 bg-base-200/50 p-4 text-sm">
+                                                <div className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">
+                                                    Notifikasi Pembayaran
+                                                </div>
+                                                <div className="space-y-2 text-xs text-base-content/70">
+                                                    {paymentNotifications.map((notification) => (
+                                                        <div key={notification.id} className="rounded-box border border-base-300 bg-base-100/80 px-3 py-2">
+                                                            <div className="font-semibold text-base-content">{notification.title}</div>
+                                                            <div className="text-[11px] text-base-content/55">{notification.message}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : null}
                                     </div>
 
                                     <div className="divider my-1" />
