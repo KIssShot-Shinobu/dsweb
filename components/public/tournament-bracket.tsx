@@ -142,6 +142,7 @@ export function TournamentBracket({
 
     useEffect(() => {
         const root = document.documentElement;
+        const body = document.body;
         let frame = requestAnimationFrame(() => {
             setPalette(readBracketPalette());
         });
@@ -155,6 +156,9 @@ export function TournamentBracket({
 
         const observer = new MutationObserver(handleThemeChange);
         observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+        if (body) {
+            observer.observe(body, { attributes: true, attributeFilter: ["data-theme"] });
+        }
 
         return () => {
             cancelAnimationFrame(frame);

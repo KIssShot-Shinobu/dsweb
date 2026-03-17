@@ -22,8 +22,13 @@ const DEFAULT_PALETTE: BracketPalette = {
 
 const readCssVar = (name: string, fallback: string) => {
     if (typeof window === "undefined") return fallback;
-    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return value || fallback;
+    const rootValue = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (rootValue) return rootValue;
+    if (document.body) {
+        const bodyValue = getComputedStyle(document.body).getPropertyValue(name).trim();
+        if (bodyValue) return bodyValue;
+    }
+    return fallback;
 };
 
 const resolveColorValue = (value: string) => {
@@ -73,20 +78,23 @@ export function readBracketPalette(): BracketPalette {
 }
 
 export function buildBracketTheme(palette: BracketPalette) {
+    const mediumBorder = applyAlpha(palette.bc, 0.6);
+    const subtleText = applyAlpha(palette.bc, 0.7);
+    const disabledText = applyAlpha(palette.bc, 0.45);
     return createTheme({
         fontFamily: "inherit",
         textColor: {
             main: palette.bc,
             highlighted: palette.bc,
-            dark: applyAlpha(palette.bc, 0.7),
-            disabled: applyAlpha(palette.bc, 0.45),
+            dark: subtleText,
+            disabled: disabledText,
         },
         matchBackground: {
             wonColor: applyAlpha(palette.su, 0.18),
-            lostColor: palette.b2,
+            lostColor: applyAlpha(palette.b2, 0.95),
         },
         border: {
-            color: applyAlpha(palette.bc, 0.45),
+            color: mediumBorder,
             highlightedColor: palette.p,
         },
         score: {
@@ -96,7 +104,7 @@ export function buildBracketTheme(palette: BracketPalette) {
             },
             background: {
                 wonColor: applyAlpha(palette.su, 0.22),
-                lostColor: palette.b1,
+                lostColor: applyAlpha(palette.b3, 0.55),
             },
         },
         canvasBackground: palette.b1,
@@ -116,10 +124,10 @@ export function buildBracketOptions(palette: BracketPalette) {
                 marginBottom: 10,
                 fontSize: 12,
                 fontColor: palette.bc,
-                backgroundColor: palette.b2,
+                backgroundColor: applyAlpha(palette.b3, 0.9),
                 fontFamily: "inherit",
             },
-            connectorColor: palette.b3,
+            connectorColor: applyAlpha(palette.bc, 0.35),
             connectorColorHighlight: palette.p,
         },
     };
