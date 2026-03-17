@@ -6,6 +6,7 @@ import { tournamentPaymentDecisionSchema } from "@/lib/validators";
 import { logAudit } from "@/lib/audit-logger";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import { syncOrCreateTournamentBracket } from "@/lib/services/tournament-bracket.service";
+import { createNotificationService } from "@/lib/services/notification.service";
 
 export async function POST(
     request: Request,
@@ -20,7 +21,7 @@ export async function POST(
         const { id, participantId } = await params;
         const tournament = await prisma.tournament.findUnique({
             where: { id },
-            select: { id: true, createdById: true, entryFee: true },
+            select: { id: true, createdById: true, entryFee: true, title: true },
         });
 
         if (!tournament) {
@@ -43,7 +44,14 @@ export async function POST(
 
         const participant = await prisma.tournamentParticipant.findUnique({
             where: { id: participantId },
-            select: { id: true, tournamentId: true, paymentStatus: true, paymentProofUrl: true },
+            select: {
+                id: true,
+                tournamentId: true,
+                paymentStatus: true,
+                paymentProofUrl: true,
+                userId: true,
+                teamId: true,
+            },
         });
 
         if (!participant || participant.tournamentId !== tournament.id) {
@@ -77,6 +85,47 @@ export async function POST(
 
         if (nextStatus === "VERIFIED") {
             await syncOrCreateTournamentBracket(prisma, tournament.id, [participant.id]);
+        }
+
+        const notifications = createNotificationService({ prisma });
+        const title = nextStatus === "VERIFIED" ? "Pembayaran terverifikasi" : "Pembayaran ditolak";
+        const message =
+            nextStatus === "VERIFIED"
+                ? `Pembayaran untuk turnamen ${tournament.title} sudah diverifikasi.`
+                : `Pembayaran untuk turnamen ${tournament.title} ditolak. Silakan upload ulang bukti pembayaran.`;
+
+        try {
+            if (participant.userId) {
+                await notifications.createNotification({
+                    userId: participant.userId,
+                    type: "SYSTEM_ALERT",
+                    title,
+                    message,
+                    link: `/tournaments/${tournament.id}`,
+                });
+            } else if (participant.teamId) {
+                const teamMembers = await prisma.teamMember.findMany({
+                    where: {
+                        teamId: participant.teamId,
+                        leftAt: null,
+                        role: { in: ["CAPTAIN", "VICE_CAPTAIN", "MANAGER"] },
+                    },
+                    select: { userId: true },
+                });
+                await Promise.all(
+                    teamMembers.map((member) =>
+                        notifications.createNotification({
+                            userId: member.userId,
+                            type: "SYSTEM_ALERT",
+                            title,
+                            message,
+                            link: `/tournaments/${tournament.id}`,
+                        })
+                    )
+                );
+            }
+        } catch (notifyError) {
+            console.error("[Tournament Payment Notify]", notifyError);
         }
 
         return NextResponse.json({ success: true, participant: updated, message: "Status pembayaran diperbarui." }, { status: 200 });
