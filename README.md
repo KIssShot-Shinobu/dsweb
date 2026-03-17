@@ -115,12 +115,6 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 
 Salin `.env.example` menjadi `.env`, lalu isi nilainya.
 
-Contoh `DATABASE_URL`:
-
-```env
-DATABASE_URL="mysql://USERNAME:PASSWORD@141.11.25.48:3306/DATABASE_NAME?connection_limit=1"
-```
-
 Variabel penting:
 
 - `DATABASE_URL`: koneksi utama Prisma ke MySQL.
