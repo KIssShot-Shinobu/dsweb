@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import {
     SingleEliminationBracket,
     DoubleEliminationBracket,
-    Match,
     SVGViewer,
     type MatchType,
 } from "react-tournament-brackets";
@@ -20,6 +19,7 @@ import {
     readBracketPalette,
     DEFAULT_PALETTE,
 } from "@/lib/bracket-theme";
+import { BracketMatchCard } from "@/components/bracket/bracket-match-card";
 
 type BracketParticipant = {
     id?: string;
@@ -116,9 +116,7 @@ export function TournamentBracketAdmin({
     const [error, setError] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [viewerSize, setViewerSize] = useState<ViewerSize>({ width: 980, height: 520 });
-    const [palette, setPalette] = useState(() =>
-        typeof window === "undefined" ? DEFAULT_PALETTE : readBracketPalette()
-    );
+    const [palette, setPalette] = useState(DEFAULT_PALETTE);
     const bracketTheme = useMemo(() => buildBracketTheme(palette), [palette]);
     const bracketOptions = useMemo(() => buildBracketOptions(palette), [palette]);
     const bracketViewerColors = useMemo(() => buildBracketViewerColors(palette), [palette]);
@@ -205,23 +203,27 @@ export function TournamentBracketAdmin({
     }, []);
 
     useEffect(() => {
-        const root = document.documentElement;
-        const body = document.body;
+        if (!containerRef.current) return;
+        const container = containerRef.current;
         let frame = requestAnimationFrame(() => {
-            setPalette(readBracketPalette());
+            setPalette(readBracketPalette(container));
         });
 
         const handleThemeChange = () => {
             cancelAnimationFrame(frame);
             frame = requestAnimationFrame(() => {
-                setPalette(readBracketPalette());
+                setPalette(readBracketPalette(container));
             });
         };
 
         const observer = new MutationObserver(handleThemeChange);
-        observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
-        if (body) {
-            observer.observe(body, { attributes: true, attributeFilter: ["data-theme"] });
+        const themeRoot = container.closest("[data-theme]") ?? document.documentElement;
+        observer.observe(themeRoot, { attributes: true, attributeFilter: ["data-theme", "class"] });
+        if (themeRoot !== document.documentElement) {
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
+        }
+        if (document.body && themeRoot !== document.body) {
+            observer.observe(document.body, { attributes: true, attributeFilter: ["data-theme", "class"] });
         }
 
         return () => {
@@ -385,7 +387,7 @@ export function TournamentBracketAdmin({
                 <StyleSheetManager shouldForwardProp={shouldForwardProp}>
                     <DoubleEliminationBracket
                         matches={{ upper: safeUpperMatches, lower: safeLowerMatches }}
-                        matchComponent={Match}
+                        matchComponent={BracketMatchCard}
                         onMatchClick={onMatchClick}
                         svgWrapper={svgWrapper}
                         theme={bracketTheme}
@@ -399,7 +401,7 @@ export function TournamentBracketAdmin({
             <StyleSheetManager shouldForwardProp={shouldForwardProp}>
                 <SingleEliminationBracket
                     matches={safeSingleMatches}
-                    matchComponent={Match}
+                    matchComponent={BracketMatchCard}
                     onMatchClick={onMatchClick}
                     svgWrapper={svgWrapper}
                     theme={bracketTheme}

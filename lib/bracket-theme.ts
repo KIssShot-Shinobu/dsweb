@@ -20,13 +20,15 @@ const DEFAULT_PALETTE: BracketPalette = {
     er: "71% 0.194 13.428",
 };
 
-const readCssVar = (name: string, fallback: string) => {
+const readCssVar = (name: string, fallback: string, scope?: Element | null) => {
     if (typeof window === "undefined") return fallback;
-    const rootValue = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    if (rootValue) return rootValue;
-    if (document.body) {
-        const bodyValue = getComputedStyle(document.body).getPropertyValue(name).trim();
-        if (bodyValue) return bodyValue;
+    const targets: Element[] = [];
+    if (scope) targets.push(scope);
+    targets.push(document.documentElement);
+    if (document.body) targets.push(document.body);
+    for (const target of targets) {
+        const value = getComputedStyle(target).getPropertyValue(name).trim();
+        if (value) return value;
     }
     return fallback;
 };
@@ -65,20 +67,20 @@ const applyAlpha = (value: string, alpha?: number) => {
     return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha})`;
 };
 
-export function readBracketPalette(): BracketPalette {
+export function readBracketPalette(scope?: Element | null): BracketPalette {
     return {
-        b1: resolveColorValue(readCssVar("--color-base-100", DEFAULT_PALETTE.b1)),
-        b2: resolveColorValue(readCssVar("--color-base-200", DEFAULT_PALETTE.b2)),
-        b3: resolveColorValue(readCssVar("--color-base-300", DEFAULT_PALETTE.b3)),
-        bc: resolveColorValue(readCssVar("--color-base-content", DEFAULT_PALETTE.bc)),
-        p: resolveColorValue(readCssVar("--color-primary", DEFAULT_PALETTE.p)),
-        su: resolveColorValue(readCssVar("--color-success", DEFAULT_PALETTE.su)),
-        er: resolveColorValue(readCssVar("--color-error", DEFAULT_PALETTE.er)),
+        b1: resolveColorValue(readCssVar("--color-base-100", DEFAULT_PALETTE.b1, scope)),
+        b2: resolveColorValue(readCssVar("--color-base-200", DEFAULT_PALETTE.b2, scope)),
+        b3: resolveColorValue(readCssVar("--color-base-300", DEFAULT_PALETTE.b3, scope)),
+        bc: resolveColorValue(readCssVar("--color-base-content", DEFAULT_PALETTE.bc, scope)),
+        p: resolveColorValue(readCssVar("--color-primary", DEFAULT_PALETTE.p, scope)),
+        su: resolveColorValue(readCssVar("--color-success", DEFAULT_PALETTE.su, scope)),
+        er: resolveColorValue(readCssVar("--color-error", DEFAULT_PALETTE.er, scope)),
     };
 }
 
 export function buildBracketTheme(palette: BracketPalette) {
-    const mediumBorder = applyAlpha(palette.bc, 0.6);
+    const mediumBorder = applyAlpha(palette.bc, 0.5);
     const subtleText = applyAlpha(palette.bc, 0.7);
     const disabledText = applyAlpha(palette.bc, 0.45);
     return createTheme({
@@ -90,8 +92,8 @@ export function buildBracketTheme(palette: BracketPalette) {
             disabled: disabledText,
         },
         matchBackground: {
-            wonColor: applyAlpha(palette.su, 0.18),
-            lostColor: applyAlpha(palette.b2, 0.95),
+            wonColor: applyAlpha(palette.su, 0.16),
+            lostColor: applyAlpha(palette.b2, 0.85),
         },
         border: {
             color: mediumBorder,
@@ -103,8 +105,8 @@ export function buildBracketTheme(palette: BracketPalette) {
                 highlightedLostColor: palette.er,
             },
             background: {
-                wonColor: applyAlpha(palette.su, 0.22),
-                lostColor: applyAlpha(palette.b3, 0.55),
+                wonColor: applyAlpha(palette.su, 0.2),
+                lostColor: applyAlpha(palette.b3, 0.45),
             },
         },
         canvasBackground: palette.b1,
@@ -114,9 +116,9 @@ export function buildBracketTheme(palette: BracketPalette) {
 export function buildBracketOptions(palette: BracketPalette) {
     return {
         style: {
-            boxHeight: 84,
+            boxHeight: 96,
             canvasPadding: 28,
-            spaceBetweenRows: 24,
+            spaceBetweenRows: 26,
             spaceBetweenColumns: 42,
             roundHeader: {
                 isShown: true,
@@ -124,10 +126,10 @@ export function buildBracketOptions(palette: BracketPalette) {
                 marginBottom: 10,
                 fontSize: 12,
                 fontColor: palette.bc,
-                backgroundColor: applyAlpha(palette.b3, 0.9),
+                backgroundColor: applyAlpha(palette.b2, 0.92),
                 fontFamily: "inherit",
             },
-            connectorColor: applyAlpha(palette.bc, 0.35),
+            connectorColor: applyAlpha(palette.bc, 0.3),
             connectorColorHighlight: palette.p,
         },
     };
@@ -135,9 +137,9 @@ export function buildBracketOptions(palette: BracketPalette) {
 
 export function buildBracketViewerColors(palette: BracketPalette) {
     return {
-        background: palette.b2,
+        background: applyAlpha(palette.b2, 0.9),
         svgBackground: palette.b1,
-        miniatureBackground: palette.b2,
+        miniatureBackground: applyAlpha(palette.b2, 0.9),
         miniatureSvgBackground: palette.b1,
     };
 }
