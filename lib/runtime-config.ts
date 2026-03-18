@@ -92,3 +92,8 @@ export function getRateLimitMatchReport() {
 
     return { max, windowSeconds };
 }
+
+export function getCronSecret() {
+    const secret = process.env.CRON_SECRET?.trim();
+    return secret || null;
+}

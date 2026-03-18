@@ -7,6 +7,8 @@ import { FormSelect } from "@/components/dashboard/form-select";
 import { DashboardEmptyState, DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
+import { DateTimePickerInput } from "@/components/ui/date-time-picker";
+import { parseLocalDateTime } from "@/lib/datetime";
 
 type MatchRow = {
     id: string;
@@ -14,6 +16,7 @@ type MatchRow = {
     status: string;
     scoreA: number | null;
     scoreB: number | null;
+    scheduledAt?: string | null;
     round: { roundNumber: number; type: string };
     playerA: { id: string; guestName: string | null; user: { id: string; fullName: string | null; username: string | null } | null } | null;
     playerB: { id: string; guestName: string | null; user: { id: string; fullName: string | null; username: string | null } | null } | null;
@@ -51,6 +54,9 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
     const [scoreA, setScoreA] = useState(0);
     const [scoreB, setScoreB] = useState(0);
     const [winnerId, setWinnerId] = useState("");
+    const [scheduleMatch, setScheduleMatch] = useState<MatchRow | null>(null);
+    const [scheduleValue, setScheduleValue] = useState("");
+    const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
 
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
     const resolveParticipantName = (participant?: MatchRow["playerA"]) => {
@@ -90,6 +96,11 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
         setScoreA(match.scoreA ?? 0);
         setScoreB(match.scoreB ?? 0);
         setWinnerId(match.winner?.id ?? "");
+    };
+
+    const openScheduleModal = (match: MatchRow) => {
+        setScheduleMatch(match);
+        setScheduleValue(match.scheduledAt ?? "");
     };
 
     const canAutoPickWinner = Boolean(activeMatch?.playerA && activeMatch?.playerB);
@@ -137,6 +148,43 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
         }
     };
 
+    const handleScheduleSubmit = async (nextValue: string | null) => {
+        if (!scheduleMatch) return;
+        setScheduleSubmitting(true);
+        try {
+            const res = await fetch(`/api/matches/${scheduleMatch.id}/schedule`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ scheduledAt: nextValue ?? "" }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                success(data?.message || "Jadwal match diperbarui.");
+                setScheduleMatch(null);
+                fetchMatches();
+            } else {
+                error(data?.message || "Gagal mengubah jadwal match.");
+            }
+        } catch {
+            error("Kesalahan jaringan.");
+        } finally {
+            setScheduleSubmitting(false);
+        }
+    };
+
+    const formatSchedule = (value?: string | null) => {
+        if (!value) return "-";
+        const date = parseLocalDateTime(value);
+        if (!date) return value;
+        return new Intl.DateTimeFormat("id-ID", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        }).format(date);
+    };
+
     return (
         <DashboardPageShell>
             <div className="space-y-6">
@@ -177,6 +225,7 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                         <th>Round</th>
                                         <th>Player 1</th>
                                         <th>Player 2</th>
+                                        <th>Jadwal</th>
                                         <th>Score</th>
                                         <th>Status</th>
                                         <th></th>
@@ -188,6 +237,7 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                             <td className="text-sm text-base-content/70">R{match.round.roundNumber}</td>
                                             <td className="text-sm font-semibold text-base-content">{resolveParticipantName(match.playerA)}</td>
                                             <td className="text-sm font-semibold text-base-content">{resolveParticipantName(match.playerB)}</td>
+                                            <td className="text-sm text-base-content/70">{formatSchedule(match.scheduledAt)}</td>
                                             <td className="text-sm text-base-content/70">
                                                 {match.scoreA ?? 0} - {match.scoreB ?? 0}
                                             </td>
@@ -195,9 +245,14 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                                 <span className="badge badge-outline">{match.status}</span>
                                             </td>
                                             <td className="text-right">
-                                                <button className={`${btnOutline} btn-xs`} onClick={() => openMatchModal(match)}>
-                                                    Edit Result
-                                                </button>
+                                                <div className="flex flex-wrap justify-end gap-2">
+                                                    <button className={`${btnOutline} btn-xs`} onClick={() => openScheduleModal(match)}>
+                                                        Schedule
+                                                    </button>
+                                                    <button className={`${btnOutline} btn-xs`} onClick={() => openMatchModal(match)}>
+                                                        Edit Result
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -257,6 +312,38 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                             </button>
                             <button className={btnPrimary} type="button" onClick={handleResolve}>
                                 Simpan
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
+            </Modal>
+
+            <Modal open={Boolean(scheduleMatch)} onClose={() => setScheduleMatch(null)} title="Jadwalkan Match">
+                {scheduleMatch ? (
+                    <div className="space-y-4">
+                        <div>
+                            <label className={labelCls}>Tanggal & Waktu</label>
+                            <DateTimePickerInput value={scheduleValue} onChange={setScheduleValue} />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <button className={btnOutline} type="button" onClick={() => setScheduleMatch(null)}>
+                                Batal
+                            </button>
+                            <button
+                                className={btnOutline}
+                                type="button"
+                                onClick={() => handleScheduleSubmit(null)}
+                                disabled={scheduleSubmitting}
+                            >
+                                Hapus Jadwal
+                            </button>
+                            <button
+                                className={btnPrimary}
+                                type="button"
+                                onClick={() => handleScheduleSubmit(scheduleValue)}
+                                disabled={scheduleSubmitting}
+                            >
+                                {scheduleSubmitting ? "Menyimpan..." : "Simpan"}
                             </button>
                         </div>
                     </div>

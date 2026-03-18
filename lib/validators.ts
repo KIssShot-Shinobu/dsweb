@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { formatGameId, isFormattedGameId, normalizeGameIdDigits } from "@/lib/game-id";
+import { parseLocalDateTime } from "@/lib/datetime";
 
 const IGN_REGEX = /^[A-Za-z0-9 _.\-\[\]()]{2,32}$/;
 const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
@@ -413,10 +414,20 @@ export const matchDisputeResolveSchema = matchReportSchema.extend({
     reason: z.string().trim().max(500, "Alasan terlalu panjang").optional().or(z.literal("")),
 });
 
+const matchScheduleAtSchema = z
+    .string()
+    .trim()
+    .refine((value) => value === "" || parseLocalDateTime(value) !== null, "Tanggal tidak valid");
+
+export const matchScheduleSchema = z.object({
+    scheduledAt: z.union([matchScheduleAtSchema, z.null()]),
+});
+
 export type MatchReportInput = z.infer<typeof matchReportSchema>;
 export type MatchDisputeInput = z.infer<typeof matchDisputeSchema>;
 export type MatchAdminResolveInput = z.infer<typeof matchAdminResolveSchema>;
 export type MatchDisputeResolveInput = z.infer<typeof matchDisputeResolveSchema>;
+export type MatchScheduleInput = z.infer<typeof matchScheduleSchema>;
 
 
 

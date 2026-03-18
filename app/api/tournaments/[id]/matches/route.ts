@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { tournamentMatchesQuerySchema } from "@/lib/validators";
 import { canRefereeTournament } from "@/lib/tournament-staff";
+import { formatLocalDateTime } from "@/lib/datetime";
 
 const DEFAULT_LIMIT = 20;
 
@@ -93,7 +94,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             prisma.match.count({ where }),
         ]);
 
-        return NextResponse.json({ success: true, matches, total, page, limit });
+        const normalizedMatches = matches.map((match) => ({
+            ...match,
+            scheduledAt: match.scheduledAt ? formatLocalDateTime(match.scheduledAt) : null,
+        }));
+
+        return NextResponse.json({ success: true, matches: normalizedMatches, total, page, limit });
     } catch (error) {
         console.error("[Tournament Matches]", error);
         return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });

@@ -47,6 +47,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Audit log aktivitas user/admin.
 - Notification system in-app dengan realtime SSE untuk invite, join request, dan alert penting.
 - Penugasan referee per tournament + dispute queue agar sengketa match bisa diselesaikan lebih cepat (referee dapat confirm result & resolve dispute tanpa override skor).
+- Penjadwalan match + reminder otomatis 30 menit sebelum match dimulai (notifikasi in-app).
 - Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
 - Native form controls (`select`, `date`, `datetime-local`) sudah di-hardening agar teks dropdown tetap terbaca di light/dark.
 - Password reset flow berbasis token dengan expiry 15 menit.
@@ -131,6 +132,7 @@ Variabel penting:
 - `REGION_CACHE_DIR`: lokasi cache lokal dataset wilayah Indonesia (default `./data/regions-cache`).
 - `REGION_CACHE_TTL_HOURS`: TTL cache wilayah lokal dalam jam (default 720 / 30 hari).
 - `EMSIFA_API_BASE_URL`: base URL dataset wilayah Indonesia Emsifa.
+- `CRON_SECRET`: secret untuk endpoint cron internal (contoh: `x-cron-secret`).
 - `RATE_LIMIT_ENABLED`: aktif/nonaktif rate limit API (default `true`).
 - `RATE_LIMIT_TOURNAMENT_REGISTER_MAX`: batas request register turnamen per window (default `5`).
 - `RATE_LIMIT_TOURNAMENT_REGISTER_WINDOW_SECONDS`: window rate limit register turnamen dalam detik (default `600`).
@@ -289,8 +291,10 @@ Auth:
   - `GET /api/tournaments/:id/matches`
   - `POST /api/matches/:id/report` (rate limit per user)
   - `POST /api/matches/:id/confirm`
+  - `POST /api/matches/:id/schedule`
   - `POST /api/matches/:id/resolve-dispute`
   - `POST /api/matches/:id/admin-resolve`
+  - `POST /api/cron/match-reminders` (scheduler)
 
 Lainnya:
 
@@ -465,6 +469,8 @@ cmd /c npm run dev
   - `prisma/migrations_manual/20260317_tournament_staff.rollback.sql`
   - `prisma/migrations_manual/20260318_tournament_waitlist.sql`
   - `prisma/migrations_manual/20260318_tournament_waitlist.rollback.sql`
+  - `prisma/migrations_manual/20260318_match_reminder_sent_at.sql`
+  - `prisma/migrations_manual/20260318_match_reminder_sent_at.rollback.sql`
 
 ## Aturan Update Dokumentasi
 

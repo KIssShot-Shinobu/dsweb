@@ -1,0 +1,2 @@
+ALTER TABLE `Match`
+  ADD COLUMN `reminderSentAt` DATETIME(3) NULL;

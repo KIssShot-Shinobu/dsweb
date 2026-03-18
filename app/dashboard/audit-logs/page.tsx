@@ -65,6 +65,8 @@ const ACTION_OPTIONS = [
     { value: "MATCH_CONFIRMED_BY_REFEREE", label: "Match Dikonfirmasi Referee" },
     { value: "MATCH_ADMIN_RESOLVED", label: "Match Diresolve Admin" },
     { value: "MATCH_DISPUTE_RESOLVED", label: "Sengketa Match Diselesaikan" },
+    { value: "MATCH_SCHEDULED", label: "Match Dijadwalkan" },
+    { value: "MATCH_RESCHEDULED", label: "Jadwal Match Diubah" },
     { value: "RATE_LIMIT_HIT", label: "Rate Limit" },
     { value: "ROLE_CHANGED", label: "Perubahan Role" },
     { value: "TREASURY_ADDED", label: "Treasury Ditambah" },

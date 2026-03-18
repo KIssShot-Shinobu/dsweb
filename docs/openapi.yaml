@@ -873,3 +873,51 @@ paths:
           description: Unauthorized
         "403":
           description: Forbidden
+  /api/matches/{id}/schedule:
+    post:
+      summary: Schedule or reschedule a match
+      security:
+        - authjsSessionCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scheduledAt
+              properties:
+                scheduledAt:
+                  type:
+                    - string
+                    - "null"
+                  description: Local datetime string (YYYY-MM-DDTHH:mm) or null to clear
+      responses:
+        "200":
+          description: Schedule updated
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+  /api/cron/match-reminders:
+    post:
+      summary: Cron endpoint to send match reminders
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reminder processed
+        "401":
+          description: Unauthorized

@@ -660,6 +660,7 @@ model Match {
   loserNextMatchSide MatchPlayerSide?
 
   scheduledAt  DateTime?
+  reminderSentAt DateTime?
   startedAt    DateTime?
   completedAt  DateTime?
   matchVersion Int       @default(1)
