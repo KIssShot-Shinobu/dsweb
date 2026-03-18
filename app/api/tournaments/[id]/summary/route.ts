@@ -28,7 +28,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                     checkInAt: true,
                 },
             }),
-            prisma.tournamentParticipant.count({ where: { tournamentId: id } }),
+            prisma.tournamentParticipant.count({
+                where: { tournamentId: id, status: { in: ["REGISTERED", "CHECKED_IN", "PLAYING"] } },
+            }),
             prisma.tournamentParticipant.count({ where: { tournamentId: id, checkedInAt: { not: null } } }),
             prisma.match.count({ where: { tournamentId: id, status: "COMPLETED" } }),
             prisma.match.count({ where: { tournamentId: id, status: { not: "COMPLETED" } } }),

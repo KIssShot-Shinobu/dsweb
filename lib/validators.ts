@@ -22,6 +22,7 @@ export const TOURNAMENT_STATUS_VALUES = ["OPEN", "ONGOING", "COMPLETED", "CANCEL
 export const TOURNAMENT_STRUCTURE_VALUES = ["SINGLE_ELIM", "DOUBLE_ELIM", "SWISS"] as const;
 export const TOURNAMENT_FORMAT_VALUES = ["BO1", "BO3", "BO5"] as const;
 export const TOURNAMENT_MODE_VALUES = ["INDIVIDUAL", "TEAM_BOARD", "TEAM_KOTH"] as const;
+export const TOURNAMENT_STAFF_ROLE_VALUES = ["REFEREE", "STAFF"] as const;
 export const TOURNAMENT_MAX_PLAYERS_VALUES = [8, 16, 32, 64, 128, 256] as const;
 export const TOURNAMENT_PAYMENT_STATUS_VALUES = ["PENDING", "VERIFIED", "REJECTED"] as const;
 export const MATCH_STATUS_VALUES = ["PENDING", "READY", "ONGOING", "RESULT_SUBMITTED", "CONFIRMED", "DISPUTED", "COMPLETED"] as const;
@@ -254,6 +255,11 @@ export const teamDeleteSchema = z.object({
     teamId: z.string().cuid("Team ID tidak valid"),
 });
 
+export const tournamentStaffAssignSchema = z.object({
+    userId: z.string().cuid("User ID tidak valid"),
+    role: z.enum(TOURNAMENT_STAFF_ROLE_VALUES).optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
@@ -277,6 +283,7 @@ export type TeamMemberPromoteInput = z.infer<typeof teamMemberPromoteSchema>;
 export type TeamTransferCaptainInput = z.infer<typeof teamTransferCaptainSchema>;
 export type TeamLeaveInput = z.infer<typeof teamLeaveSchema>;
 export type TeamDeleteInput = z.infer<typeof teamDeleteSchema>;
+export type TournamentStaffAssignInput = z.infer<typeof tournamentStaffAssignSchema>;
 export type NotificationQueryInput = z.infer<typeof notificationQuerySchema>;
 export type NotificationReadInput = z.infer<typeof notificationReadSchema>;
 export type TournamentParticipantAddInput = z.infer<typeof tournamentParticipantAddSchema>;
@@ -402,9 +409,14 @@ export const matchAdminResolveSchema = matchReportSchema.extend({
     reason: z.string().trim().max(500, "Alasan terlalu panjang").optional().or(z.literal("")),
 });
 
+export const matchDisputeResolveSchema = matchReportSchema.extend({
+    reason: z.string().trim().max(500, "Alasan terlalu panjang").optional().or(z.literal("")),
+});
+
 export type MatchReportInput = z.infer<typeof matchReportSchema>;
 export type MatchDisputeInput = z.infer<typeof matchDisputeSchema>;
 export type MatchAdminResolveInput = z.infer<typeof matchAdminResolveSchema>;
+export type MatchDisputeResolveInput = z.infer<typeof matchDisputeResolveSchema>;
 
 
 

@@ -11,6 +11,7 @@ export function TournamentRegisterButton({
     isFull = false,
     entryFee = 0,
     paymentStatus = null,
+    participantStatus = null,
 }: {
     tournamentId: string;
     disabled: boolean;
@@ -18,12 +19,14 @@ export function TournamentRegisterButton({
     isFull?: boolean;
     entryFee?: number;
     paymentStatus?: "PENDING" | "VERIFIED" | "REJECTED" | null;
+    participantStatus?: "REGISTERED" | "CHECKED_IN" | "DISQUALIFIED" | "PLAYING" | "WAITLIST" | null;
 }) {
     const router = useRouter();
     const { success, error: toastError } = useToast();
     const [submitting, setSubmitting] = useState(false);
     const [registered, setRegistered] = useState(isRegistered);
     const [localPaymentStatus, setLocalPaymentStatus] = useState<"PENDING" | "VERIFIED" | "REJECTED" | null>(paymentStatus);
+    const [localStatus, setLocalStatus] = useState(participantStatus);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [paymentProofUrl, setPaymentProofUrl] = useState<string | null>(null);
@@ -35,6 +38,10 @@ export function TournamentRegisterButton({
     useEffect(() => {
         setLocalPaymentStatus(paymentStatus);
     }, [paymentStatus]);
+
+    useEffect(() => {
+        setLocalStatus(participantStatus);
+    }, [participantStatus]);
 
     const handleRegister = async () => {
         setSubmitting(true);
@@ -49,7 +56,14 @@ export function TournamentRegisterButton({
 
             success(result.message || "Pendaftaran Anda berhasil dikonfirmasi.");
             setRegistered(true);
-            setLocalPaymentStatus("VERIFIED");
+            if (result?.participant?.paymentStatus) {
+                setLocalPaymentStatus(result.participant.paymentStatus);
+            } else {
+                setLocalPaymentStatus("VERIFIED");
+            }
+            if (result?.participant?.status) {
+                setLocalStatus(result.participant.status);
+            }
             router.refresh();
         } catch (error) {
             error instanceof Error ? toastError(error.message) : toastError("Pendaftaran turnamen belum dapat diproses.");
@@ -97,7 +111,14 @@ export function TournamentRegisterButton({
 
             success(result.message || "Bukti pembayaran dikirim. Menunggu verifikasi.");
             setRegistered(true);
-            setLocalPaymentStatus("PENDING");
+            if (result?.participant?.paymentStatus) {
+                setLocalPaymentStatus(result.participant.paymentStatus);
+            } else {
+                setLocalPaymentStatus("PENDING");
+            }
+            if (result?.participant?.status) {
+                setLocalStatus(result.participant.status);
+            }
             setShowPaymentModal(false);
             router.refresh();
         } catch (error) {
@@ -108,11 +129,11 @@ export function TournamentRegisterButton({
     };
 
     const isPaidTournament = entryFee > 0;
+    const isWaitlisted = localStatus === "WAITLIST";
     const isPending = registered && localPaymentStatus === "PENDING";
     const isRejected = registered && localPaymentStatus === "REJECTED";
     const isVerified = registered && localPaymentStatus === "VERIFIED";
-    const registerDisabled =
-        submitting || (disabled && !(isPaidTournament && isRejected && isFull));
+    const registerDisabled = submitting || disabled;
     const closePaymentModal = () => {
         setShowPaymentModal(false);
         setPaymentProofUrl(null);
@@ -120,7 +141,11 @@ export function TournamentRegisterButton({
 
     return (
         <div className="space-y-3">
-            {isVerified ? (
+            {isWaitlisted ? (
+                <div className="badge badge-warning h-auto px-4 py-2 text-xs font-bold uppercase tracking-[0.2em]">
+                    Waitlist
+                </div>
+            ) : isVerified ? (
                 <div className="badge badge-success h-auto px-4 py-2 text-xs font-bold uppercase tracking-[0.2em]">
                     Registered
                 </div>
@@ -144,7 +169,7 @@ export function TournamentRegisterButton({
                     {submitting
                         ? "Memproses pendaftaran..."
                         : isFull
-                          ? "Slot peserta penuh"
+                          ? "Masuk Waitlist"
                           : disabled
                             ? "Pendaftaran belum tersedia"
                             : isRejected

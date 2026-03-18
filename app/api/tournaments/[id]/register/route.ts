@@ -45,9 +45,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             where: { id: tournamentId },
             include: {
                 game: { select: { id: true, code: true, name: true } },
-                _count: {
-                    select: { participants: true },
-                },
             },
         });
 
@@ -80,6 +77,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const requiresPayment = tournament.entryFee > 0;
 
         const isTeamTournament = tournament.isTeamTournament || tournament.mode !== "INDIVIDUAL";
+        const activeCount = await prisma.tournamentParticipant.count({
+            where: {
+                tournamentId,
+                status: { in: ["REGISTERED", "CHECKED_IN", "PLAYING"] },
+            },
+        });
+        const isFull = Boolean(tournament.maxPlayers && activeCount >= tournament.maxPlayers);
+
         if (isTeamTournament) {
             const allowedRoles = ["CAPTAIN", "VICE_CAPTAIN", "MANAGER"];
             if (!currentUser.teamId || !currentUser.teamMembershipRole || !allowedRoles.includes(currentUser.teamMembershipRole)) {
@@ -122,15 +127,49 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                         return NextResponse.json({ success: true, participant: existingTeam, message: "Pendaftaran menunggu verifikasi admin." }, { status: 200 });
                     }
                 }
+                if (existingTeam.status === "WAITLIST") {
+                    return NextResponse.json({ success: true, participant: existingTeam, message: "Team sudah berada di waitlist turnamen ini" }, { status: 200 });
+                }
                 return NextResponse.json({ success: true, participant: existingTeam, message: "Team sudah terdaftar di turnamen ini" }, { status: 200 });
-            }
-
-            if (tournament.maxPlayers && tournament._count.participants >= tournament.maxPlayers) {
-                return NextResponse.json({ success: false, message: "Slot peserta sudah penuh" }, { status: 409 });
             }
 
             if (requiresPayment && !paymentProofUrl) {
                 return NextResponse.json({ success: false, message: "Bukti pembayaran wajib diunggah." }, { status: 400 });
+            }
+
+            if (isFull) {
+                const waitlisted = await prisma.tournamentParticipant.create({
+                    data: {
+                        tournamentId,
+                        teamId: team.id,
+                        guestName: team.name,
+                        gameId: team.name,
+                        status: "WAITLIST",
+                        paymentStatus: requiresPayment ? "PENDING" : "VERIFIED",
+                        ...(paymentProofUrl ? { paymentProofUrl } : {}),
+                    },
+                });
+
+                await logAudit({
+                    userId,
+                    action: AUDIT_ACTIONS.TOURNAMENT_WAITLISTED,
+                    targetId: tournamentId,
+                    targetType: "Tournament",
+                    details: {
+                        teamId: team.id,
+                        teamName: team.name,
+                        tournamentTitle: tournament.title,
+                    },
+                });
+
+                return NextResponse.json(
+                    {
+                        success: true,
+                        participant: waitlisted,
+                        message: "Slot penuh. Team masuk waitlist dan akan dipromosikan jika ada slot kosong.",
+                    },
+                    { status: 201 }
+                );
             }
 
             const participant = await prisma.tournamentParticipant.create({
@@ -200,11 +239,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                     return NextResponse.json({ success: true, participant: existingParticipant, message: "Pendaftaran menunggu verifikasi admin." }, { status: 200 });
                 }
             }
+            if (existingParticipant.status === "WAITLIST") {
+                return NextResponse.json({ success: true, participant: existingParticipant, message: "Anda sudah berada di waitlist turnamen ini" }, { status: 200 });
+            }
             return NextResponse.json({ success: true, participant: existingParticipant, message: "Anda sudah terdaftar di turnamen ini" }, { status: 200 });
-        }
-
-        if (tournament.maxPlayers && tournament._count.participants >= tournament.maxPlayers) {
-            return NextResponse.json({ success: false, message: "Slot peserta sudah penuh" }, { status: 409 });
         }
 
         // Get Game Profile specific to tournament format to snapshot IGN
@@ -222,6 +260,40 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         if (requiresPayment && !paymentProofUrl) {
             return NextResponse.json({ success: false, message: "Bukti pembayaran wajib diunggah." }, { status: 400 });
+        }
+
+        if (isFull) {
+            const waitlisted = await prisma.tournamentParticipant.create({
+                data: {
+                    tournamentId,
+                    userId,
+                    gameId: gameProfile.ign,
+                    status: "WAITLIST",
+                    paymentStatus: requiresPayment ? "PENDING" : "VERIFIED",
+                    ...(paymentProofUrl ? { paymentProofUrl } : {}),
+                }
+            });
+
+            await logAudit({
+                userId,
+                action: AUDIT_ACTIONS.TOURNAMENT_WAITLISTED,
+                targetId: tournamentId,
+                targetType: "Tournament",
+                details: {
+                    ign: gameProfile.ign,
+                    gameCode: tournament.game?.code ?? "",
+                    tournamentTitle: tournament.title,
+                },
+            });
+
+            return NextResponse.json(
+                {
+                    success: true,
+                    participant: waitlisted,
+                    message: "Slot penuh. Anda masuk waitlist dan akan dipromosikan jika ada slot kosong.",
+                },
+                { status: 201 }
+            );
         }
 
         const participant = await prisma.tournamentParticipant.create({

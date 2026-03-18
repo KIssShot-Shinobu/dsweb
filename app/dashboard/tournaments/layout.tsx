@@ -1,6 +1,7 @@
-﻿import { requireDashboardRole } from "@/lib/dashboard-auth";
+import { requireDashboardUser } from "@/lib/dashboard-auth";
 
 export default async function TournamentsLayout({ children }: { children: React.ReactNode }) {
-    await requireDashboardRole("ADMIN");
+    await requireDashboardUser();
     return children;
 }
+

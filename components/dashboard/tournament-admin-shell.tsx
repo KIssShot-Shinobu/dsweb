@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { LayoutDashboard, ScrollText, Settings, Shield, Trophy, UserCheck, X } from "lucide-react";
+import { LayoutDashboard, ScrollText, Settings, Shield, Trophy, UserCheck, X, Gavel, Users } from "lucide-react";
 import { btnOutline } from "@/components/dashboard/form-styles";
 
 type TournamentShellProps = {
     tournamentId: string;
+    canManage: boolean;
+    canReferee: boolean;
     children: ReactNode;
 };
 
@@ -16,26 +18,32 @@ const NAV_ITEMS = [
     { label: "Participants", href: "/participants", icon: UserCheck },
     { label: "Bracket", href: "/bracket", icon: Trophy },
     { label: "Matches", href: "/matches", icon: ScrollText },
+    { label: "Disputes", href: "/disputes", icon: Gavel, access: "referee" },
     { label: "Check-In", href: "/check-in", icon: Shield },
     { label: "Announcements", href: "/announcements", icon: ScrollText },
+    { label: "Referees", href: "/referees", icon: Users, access: "manage" },
     { label: "Settings", href: "/settings", icon: Settings },
     { label: "Publish", href: "/publish", icon: Trophy },
 ] as const;
 
-export function TournamentAdminShell({ tournamentId, children }: TournamentShellProps) {
+export function TournamentAdminShell({ tournamentId, canManage, canReferee, children }: TournamentShellProps) {
     const pathname = usePathname();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [tournamentTitle, setTournamentTitle] = useState("");
     const [tournamentMeta, setTournamentMeta] = useState("");
 
-    const navLinks = useMemo(
-        () =>
-            NAV_ITEMS.map((item) => ({
-                ...item,
-                href: `/dashboard/tournaments/${tournamentId}${item.href}`,
-            })),
-        [tournamentId]
-    );
+    const navLinks = useMemo(() => {
+        const links = NAV_ITEMS.filter((item) => {
+            if (item.access === "manage") return canManage;
+            if (item.access === "referee") return canManage || canReferee;
+            return canManage;
+        }).map((item) => ({
+            ...item,
+            href: `/dashboard/tournaments/${tournamentId}${item.href}`,
+        }));
+
+        return links;
+    }, [canManage, canReferee, tournamentId]);
 
     useEffect(() => {
         let active = true;

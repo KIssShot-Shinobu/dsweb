@@ -88,6 +88,11 @@ enum TeamInviteStatus {
   DECLINED
 }
 
+enum TournamentStaffRole {
+  REFEREE
+  STAFF
+}
+
 enum TeamJoinRequestStatus {
   PENDING
   ACCEPTED
@@ -143,6 +148,7 @@ enum TournamentParticipantStatus {
   CHECKED_IN
   DISQUALIFIED
   PLAYING
+  WAITLIST
 }
 
 enum TournamentPaymentStatus {
@@ -200,6 +206,7 @@ model Tournament {
   matches       Match[]
   bracketNodes  BracketNode[]
   announcements TournamentAnnouncement[]
+  staffAssignments TournamentStaff[]
 
   @@index([createdById])
   @@index([gameId])
@@ -325,6 +332,7 @@ model User {
   auditLogs                    AuditLog[]
   tournaments                  TournamentParticipant[]
   createdTournaments           Tournament[]             @relation("TournamentCreator")
+  tournamentStaffAssignments   TournamentStaff[]
   matchReports                 MatchReport[]
   matchResultsConfirmed        MatchResult[]            @relation("MatchResultConfirmedBy")
   matchDisputesRaised          MatchDispute[]           @relation("MatchDisputeRaisedBy")
@@ -341,6 +349,20 @@ model User {
   @@index([role])
   @@index([lastActiveAt])
   @@index([createdAt])
+}
+
+model TournamentStaff {
+  id           String              @id @default(cuid())
+  tournamentId String
+  tournament   Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         TournamentStaffRole @default(REFEREE)
+  createdAt    DateTime            @default(now())
+
+  @@unique([tournamentId, userId])
+  @@index([tournamentId, role])
+  @@index([userId])
 }
 
 model Notification {

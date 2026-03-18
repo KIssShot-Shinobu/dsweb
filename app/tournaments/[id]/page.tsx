@@ -77,13 +77,15 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           )
         : null;
     const isRegistered = Boolean(participantForUser);
-    const participantCount = tournament.participants.length;
+    const activeParticipants = tournament.participants.filter((participant) => !["WAITLIST", "DISQUALIFIED"].includes(participant.status));
+    const participantCount = activeParticipants.length;
+    const waitlistCount = tournament.participants.filter((participant) => participant.status === "WAITLIST").length;
     const maxPlayers = tournament.maxPlayers ?? null;
     const isFull = Boolean(maxPlayers && participantCount >= maxPlayers);
     const rosterParticipants =
         tournament.entryFee > 0
-            ? tournament.participants.filter((participant) => participant.paymentStatus === "VERIFIED")
-            : tournament.participants;
+            ? tournament.participants.filter((participant) => participant.paymentStatus === "VERIFIED" && participant.status !== "WAITLIST")
+            : tournament.participants.filter((participant) => participant.status !== "WAITLIST");
     const paymentNotifications = currentUser
         ? await prisma.notification.findMany({
               where: {
@@ -191,6 +193,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                     <div className="text-sm font-semibold text-base-content">
                                         {maxPlayers ? `${participantCount} / ${maxPlayers}` : `${participantCount} pemain`}
                                     </div>
+                                    {waitlistCount > 0 ? (
+                                        <div className="mt-2 text-xs text-base-content/60">{waitlistCount} di waitlist</div>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>
@@ -206,11 +211,12 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                         </p>
                                         <TournamentRegisterButton
                                             tournamentId={tournament.id}
-                                            disabled={tournament.status !== "OPEN" || isFull}
+                                            disabled={tournament.status !== "OPEN"}
                                             isFull={isFull}
                                             isRegistered={isRegistered}
                                             entryFee={tournament.entryFee}
                                             paymentStatus={participantForUser?.paymentStatus ?? null}
+                                            participantStatus={participantForUser?.status ?? null}
                                         />
                                         {renderPaymentStatus()}
                                         {paymentNotifications.length > 0 ? (

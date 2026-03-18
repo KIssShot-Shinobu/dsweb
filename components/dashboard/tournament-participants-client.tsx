@@ -24,6 +24,7 @@ type ParticipantRow = {
     gameId: string;
     joinedAt: string;
     checkedInAt: string | null;
+    status: "REGISTERED" | "CHECKED_IN" | "DISQUALIFIED" | "PLAYING" | "WAITLIST";
     paymentStatus: "PENDING" | "VERIFIED" | "REJECTED";
     paymentProofUrl: string | null;
     paymentVerifiedAt: string | null;
@@ -322,7 +323,7 @@ export function TournamentParticipantsClient({
             const data = await res.json();
             if (res.ok) {
                 toastSyncInfo(
-                    `Bulk selesai. Added ${data.result.added}, skipped ${data.result.skipped}, failed ${data.result.failed.length}.`,
+                    `Bulk selesai. Added ${data.result.added}, waitlisted ${data.result.waitlisted ?? 0}, skipped ${data.result.skipped}, failed ${data.result.failed.length}.`,
                     data
                 );
                 setBulkText("");
@@ -490,6 +491,9 @@ export function TournamentParticipantsClient({
                                                                 <span className="badge badge-outline badge-xs">Guest</span>
                                                             ) : null}
                                                             {participant.team ? <span className="badge badge-outline badge-xs">Team</span> : null}
+                                                            {participant.status === "WAITLIST" ? (
+                                                                <span className="badge badge-warning badge-xs">Waitlist</span>
+                                                            ) : null}
                                                         </div>
                                                         <div className="text-xs text-base-content/50">
                                                             {participant.team
@@ -563,6 +567,7 @@ export function TournamentParticipantsClient({
                                                         type="button"
                                                         className="btn btn-outline btn-xs"
                                                         onClick={() => toggleCheckIn(participant)}
+                                                        disabled={participant.status === "WAITLIST"}
                                                     >
                                                         {participant.checkedInAt ? "Uncheck" : "Check-in"}
                                                     </button>

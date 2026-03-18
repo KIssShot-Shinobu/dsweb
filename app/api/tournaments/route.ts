@@ -60,8 +60,24 @@ export async function GET(request: NextRequest) {
             prisma.tournament.count({ where: { ...where, status: "CANCELLED" } }),
         ]);
 
+        const tournamentIds = tournaments.map((tournament) => tournament.id);
+        const activeCounts = tournamentIds.length
+            ? await prisma.tournamentParticipant.groupBy({
+                  by: ["tournamentId"],
+                  where: {
+                      tournamentId: { in: tournamentIds },
+                      status: { in: ["REGISTERED", "CHECKED_IN", "PLAYING"] },
+                  },
+                  _count: { _all: true },
+              })
+            : [];
+        const activeCountMap = new Map(activeCounts.map((entry) => [entry.tournamentId, entry._count._all]));
+
         const sanitizedTournaments = tournaments.map((tournament) => ({
             ...tournament,
+            _count: {
+                participants: activeCountMap.get(tournament.id) ?? 0,
+            },
             gameType: tournament.game?.code ?? "",
             gameName: tournament.game?.name ?? "",
             startAt: tournament.startAt.toISOString(),

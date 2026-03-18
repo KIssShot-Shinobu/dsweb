@@ -9,6 +9,7 @@ import { syncOrCreateTournamentBracket } from "@/lib/services/tournament-bracket
 
 type BulkResult = {
     added: number;
+    waitlisted: number;
     skipped: number;
     failed: Array<{ line: string; reason: string }>;
 };
@@ -73,11 +74,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         });
         const existingSet = new Set(existingGuests.map((item) => item.guestName?.toLowerCase() ?? ""));
         const seen = new Set<string>();
-        const toCreate: Array<{ tournamentId: string; guestName: string; gameId: string }> = [];
-        const result: BulkResult = { added: 0, skipped: 0, failed: [] };
+        const toCreate: Array<{ tournamentId: string; guestName: string; gameId: string; status: "REGISTERED" | "WAITLIST" }> = [];
+        const result: BulkResult = { added: 0, waitlisted: 0, skipped: 0, failed: [] };
+        const activeCount = await prisma.tournamentParticipant.count({
+            where: {
+                tournamentId: id,
+                status: { in: ["REGISTERED", "CHECKED_IN", "PLAYING"] },
+            },
+        });
         let remainingSlots =
             tournament.maxPlayers !== null && tournament.maxPlayers !== undefined
-                ? Math.max(0, tournament.maxPlayers - tournament._count.participants)
+                ? Math.max(0, tournament.maxPlayers - activeCount)
                 : Number.POSITIVE_INFINITY;
 
         for (const line of rows) {
@@ -93,11 +100,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 continue;
             }
 
-            if (remainingSlots <= 0) {
-                result.failed.push({ line, reason: "Slot peserta sudah penuh" });
-                continue;
-            }
-
             const validation = tournamentParticipantAddSchema.safeParse({
                 guestName: rawName,
                 gameId: rawGameId,
@@ -109,8 +111,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             }
 
             seen.add(normalizedName);
-            toCreate.push({ tournamentId: id, guestName: rawName, gameId: rawGameId });
-            remainingSlots = remainingSlots === Number.POSITIVE_INFINITY ? remainingSlots : remainingSlots - 1;
+            const status = remainingSlots > 0 ? "REGISTERED" : "WAITLIST";
+            toCreate.push({ tournamentId: id, guestName: rawName, gameId: rawGameId, status });
+            if (status === "REGISTERED") {
+                remainingSlots = remainingSlots === Number.POSITIVE_INFINITY ? remainingSlots : remainingSlots - 1;
+            }
         }
 
         if (toCreate.length > 0) {
@@ -126,16 +131,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             ? await prisma.tournamentParticipant.findMany({
                   where: {
                       tournamentId: id,
-                      guestName: { in: toCreate.map((item) => item.guestName) },
+                      guestName: { in: toCreate.filter((item) => item.status === "REGISTERED").map((item) => item.guestName) },
                   },
                   select: { id: true },
               })
             : [];
-        const syncResult = await syncOrCreateTournamentBracket(
-            prisma,
-            id,
-            syncedParticipants.map((participant) => participant.id)
-        );
+        const syncResult = syncedParticipants.length
+            ? await syncOrCreateTournamentBracket(
+                  prisma,
+                  id,
+                  syncedParticipants.map((participant) => participant.id)
+              )
+            : { created: false, syncedCount: 0, pendingCount: 0 };
+
+        result.waitlisted = toCreate.filter((item) => item.status === "WAITLIST").length;
 
         await logAudit({
             userId: currentUser.id,
@@ -144,6 +153,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             targetType: "Tournament",
             details: {
                 bulkAdded: result.added,
+                bulkWaitlisted: result.waitlisted,
                 bulkSkipped: result.skipped,
                 bulkFailed: result.failed.length,
                 tournamentTitle: tournament.title,

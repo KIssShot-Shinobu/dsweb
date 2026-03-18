@@ -157,8 +157,48 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 return NextResponse.json({ success: false, message: "User sudah terdaftar di turnamen ini" }, { status: 409 });
             }
 
-            if (tournament.maxPlayers && tournament._count.participants >= tournament.maxPlayers) {
-                return NextResponse.json({ success: false, message: "Slot peserta sudah penuh" }, { status: 409 });
+            const activeCount = await prisma.tournamentParticipant.count({
+                where: {
+                    tournamentId: id,
+                    status: { in: ["REGISTERED", "CHECKED_IN", "PLAYING"] },
+                },
+            });
+            const isFull = Boolean(tournament.maxPlayers && activeCount >= tournament.maxPlayers);
+
+            if (isFull) {
+                const participant = await prisma.tournamentParticipant.create({
+                    data: {
+                        tournamentId: id,
+                        userId,
+                        gameId,
+                        status: "WAITLIST",
+                    },
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                username: true,
+                                email: true,
+                                discordId: true,
+                                avatarUrl: true,
+                            },
+                        },
+                    },
+                });
+
+                await logAudit({
+                    userId: currentUser.id,
+                    action: AUDIT_ACTIONS.TOURNAMENT_WAITLISTED,
+                    targetId: id,
+                    targetType: "Tournament",
+                    details: { addedUserId: userId },
+                });
+
+                return NextResponse.json(
+                    { success: true, participant, message: "Slot penuh. Peserta masuk waitlist." },
+                    { status: 201 }
+                );
             }
 
             const participant = await prisma.tournamentParticipant.create({
@@ -203,15 +243,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             return NextResponse.json({ success: false, message: "Guest dengan nama yang sama sudah terdaftar" }, { status: 409 });
         }
 
-        if (tournament.maxPlayers && tournament._count.participants >= tournament.maxPlayers) {
-            return NextResponse.json({ success: false, message: "Slot peserta sudah penuh" }, { status: 409 });
-        }
+        const activeCount = await prisma.tournamentParticipant.count({
+            where: {
+                tournamentId: id,
+                status: { in: ["REGISTERED", "CHECKED_IN", "PLAYING"] },
+            },
+        });
+        const isFull = Boolean(tournament.maxPlayers && activeCount >= tournament.maxPlayers);
 
         const participant = await prisma.tournamentParticipant.create({
             data: {
                 tournamentId: id,
                 guestName,
                 gameId,
+                status: isFull ? "WAITLIST" : "REGISTERED",
             },
         });
 
@@ -223,9 +268,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             details: { guestName, tournamentTitle: tournament.title },
         });
 
-        const syncResult = await syncOrCreateTournamentBracket(prisma, id, [participant.id]);
+        const syncResult = isFull ? { created: false, syncedCount: 0, pendingCount: 0 } : await syncOrCreateTournamentBracket(prisma, id, [participant.id]);
 
-        return NextResponse.json({ success: true, participant, ...syncResult }, { status: 201 });
+        if (isFull) {
+            await logAudit({
+                userId: currentUser.id,
+                action: AUDIT_ACTIONS.TOURNAMENT_WAITLISTED,
+                targetId: id,
+                targetType: "Tournament",
+                details: { guestName, tournamentTitle: tournament.title },
+            });
+        }
+
+        return NextResponse.json(
+            {
+                success: true,
+                participant,
+                message: isFull ? "Slot penuh. Guest masuk waitlist." : undefined,
+                ...syncResult,
+            },
+            { status: 201 }
+        );
     } catch (error) {
         console.error("[Tournament Participants POST]", error);
         return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });

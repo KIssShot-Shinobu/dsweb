@@ -5,6 +5,7 @@ import { getServerCurrentUser } from "@/lib/server-current-user";
 import { logAudit } from "@/lib/audit-logger";
 import { tournamentParticipantUpdateSchema } from "@/lib/validators";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
+import { promoteWaitlistIfSlotAvailable } from "@/lib/services/tournament-waitlist.service";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string; participantId: string }> }) {
     try {
@@ -71,6 +72,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         }
 
         await prisma.tournamentParticipant.delete({ where: { id: participantId } });
+        const promotion = await promoteWaitlistIfSlotAvailable(prisma, id, { actorUserId: currentUser.id });
 
         await logAudit({
             userId: currentUser.id,
@@ -80,7 +82,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
             details: { tournamentId: id },
         });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, promotion });
     } catch (error) {
         console.error("[Tournament Participant Delete]", error);
         return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });

@@ -34,7 +34,9 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
         const participants = await prisma.tournamentParticipant.findMany({
             where: {
                 tournamentId: tournament.id,
-                ...(tournament.checkinRequired ? { status: "CHECKED_IN" } : {}),
+                ...(tournament.checkinRequired
+                    ? { status: "CHECKED_IN" }
+                    : { status: { in: ["REGISTERED", "CHECKED_IN", "PLAYING"] } }),
                 ...(tournament.entryFee > 0 ? { paymentStatus: "VERIFIED" } : {}),
             },
             select: { id: true },

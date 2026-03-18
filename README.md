@@ -23,6 +23,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Tournament sekarang punya `maxPlayers` untuk batas kapasitas (input angka bebas). Bracket otomatis menyesuaikan ke power‑of‑two terdekat. Registrasi publik/admin akan menolak jika slot penuh.
 - Tournament kini menyimpan `startAt` serta window pendaftaran (`registrationOpen`/`registrationClose`) dan toggle `checkinRequired` per event.
 - Untuk turnamen berbayar (entry fee > 0), registrasi wajib upload **bukti pembayaran**. Peserta masuk status **PENDING** sampai admin verifikasi (**VERIFIED/REJECTED**). Hanya peserta VERIFIED yang tampil di roster publik dan masuk bracket. Notifikasi + email dikirim saat verifikasi.
+- Waitlist otomatis saat slot penuh, dan auto-promote ketika ada slot kosong.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
 - Panel operasional disatukan ke halaman `/dashboard`, termasuk summary users, teams, tournament, treasury, dan quick actions.
 - Hapus tournament di dashboard memakai confirm modal + undo 5 detik.
@@ -45,6 +46,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Upload file gambar (screenshot/profile) via API. Dashboard kini hanya menampilkan avatar user aktif di header agar layout tidak boros.
 - Audit log aktivitas user/admin.
 - Notification system in-app dengan realtime SSE untuk invite, join request, dan alert penting.
+- Penugasan referee per tournament + dispute queue agar sengketa match bisa diselesaikan lebih cepat (referee dapat confirm result & resolve dispute tanpa override skor).
 - Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
 - Native form controls (`select`, `date`, `datetime-local`) sudah di-hardening agar teks dropdown tetap terbaca di light/dark.
 - Password reset flow berbasis token dengan expiry 15 menit.
@@ -279,8 +281,16 @@ Auth:
   - `GET /api/tournaments/:id/bracket` (public, tanpa login)
   - `PUT /api/tournaments/:id` (min role OFFICER, support update field tournament)
   - `DELETE /api/tournaments/:id` (min role OFFICER)
+  - `GET /api/tournaments/:id/staff`
+  - `POST /api/tournaments/:id/staff`
+  - `DELETE /api/tournaments/:id/staff/:staffId`
+  - `GET /api/tournaments/:id/staff/candidates`
   - `POST /api/tournaments/:id/register`
+  - `GET /api/tournaments/:id/matches`
   - `POST /api/matches/:id/report` (rate limit per user)
+  - `POST /api/matches/:id/confirm`
+  - `POST /api/matches/:id/resolve-dispute`
+  - `POST /api/matches/:id/admin-resolve`
 
 Lainnya:
 
@@ -324,6 +334,7 @@ Lainnya:
 - `USER/MEMBER`: profile dan menu personal.
 - `MEMBER+` dengan role team pengurus: akses `Team Saya` untuk mengelola roster/invite/role team.
 - `OFFICER`: fitur guild level menengah, termasuk melihat roster team, detail team, dan users.
+- `REFEREE (per tournament)`: akses Dispute Queue dan konfirmasi hasil match pada turnamen yang ditugaskan.
 - `ADMIN/FOUNDER`: akses penuh dashboard operasional (users, teams, tournaments, treasury, audit).
 
 Catatan: beberapa menu mengikuti pengecekan role di frontend dan backend; backend tetap sumber kebenaran.
@@ -450,6 +461,10 @@ cmd /c npm run dev
   - `prisma/migrations_manual/20260307_sensitive_user_fields.rollback.sql`
   - `prisma/migrations_manual/20260309_authjs_full_session_migration.sql`
   - `prisma/migrations_manual/20260309_authjs_full_session_migration.rollback.sql`
+  - `prisma/migrations_manual/20260317_tournament_staff.sql`
+  - `prisma/migrations_manual/20260317_tournament_staff.rollback.sql`
+  - `prisma/migrations_manual/20260318_tournament_waitlist.sql`
+  - `prisma/migrations_manual/20260318_tournament_waitlist.rollback.sql`
 
 ## Aturan Update Dokumentasi
 

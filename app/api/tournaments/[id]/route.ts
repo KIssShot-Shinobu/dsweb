@@ -118,7 +118,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         if (typeof updateData.maxPlayers === "number") {
             const participantCount = await prisma.tournamentParticipant.count({
-                where: { tournamentId: id },
+                where: {
+                    tournamentId: id,
+                    status: { in: ["REGISTERED", "CHECKED_IN", "PLAYING"] },
+                },
             });
             if (participantCount > updateData.maxPlayers) {
                 return NextResponse.json(

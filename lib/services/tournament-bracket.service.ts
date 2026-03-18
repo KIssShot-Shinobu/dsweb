@@ -791,7 +791,9 @@ export async function syncTournamentRosterToBracket(prisma: PrismaClient, tourna
         const participants = await tx.tournamentParticipant.findMany({
             where: {
                 tournamentId,
-                ...(tournament.checkinRequired ? { status: "CHECKED_IN" } : {}),
+                ...(tournament.checkinRequired
+                    ? { status: "CHECKED_IN" }
+                    : { status: { in: ["REGISTERED", "CHECKED_IN", "PLAYING"] } }),
                 ...(tournament.entryFee > 0 ? { paymentStatus: "VERIFIED" } : {}),
                 ...(participantIds?.length ? { id: { in: participantIds } } : {}),
             },
@@ -852,7 +854,9 @@ export async function syncOrCreateTournamentBracket(
         const participants = await prisma.tournamentParticipant.findMany({
             where: {
                 tournamentId,
-                ...(tournament.checkinRequired ? { status: "CHECKED_IN" } : {}),
+                ...(tournament.checkinRequired
+                    ? { status: "CHECKED_IN" }
+                    : { status: { in: ["REGISTERED", "CHECKED_IN", "PLAYING"] } }),
                 ...(tournament.entryFee > 0 ? { paymentStatus: "VERIFIED" } : {}),
             },
             select: { id: true },
