@@ -44,10 +44,11 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Treasury transaksi + analytics ringkas dengan filter server-side; halaman treasury sekarang default ke semua periode agar sinkron dengan total data dashboard.
 - Dashboard summary memakai endpoint terpusat `/api/dashboard/summary`, termasuk ringkasan guild members, assigned team, dan total team aktif.
 - Upload file gambar (screenshot/profile) via API. Dashboard kini hanya menampilkan avatar user aktif di header agar layout tidak boros.
-- Audit log aktivitas user/admin.
-- Notification system in-app dengan realtime SSE untuk invite, join request, dan alert penting.
-- Penugasan referee per tournament + dispute queue agar sengketa match bisa diselesaikan lebih cepat (referee dapat confirm result & resolve dispute tanpa override skor).
-- Penjadwalan match + reminder otomatis 30 menit sebelum match dimulai (notifikasi in-app).
+  - Audit log aktivitas user/admin.
+  - Notification system in-app dengan realtime SSE untuk invite, join request, dan alert penting.
+  - Penugasan referee per tournament + dispute queue agar sengketa match bisa diselesaikan lebih cepat (referee dapat confirm result & resolve dispute tanpa override skor).
+  - Diskualifikasi peserta dari dashboard dengan auto-advance match aktif + audit log.
+  - Penjadwalan match + reminder otomatis 30 menit sebelum match dimulai (notifikasi in-app).
 - Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
 - Native form controls (`select`, `date`, `datetime-local`) sudah di-hardening agar teks dropdown tetap terbaca di light/dark.
 - Password reset flow berbasis token dengan expiry 15 menit.
@@ -286,9 +287,10 @@ Auth:
   - `GET /api/tournaments/:id/staff`
   - `POST /api/tournaments/:id/staff`
   - `DELETE /api/tournaments/:id/staff/:staffId`
-  - `GET /api/tournaments/:id/staff/candidates`
-  - `POST /api/tournaments/:id/register`
-  - `GET /api/tournaments/:id/matches`
+    - `GET /api/tournaments/:id/staff/candidates`
+    - `POST /api/tournaments/:id/register`
+    - `POST /api/tournaments/:id/participants/:participantId/disqualify`
+    - `GET /api/tournaments/:id/matches`
   - `POST /api/matches/:id/report` (rate limit per user)
   - `POST /api/matches/:id/confirm`
   - `POST /api/matches/:id/schedule`

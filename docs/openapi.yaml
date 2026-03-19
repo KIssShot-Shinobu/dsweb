@@ -830,10 +830,10 @@ paths:
         "404":
           description: Not found
   /api/tournaments/{id}/staff/candidates:
-    get:
-      summary: List candidate users for tournament staff
-      security:
-        - authjsSessionCookie: []
+      get:
+        summary: List candidate users for tournament staff
+        security:
+          - authjsSessionCookie: []
       parameters:
         - in: path
           name: id
@@ -848,14 +848,39 @@ paths:
           name: limit
           schema:
             type: integer
+        responses:
+          "200":
+            description: Candidate list payload
+          "403":
+            description: Forbidden
+  /api/tournaments/{id}/participants/{participantId}/disqualify:
+    post:
+      summary: Disqualify tournament participant
+      security:
+        - authjsSessionCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: participantId
+          required: true
+          schema:
+            type: string
       responses:
         "200":
-          description: Candidate list payload
+          description: Participant disqualified
         "403":
           description: Forbidden
-  /api/matches/{id}/resolve-dispute:
-    post:
-      summary: Resolve match dispute by referee
+        "404":
+          description: Not found
+        "409":
+          description: Tournament closed
+    /api/matches/{id}/resolve-dispute:
+      post:
+        summary: Resolve match dispute by referee
       security:
         - authjsSessionCookie: []
       parameters:

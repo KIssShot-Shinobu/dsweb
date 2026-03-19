@@ -16,7 +16,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
         const { id } = await params;
         const tournament = await prisma.tournament.findUnique({
             where: { id },
-            select: { id: true, status: true, createdById: true, structure: true, title: true, maxPlayers: true, checkinRequired: true, entryFee: true },
+            select: { id: true, status: true, createdById: true, structure: true, format: true, title: true, maxPlayers: true, bracketSize: true, checkinRequired: true, entryFee: true },
         });
 
         if (!tournament) {
@@ -51,7 +51,9 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
             tournament.id,
             tournament.structure,
             participants.map((participant) => ({ participantId: participant.id })),
-            tournament.maxPlayers ?? undefined
+            tournament.format,
+            tournament.maxPlayers ?? undefined,
+            tournament.bracketSize ?? undefined
         );
 
         await logAudit({

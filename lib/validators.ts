@@ -397,8 +397,8 @@ export const tournamentPaymentDecisionSchema = z.object({
 export type TournamentPaymentDecisionInput = z.infer<typeof tournamentPaymentDecisionSchema>;
 
 export const matchReportSchema = z.object({
-    scoreA: z.coerce.number().int().min(0).max(2),
-    scoreB: z.coerce.number().int().min(0).max(2),
+    scoreA: z.coerce.number().int().min(0).max(3),
+    scoreB: z.coerce.number().int().min(0).max(3),
     winnerId: z.string().cuid("Winner ID tidak valid"),
 });
 

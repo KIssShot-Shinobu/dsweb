@@ -35,6 +35,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         if (participant.status === "WAITLIST") {
             return NextResponse.json({ success: false, message: "Peserta masih di waitlist." }, { status: 400 });
         }
+        if (participant.status === "DISQUALIFIED") {
+            return NextResponse.json({ success: false, message: "Peserta sudah didiskualifikasi." }, { status: 400 });
+        }
 
         const nextCheckedInAt = participant.checkedInAt ? null : new Date();
         const nextStatus = nextCheckedInAt ? "CHECKED_IN" : participant.status === "CHECKED_IN" ? "REGISTERED" : participant.status;

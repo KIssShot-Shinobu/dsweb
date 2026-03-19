@@ -7,6 +7,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { extractIP, logAudit } from "@/lib/audit-logger";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import { getRateLimitEnabled, getRateLimitMatchReport } from "@/lib/runtime-config";
+import { validateMatchScore } from "@/lib/services/match-scoring";
 
 function reportsMatch(left: { scoreA: number; scoreB: number; winnerId: string }, right: { scoreA: number; scoreB: number; winnerId: string }) {
     return left.scoreA === right.scoreA && left.scoreB === right.scoreB && left.winnerId === right.winnerId;
@@ -50,10 +51,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             select: {
                 id: true,
                 status: true,
+                tournament: { select: { format: true } },
                 playerAId: true,
                 playerBId: true,
-                playerA: { select: { userId: true } },
-                playerB: { select: { userId: true } },
+                playerA: { select: { userId: true, status: true } },
+                playerB: { select: { userId: true, status: true } },
             },
         });
 
@@ -70,8 +72,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             return NextResponse.json({ success: false, message: "Anda bukan pemain di match ini" }, { status: 403 });
         }
 
+        const currentParticipantStatus =
+            match.playerA?.userId === currentUser.id
+                ? match.playerA?.status
+                : match.playerB?.userId === currentUser.id
+                  ? match.playerB?.status
+                  : null;
+        if (currentParticipantStatus === "DISQUALIFIED") {
+            return NextResponse.json({ success: false, message: "Akun kamu sudah didiskualifikasi dari turnamen ini" }, { status: 403 });
+        }
+
         if (![match.playerAId, match.playerBId].includes(parsed.data.winnerId)) {
             return NextResponse.json({ success: false, message: "Winner ID tidak valid untuk match ini" }, { status: 400 });
+        }
+
+        const scoreError = validateMatchScore({
+            scoreA: parsed.data.scoreA,
+            scoreB: parsed.data.scoreB,
+            winnerId: parsed.data.winnerId,
+            playerAId: match.playerAId,
+            playerBId: match.playerBId,
+            format: match.tournament.format,
+        });
+        if (scoreError) {
+            return NextResponse.json({ success: false, message: scoreError }, { status: 400 });
         }
 
         await prisma.matchReport.upsert({

@@ -53,6 +53,7 @@ const ACTION_OPTIONS = [
     { value: "TOURNAMENT_PARTICIPANT_UPDATED", label: "Update Peserta Turnamen" },
     { value: "TOURNAMENT_PARTICIPANT_REMOVED", label: "Hapus Peserta Turnamen" },
     { value: "TOURNAMENT_PARTICIPANT_CHECKIN_TOGGLED", label: "Check-in Peserta" },
+    { value: "TOURNAMENT_PARTICIPANT_DISQUALIFIED", label: "Peserta Didiskualifikasi" },
     { value: "TOURNAMENT_WAITLISTED", label: "Peserta Masuk Waitlist" },
     { value: "TOURNAMENT_WAITLIST_PROMOTED", label: "Peserta Naik dari Waitlist" },
     { value: "TOURNAMENT_ANNOUNCEMENT_CREATED", label: "Pengumuman Turnamen Dibuat" },

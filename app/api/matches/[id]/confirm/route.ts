@@ -23,8 +23,8 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
                 status: true,
                 playerAId: true,
                 playerBId: true,
-                playerA: { select: { userId: true } },
-                playerB: { select: { userId: true } },
+                playerA: { select: { userId: true, status: true } },
+                playerB: { select: { userId: true, status: true } },
             },
         });
 
@@ -34,6 +34,15 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
 
         const participantUserIds = [match.playerA?.userId, match.playerB?.userId].filter(Boolean);
         const isParticipant = participantUserIds.includes(currentUser.id);
+        const currentParticipantStatus =
+            match.playerA?.userId === currentUser.id
+                ? match.playerA?.status
+                : match.playerB?.userId === currentUser.id
+                  ? match.playerB?.status
+                  : null;
+        if (isParticipant && currentParticipantStatus === "DISQUALIFIED") {
+            return NextResponse.json({ success: false, message: "Akun kamu sudah didiskualifikasi dari turnamen ini" }, { status: 403 });
+        }
         const isReferee = !isParticipant && await canRefereeTournament(currentUser.id, match.tournamentId);
         if (!isParticipant && !isReferee) {
             return NextResponse.json({ success: false, message: "Anda tidak punya akses ke match ini" }, { status: 403 });

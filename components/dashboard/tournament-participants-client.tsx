@@ -86,6 +86,7 @@ export function TournamentParticipantsClient({
     const [editing, setEditing] = useState<ParticipantRow | null>(null);
     const [gameId, setGameId] = useState("");
     const [confirmRemove, setConfirmRemove] = useState<ParticipantRow | null>(null);
+    const [confirmDisqualify, setConfirmDisqualify] = useState<ParticipantRow | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showBulkModal, setShowBulkModal] = useState(false);
     const [activeTab, setActiveTab] = useState<"user" | "guest">("user");
@@ -98,6 +99,7 @@ export function TournamentParticipantsClient({
     const [guestGameId, setGuestGameId] = useState("");
     const [bulkText, setBulkText] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [disqualifying, setDisqualifying] = useState(false);
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const candidateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -215,6 +217,28 @@ export function TournamentParticipantsClient({
             }
         } catch {
             error("Kesalahan jaringan.");
+        }
+    };
+
+    const handleDisqualify = async () => {
+        if (!confirmDisqualify || disqualifying) return;
+        setDisqualifying(true);
+        try {
+            const res = await fetch(`/api/tournaments/${tournamentId}/participants/${confirmDisqualify.id}/disqualify`, {
+                method: "POST",
+            });
+            const data = await res.json();
+            if (res.ok) {
+                success("Peserta didiskualifikasi.");
+                setConfirmDisqualify(null);
+                fetchParticipants();
+            } else {
+                error(data.message || "Gagal mendiskualifikasi peserta.");
+            }
+        } catch {
+            error("Kesalahan jaringan.");
+        } finally {
+            setDisqualifying(false);
         }
     };
 
@@ -494,6 +518,9 @@ export function TournamentParticipantsClient({
                                                             {participant.status === "WAITLIST" ? (
                                                                 <span className="badge badge-warning badge-xs">Waitlist</span>
                                                             ) : null}
+                                                            {participant.status === "DISQUALIFIED" ? (
+                                                                <span className="badge badge-error badge-xs">Disqualified</span>
+                                                            ) : null}
                                                         </div>
                                                         <div className="text-xs text-base-content/50">
                                                             {participant.team
@@ -567,7 +594,7 @@ export function TournamentParticipantsClient({
                                                         type="button"
                                                         className="btn btn-outline btn-xs"
                                                         onClick={() => toggleCheckIn(participant)}
-                                                        disabled={participant.status === "WAITLIST"}
+                                                        disabled={participant.status === "WAITLIST" || participant.status === "DISQUALIFIED"}
                                                     >
                                                         {participant.checkedInAt ? "Uncheck" : "Check-in"}
                                                     </button>
@@ -576,6 +603,14 @@ export function TournamentParticipantsClient({
                                                             Edit
                                                         </button>
                                                     ) : null}
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-warning btn-outline btn-xs"
+                                                        onClick={() => setConfirmDisqualify(participant)}
+                                                        disabled={participant.status === "DISQUALIFIED"}
+                                                    >
+                                                        Disqualify
+                                                    </button>
                                                     <button type="button" className="btn btn-error btn-outline btn-xs" onClick={() => setConfirmRemove(participant)}>
                                                         Remove
                                                     </button>
@@ -766,10 +801,18 @@ export function TournamentParticipantsClient({
             <ConfirmModal
                 open={Boolean(confirmRemove)}
                 title="Hapus peserta?"
-                description="Peserta akan dihapus dari turnamen. Aksi ini hanya bisa dilakukan saat turnamen masih OPEN."
+                message="Peserta akan dihapus dari turnamen. Aksi ini hanya bisa dilakukan saat turnamen masih OPEN."
                 confirmLabel="Hapus"
                 onConfirm={handleRemove}
-                onClose={() => setConfirmRemove(null)}
+                onCancel={() => setConfirmRemove(null)}
+            />
+            <ConfirmModal
+                open={Boolean(confirmDisqualify)}
+                title="Diskualifikasi peserta?"
+                message="Peserta akan ditandai sebagai DISQUALIFIED. Match aktif akan di-advance otomatis bila ada lawan."
+                confirmLabel={disqualifying ? "Memproses..." : "Disqualify"}
+                onConfirm={handleDisqualify}
+                onCancel={() => setConfirmDisqualify(null)}
             />
         </DashboardPageShell>
     );

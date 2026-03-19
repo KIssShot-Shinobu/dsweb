@@ -8,6 +8,7 @@ import { canRefereeTournament } from "@/lib/tournament-staff";
 import { logAudit } from "@/lib/audit-logger";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import { createNotificationService } from "@/lib/services/notification.service";
+import { validateMatchScore } from "@/lib/services/match-scoring";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -29,6 +30,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 id: true,
                 tournamentId: true,
                 status: true,
+                tournament: { select: { format: true } },
                 playerAId: true,
                 playerBId: true,
                 playerA: { select: { userId: true } },
@@ -51,6 +53,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         if (![match.playerAId, match.playerBId].includes(parsed.data.winnerId)) {
             return NextResponse.json({ success: false, message: "Winner ID tidak valid untuk match ini" }, { status: 400 });
+        }
+
+        const scoreError = validateMatchScore({
+            scoreA: parsed.data.scoreA,
+            scoreB: parsed.data.scoreB,
+            winnerId: parsed.data.winnerId,
+            playerAId: match.playerAId,
+            playerBId: match.playerBId,
+            format: match.tournament.format,
+        });
+        if (scoreError) {
+            return NextResponse.json({ success: false, message: scoreError }, { status: 400 });
         }
 
         const reportMatch = await prisma.matchReport.findFirst({
