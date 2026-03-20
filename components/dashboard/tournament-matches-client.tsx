@@ -8,6 +8,8 @@ import { DashboardEmptyState, DashboardPageHeader, DashboardPageShell, Dashboard
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
 import { DateTimePickerInput } from "@/components/ui/date-time-picker";
+import { MatchChatThread } from "@/components/shared/match-chat-thread";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { parseLocalDateTime } from "@/lib/datetime";
 
 type MatchRow = {
@@ -45,6 +47,7 @@ const PER_PAGE = 20;
 
 export function TournamentMatchesClient({ tournamentId }: { tournamentId: string }) {
     const { success, error } = useToast();
+    const { user } = useCurrentUser();
     const [matches, setMatches] = useState<MatchRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -305,6 +308,9 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                         <div>
                             <label className={labelCls}>Winner</label>
                             <FormSelect value={winnerId} onChange={setWinnerId} options={winnerOptions} placeholder="Pilih pemenang" />
+                        </div>
+                        <div className="rounded-box border border-base-300 bg-base-100/80 p-4">
+                            <MatchChatThread matchId={activeMatch.id} currentUserId={user?.id ?? null} readOnly={activeMatch.status === "COMPLETED"} />
                         </div>
                         <div className="flex justify-end gap-2">
                             <button className={btnOutline} type="button" onClick={() => setActiveMatch(null)}>

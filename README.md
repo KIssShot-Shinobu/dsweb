@@ -48,6 +48,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Notification system in-app dengan realtime SSE untuk invite, join request, dan alert penting.
 - Penugasan referee per tournament + dispute queue agar sengketa match bisa diselesaikan lebih cepat (referee dapat confirm result & resolve dispute tanpa override skor).
 - Sengketa match mendukung upload bukti (screenshot) saat report/dispute untuk mempercepat verifikasi.
+- Match chat/notes per match untuk koordinasi jadwal/hasil (pemain + referee + admin + pengurus team), lampiran otomatis dihapus saat match selesai.
 - Diskualifikasi peserta dari dashboard dengan auto-advance match aktif + audit log.
   - Penjadwalan match + reminder otomatis 30 menit sebelum match dimulai (notifikasi in-app).
   - Forfeit otomatis untuk match terjadwal yang peserta-nya tidak check-in tepat waktu (cron), configurable per tournament (toggle + grace + mode) dan hanya berjalan jika check-in aktif.
@@ -480,6 +481,8 @@ cmd /c npm run dev
   - `prisma/migrations_manual/20260319_match_dispute_evidence.rollback.sql`
   - `prisma/migrations_manual/20260319_tournament_forfeit_settings.sql`
   - `prisma/migrations_manual/20260319_tournament_forfeit_settings.rollback.sql`
+  - `prisma/migrations_manual/20260320_match_messages.sql`
+  - `prisma/migrations_manual/20260320_match_messages.rollback.sql`
 
 ## Aturan Update Dokumentasi
 

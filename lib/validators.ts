@@ -408,6 +408,32 @@ export const tournamentPaymentDecisionSchema = z.object({
 
 export type TournamentPaymentDecisionInput = z.infer<typeof tournamentPaymentDecisionSchema>;
 
+const matchScheduleAtSchema = z
+    .string()
+    .trim()
+    .refine((value) => value === "" || parseLocalDateTime(value) !== null, "Tanggal tidak valid");
+
+const evidenceUrlSchema = z
+    .string()
+    .trim()
+    .max(500, "Link bukti terlalu panjang")
+    .regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan bukti hasil upload");
+const evidenceUrlsSchema = z.array(evidenceUrlSchema).max(3, "Maksimal 3 bukti").optional();
+
+const matchMessageContentSchema = z.string().trim().min(1, "Pesan wajib diisi").max(1000, "Pesan terlalu panjang");
+
+export const matchMessageSchema = z.object({
+    content: matchMessageContentSchema,
+    attachmentUrls: evidenceUrlsSchema,
+});
+
+export const matchMessageUpdateSchema = z
+    .object({
+        content: matchMessageContentSchema.optional(),
+        attachmentUrls: evidenceUrlsSchema,
+    })
+    .refine((value) => value.content !== undefined || value.attachmentUrls !== undefined, "Minimal satu field harus diisi");
+
 export const matchReportSchema = z.object({
     scoreA: z.coerce.number().int().min(0).max(3),
     scoreB: z.coerce.number().int().min(0).max(3),
@@ -428,18 +454,6 @@ export const matchDisputeResolveSchema = matchReportSchema.extend({
     reason: z.string().trim().max(500, "Alasan terlalu panjang").optional().or(z.literal("")),
 });
 
-const matchScheduleAtSchema = z
-    .string()
-    .trim()
-    .refine((value) => value === "" || parseLocalDateTime(value) !== null, "Tanggal tidak valid");
-
-const evidenceUrlSchema = z
-    .string()
-    .trim()
-    .max(500, "Link bukti terlalu panjang")
-    .regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan bukti hasil upload");
-const evidenceUrlsSchema = z.array(evidenceUrlSchema).max(3, "Maksimal 3 bukti").optional();
-
 export const matchScheduleSchema = z.object({
     scheduledAt: z.union([matchScheduleAtSchema, z.null()]),
 });
@@ -448,6 +462,8 @@ export type MatchReportInput = z.infer<typeof matchReportSchema>;
 export type MatchDisputeInput = z.infer<typeof matchDisputeSchema>;
 export type MatchAdminResolveInput = z.infer<typeof matchAdminResolveSchema>;
 export type MatchDisputeResolveInput = z.infer<typeof matchDisputeResolveSchema>;
+export type MatchMessageInput = z.infer<typeof matchMessageSchema>;
+export type MatchMessageUpdateInput = z.infer<typeof matchMessageUpdateSchema>;
 export type MatchScheduleInput = z.infer<typeof matchScheduleSchema>;
 
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/dashboard/toast";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { normalizeAssetUrl } from "@/lib/asset-url";
+import { MatchChatThread } from "@/components/shared/match-chat-thread";
 
 type MatchParticipant = {
     id: string;
@@ -109,7 +110,7 @@ function EvidenceUploader({
     );
 }
 
-export function TournamentMyMatch({ match }: { match: MatchSummary }) {
+export function TournamentMyMatch({ match, currentUserId }: { match: MatchSummary; currentUserId?: string | null }) {
     const router = useRouter();
     const { success, error } = useToast();
     const [scoreA, setScoreA] = useState(match.report?.scoreA ?? 0);
@@ -130,6 +131,7 @@ export function TournamentMyMatch({ match }: { match: MatchSummary }) {
 
     const canReport = !["COMPLETED", "DISPUTED"].includes(match.status);
     const canDispute = !match.hasOpenDispute && match.status !== "COMPLETED";
+    const readOnlyChat = match.status === "COMPLETED";
 
     const handleReport = async () => {
         if (!winnerId) {
@@ -291,6 +293,12 @@ export function TournamentMyMatch({ match }: { match: MatchSummary }) {
                         </div>
                     </>
                 )}
+            </div>
+
+            <div className="divider my-1" />
+
+            <div className="rounded-box border border-base-300 bg-base-100/80 p-4">
+                <MatchChatThread matchId={match.id} currentUserId={currentUserId} readOnly={readOnlyChat} />
             </div>
         </div>
     );

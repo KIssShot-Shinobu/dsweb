@@ -296,7 +296,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                         {myMatchPayload ? (
                                             <>
                                                 <div className="divider my-1" />
-                                                <TournamentMyMatch match={myMatchPayload} />
+                                                <TournamentMyMatch match={myMatchPayload} currentUserId={currentUser?.id ?? null} />
                                             </>
                                         ) : null}
                                     </div>

@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient, MatchPlayerSide, MatchStatus, MatchResultSource, TournamentStructure, RoundType, TournamentFormat } from "@prisma/client";
 import { getRequiredWinsForFormat } from "@/lib/services/match-scoring";
+import { deleteUploadFileByUrl } from "@/lib/upload-files";
 
 type BracketParticipant = {
     participantId: string;
@@ -973,6 +974,28 @@ export async function syncOrCreateTournamentBracket(
     return { created: false, ...syncResult };
 }
 
+const normalizeAttachmentUrls = (value: unknown) =>
+    Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+
+async function purgeMatchMessageAttachments(prisma: PrismaClient, matchId: string) {
+    const messages = await prisma.matchMessage.findMany({
+        where: { matchId, attachmentUrls: { not: null } },
+        select: { id: true, attachmentUrls: true },
+    });
+
+    if (messages.length === 0) return;
+
+    const urls = messages.flatMap((message) => normalizeAttachmentUrls(message.attachmentUrls));
+    if (urls.length > 0) {
+        await Promise.allSettled(urls.map((url) => deleteUploadFileByUrl(url)));
+    }
+
+    await prisma.matchMessage.updateMany({
+        where: { matchId },
+        data: { attachmentUrls: [] },
+    });
+}
+
 export async function resolveMatchResult(prisma: PrismaClient, matchId: string, result: { scoreA: number; scoreB: number; winnerId: string; source: MatchResultSource; confirmedById?: string | null }) {
     await prisma.$transaction(async (tx) => {
         await tx.match.update({
@@ -1019,4 +1042,10 @@ export async function resolveMatchResult(prisma: PrismaClient, matchId: string, 
             await maybeAdvanceSwissRound(tx as PrismaClient, match.tournamentId, match.round.roundNumber);
         }
     });
+
+    try {
+        await purgeMatchMessageAttachments(prisma, matchId);
+    } catch (error) {
+        console.error("[Match Message Purge]", error);
+    }
 }

@@ -345,6 +345,7 @@ model User {
   matchResultsConfirmed        MatchResult[]            @relation("MatchResultConfirmedBy")
   matchDisputesRaised          MatchDispute[]           @relation("MatchDisputeRaisedBy")
   matchDisputesResolved        MatchDispute[]           @relation("MatchDisputeResolvedBy")
+  matchMessages                MatchMessage[]
   emailVerificationToken       EmailVerificationToken?
   passwordResetToken           PasswordResetToken?
   badges                       UserBadge[]
@@ -677,6 +678,7 @@ model Match {
   disputes MatchDispute[]
   players  MatchPlayer[]
   result   MatchResult?
+  messages MatchMessage[]
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -754,6 +756,21 @@ model MatchDispute {
 
   @@index([matchId, status])
   @@index([raisedById])
+}
+
+model MatchMessage {
+  id             String   @id @default(cuid())
+  matchId        String
+  match          Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String   @db.VarChar(1000)
+  attachmentUrls Json?
+  createdAt      DateTime @default(now())
+  editedAt       DateTime?
+
+  @@index([matchId, createdAt])
+  @@index([senderId])
 }
 
 model BracketNode {
