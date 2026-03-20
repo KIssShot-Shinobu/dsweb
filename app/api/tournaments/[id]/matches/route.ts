@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { tournamentMatchesQuerySchema } from "@/lib/validators";
 import { canRefereeTournament } from "@/lib/tournament-staff";
-import { formatLocalDateTime } from "@/lib/datetime";
+import { formatLocalDateTimeInTimeZone, formatDisplayDateTimeInTimeZone } from "@/lib/datetime";
+import { DEFAULT_TIMEZONE } from "@/lib/timezones";
 
 const DEFAULT_LIMIT = 20;
 
@@ -87,6 +88,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             };
         }
 
+        const tournament = await prisma.tournament.findUnique({
+            where: { id },
+            select: { timezone: true },
+        });
+        const timeZone = tournament?.timezone ?? DEFAULT_TIMEZONE;
+
         const [matches, total] = await Promise.all([
             prisma.match.findMany({
                 where,
@@ -100,7 +107,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
         const normalizedMatches = matches.map((match) => ({
             ...match,
-            scheduledAt: match.scheduledAt ? formatLocalDateTime(match.scheduledAt) : null,
+            scheduledAt: match.scheduledAt ? formatLocalDateTimeInTimeZone(match.scheduledAt, timeZone) : null,
+            scheduledAtLabel: match.scheduledAt ? formatDisplayDateTimeInTimeZone(match.scheduledAt, timeZone) : null,
+            tournamentTimezone: timeZone,
         }));
 
         return NextResponse.json({ success: true, matches: normalizedMatches, total, page, limit });

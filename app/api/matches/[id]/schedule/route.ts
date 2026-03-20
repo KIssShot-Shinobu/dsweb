@@ -3,21 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { hasRole, ROLES } from "@/lib/auth";
 import { matchScheduleSchema } from "@/lib/validators";
-import { parseLocalDateTime, formatLocalDateTime } from "@/lib/datetime";
+import { parseLocalDateTimeInTimeZone, formatLocalDateTimeInTimeZone, formatDisplayDateTimeInTimeZone } from "@/lib/datetime";
+import { DEFAULT_TIMEZONE } from "@/lib/timezones";
 import { createNotificationService } from "@/lib/services/notification.service";
 import { resolveMatchNotificationRecipients } from "@/lib/services/match-notification";
 import { canRefereeTournament } from "@/lib/tournament-staff";
 import { logAudit } from "@/lib/audit-logger";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 
-const formatScheduleLabel = (value: Date) =>
-    new Intl.DateTimeFormat("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(value);
+const formatScheduleLabel = (value: Date, timeZone: string) => formatDisplayDateTimeInTimeZone(value, timeZone);
 
 const resolveParticipantLabel = (participant?: {
     guestName: string | null;
@@ -60,7 +54,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                         user: { select: { fullName: true, username: true } },
                     },
                 },
-                tournament: { select: { id: true, title: true } },
+                tournament: { select: { id: true, title: true, timezone: true } },
             },
         });
 
@@ -75,8 +69,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             }
         }
 
+        const timeZone = match.tournament.timezone ?? DEFAULT_TIMEZONE;
         const rawSchedule = parsed.data.scheduledAt;
-        const nextScheduledAt = rawSchedule ? parseLocalDateTime(rawSchedule) : null;
+        const nextScheduledAt = rawSchedule ? parseLocalDateTimeInTimeZone(rawSchedule, timeZone) : null;
         if (rawSchedule && !nextScheduledAt) {
             return NextResponse.json({ success: false, message: "Tanggal jadwal tidak valid" }, { status: 400 });
         }
@@ -125,7 +120,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 const notifications = createNotificationService({ prisma });
                 const labelA = resolveParticipantLabel(match.playerA);
                 const labelB = resolveParticipantLabel(match.playerB);
-                const scheduleLabel = formatScheduleLabel(nextScheduledAt);
+                const scheduleLabel = formatScheduleLabel(nextScheduledAt, timeZone);
                 const message = `Match ${labelA} vs ${labelB} dijadwalkan pada ${scheduleLabel}.`;
 
                 try {
@@ -150,7 +145,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             success: true,
             match: {
                 ...updated,
-                scheduledAt: nextScheduledAt ? formatLocalDateTime(nextScheduledAt) : null,
+                scheduledAt: nextScheduledAt ? formatLocalDateTimeInTimeZone(nextScheduledAt, timeZone) : null,
+                scheduledAtLabel: nextScheduledAt ? formatDisplayDateTimeInTimeZone(nextScheduledAt, timeZone) : null,
+                tournamentTimezone: timeZone,
             },
         });
     } catch (error) {

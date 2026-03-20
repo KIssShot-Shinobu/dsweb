@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { ImageCropModal } from "@/components/ui/image-crop-modal";
 import { DateTimePickerInput } from "@/components/ui/date-time-picker";
+import { DEFAULT_TIMEZONE, getTimeZoneOptions } from "@/lib/timezones";
 
 export const tournamentFormSelectOptions = {
     gameType: [
@@ -70,6 +71,7 @@ export function getDefaultTournamentForm() {
         structure: "SINGLE_ELIM",
         mode: "INDIVIDUAL",
         isTeamTournament: false,
+        timezone: DEFAULT_TIMEZONE,
         entryFee: 0,
         prizePool: 0,
         startAt: "",
@@ -117,6 +119,7 @@ export function buildTournamentPayload(formData: TournamentFormState) {
         mode: formData.isTeamTournament ? formData.mode : "INDIVIDUAL",
         isTeamTournament: formData.isTeamTournament,
         status: formData.status,
+        timezone: formData.timezone,
         entryFee: formData.entryFee,
         prizePool: formData.prizePool,
         maxPlayers: formData.maxPlayers ? Number(formData.maxPlayers) : undefined,
@@ -174,6 +177,7 @@ export function TournamentForm({
 }) {
     const [confirmPublishOpen, setConfirmPublishOpen] = useState(false);
     const [pendingSubmit, setPendingSubmit] = useState(false);
+    const timeZoneOptions = useMemo(() => getTimeZoneOptions(), []);
     const [cropState, setCropState] = useState<{
         open: boolean;
         imageSrc: string | null;
@@ -296,6 +300,11 @@ export function TournamentForm({
                                     className="w-full"
                                 />
                             </div>
+                        </div>
+                        <div>
+                            <label className={labelCls}>Timezone</label>
+                            <FormSelect value={formData.timezone} onChange={(value) => setFormData((prev) => ({ ...prev, timezone: value }))} options={timeZoneOptions} />
+                            <p className="mt-1 text-xs text-base-content/55">Jadwal dan kalender mengikuti timezone ini.</p>
                         </div>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div className="rounded-box border border-base-300 bg-base-200/40 px-3 py-3">

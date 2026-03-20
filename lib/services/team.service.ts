@@ -5,6 +5,7 @@ import { logAudit } from "@/lib/audit-logger";
 import { generateUniqueTeamSlug } from "@/lib/team-slug";
 import { createTeamRepository, type TeamRepository } from "@/lib/repositories/team.repository";
 import { createNotificationService, type NotificationService } from "@/lib/services/notification.service";
+import { hasRole, ROLES } from "@/lib/auth";
 import {
     canAssignRole,
     canDeleteTeam,
@@ -16,6 +17,7 @@ import {
     canRemoveMember,
     canTransferCaptain,
 } from "@/lib/permissions/team.permission";
+import { isTeamRosterLocked } from "@/lib/team-roster-lock";
 import type {
     TeamCreateInput,
     TeamDeleteInput,
@@ -182,6 +184,31 @@ function ensureCanManage(actorMembership: { role: TeamRole }, allowed: boolean, 
     return actorMembership;
 }
 
+async function ensureRosterUnlocked(deps: TeamServiceDeps, teamId: string, actorUserId: string, action: string) {
+    const actor = await deps.prisma.user.findUnique({
+        where: { id: actorUserId },
+        select: { role: true },
+    });
+    if (actor && hasRole(actor.role, ROLES.OFFICER)) {
+        return;
+    }
+
+    const locked = await isTeamRosterLocked(deps.prisma, teamId);
+    if (!locked) {
+        return;
+    }
+
+    await deps.audit({
+        userId: actorUserId,
+        action: AUDIT_ACTIONS.ROSTER_LOCK_BLOCKED,
+        targetId: teamId,
+        targetType: "Team",
+        details: { reason: "ONGOING_TOURNAMENT", action },
+    });
+
+    throw new TeamServiceError(409, "Roster terkunci karena turnamen sedang berjalan");
+}
+
 async function ensureNoActiveMembership(repository: TeamRepository, userId: string, message: string) {
     const existingMembership = await repository.findActiveMembershipByUserId(userId);
     if (existingMembership) {
@@ -323,6 +350,7 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
             }
 
             await ensureNoActiveMembership(repository, actorUserId, "Anda masih memiliki team aktif");
+            await ensureRosterUnlocked(deps, invite.teamId, actorUserId, "INVITE_ACCEPT");
 
             const result = await deps.prisma.$transaction(async (tx) => {
                 const txRepository = createTeamRepository(tx);
@@ -484,6 +512,7 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
             }
 
             await ensureNoActiveMembership(repository, joinRequest.userId, "User sudah memiliki team aktif");
+            await ensureRosterUnlocked(deps, joinRequest.teamId, actorUserId, "JOIN_REQUEST_ACCEPT");
 
             const result = await deps.prisma.$transaction(async (tx) => {
                 const txRepository = createTeamRepository(tx);
@@ -561,6 +590,7 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
         async assignMemberAsAdmin(actorUserId: string, input: TeamRosterAdminAssignInput) {
             const team = ensureTeamExists(await repository.findTeamById(input.teamId));
             const role = input.role ?? "PLAYER";
+            await ensureRosterUnlocked(deps, input.teamId, actorUserId, "ROSTER_ASSIGN");
 
             const [targetUser, activeMembership, existingMembership, pendingInvite, pendingJoinRequest] = await Promise.all([
                 deps.prisma.user.findUnique({
@@ -642,6 +672,8 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
                 throw new TeamServiceError(404, "Member roster tidak ditemukan");
             }
 
+            await ensureRosterUnlocked(deps, input.teamId, actorUserId, "ROSTER_UNASSIGN");
+
             const removedMembership = await repository.markMembershipLeft(membership.id);
 
             await deps.audit({
@@ -687,6 +719,8 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
                 canRemoveMember(actorMembership.role, targetMembership.role),
                 "Anda tidak boleh mengeluarkan member ini"
             );
+
+            await ensureRosterUnlocked(deps, input.teamId, actorUserId, "ROSTER_REMOVE");
 
             const removedMembership = await repository.markMembershipLeft(targetMembership.id);
 
@@ -807,6 +841,8 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
         async leaveTeam(actorUserId: string, input: TeamLeaveInput) {
             const membership = await resolveActorMembership(repository, input.teamId, actorUserId);
             ensureCanManage(membership, canLeaveTeam(membership.role), "Captain harus mentransfer captain terlebih dahulu");
+
+            await ensureRosterUnlocked(deps, input.teamId, actorUserId, "TEAM_LEAVE");
 
             const leftMembership = await repository.markMembershipLeft(membership.id);
 

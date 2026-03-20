@@ -10,7 +10,10 @@ import { prisma } from "@/lib/prisma";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { resolveTournamentImage } from "@/lib/tournament-image";
 import { getCurrentUser } from "@/lib/auth";
-import { formatLocalDateTime } from "@/lib/datetime";
+import { formatLocalDateTimeInTimeZone, formatDisplayDateTimeInTimeZone } from "@/lib/datetime";
+import { DEFAULT_TIMEZONE } from "@/lib/timezones";
+import { buildGoogleCalendarUrl } from "@/lib/google-calendar";
+import { getAppUrl } from "@/lib/runtime-config";
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("id-ID", {
@@ -20,14 +23,8 @@ function formatCurrency(amount: number) {
     }).format(amount);
 }
 
-function formatDate(value: Date) {
-    return value.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
+function formatDate(value: Date, timeZone: string) {
+    return formatDisplayDateTimeInTimeZone(value, timeZone);
 }
 
 function getStatusTone(status: string) {
@@ -134,11 +131,25 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           })
         : null;
 
+    const tournamentTimeZone = tournament.timezone ?? DEFAULT_TIMEZONE;
+    const appUrl = getAppUrl();
+    const tournamentUrl = `${appUrl}/tournaments/${tournament.id}`;
+    const tournamentCalendarUrl = tournament.startAt
+        ? buildGoogleCalendarUrl({
+              title: tournament.title,
+              start: tournament.startAt,
+              end: new Date(tournament.startAt.getTime() + 120 * 60 * 1000),
+              details: `Tournament: ${tournament.title}\n${tournamentUrl}`,
+              timeZone: tournamentTimeZone,
+          })
+        : null;
     const myMatchPayload = myMatch
         ? {
               id: myMatch.id,
               status: myMatch.status,
-              scheduledAt: myMatch.scheduledAt ? formatLocalDateTime(myMatch.scheduledAt) : null,
+              scheduledAt: myMatch.scheduledAt ? formatLocalDateTimeInTimeZone(myMatch.scheduledAt, tournamentTimeZone) : null,
+              scheduledAtLabel: myMatch.scheduledAt ? formatDisplayDateTimeInTimeZone(myMatch.scheduledAt, tournamentTimeZone) : null,
+              scheduledAtUtc: myMatch.scheduledAt ? myMatch.scheduledAt.toISOString() : null,
               playerA: myMatch.playerA ? { id: myMatch.playerA.id, name: resolveParticipantName(myMatch.playerA) } : null,
               playerB: myMatch.playerB ? { id: myMatch.playerB.id, name: resolveParticipantName(myMatch.playerB) } : null,
               report: myMatch.reports[0]
@@ -237,7 +248,22 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                             <div className="grid gap-4 p-6 md:grid-cols-4">
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
                                     <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">Jadwal Event</div>
-                                    <div className="text-sm font-semibold text-base-content">{formatDate(tournament.startAt)}</div>
+                                    <div className="text-sm font-semibold text-base-content">{formatDate(tournament.startAt, tournamentTimeZone)}</div>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        {tournamentCalendarUrl ? (
+                                            <a className="btn btn-primary btn-xs" href={tournamentCalendarUrl} target="_blank" rel="noreferrer">
+                                                Add to Google Calendar
+                                            </a>
+                                        ) : null}
+                                        <a
+                                            className="btn btn-outline btn-xs"
+                                            href={`/api/tournaments/${tournament.id}/calendar`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            Download ICS
+                                        </a>
+                                    </div>
                                 </div>
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
                                     <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">Prize Pool</div>
@@ -296,7 +322,13 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                         {myMatchPayload ? (
                                             <>
                                                 <div className="divider my-1" />
-                                                <TournamentMyMatch match={myMatchPayload} currentUserId={currentUser?.id ?? null} />
+                                                <TournamentMyMatch
+                                                    match={myMatchPayload}
+                                                    currentUserId={currentUser?.id ?? null}
+                                                    tournamentTitle={tournament.title}
+                                                    tournamentUrl={tournamentUrl}
+                                                    tournamentTimeZone={tournamentTimeZone}
+                                                />
                                             </>
                                         ) : null}
                                     </div>

@@ -68,6 +68,19 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         }
 
         if (participant.tournament.status !== "OPEN") {
+            if (participant.tournament.status === "ONGOING") {
+                await logAudit({
+                    userId: currentUser.id,
+                    action: AUDIT_ACTIONS.ROSTER_LOCK_BLOCKED,
+                    targetId: id,
+                    targetType: "Tournament",
+                    details: { reason: "ONGOING_TOURNAMENT", action: "PARTICIPANT_REMOVE", participantId },
+                });
+                return NextResponse.json(
+                    { success: false, message: "Roster terkunci karena turnamen sedang berjalan" },
+                    { status: 409 }
+                );
+            }
             return NextResponse.json({ success: false, message: "Peserta hanya bisa dihapus saat turnamen masih OPEN" }, { status: 409 });
         }
 

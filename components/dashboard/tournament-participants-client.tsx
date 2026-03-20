@@ -71,10 +71,12 @@ export function TournamentParticipantsClient({
     tournamentId,
     isTeamTournament = false,
     entryFee = 0,
+    tournamentStatus = "OPEN",
 }: {
     tournamentId: string;
     isTeamTournament?: boolean;
     entryFee?: number;
+    tournamentStatus?: string;
 }) {
     const { success, error } = useToast();
     const [participants, setParticipants] = useState<ParticipantRow[]>([]);
@@ -105,6 +107,7 @@ export function TournamentParticipantsClient({
 
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
     const isPaidTournament = entryFee > 0;
+    const rosterLocked = tournamentStatus === "ONGOING";
 
     const toastSyncInfo = (fallback: string, data?: SyncInfo) => {
         if (typeof data?.syncedCount === "number" && typeof data?.pendingCount === "number") {
@@ -271,6 +274,10 @@ export function TournamentParticipantsClient({
     };
 
     const handleAddUser = async () => {
+        if (rosterLocked) {
+            error("Roster terkunci karena turnamen sedang berjalan.");
+            return;
+        }
         if (!selectedUser) {
             error("Pilih user terlebih dahulu.");
             return;
@@ -302,6 +309,10 @@ export function TournamentParticipantsClient({
     };
 
     const handleAddGuest = async () => {
+        if (rosterLocked) {
+            error("Roster terkunci karena turnamen sedang berjalan.");
+            return;
+        }
         if (!guestName.trim()) {
             error("Nama guest wajib diisi.");
             return;
@@ -333,6 +344,10 @@ export function TournamentParticipantsClient({
     };
 
     const handleBulkAdd = async () => {
+        if (rosterLocked) {
+            error("Roster terkunci karena turnamen sedang berjalan.");
+            return;
+        }
         if (!bulkText.trim()) {
             error("Data bulk tidak boleh kosong.");
             return;
@@ -416,16 +431,21 @@ export function TournamentParticipantsClient({
                             <span className="badge badge-outline">Team Tournament</span>
                         ) : (
                             <>
-                                <button className={btnOutline} onClick={() => setShowBulkModal(true)}>
+                                <button className={btnOutline} onClick={() => setShowBulkModal(true)} disabled={rosterLocked}>
                                     Bulk Add
                                 </button>
-                                <button className={btnPrimary} onClick={() => setShowAddModal(true)}>
+                                <button className={btnPrimary} onClick={() => setShowAddModal(true)} disabled={rosterLocked}>
                                     Tambah Peserta
                                 </button>
                             </>
                         )
                     }
                 />
+                {rosterLocked ? (
+                    <div className="alert alert-warning">
+                        <span>Roster terkunci karena turnamen sudah ONGOING. Tambah/hapus peserta dinonaktifkan.</span>
+                    </div>
+                ) : null}
 
                 <DashboardPanel
                     title="Peserta Terdaftar"

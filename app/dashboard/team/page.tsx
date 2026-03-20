@@ -12,6 +12,7 @@ import { dashboardStackCls } from "@/components/dashboard/form-styles";
 import { requireDashboardUser } from "@/lib/dashboard-auth";
 import { prisma } from "@/lib/prisma";
 import { createTeamService } from "@/lib/services/team.service";
+import { isTeamRosterLocked } from "@/lib/team-roster-lock";
 
 const teamService = createTeamService();
 
@@ -101,7 +102,12 @@ export default async function MyTeamPage() {
 
     return (
         <DashboardPageShell>
-            <TeamManageClient team={team as TeamView} candidates={candidates} returnHref="/dashboard/team" />
+            <TeamManageClient
+                team={team as TeamView}
+                candidates={candidates}
+                returnHref="/dashboard/team"
+                rosterLocked={await isTeamRosterLocked(prisma, team.id)}
+            />
         </DashboardPageShell>
     );
 }

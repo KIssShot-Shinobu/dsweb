@@ -10,7 +10,6 @@ import { useToast } from "@/components/dashboard/toast";
 import { DateTimePickerInput } from "@/components/ui/date-time-picker";
 import { MatchChatThread } from "@/components/shared/match-chat-thread";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { parseLocalDateTime } from "@/lib/datetime";
 
 type MatchRow = {
     id: string;
@@ -19,6 +18,8 @@ type MatchRow = {
     scoreA: number | null;
     scoreB: number | null;
     scheduledAt?: string | null;
+    scheduledAtLabel?: string | null;
+    tournamentTimezone?: string | null;
     round: { roundNumber: number; type: string };
     playerA: { id: string; guestName: string | null; user: { id: string; fullName: string | null; username: string | null } | null } | null;
     playerB: { id: string; guestName: string | null; user: { id: string; fullName: string | null; username: string | null } | null } | null;
@@ -175,17 +176,10 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
         }
     };
 
-    const formatSchedule = (value?: string | null) => {
-        if (!value) return "-";
-        const date = parseLocalDateTime(value);
-        if (!date) return value;
-        return new Intl.DateTimeFormat("id-ID", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        }).format(date);
+    const formatSchedule = (match: MatchRow) => {
+        if (match.scheduledAtLabel) return match.scheduledAtLabel;
+        if (match.scheduledAt) return match.scheduledAt;
+        return "-";
     };
 
     return (
@@ -240,7 +234,7 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                             <td className="text-sm text-base-content/70">R{match.round.roundNumber}</td>
                                             <td className="text-sm font-semibold text-base-content">{resolveParticipantName(match.playerA)}</td>
                                             <td className="text-sm font-semibold text-base-content">{resolveParticipantName(match.playerB)}</td>
-                                            <td className="text-sm text-base-content/70">{formatSchedule(match.scheduledAt)}</td>
+                                            <td className="text-sm text-base-content/70">{formatSchedule(match)}</td>
                                             <td className="text-sm text-base-content/70">
                                                 {match.scoreA ?? 0} - {match.scoreB ?? 0}
                                             </td>

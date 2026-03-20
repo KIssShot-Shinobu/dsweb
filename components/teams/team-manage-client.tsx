@@ -65,10 +65,12 @@ export function TeamManageClient({
     team,
     candidates,
     returnHref = "/teams",
+    rosterLocked = false,
 }: {
     team: TeamView;
     candidates: Candidate[];
     returnHref?: string;
+    rosterLocked?: boolean;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -100,7 +102,7 @@ export function TeamManageClient({
     });
 
     const viewerRole = team.viewerMembership?.role || "PLAYER";
-    const canInvite = team.permissions.canInvite;
+    const canInvite = team.permissions.canInvite && !rosterLocked;
     const canPromote = team.permissions.canPromote;
     const canTransfer = team.permissions.canTransferCaptain;
     const canEdit = team.permissions.canEditTeam;
@@ -155,6 +157,10 @@ export function TeamManageClient({
 
     const handleInvite = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (rosterLocked) {
+            warning("Roster terkunci karena turnamen sedang berjalan.");
+            return;
+        }
         if (!selectedCandidate) {
             warning("Pilih user yang ingin diundang");
             return;
@@ -232,6 +238,10 @@ export function TeamManageClient({
     };
 
     const handleRemove = async (memberId: string) => {
+        if (rosterLocked) {
+            warning("Roster terkunci karena turnamen sedang berjalan.");
+            return;
+        }
         await runAction(
             "/api/team/member/remove",
             {
@@ -311,6 +321,10 @@ export function TeamManageClient({
         .join("") || "DS";
 
     const handleJoinRequestDecision = async (requestId: string, decision: "accept" | "reject") => {
+        if (rosterLocked && decision === "accept") {
+            warning("Roster terkunci karena turnamen sedang berjalan.");
+            return false;
+        }
         const ok = await runAction(
             `/api/team/request-join/${decision}`,
             {
@@ -365,7 +379,12 @@ export function TeamManageClient({
                     ) : null}
                     {canRemove ? (
                         <li>
-                            <button type="button" className="text-error" onClick={() => setRemoveTarget(member)} disabled={isBusy}>
+                            <button
+                                type="button"
+                                className="text-error"
+                                onClick={() => setRemoveTarget(member)}
+                                disabled={isBusy || rosterLocked}
+                            >
                                 Remove Member
                             </button>
                         </li>
@@ -377,6 +396,11 @@ export function TeamManageClient({
 
     return (
         <div className={dashboardStackCls}>
+            {rosterLocked ? (
+                <div className="alert alert-warning">
+                    <span>Roster terkunci karena turnamen sedang berjalan. Aksi tambah/hapus member akan ditolak.</span>
+                </div>
+            ) : null}
             <section className="card border border-base-300 bg-base-100 shadow-sm">
                 <div className="card-body">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

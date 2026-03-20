@@ -7,6 +7,18 @@ const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
 const SAFE_TEXT_REGEX = /^[\p{L}\p{N}\s'.,()\-_/]+$/u;
 const LOCAL_UPLOAD_PATH_REGEX = /^\/uploads\/[A-Za-z0-9._/-]+$/;
 const USERNAME_REGEX = /^[a-zA-Z0-9._-]{3,24}$/;
+const TIMEZONE_REGEX = /^[A-Za-z_]+(?:\/[A-Za-z0-9_+\-]+)+$/;
+
+const isValidTimeZone = (value: string) => {
+    if (value === "UTC") return true;
+    if (!TIMEZONE_REGEX.test(value)) return false;
+    try {
+        Intl.DateTimeFormat("en-US", { timeZone: value });
+        return true;
+    } catch {
+        return false;
+    }
+};
 
 const gameIdFieldSchema = z
     .string()
@@ -366,6 +378,7 @@ const tournamentBaseSchema = z.object({
         .optional()
         .refine((value) => !value || !Number.isNaN(Date.parse(value)), { message: "Tanggal registrasi tidak valid" }),
     checkinRequired: z.boolean().optional(),
+    timezone: z.string().trim().refine((value) => isValidTimeZone(value), "Timezone tidak valid").optional(),
     forfeitEnabled: z.boolean().optional(),
     forfeitGraceMinutes: z.coerce.number().int().min(1, "Grace minutes minimal 1").optional(),
     forfeitMode: z.enum(TOURNAMENT_FORFEIT_MODE_VALUES, { message: "Mode forfeit tidak valid" }).optional(),
@@ -413,6 +426,11 @@ const matchScheduleAtSchema = z
     .trim()
     .refine((value) => value === "" || parseLocalDateTime(value) !== null, "Tanggal tidak valid");
 
+const availabilitySlotSchema = z
+    .string()
+    .trim()
+    .refine((value) => parseLocalDateTime(value) !== null, "Tanggal tidak valid");
+
 const evidenceUrlSchema = z
     .string()
     .trim()
@@ -458,6 +476,14 @@ export const matchScheduleSchema = z.object({
     scheduledAt: z.union([matchScheduleAtSchema, z.null()]),
 });
 
+export const matchAvailabilitySchema = z.object({
+    slots: z.array(availabilitySlotSchema).min(1, "Minimal 1 slot").max(3, "Maksimal 3 slot"),
+});
+
+export const matchAvailabilitySelectSchema = z.object({
+    slot: availabilitySlotSchema,
+});
+
 export type MatchReportInput = z.infer<typeof matchReportSchema>;
 export type MatchDisputeInput = z.infer<typeof matchDisputeSchema>;
 export type MatchAdminResolveInput = z.infer<typeof matchAdminResolveSchema>;
@@ -465,6 +491,8 @@ export type MatchDisputeResolveInput = z.infer<typeof matchDisputeResolveSchema>
 export type MatchMessageInput = z.infer<typeof matchMessageSchema>;
 export type MatchMessageUpdateInput = z.infer<typeof matchMessageUpdateSchema>;
 export type MatchScheduleInput = z.infer<typeof matchScheduleSchema>;
+export type MatchAvailabilityInput = z.infer<typeof matchAvailabilitySchema>;
+export type MatchAvailabilitySelectInput = z.infer<typeof matchAvailabilitySelectSchema>;
 
 
 

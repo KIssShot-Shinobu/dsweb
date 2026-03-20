@@ -49,9 +49,13 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Penugasan referee per tournament + dispute queue agar sengketa match bisa diselesaikan lebih cepat (referee dapat confirm result & resolve dispute tanpa override skor).
 - Sengketa match mendukung upload bukti (screenshot) saat report/dispute untuk mempercepat verifikasi.
 - Match chat/notes per match untuk koordinasi jadwal/hasil (pemain + referee + admin + pengurus team), lampiran otomatis dihapus saat match selesai.
+- Match availability: pemain mengusulkan 1-3 slot jadwal, lawan memilih (tercatat audit + notifikasi).
+- Tournament timezone + export kalender (ICS) untuk match terjadwal dan jadwal start event.
 - Diskualifikasi peserta dari dashboard dengan auto-advance match aktif + audit log.
   - Penjadwalan match + reminder otomatis 30 menit sebelum match dimulai (notifikasi in-app).
+  - Auto-confirm hasil match setelah 24 jam jika lawan tidak merespons.
   - Forfeit otomatis untuk match terjadwal yang peserta-nya tidak check-in tepat waktu (cron), configurable per tournament (toggle + grace + mode) dan hanya berjalan jika check-in aktif.
+- Roster lock otomatis saat turnamen ONGOING (lineup freeze untuk team roster).
 - Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
 - Native form controls (`select`, `date`, `datetime-local`) sudah di-hardening agar teks dropdown tetap terbaca di light/dark.
 - Password reset flow berbasis token dengan expiry 15 menit.
@@ -481,8 +485,12 @@ cmd /c npm run dev
   - `prisma/migrations_manual/20260319_match_dispute_evidence.rollback.sql`
   - `prisma/migrations_manual/20260319_tournament_forfeit_settings.sql`
   - `prisma/migrations_manual/20260319_tournament_forfeit_settings.rollback.sql`
+  - `prisma/migrations_manual/20260320_tournament_timezone.sql`
+  - `prisma/migrations_manual/20260320_tournament_timezone.rollback.sql`
   - `prisma/migrations_manual/20260320_match_messages.sql`
   - `prisma/migrations_manual/20260320_match_messages.rollback.sql`
+  - `prisma/migrations_manual/20260320_match_availability.sql`
+  - `prisma/migrations_manual/20260320_match_availability.rollback.sql`
 
 ## Aturan Update Dokumentasi
 

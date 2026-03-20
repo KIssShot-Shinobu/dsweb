@@ -3,17 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { getCronSecret } from "@/lib/runtime-config";
 import { createNotificationService } from "@/lib/services/notification.service";
 import { resolveMatchNotificationRecipients } from "@/lib/services/match-notification";
+import { formatDisplayDateTimeInTimeZone } from "@/lib/datetime";
+import { DEFAULT_TIMEZONE } from "@/lib/timezones";
 
 const REMINDER_WINDOW_MINUTES = 30;
 
-const formatScheduleLabel = (value: Date) =>
-    new Intl.DateTimeFormat("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(value);
+const formatScheduleLabel = (value: Date, timeZone: string) => formatDisplayDateTimeInTimeZone(value, timeZone);
 
 const resolveParticipantLabel = (participant?: {
     guestName: string | null;
@@ -48,6 +43,7 @@ export async function POST(request: Request) {
                 id: true,
                 tournamentId: true,
                 scheduledAt: true,
+                tournament: { select: { timezone: true } },
                 playerA: {
                     select: {
                         userId: true,
@@ -89,7 +85,8 @@ export async function POST(request: Request) {
 
             const labelA = resolveParticipantLabel(match.playerA);
             const labelB = resolveParticipantLabel(match.playerB);
-            const scheduleLabel = formatScheduleLabel(match.scheduledAt);
+            const timeZone = match.tournament?.timezone ?? DEFAULT_TIMEZONE;
+            const scheduleLabel = formatScheduleLabel(match.scheduledAt, timeZone);
             const message = `Reminder: Match ${labelA} vs ${labelB} akan dimulai pada ${scheduleLabel}.`;
 
             try {

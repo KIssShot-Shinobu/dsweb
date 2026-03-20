@@ -6,6 +6,8 @@ import { tournamentSchema } from "@/lib/validators";
 import { resolveTournamentImage } from "@/lib/tournament-image";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { resolveGameByCodeOrId } from "@/lib/game";
+import { parseLocalDateTimeInTimeZone } from "@/lib/datetime";
+import { DEFAULT_TIMEZONE } from "@/lib/timezones";
 
 function buildTournamentWhere(searchParams: URLSearchParams) {
     const status = searchParams.get("status");
@@ -124,8 +126,20 @@ export async function POST(request: NextRequest) {
         if (!game) {
             return NextResponse.json({ success: false, message: "Game tidak ditemukan" }, { status: 400 });
         }
-        const registrationOpen = data.registrationOpen ? new Date(data.registrationOpen) : null;
-        const registrationClose = data.registrationClose ? new Date(data.registrationClose) : null;
+        const timeZone = data.timezone ?? DEFAULT_TIMEZONE;
+        const registrationOpen = data.registrationOpen ? parseLocalDateTimeInTimeZone(data.registrationOpen, timeZone) : null;
+        const registrationClose = data.registrationClose ? parseLocalDateTimeInTimeZone(data.registrationClose, timeZone) : null;
+        if (data.registrationOpen && !registrationOpen) {
+            return NextResponse.json({ success: false, message: "Tanggal registrasi tidak valid" }, { status: 400 });
+        }
+        if (data.registrationClose && !registrationClose) {
+            return NextResponse.json({ success: false, message: "Tanggal registrasi tidak valid" }, { status: 400 });
+        }
+
+        const startAt = parseLocalDateTimeInTimeZone(data.startAt, timeZone);
+        if (!startAt) {
+            return NextResponse.json({ success: false, message: "Tanggal start tidak valid" }, { status: 400 });
+        }
         const mode = data.mode || "INDIVIDUAL";
         const isTeamTournament =
             typeof data.isTeamTournament === "boolean"
@@ -144,6 +158,7 @@ export async function POST(request: NextRequest) {
                 structure: data.structure || "SINGLE_ELIM",
                 mode,
                 isTeamTournament,
+                timezone: timeZone,
                 entryFee: data.entryFee,
                 prizePool: data.prizePool,
                 maxPlayers: data.maxPlayers ?? null,
@@ -155,7 +170,7 @@ export async function POST(request: NextRequest) {
                 forfeitMode: data.forfeitMode ?? "CHECKIN_ONLY",
                 registrationOpen,
                 registrationClose,
-                startAt: new Date(data.startAt),
+                startAt,
                 image: data.image || null,
                 createdById: currentUser.id,
             },

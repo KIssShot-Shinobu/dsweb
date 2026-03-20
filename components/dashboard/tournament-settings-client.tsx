@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
 import { DateTimePickerInput } from "@/components/ui/date-time-picker";
+import { DEFAULT_TIMEZONE, getTimeZoneOptions } from "@/lib/timezones";
+import { formatLocalDateTimeInTimeZone } from "@/lib/datetime";
 
 const GAME_OPTIONS = [
     { value: "DUEL_LINKS", label: "Duel Links" },
@@ -51,6 +53,7 @@ type TournamentForm = {
     startAt: string;
     registrationOpen: string;
     registrationClose: string;
+    timezone: string;
     checkinRequired: boolean;
     forfeitEnabled: boolean;
     forfeitGraceMinutes: number;
@@ -66,6 +69,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
     const { success, error } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const timeZoneOptions = useMemo(() => getTimeZoneOptions(), []);
     const [form, setForm] = useState<TournamentForm>({
         title: "",
         description: "",
@@ -75,6 +79,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
         startAt: "",
         registrationOpen: "",
         registrationClose: "",
+        timezone: DEFAULT_TIMEZONE,
         checkinRequired: false,
         forfeitEnabled: false,
         forfeitGraceMinutes: 15,
@@ -98,15 +103,17 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                 if (!active) return;
                 if (res.ok) {
                     const tournament = data.tournament;
+                    const timeZone = tournament.timezone || DEFAULT_TIMEZONE;
                     setForm({
                         title: tournament.title,
                         description: tournament.description ?? "",
                         gameType: tournament.gameType,
                         format: tournament.format,
                         structure: tournament.structure ?? "SINGLE_ELIM",
-                        startAt: new Date(tournament.startAt).toISOString().slice(0, 16),
-                        registrationOpen: tournament.registrationOpen ? new Date(tournament.registrationOpen).toISOString().slice(0, 16) : "",
-                        registrationClose: tournament.registrationClose ? new Date(tournament.registrationClose).toISOString().slice(0, 16) : "",
+                        startAt: formatLocalDateTimeInTimeZone(new Date(tournament.startAt), timeZone),
+                        registrationOpen: tournament.registrationOpen ? formatLocalDateTimeInTimeZone(new Date(tournament.registrationOpen), timeZone) : "",
+                        registrationClose: tournament.registrationClose ? formatLocalDateTimeInTimeZone(new Date(tournament.registrationClose), timeZone) : "",
+                        timezone: timeZone,
                         checkinRequired: Boolean(tournament.checkinRequired),
                         forfeitEnabled: Boolean(tournament.forfeitEnabled),
                         forfeitGraceMinutes: tournament.forfeitGraceMinutes ?? 15,
@@ -149,6 +156,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                     startAt: form.startAt,
                     registrationOpen: form.registrationOpen || undefined,
                     registrationClose: form.registrationClose || undefined,
+                    timezone: form.timezone,
                     checkinRequired: form.checkinRequired,
                     forfeitEnabled: form.forfeitEnabled,
                     forfeitGraceMinutes: form.forfeitGraceMinutes,
@@ -202,6 +210,11 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                                 onChange={(value) => setForm((prev) => ({ ...prev, startAt: value }))}
                                 className="w-full"
                             />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Timezone</label>
+                            <FormSelect value={form.timezone} onChange={(value) => setForm((prev) => ({ ...prev, timezone: value }))} options={timeZoneOptions} />
+                            <p className="mt-1 text-xs text-base-content/55">Jadwal dan kalender mengikuti timezone ini.</p>
                         </div>
                         <div>
                             <label className={labelCls}>Registration Open</label>

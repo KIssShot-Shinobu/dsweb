@@ -6,6 +6,8 @@ import { tournamentUpdateSchema } from "@/lib/validators";
 import { resolveTournamentImage } from "@/lib/tournament-image";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { resolveGameByCodeOrId } from "@/lib/game";
+import { parseLocalDateTimeInTimeZone } from "@/lib/datetime";
+import { DEFAULT_TIMEZONE } from "@/lib/timezones";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -66,16 +68,20 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ success: false, message: "Tidak ada data untuk diupdate" }, { status: 400 });
         }
 
-        let currentTournament: { isTeamTournament: boolean; mode: string; checkinRequired: boolean } | null = null;
+        let currentTournament: { isTeamTournament: boolean; mode: string; checkinRequired: boolean; timezone: string | null } | null = null;
         const needsCurrentTournament =
             typeof updateData.isTeamTournament === "boolean" ||
             typeof updateData.mode === "string" ||
-            updateData.forfeitEnabled === true;
+            updateData.forfeitEnabled === true ||
+            typeof updateData.startAt === "string" ||
+            typeof updateData.registrationOpen === "string" ||
+            typeof updateData.registrationClose === "string" ||
+            typeof updateData.timezone === "string";
 
         if (needsCurrentTournament) {
             currentTournament = await prisma.tournament.findUnique({
                 where: { id },
-                select: { isTeamTournament: true, mode: true, checkinRequired: true },
+                select: { isTeamTournament: true, mode: true, checkinRequired: true, timezone: true },
             });
 
             if (!currentTournament) {
@@ -106,8 +112,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             }
         }
 
+        const timeZone = typeof updateData.timezone === "string" ? updateData.timezone : currentTournament?.timezone ?? DEFAULT_TIMEZONE;
         if (typeof updateData.startAt === "string") {
-            updateData.startAt = new Date(updateData.startAt);
+            const parsedStart = parseLocalDateTimeInTimeZone(updateData.startAt, timeZone);
+            if (!parsedStart) {
+                return NextResponse.json({ success: false, message: "Tanggal start tidak valid" }, { status: 400 });
+            }
+            updateData.startAt = parsedStart;
         }
 
         if (typeof updateData.gameType === "string") {
@@ -120,11 +131,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         if (typeof updateData.registrationOpen === "string") {
-            updateData.registrationOpen = updateData.registrationOpen ? new Date(updateData.registrationOpen) : null;
+            const rawOpen = updateData.registrationOpen;
+            const parsedOpen = rawOpen ? parseLocalDateTimeInTimeZone(rawOpen, timeZone) : null;
+            if (rawOpen && !parsedOpen) {
+                return NextResponse.json({ success: false, message: "Tanggal registrasi tidak valid" }, { status: 400 });
+            }
+            updateData.registrationOpen = parsedOpen;
         }
 
         if (typeof updateData.registrationClose === "string") {
-            updateData.registrationClose = updateData.registrationClose ? new Date(updateData.registrationClose) : null;
+            const rawClose = updateData.registrationClose;
+            const parsedClose = rawClose ? parseLocalDateTimeInTimeZone(rawClose, timeZone) : null;
+            if (rawClose && !parsedClose) {
+                return NextResponse.json({ success: false, message: "Tanggal registrasi tidak valid" }, { status: 400 });
+            }
+            updateData.registrationClose = parsedClose;
         }
 
         if (updateData.description === "") {

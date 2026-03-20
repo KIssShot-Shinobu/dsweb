@@ -269,7 +269,7 @@ export function MatchChatThread({
                             </div>
                             <div className="text-xs text-base-content/50">
                                 {formatTimestamp(message.createdAt)}
-                                {message.editedAt ? " • edited" : ""}
+                                {message.editedAt ? " - edited" : ""}
                             </div>
                         </div>
                         {editingId === message.id ? (
