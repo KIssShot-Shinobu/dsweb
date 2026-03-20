@@ -98,6 +98,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             return NextResponse.json({ success: false, message: scoreError }, { status: 400 });
         }
 
+        const hasEvidence = Object.prototype.hasOwnProperty.call(parsed.data, "evidenceUrls");
+        const evidenceUrls = parsed.data.evidenceUrls ?? null;
+
         await prisma.matchReport.upsert({
             where: { matchId_reportedById: { matchId: id, reportedById: currentUser.id } },
             create: {
@@ -106,11 +109,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 scoreA: parsed.data.scoreA,
                 scoreB: parsed.data.scoreB,
                 winnerId: parsed.data.winnerId,
+                ...(hasEvidence ? { evidenceUrls } : {}),
             },
             update: {
                 scoreA: parsed.data.scoreA,
                 scoreB: parsed.data.scoreB,
                 winnerId: parsed.data.winnerId,
+                ...(hasEvidence ? { evidenceUrls } : {}),
             },
         });
 

@@ -30,7 +30,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
             seed: entry.seed,
             participant: {
                 id: entry.id,
-                name: entry.user?.fullName || entry.user?.username || entry.guestName || "Guest",
+                name: entry.user?.username || entry.user?.fullName || entry.guestName || "Guest",
             },
         }));
 

@@ -1,0 +1,39 @@
+Seru banget bahas fitur turnamen—ini ruang yang kaya banget untuk dibikin solid dan “pro” secara operasional.
+
+Berikut fitur tambahan yang paling relevan (saya urutkan dari quick wins ke yang lebih besar). Saya sertakan alasan singkat biar gampang pilih.
+
+Quick wins (tanpa perubahan arsitektur besar)
+
+No‑show / Forfeit otomatis
+Auto‑DQ kalau peserta tidak check‑in / tidak report dalam X menit setelah match READY.
+Dampak: mengurangi bracket macet.
+Evidence upload untuk sengketa
+Saat report/resolve dispute, pemain bisa upload screenshot/link bukti.
+Dampak: mempermudah referee, audit lebih kuat.
+Match chat / notes singkat (per match)
+Thread kecil untuk komunikasi jadwal/hasil.
+Dampak: mengurangi koordinasi di luar sistem.
+Calendar + timezone support
+Sync jadwal ke kalender (ICS) dan tampilan zona waktu.
+Dampak: mengurangi miss jadwal untuk event lintas kota.
+Medium impact (butuh sedikit perubahan data / logic)
+5. Per‑round format
+BO1 di early rounds, BO3 di semis, BO5 di final.
+Dampak: lebih kompetitif & fleksibel.
+6. Seeding manual + lock roster
+Admin bisa set seed sebelum start, roster dikunci setelah seeding.
+Dampak: fairness dan menghindari “last‑minute shuffle”.
+7. Substitute / stand‑in rules
+Izinkan replace player sebelum bracket start (dengan audit).
+Dampak: turnamen team lebih fleksibel.
+
+High impact (bigger scope)
+8. Map/side veto flow
+Voting map/side per match (terutama e‑sports).
+Dampak: pro‑level competitive flow.
+9. Prize distribution tracker
+Atur payout dan status pembayaran hadiah.
+Dampak: transparansi finansial.
+10. Streaming / broadcast overlay feed
+Integrasi bracket + match detail ke overlay stream.
+Dampak: experience publik.

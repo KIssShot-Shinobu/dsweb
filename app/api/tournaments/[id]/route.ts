@@ -66,24 +66,43 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ success: false, message: "Tidak ada data untuk diupdate" }, { status: 400 });
         }
 
-        if (typeof updateData.isTeamTournament === "boolean" || typeof updateData.mode === "string") {
-            const currentTournament = await prisma.tournament.findUnique({
+        let currentTournament: { isTeamTournament: boolean; mode: string; checkinRequired: boolean } | null = null;
+        const needsCurrentTournament =
+            typeof updateData.isTeamTournament === "boolean" ||
+            typeof updateData.mode === "string" ||
+            updateData.forfeitEnabled === true;
+
+        if (needsCurrentTournament) {
+            currentTournament = await prisma.tournament.findUnique({
                 where: { id },
-                select: { isTeamTournament: true, mode: true },
+                select: { isTeamTournament: true, mode: true, checkinRequired: true },
             });
 
             if (!currentTournament) {
                 return NextResponse.json({ success: false, message: "Turnamen tidak ditemukan" }, { status: 404 });
             }
+        }
 
+        if (typeof updateData.isTeamTournament === "boolean" || typeof updateData.mode === "string") {
             const nextIsTeam =
                 typeof updateData.isTeamTournament === "boolean"
                     ? updateData.isTeamTournament
-                    : currentTournament.isTeamTournament;
-            const nextMode = typeof updateData.mode === "string" ? updateData.mode : currentTournament.mode;
+                    : currentTournament?.isTeamTournament ?? false;
+            const nextMode = typeof updateData.mode === "string" ? updateData.mode : currentTournament?.mode ?? "INDIVIDUAL";
 
             if (nextIsTeam && nextMode === "INDIVIDUAL") {
                 return NextResponse.json({ success: false, message: "Mode team wajib dipilih" }, { status: 400 });
+            }
+        }
+
+        if (updateData.forfeitEnabled === true) {
+            if (updateData.checkinRequired === false) {
+                return NextResponse.json({ success: false, message: "Auto-forfeit membutuhkan check-in aktif" }, { status: 400 });
+            }
+
+            const checkinRequired = updateData.checkinRequired ?? currentTournament?.checkinRequired ?? false;
+            if (!checkinRequired) {
+                return NextResponse.json({ success: false, message: "Auto-forfeit membutuhkan check-in aktif" }, { status: 400 });
             }
         }
 

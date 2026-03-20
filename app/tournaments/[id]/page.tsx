@@ -5,10 +5,12 @@ import { Footer } from "@/components/ui/footer";
 import { Navbar } from "@/components/ui/navbar";
 import { TournamentRegisterButton } from "@/components/public/tournament-register-button";
 import { TournamentBracketSection } from "@/components/public/tournament-bracket-section";
+import { TournamentMyMatch } from "@/components/public/tournament-my-match";
 import { prisma } from "@/lib/prisma";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { resolveTournamentImage } from "@/lib/tournament-image";
 import { getCurrentUser } from "@/lib/auth";
+import { formatLocalDateTime } from "@/lib/datetime";
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("id-ID", {
@@ -41,6 +43,11 @@ function getStatusLabel(status: string) {
     if (status === "COMPLETED") return "Selesai";
     if (status === "CANCELLED") return "Dibatalkan";
     return status;
+}
+
+function resolveParticipantName(participant?: { guestName: string | null; user?: { fullName: string | null; username: string | null } | null }) {
+    if (!participant) return "TBD";
+    return participant.user?.username || participant.user?.fullName || participant.guestName || "TBD";
 }
 
 export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -96,6 +103,58 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               take: 3,
           })
         : [];
+
+    const myMatch = currentUser && participantForUser
+        ? await prisma.match.findFirst({
+              where: {
+                  tournamentId: id,
+                  status: { not: "COMPLETED" },
+                  OR: [{ playerAId: participantForUser.id }, { playerBId: participantForUser.id }],
+              },
+              orderBy: [{ round: { roundNumber: "asc" } }, { bracketIndex: "asc" }],
+              select: {
+                  id: true,
+                  status: true,
+                  scheduledAt: true,
+                  playerA: { select: { id: true, guestName: true, user: { select: { fullName: true, username: true } } } },
+                  playerB: { select: { id: true, guestName: true, user: { select: { fullName: true, username: true } } } },
+                  reports: {
+                      where: { reportedById: currentUser.id },
+                      select: { scoreA: true, scoreB: true, winnerId: true, evidenceUrls: true },
+                      orderBy: { createdAt: "desc" },
+                      take: 1,
+                  },
+                  disputes: {
+                      where: { status: "OPEN" },
+                      select: { reason: true, evidenceUrls: true },
+                      orderBy: { createdAt: "desc" },
+                      take: 1,
+                  },
+              },
+          })
+        : null;
+
+    const myMatchPayload = myMatch
+        ? {
+              id: myMatch.id,
+              status: myMatch.status,
+              scheduledAt: myMatch.scheduledAt ? formatLocalDateTime(myMatch.scheduledAt) : null,
+              playerA: myMatch.playerA ? { id: myMatch.playerA.id, name: resolveParticipantName(myMatch.playerA) } : null,
+              playerB: myMatch.playerB ? { id: myMatch.playerB.id, name: resolveParticipantName(myMatch.playerB) } : null,
+              report: myMatch.reports[0]
+                  ? {
+                        scoreA: myMatch.reports[0].scoreA,
+                        scoreB: myMatch.reports[0].scoreB,
+                        winnerId: myMatch.reports[0].winnerId,
+                        evidenceUrls: Array.isArray(myMatch.reports[0].evidenceUrls)
+                            ? myMatch.reports[0].evidenceUrls
+                            : null,
+                    }
+                  : null,
+              hasOpenDispute: myMatch.disputes.length > 0,
+              disputeReason: myMatch.disputes[0]?.reason ?? null,
+          }
+        : null;
 
     const renderPaymentStatus = () => {
         if (!participantForUser || tournament.entryFee <= 0) return null;
@@ -234,6 +293,12 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                                 </div>
                                             </div>
                                         ) : null}
+                                        {myMatchPayload ? (
+                                            <>
+                                                <div className="divider my-1" />
+                                                <TournamentMyMatch match={myMatchPayload} />
+                                            </>
+                                        ) : null}
                                     </div>
 
                                     <div className="divider my-1" />
@@ -245,7 +310,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                         ) : (
                                             <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
                                                 {rosterParticipants.map((participant, index) => {
-                                                    const displayName = participant.user?.fullName || participant.guestName || "Guest";
+                                                    const displayName = participant.user?.username || participant.user?.fullName || participant.guestName || "Guest";
                                                     const roleLabel = participant.user?.role || "Guest";
                                                     const avatarUrl = participant.user?.avatarUrl ? normalizeAssetUrl(participant.user.avatarUrl) : null;
 

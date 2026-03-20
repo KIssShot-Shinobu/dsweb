@@ -31,6 +31,11 @@ const STATUS_OPTIONS = [
     { value: "CANCELLED", label: "CANCELLED" },
 ];
 
+const FORFEIT_MODE_OPTIONS = [
+    { value: "CHECKIN_ONLY", label: "Check-in only" },
+    { value: "SCHEDULE_NO_SHOW", label: "No-show schedule" },
+];
+
 const formatIdrInput = (value: number) => new Intl.NumberFormat("id-ID").format(value);
 const parseIdrInput = (value: string) => {
     const numeric = Number(value.replace(/[^0-9]/g, ""));
@@ -47,6 +52,9 @@ type TournamentForm = {
     registrationOpen: string;
     registrationClose: string;
     checkinRequired: boolean;
+    forfeitEnabled: boolean;
+    forfeitGraceMinutes: number;
+    forfeitMode: string;
     entryFee: number;
     prizePool: number;
     status: string;
@@ -68,6 +76,9 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
         registrationOpen: "",
         registrationClose: "",
         checkinRequired: false,
+        forfeitEnabled: false,
+        forfeitGraceMinutes: 15,
+        forfeitMode: "CHECKIN_ONLY",
         entryFee: 0,
         prizePool: 0,
         status: "OPEN",
@@ -97,6 +108,9 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                         registrationOpen: tournament.registrationOpen ? new Date(tournament.registrationOpen).toISOString().slice(0, 16) : "",
                         registrationClose: tournament.registrationClose ? new Date(tournament.registrationClose).toISOString().slice(0, 16) : "",
                         checkinRequired: Boolean(tournament.checkinRequired),
+                        forfeitEnabled: Boolean(tournament.forfeitEnabled),
+                        forfeitGraceMinutes: tournament.forfeitGraceMinutes ?? 15,
+                        forfeitMode: tournament.forfeitMode ?? "CHECKIN_ONLY",
                         entryFee: tournament.entryFee ?? 0,
                         prizePool: tournament.prizePool ?? 0,
                         status: tournament.status,
@@ -136,6 +150,9 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                     registrationOpen: form.registrationOpen || undefined,
                     registrationClose: form.registrationClose || undefined,
                     checkinRequired: form.checkinRequired,
+                    forfeitEnabled: form.forfeitEnabled,
+                    forfeitGraceMinutes: form.forfeitGraceMinutes,
+                    forfeitMode: form.forfeitMode,
                     entryFee: form.entryFee,
                     prizePool: form.prizePool,
                     status: form.status,
@@ -154,6 +171,9 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
             setSaving(false);
         }
     };
+
+    const forfeitAvailable = form.checkinRequired;
+    const forfeitActive = forfeitAvailable && form.forfeitEnabled;
 
     return (
         <DashboardPageShell>
@@ -226,7 +246,18 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                         </div>
                         <label className="flex items-center justify-between rounded-box border border-base-300 bg-base-200/40 px-3 py-3 text-sm font-semibold text-base-content">
                             Check-in Required
-                            <input type="checkbox" className="toggle toggle-primary" checked={form.checkinRequired} onChange={(event) => setForm((prev) => ({ ...prev, checkinRequired: event.target.checked }))} />
+                            <input
+                                type="checkbox"
+                                className="toggle toggle-primary"
+                                checked={form.checkinRequired}
+                                onChange={(event) =>
+                                    setForm((prev) => ({
+                                        ...prev,
+                                        checkinRequired: event.target.checked,
+                                        forfeitEnabled: event.target.checked ? prev.forfeitEnabled : false,
+                                    }))
+                                }
+                            />
                         </label>
                         <div>
                             <label className={labelCls}>{form.isTeamTournament ? "Max Teams" : "Max Players"}</label>
@@ -265,6 +296,46 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                                 placeholder="0"
                             />
                         </div>
+                    </div>
+                </DashboardPanel>
+
+                <DashboardPanel title="Auto Forfeit" description="Atur forfeit otomatis berdasarkan jadwal dan check-in.">
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                        <label className="flex items-center justify-between rounded-box border border-base-300 bg-base-200/40 px-3 py-3 text-sm font-semibold text-base-content">
+                            Auto Forfeit
+                            <input
+                                type="checkbox"
+                                className="toggle toggle-primary"
+                                checked={form.forfeitEnabled}
+                                disabled={!forfeitAvailable}
+                                onChange={(event) => setForm((prev) => ({ ...prev, forfeitEnabled: event.target.checked }))}
+                            />
+                        </label>
+                        <div>
+                            <label className={labelCls}>Grace Minutes</label>
+                            <input
+                                type="number"
+                                min={1}
+                                className={inputCls}
+                                value={form.forfeitGraceMinutes}
+                                onChange={(event) => setForm((prev) => ({ ...prev, forfeitGraceMinutes: Number(event.target.value) }))}
+                                disabled={!forfeitActive}
+                            />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Mode</label>
+                            <FormSelect
+                                value={form.forfeitMode}
+                                onChange={(value) => setForm((prev) => ({ ...prev, forfeitMode: value }))}
+                                options={FORFEIT_MODE_OPTIONS}
+                                disabled={!forfeitActive}
+                            />
+                        </div>
+                        {!forfeitAvailable ? (
+                            <p className="text-xs text-base-content/55 lg:col-span-3">
+                                Aktifkan check-in untuk menggunakan auto-forfeit.
+                            </p>
+                        ) : null}
                     </div>
                 </DashboardPanel>
 

@@ -21,7 +21,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Tournament kini mendukung mode **Team** (TEAM_BOARD / TEAM_KOTH). Pendaftaran team hanya untuk captain/vice/manager.
 - Bracket tournament dapat diakses publik (tanpa login) untuk halaman public.
 - Tournament sekarang punya `maxPlayers` untuk batas kapasitas (input angka bebas). Bracket otomatis menyesuaikan ke power‑of‑two terdekat. Registrasi publik/admin akan menolak jika slot penuh.
-- Tournament kini menyimpan `startAt` serta window pendaftaran (`registrationOpen`/`registrationClose`) dan toggle `checkinRequired` per event.
+- Tournament kini menyimpan `startAt` serta window pendaftaran (`registrationOpen`/`registrationClose`), toggle `checkinRequired`, dan pengaturan auto-forfeit per event (toggle + grace + mode).
 - Untuk turnamen berbayar (entry fee > 0), registrasi wajib upload **bukti pembayaran**. Peserta masuk status **PENDING** sampai admin verifikasi (**VERIFIED/REJECTED**). Hanya peserta VERIFIED yang tampil di roster publik dan masuk bracket. Notifikasi + email dikirim saat verifikasi.
 - Waitlist otomatis saat slot penuh, dan auto-promote ketika ada slot kosong.
 - Dashboard tournament dengan opsi `Edit`, `Delete`, dan `Update Status`.
@@ -44,11 +44,13 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Treasury transaksi + analytics ringkas dengan filter server-side; halaman treasury sekarang default ke semua periode agar sinkron dengan total data dashboard.
 - Dashboard summary memakai endpoint terpusat `/api/dashboard/summary`, termasuk ringkasan guild members, assigned team, dan total team aktif.
 - Upload file gambar (screenshot/profile) via API. Dashboard kini hanya menampilkan avatar user aktif di header agar layout tidak boros.
-  - Audit log aktivitas user/admin.
-  - Notification system in-app dengan realtime SSE untuk invite, join request, dan alert penting.
-  - Penugasan referee per tournament + dispute queue agar sengketa match bisa diselesaikan lebih cepat (referee dapat confirm result & resolve dispute tanpa override skor).
-  - Diskualifikasi peserta dari dashboard dengan auto-advance match aktif + audit log.
+- Audit log aktivitas user/admin.
+- Notification system in-app dengan realtime SSE untuk invite, join request, dan alert penting.
+- Penugasan referee per tournament + dispute queue agar sengketa match bisa diselesaikan lebih cepat (referee dapat confirm result & resolve dispute tanpa override skor).
+- Sengketa match mendukung upload bukti (screenshot) saat report/dispute untuk mempercepat verifikasi.
+- Diskualifikasi peserta dari dashboard dengan auto-advance match aktif + audit log.
   - Penjadwalan match + reminder otomatis 30 menit sebelum match dimulai (notifikasi in-app).
+  - Forfeit otomatis untuk match terjadwal yang peserta-nya tidak check-in tepat waktu (cron), configurable per tournament (toggle + grace + mode) dan hanya berjalan jika check-in aktif.
 - Theme switch `Light/Dark` yang berlaku di dashboard dan public page.
 - Native form controls (`select`, `date`, `datetime-local`) sudah di-hardening agar teks dropdown tetap terbaca di light/dark.
 - Password reset flow berbasis token dengan expiry 15 menit.
@@ -279,10 +281,10 @@ Auth:
   Tournament:
   
   - `GET /api/tournaments` (`search`, `status`, `gameType`, `page`, `limit`)
-  - `POST /api/tournaments` (min role OFFICER)
+  - `POST /api/tournaments` (min role OFFICER, support `forfeitEnabled`, `forfeitGraceMinutes`, `forfeitMode`)
   - `GET /api/tournaments/:id`
   - `GET /api/tournaments/:id/bracket` (public, tanpa login)
-  - `PUT /api/tournaments/:id` (min role OFFICER, support update field tournament)
+  - `PUT /api/tournaments/:id` (min role OFFICER, support update field tournament + forfeit settings)
   - `DELETE /api/tournaments/:id` (min role OFFICER)
   - `GET /api/tournaments/:id/staff`
   - `POST /api/tournaments/:id/staff`
@@ -294,9 +296,10 @@ Auth:
   - `POST /api/matches/:id/report` (rate limit per user)
   - `POST /api/matches/:id/confirm`
   - `POST /api/matches/:id/schedule`
-  - `POST /api/matches/:id/resolve-dispute`
-  - `POST /api/matches/:id/admin-resolve`
-  - `POST /api/cron/match-reminders` (scheduler)
+    - `POST /api/matches/:id/resolve-dispute`
+    - `POST /api/matches/:id/admin-resolve`
+    - `POST /api/cron/match-reminders` (scheduler)
+    - `POST /api/cron/match-forfeits` (scheduler)
 
 Lainnya:
 
@@ -473,6 +476,10 @@ cmd /c npm run dev
   - `prisma/migrations_manual/20260318_tournament_waitlist.rollback.sql`
   - `prisma/migrations_manual/20260318_match_reminder_sent_at.sql`
   - `prisma/migrations_manual/20260318_match_reminder_sent_at.rollback.sql`
+  - `prisma/migrations_manual/20260319_match_dispute_evidence.sql`
+  - `prisma/migrations_manual/20260319_match_dispute_evidence.rollback.sql`
+  - `prisma/migrations_manual/20260319_tournament_forfeit_settings.sql`
+  - `prisma/migrations_manual/20260319_tournament_forfeit_settings.rollback.sql`
 
 ## Aturan Update Dokumentasi
 

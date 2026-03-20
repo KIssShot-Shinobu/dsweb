@@ -38,6 +38,11 @@ components:
         - ONGOING
         - COMPLETED
         - CANCELLED
+    TournamentForfeitMode:
+      type: string
+      enum:
+        - CHECKIN_ONLY
+        - SCHEDULE_NO_SHOW
     TournamentParticipantStatus:
       type: string
       enum:
@@ -676,6 +681,62 @@ paths:
       summary: Create tournament
       security:
         - authjsSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - gameType
+                - format
+                - startAt
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                gameType:
+                  type: string
+                format:
+                  type: string
+                  enum:
+                    - BO1
+                    - BO3
+                    - BO5
+                structure:
+                  type: string
+                  enum:
+                    - SINGLE_ELIM
+                    - DOUBLE_ELIM
+                    - SWISS
+                startAt:
+                  type: string
+                  format: date-time
+                registrationOpen:
+                  type: string
+                  format: date-time
+                registrationClose:
+                  type: string
+                  format: date-time
+                checkinRequired:
+                  type: boolean
+                forfeitEnabled:
+                  type: boolean
+                forfeitGraceMinutes:
+                  type: integer
+                  minimum: 1
+                forfeitMode:
+                  $ref: "#/components/schemas/TournamentForfeitMode"
+                entryFee:
+                  type: number
+                prizePool:
+                  type: number
+                maxPlayers:
+                  type: integer
+                status:
+                  $ref: "#/components/schemas/TournamentStatus"
       responses:
         "201":
           description: Tournament created
@@ -699,6 +760,57 @@ paths:
       summary: Update tournament
       security:
         - authjsSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                gameType:
+                  type: string
+                format:
+                  type: string
+                  enum:
+                    - BO1
+                    - BO3
+                    - BO5
+                structure:
+                  type: string
+                  enum:
+                    - SINGLE_ELIM
+                    - DOUBLE_ELIM
+                    - SWISS
+                startAt:
+                  type: string
+                  format: date-time
+                registrationOpen:
+                  type: string
+                  format: date-time
+                registrationClose:
+                  type: string
+                  format: date-time
+                checkinRequired:
+                  type: boolean
+                forfeitEnabled:
+                  type: boolean
+                forfeitGraceMinutes:
+                  type: integer
+                  minimum: 1
+                forfeitMode:
+                  $ref: "#/components/schemas/TournamentForfeitMode"
+                entryFee:
+                  type: number
+                prizePool:
+                  type: number
+                maxPlayers:
+                  type: integer
+                status:
+                  $ref: "#/components/schemas/TournamentStatus"
       responses:
         "200":
           description: Tournament updated
@@ -878,9 +990,9 @@ paths:
           description: Not found
         "409":
           description: Tournament closed
-    /api/matches/{id}/resolve-dispute:
-      post:
-        summary: Resolve match dispute by referee
+  /api/matches/{id}/report:
+    post:
+      summary: Report match result by participant
       security:
         - authjsSessionCookie: []
       parameters:
@@ -889,6 +1001,106 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scoreA
+                - scoreB
+                - winnerId
+              properties:
+                scoreA:
+                  type: integer
+                scoreB:
+                  type: integer
+                winnerId:
+                  type: string
+                evidenceUrls:
+                  type: array
+                  items:
+                    type: string
+                  description: List bukti (path upload internal /uploads/*)
+      responses:
+        "200":
+          description: Match report accepted
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+  /api/matches/{id}/dispute:
+    post:
+      summary: Raise match dispute by participant
+      security:
+        - authjsSessionCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                evidenceUrls:
+                  type: array
+                  items:
+                    type: string
+                  description: List bukti (path upload internal /uploads/*)
+      responses:
+        "201":
+          description: Dispute created
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+  /api/matches/{id}/resolve-dispute:
+    post:
+      summary: Resolve match dispute by referee
+      security:
+        - authjsSessionCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scoreA
+                - scoreB
+                - winnerId
+              properties:
+                scoreA:
+                  type: integer
+                scoreB:
+                  type: integer
+                winnerId:
+                  type: string
+                reason:
+                  type: string
+                evidenceUrls:
+                  type: array
+                  items:
+                    type: string
+                  description: Bukti tambahan saat resolve (path upload internal /uploads/*)
       responses:
         "200":
           description: Dispute resolved
@@ -944,5 +1156,19 @@ paths:
       responses:
         "200":
           description: Reminder processed
+        "401":
+          description: Unauthorized
+  /api/cron/match-forfeits:
+    post:
+      summary: Cron endpoint to auto-forfeit no-show matches
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Forfeit processed
         "401":
           description: Unauthorized

@@ -45,6 +45,10 @@ export const tournamentFormSelectOptions = {
         { value: "COMPLETED", label: "COMPLETED" },
         { value: "CANCELLED", label: "CANCELLED" },
     ],
+    forfeitMode: [
+        { value: "CHECKIN_ONLY", label: "Check-in only" },
+        { value: "SCHEDULE_NO_SHOW", label: "No-show schedule" },
+    ],
 };
 
 const DEFAULT_MAX_PLAYERS = "32";
@@ -72,6 +76,9 @@ export function getDefaultTournamentForm() {
         image: "",
         onlineMode: "ONLINE",
         checkInEnabled: true,
+        forfeitEnabled: false,
+        forfeitGraceMinutes: 15,
+        forfeitMode: "CHECKIN_ONLY",
         longDescription: "",
         visibility: "PUBLIC",
         privacyPassword: "",
@@ -116,6 +123,9 @@ export function buildTournamentPayload(formData: TournamentFormState) {
         registrationOpen: formData.registrationStart || undefined,
         registrationClose: formData.registrationEnd || undefined,
         checkinRequired: formData.checkInEnabled,
+        forfeitEnabled: formData.forfeitEnabled,
+        forfeitGraceMinutes: formData.forfeitGraceMinutes,
+        forfeitMode: formData.forfeitMode,
         startAt: formData.startAt,
         image: formData.image,
     };
@@ -234,6 +244,9 @@ export function TournamentForm({
         }));
     };
 
+    const forfeitAvailable = formData.checkInEnabled;
+    const forfeitActive = formData.forfeitEnabled && forfeitAvailable;
+
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -304,10 +317,55 @@ export function TournamentForm({
                                         type="checkbox"
                                         className="toggle toggle-primary"
                                         checked={formData.checkInEnabled}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, checkInEnabled: e.target.checked }))}
+                                        onChange={(e) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                checkInEnabled: e.target.checked,
+                                                forfeitEnabled: e.target.checked ? prev.forfeitEnabled : false,
+                                            }))
+                                        }
                                     />
                                 </label>
                                 <p className="mt-2 text-xs text-base-content/55">Gunakan check-in sebelum bracket dimulai.</p>
+                            </div>
+                        </div>
+                    </div>
+                </FormSection>
+                <FormSection title="Auto Forfeit" description="Atur forfeit otomatis untuk peserta yang tidak hadir.">
+                    <div className="space-y-4">
+                        <label className="flex items-center justify-between rounded-box border border-base-300 bg-base-200/40 px-3 py-3 text-sm font-semibold text-base-content">
+                            Auto Forfeit
+                            <input
+                                type="checkbox"
+                                className="toggle toggle-primary"
+                                checked={formData.forfeitEnabled}
+                                disabled={!forfeitAvailable}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, forfeitEnabled: e.target.checked }))}
+                            />
+                        </label>
+                        <p className="text-xs text-base-content/55">
+                            Aktifkan check-in untuk menggunakan auto-forfeit.
+                        </p>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                                <label className={labelCls}>Grace Minutes</label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    className={inputCls}
+                                    value={formData.forfeitGraceMinutes}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, forfeitGraceMinutes: Number(e.target.value) }))}
+                                    disabled={!forfeitActive}
+                                />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Mode</label>
+                                <FormSelect
+                                    value={formData.forfeitMode}
+                                    onChange={(value) => setFormData((prev) => ({ ...prev, forfeitMode: value }))}
+                                    options={tournamentFormSelectOptions.forfeitMode}
+                                    disabled={!forfeitActive}
+                                />
                             </div>
                         </div>
                     </div>

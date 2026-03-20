@@ -144,9 +144,10 @@ export async function registerUser(
     }
 
     const hashedPassword = await deps.hashPassword(data.password);
+    const usernameBase = data.fullName?.trim() || data.email.split("@")[0] || "user";
     const username = await ensureUniqueUsername(
         deps.prisma,
-        data.email.split("@")[0] || "user"
+        usernameBase
     );
 
     const createUser = deps.prisma.user.create;

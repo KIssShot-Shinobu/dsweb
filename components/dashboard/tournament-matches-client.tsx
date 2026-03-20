@@ -61,7 +61,7 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
     const resolveParticipantName = (participant?: MatchRow["playerA"]) => {
         if (!participant) return "TBD";
-        return participant.user?.fullName || participant.user?.username || participant.guestName || "TBD";
+        return participant.user?.username || participant.user?.fullName || participant.guestName || "TBD";
     };
 
     const fetchMatches = async () => {

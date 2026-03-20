@@ -23,6 +23,7 @@ export const TOURNAMENT_STATUS_VALUES = ["OPEN", "ONGOING", "COMPLETED", "CANCEL
 export const TOURNAMENT_STRUCTURE_VALUES = ["SINGLE_ELIM", "DOUBLE_ELIM", "SWISS"] as const;
 export const TOURNAMENT_FORMAT_VALUES = ["BO1", "BO3", "BO5"] as const;
 export const TOURNAMENT_MODE_VALUES = ["INDIVIDUAL", "TEAM_BOARD", "TEAM_KOTH"] as const;
+export const TOURNAMENT_FORFEIT_MODE_VALUES = ["CHECKIN_ONLY", "SCHEDULE_NO_SHOW"] as const;
 export const TOURNAMENT_STAFF_ROLE_VALUES = ["REFEREE", "STAFF"] as const;
 export const TOURNAMENT_MAX_PLAYERS_VALUES = [8, 16, 32, 64, 128, 256] as const;
 export const TOURNAMENT_PAYMENT_STATUS_VALUES = ["PENDING", "VERIFIED", "REJECTED"] as const;
@@ -365,6 +366,9 @@ const tournamentBaseSchema = z.object({
         .optional()
         .refine((value) => !value || !Number.isNaN(Date.parse(value)), { message: "Tanggal registrasi tidak valid" }),
     checkinRequired: z.boolean().optional(),
+    forfeitEnabled: z.boolean().optional(),
+    forfeitGraceMinutes: z.coerce.number().int().min(1, "Grace minutes minimal 1").optional(),
+    forfeitMode: z.enum(TOURNAMENT_FORFEIT_MODE_VALUES, { message: "Mode forfeit tidak valid" }).optional(),
     image: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload lokal").optional().or(z.literal("")),
 });
 
@@ -377,6 +381,14 @@ export const tournamentSchema = tournamentBaseSchema.superRefine((data, ctx) => 
                 path: ["mode"],
             });
         }
+    }
+
+    if (data.forfeitEnabled && !data.checkinRequired) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Auto-forfeit membutuhkan check-in aktif",
+            path: ["forfeitEnabled"],
+        });
     }
 });
 
@@ -400,10 +412,12 @@ export const matchReportSchema = z.object({
     scoreA: z.coerce.number().int().min(0).max(3),
     scoreB: z.coerce.number().int().min(0).max(3),
     winnerId: z.string().cuid("Winner ID tidak valid"),
+    evidenceUrls: evidenceUrlsSchema,
 });
 
 export const matchDisputeSchema = z.object({
     reason: z.string().trim().max(500, "Alasan terlalu panjang").optional().or(z.literal("")),
+    evidenceUrls: evidenceUrlsSchema,
 });
 
 export const matchAdminResolveSchema = matchReportSchema.extend({
@@ -418,6 +432,13 @@ const matchScheduleAtSchema = z
     .string()
     .trim()
     .refine((value) => value === "" || parseLocalDateTime(value) !== null, "Tanggal tidak valid");
+
+const evidenceUrlSchema = z
+    .string()
+    .trim()
+    .max(500, "Link bukti terlalu panjang")
+    .regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan bukti hasil upload");
+const evidenceUrlsSchema = z.array(evidenceUrlSchema).max(3, "Maksimal 3 bukti").optional();
 
 export const matchScheduleSchema = z.object({
     scheduledAt: z.union([matchScheduleAtSchema, z.null()]),

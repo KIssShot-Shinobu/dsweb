@@ -43,6 +43,11 @@ enum TournamentStructure {
   SWISS
 }
 
+enum TournamentForfeitMode {
+  CHECKIN_ONLY
+  SCHEDULE_NO_SHOW
+}
+
 enum TournamentMode {
   INDIVIDUAL
   TEAM_BOARD
@@ -187,6 +192,9 @@ model Tournament {
   checkinRequired Boolean         @default(false)
   checkInOpen Boolean             @default(false)
   checkInAt   DateTime?
+  forfeitEnabled Boolean          @default(false)
+  forfeitGraceMinutes Int         @default(15)
+  forfeitMode TournamentForfeitMode @default(CHECKIN_ONLY)
   minPlayers Int?
   maxPlayers Int?
   bracketSize Int?
@@ -704,6 +712,7 @@ model MatchReport {
   scoreB       Int
   winnerId     String
   resultSource MatchResultSource @default(PLAYER)
+  evidenceUrls Json?
   createdAt    DateTime          @default(now())
 
   @@unique([matchId, reportedById])
@@ -735,8 +744,11 @@ model MatchDispute {
   raisedBy     User               @relation("MatchDisputeRaisedBy", fields: [raisedById], references: [id], onDelete: Cascade)
   status       MatchDisputeStatus @default(OPEN)
   reason       String?            @db.VarChar(500)
+  evidenceUrls Json?
   resolvedById String?
   resolvedBy   User?              @relation("MatchDisputeResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolutionNote String?          @db.VarChar(500)
+  resolutionEvidenceUrls Json?
   createdAt    DateTime           @default(now())
   resolvedAt   DateTime?
 

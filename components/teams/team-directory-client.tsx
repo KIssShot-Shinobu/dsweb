@@ -115,7 +115,7 @@ export function TeamDirectoryClient({
                                                 </p>
                                                 <div className="flex flex-wrap gap-2 text-xs text-base-content/70">
                                                     <span className="badge badge-outline">{team.memberCount} member</span>
-                                                    <span className="badge badge-outline">Captain: {team.captain?.user.fullName || "-"}</span>
+                                                    <span className="badge badge-outline">Captain: {team.captain?.user.username || team.captain?.user.fullName || "-"}</span>
                                                 </div>
                                             </div>
                                         </div>

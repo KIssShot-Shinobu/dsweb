@@ -14,7 +14,7 @@ import {
 
 type AuditLog = {
     id: string;
-    userId: string;
+    userId: string | null;
     action: string;
     targetId: string | null;
     targetType: string | null;
@@ -68,6 +68,7 @@ const ACTION_OPTIONS = [
     { value: "MATCH_DISPUTE_RESOLVED", label: "Sengketa Match Diselesaikan" },
     { value: "MATCH_SCHEDULED", label: "Match Dijadwalkan" },
     { value: "MATCH_RESCHEDULED", label: "Jadwal Match Diubah" },
+    { value: "MATCH_FORFEITED", label: "Match Forfeit Otomatis" },
     { value: "RATE_LIMIT_HIT", label: "Rate Limit" },
     { value: "ROLE_CHANGED", label: "Perubahan Role" },
     { value: "TREASURY_ADDED", label: "Treasury Ditambah" },
@@ -313,13 +314,13 @@ export default function AuditLogsPage() {
                                                 <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getActionBadgeColor(log.action)}`}>
                                                     {ACTION_LABELS[log.action] ?? log.action}
                                                 </span>
-                                                <span className="rounded-full bg-base-100 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50" title={log.userId}>
-                                                    {log.userId === "0" ? "SYSTEM" : log.userId.slice(-8)}
+                                                <span className="rounded-full bg-base-100 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50" title={log.userId || "SYSTEM"}>
+                                                    {!log.userId || log.userId === "0" ? "SYSTEM" : log.userId.slice(-8)}
                                                 </span>
                                                 <span className="text-xs text-base-content/45">{formatDate(log.createdAt)}</span>
                                             </div>
                                             <div>
-                                                <div className="text-sm font-semibold text-base-content">{log.user?.fullName || "System Event"}</div>
+                                                <div className="text-sm font-semibold text-base-content">{log.user?.username || log.user?.fullName || "System Event"}</div>
                                                 <div className="text-xs text-base-content/45 break-words">{log.user?.email || log.ipAddress}</div>
                                             </div>
                                         </div>

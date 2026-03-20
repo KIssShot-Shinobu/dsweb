@@ -38,12 +38,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             return NextResponse.json({ success: false, message: "Anda bukan pemain di match ini" }, { status: 403 });
         }
 
+        const hasEvidence = Object.prototype.hasOwnProperty.call(parsed.data, "evidenceUrls");
+        const evidenceUrls = parsed.data.evidenceUrls ?? null;
+
         await prisma.matchDispute.create({
             data: {
                 matchId: id,
                 raisedById: currentUser.id,
                 status: "OPEN",
                 reason: parsed.data.reason || null,
+                ...(hasEvidence ? { evidenceUrls } : {}),
             },
         });
 

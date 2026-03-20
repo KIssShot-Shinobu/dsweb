@@ -482,8 +482,8 @@ export function TournamentParticipantsClient({
                                     {participants.map((participant) => {
                                         const displayName =
                                             participant.team?.name ||
-                                            participant.user?.fullName ||
                                             participant.user?.username ||
+                                            participant.user?.fullName ||
                                             participant.guestName ||
                                             "Guest";
                                         const avatarUrl = normalizeAssetUrl(participant.team?.logoUrl || participant.user?.avatarUrl || "");
@@ -692,8 +692,11 @@ export function TournamentParticipantsClient({
                                             onClick={() => setSelectedUser(user)}
                                         >
                                             <div>
-                                                <div className="font-semibold text-base-content">{user.fullName}</div>
-                                                <div className="text-xs text-base-content/50">@{user.username} • {user.email}</div>
+                                                <div className="font-semibold text-base-content">{user.username || user.fullName}</div>
+                                                <div className="text-xs text-base-content/50">
+                                                    {user.fullName && user.fullName !== user.username ? `${user.fullName} • ` : ""}
+                                                    {user.email}
+                                                </div>
                                             </div>
                                             {selectedUser?.id === user.id ? <span className="badge badge-primary badge-sm">Dipilih</span> : null}
                                         </button>

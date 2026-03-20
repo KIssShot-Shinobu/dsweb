@@ -340,7 +340,7 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
             <ConfirmModal
                 open={Boolean(removeTarget)}
                 title="Hapus Referee"
-                message={`Hapus ${removeTarget?.user.fullName || "referee"} dari turnamen ini?`}
+                message={`Hapus ${removeTarget?.user.username || removeTarget?.user.fullName || "referee"} dari turnamen ini?`}
                 confirmLabel="Hapus"
                 onConfirm={handleRemove}
                 onCancel={() => setRemoveTarget(null)}

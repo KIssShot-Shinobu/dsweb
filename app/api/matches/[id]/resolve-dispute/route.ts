@@ -89,9 +89,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             confirmedById: currentUser.id,
         });
 
+        const hasEvidence = Object.prototype.hasOwnProperty.call(parsed.data, "evidenceUrls");
+        const evidenceUrls = parsed.data.evidenceUrls ?? null;
+        const resolutionNote = parsed.data.reason?.trim() ? parsed.data.reason.trim() : null;
+        const disputeUpdate: Record<string, unknown> = {
+            status: "RESOLVED",
+            resolvedById: currentUser.id,
+            resolvedAt: new Date(),
+        };
+        if (resolutionNote) {
+            disputeUpdate.resolutionNote = resolutionNote;
+        }
+        if (hasEvidence) {
+            disputeUpdate.resolutionEvidenceUrls = evidenceUrls;
+        }
+
         await prisma.matchDispute.updateMany({
             where: { matchId: id, status: "OPEN" },
-            data: { status: "RESOLVED", resolvedById: currentUser.id, resolvedAt: new Date() },
+            data: disputeUpdate,
         });
 
         const notifications = createNotificationService({ prisma });

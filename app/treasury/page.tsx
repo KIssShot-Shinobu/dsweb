@@ -172,7 +172,7 @@ export default function PublicTreasuryPage() {
                                 <div className="min-w-0 flex-1">
                                     <div className="truncate text-xs font-semibold text-base-content sm:text-sm">{transaction.description}</div>
                                     <div className="truncate text-[11px] text-base-content/60 sm:text-xs">
-                                        {formatDate(transaction.createdAt)} - {transaction.user?.fullName || "Kas umum"}
+                                        {formatDate(transaction.createdAt)} - {transaction.user?.username || transaction.user?.fullName || "Kas umum"}
                                     </div>
                                 </div>
                                 <div className={`text-sm font-bold ${transaction.amount >= 0 ? "text-success" : "text-error"}`}>

@@ -22,7 +22,7 @@ const formatScheduleLabel = (value: Date) =>
 const resolveParticipantLabel = (participant?: {
     guestName: string | null;
     user: { fullName: string | null; username: string | null } | null;
-}) => participant?.user?.fullName || participant?.user?.username || participant?.guestName || "TBD";
+}) => participant?.user?.username || participant?.user?.fullName || participant?.guestName || "TBD";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {

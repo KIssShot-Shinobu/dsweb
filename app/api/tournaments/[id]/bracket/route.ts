@@ -25,7 +25,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         const { id } = await params;
         const resolveParticipantName = (participant?: { guestName: string | null; user?: { fullName: string | null; username: string | null } | null }) => {
             if (!participant) return "TBD";
-            return participant.user?.fullName || participant.user?.username || participant.guestName || "TBD";
+            return participant.user?.username || participant.user?.fullName || participant.guestName || "TBD";
         };
         const rounds = await prisma.tournamentRound.findMany({
             where: { tournamentId: id },
