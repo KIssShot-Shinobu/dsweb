@@ -1,4 +1,4 @@
-import test, { mock } from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
 import type { PrismaClient } from "@prisma/client";
 
@@ -7,14 +7,6 @@ process.env.DATABASE_URL ??= "mysql://user:pass@127.0.0.1:3306/test";
 test("resolveMatchResult purges chat attachments after completion", async () => {
     const deletedUrls: string[] = [];
     const updateCalls: Array<Record<string, unknown>> = [];
-
-    mock.module("@/lib/upload-files", {
-        namedExports: {
-            deleteUploadFileByUrl: async (url?: string | null) => {
-                if (url) deletedUrls.push(url);
-            },
-        },
-    });
 
     const { resolveMatchResult } = await import("@/lib/services/tournament-bracket.service");
 
@@ -50,12 +42,21 @@ test("resolveMatchResult purges chat attachments after completion", async () => 
         $transaction: async (callback: (tx: PrismaClient) => unknown) => callback(prisma as unknown as PrismaClient),
     } as unknown as PrismaClient;
 
-    await resolveMatchResult(prisma, "match_1", {
-        scoreA: 2,
-        scoreB: 0,
-        winnerId: "participant_1",
-        source: "SYSTEM",
-    });
+    await resolveMatchResult(
+        prisma,
+        "match_1",
+        {
+            scoreA: 2,
+            scoreB: 0,
+            winnerId: "participant_1",
+            source: "SYSTEM",
+        },
+        {
+            deleteUploadFileByUrl: async (url?: string | null) => {
+                if (url) deletedUrls.push(url);
+            },
+        }
+    );
 
     assert.deepEqual(deletedUrls.sort(), ["/uploads/a.png", "/uploads/b.png", "/uploads/c.png"].sort());
     assert.equal(updateCalls.length, 1);

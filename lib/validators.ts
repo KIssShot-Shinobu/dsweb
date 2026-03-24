@@ -354,19 +354,66 @@ export const profileAvatarSchema = z.object({
 
 export type ProfileAvatarInput = z.infer<typeof profileAvatarSchema>;
 
-export const profileUpdateSchema = z.object({
-    username: z
-        .string()
-        .trim()
-        .min(3, "Username minimal 3 karakter")
-        .max(24, "Username maksimal 24 karakter")
-        .regex(USERNAME_REGEX, "Username hanya boleh huruf, angka, titik, underscore, dan strip")
-        .transform((value) => value.toLowerCase()),
-    email: z.string().trim().toLowerCase().email("Email tidak valid"),
-    phoneWhatsapp: z.string().trim().regex(PHONE_REGEX, "Nomor WhatsApp tidak valid (contoh: +628123456789)"),
-    provinceCode: z.string().trim().min(2, "Provinsi harus dipilih").max(16, "Kode provinsi tidak valid"),
-    cityCode: z.string().trim().min(4, "Kabupaten / kota harus dipilih").max(16, "Kode kabupaten / kota tidak valid"),
-});
+const countryCodeSchema = z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z]{2}$/, "Kode negara harus 2 huruf (ISO-2)")
+    .transform((value) => value.toUpperCase());
+
+export const profileUpdateSchema = z
+    .object({
+        username: z
+            .string()
+            .trim()
+            .min(3, "Username minimal 3 karakter")
+            .max(24, "Username maksimal 24 karakter")
+            .regex(USERNAME_REGEX, "Username hanya boleh huruf, angka, titik, underscore, dan strip")
+            .transform((value) => value.toLowerCase()),
+        email: z.string().trim().toLowerCase().email("Email tidak valid"),
+        phoneWhatsapp: z.string().trim().regex(PHONE_REGEX, "Nomor WhatsApp tidak valid (contoh: +628123456789)"),
+        provinceCode: z.string().trim().max(16, "Kode provinsi tidak valid").optional().or(z.literal("")),
+        cityCode: z.string().trim().max(16, "Kode kabupaten / kota tidak valid").optional().or(z.literal("")),
+        countryCode: countryCodeSchema.optional().or(z.literal("")),
+        countryName: z.string().trim().max(191, "Nama negara terlalu panjang").optional().or(z.literal("")),
+        domicileType: z.enum(["ID", "INTL"]).optional(),
+    })
+    .superRefine((data, ctx) => {
+        const hasRegion = Boolean(data.provinceCode && data.cityCode);
+        const hasCountry = Boolean(data.countryCode && data.countryName);
+        const domicileType = data.domicileType ?? (hasCountry ? "INTL" : "ID");
+
+        if (domicileType === "ID") {
+            if (!data.provinceCode || data.provinceCode.trim().length < 2) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Provinsi harus dipilih",
+                    path: ["provinceCode"],
+                });
+            }
+            if (!data.cityCode || data.cityCode.trim().length < 4) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Kabupaten / kota harus dipilih",
+                    path: ["cityCode"],
+                });
+            }
+        } else {
+            if (!data.countryCode) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Negara harus dipilih",
+                    path: ["countryCode"],
+                });
+            }
+            if (!data.countryName) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Nama negara harus dipilih",
+                    path: ["countryName"],
+                });
+            }
+        }
+    });
 
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 

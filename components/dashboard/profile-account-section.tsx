@@ -7,11 +7,15 @@ import { Modal } from "@/components/dashboard/modal";
 import { useToast } from "@/components/dashboard/toast";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { IndonesiaRegionFields, type RegionFormValue } from "@/components/shared/indonesia-region-fields";
+import { SearchableCombobox, type SearchableOption } from "@/components/shared/searchable-combobox";
+import { getCountryOptions } from "@/lib/country-options";
 
 type ProfileAccountSectionProps = {
     username: string;
     email: string;
     phoneWhatsapp: string;
+    countryCode?: string | null;
+    countryName?: string | null;
     provinceCode?: string | null;
     provinceName?: string | null;
     cityCode?: string | null;
@@ -23,10 +27,13 @@ type ProfileFormState = {
     username: string;
     email: string;
     phoneWhatsapp: string;
+    countryCode: string;
+    countryName: string;
     provinceCode: string;
     provinceName: string;
     cityCode: string;
     cityName: string;
+    domicileType: "ID" | "INTL";
 };
 
 type ProfileFormErrors = Partial<Record<keyof ProfileFormState, string[]>>;
@@ -57,6 +64,8 @@ export function ProfileAccountSection({
     username,
     email,
     phoneWhatsapp,
+    countryCode,
+    countryName,
     provinceCode,
     provinceName,
     cityCode,
@@ -66,23 +75,29 @@ export function ProfileAccountSection({
     const router = useRouter();
     const { success, error } = useToast();
 
-    const initialState = useMemo(
-        () => ({
+    const initialState = useMemo(() => {
+        const isInternational = Boolean(countryCode && countryCode !== "ID");
+        return {
             username,
             email,
             phoneWhatsapp,
+            countryCode: isInternational ? countryCode || "" : "",
+            countryName: isInternational ? countryName || "" : "",
             provinceCode: provinceCode || "",
             provinceName: provinceName || "",
             cityCode: cityCode || "",
             cityName: city || "",
-        }),
-        [city, cityCode, email, phoneWhatsapp, provinceCode, provinceName, username],
-    );
+            domicileType: isInternational ? "INTL" : "ID",
+        };
+    }, [city, cityCode, countryCode, countryName, email, phoneWhatsapp, provinceCode, provinceName, username]);
+
+    const summaryIsInternational = Boolean(countryCode && countryCode !== "ID");
 
     const [open, setOpen] = useState(false);
     const [form, setForm] = useState<ProfileFormState>(initialState);
     const [errors, setErrors] = useState<ProfileFormErrors>({});
     const [loading, setLoading] = useState(false);
+    const countryOptions = useMemo<SearchableOption[]>(() => getCountryOptions(), []);
 
     const resetForm = () => {
         setForm(initialState);
@@ -140,6 +155,11 @@ export function ProfileAccountSection({
         cityName: form.cityName,
     };
 
+    const selectedCountry = useMemo(
+        () => countryOptions.find((option) => option.value === form.countryCode),
+        [countryOptions, form.countryCode],
+    );
+
     return (
         <>
             <button
@@ -167,10 +187,16 @@ export function ProfileAccountSection({
                     <SummaryRow icon={<User2 className="h-4 w-4" />} label="Username" value={`@${username}`} />
                     <SummaryRow icon={<Mail className="h-4 w-4" />} label="Email" value={email} />
                     <SummaryRow icon={<Phone className="h-4 w-4" />} label="WhatsApp" value={phoneWhatsapp || "-"} />
-                    <SummaryRow icon={<MapPinned className="h-4 w-4" />} label="Provinsi" value={provinceName || "-"} />
-                    <div className="xl:col-span-2">
-                        <SummaryRow icon={<MapPin className="h-4 w-4" />} label="Kabupaten / Kota" value={city || "-"} />
-                    </div>
+                    {summaryIsInternational ? (
+                        <SummaryRow icon={<MapPinned className="h-4 w-4" />} label="Negara" value={countryName || "-"} />
+                    ) : (
+                        <>
+                            <SummaryRow icon={<MapPinned className="h-4 w-4" />} label="Provinsi" value={provinceName || "-"} />
+                            <div className="xl:col-span-2">
+                                <SummaryRow icon={<MapPin className="h-4 w-4" />} label="Kabupaten / Kota" value={city || "-"} />
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {!emailVerified ? (
@@ -221,12 +247,78 @@ export function ProfileAccountSection({
                         <FieldError field="phoneWhatsapp" />
                     </div>
 
-                    <IndonesiaRegionFields
-                        variant="dashboard"
-                        value={regionValue}
-                        onChange={(region) => setForm((current) => ({ ...current, ...region }))}
-                        errors={{ provinceCode: errors.provinceCode, cityCode: errors.cityCode }}
-                    />
+                    <div className="rounded-box border border-base-300 bg-base-200/50 px-4 py-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-base-content/55">Domisili</div>
+                        <div className="mt-3 grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                className={`btn ${form.domicileType === "ID" ? "btn-primary" : "btn-outline"} w-full rounded-box`}
+                                onClick={() =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        domicileType: "ID",
+                                        countryCode: "",
+                                        countryName: "",
+                                    }))
+                                }
+                            >
+                                Indonesia
+                            </button>
+                            <button
+                                type="button"
+                                className={`btn ${form.domicileType === "INTL" ? "btn-primary" : "btn-outline"} w-full rounded-box`}
+                                onClick={() =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        domicileType: "INTL",
+                                        provinceCode: "",
+                                        provinceName: "",
+                                        cityCode: "",
+                                        cityName: "",
+                                    }))
+                                }
+                            >
+                                International
+                            </button>
+                        </div>
+                        <p className="mt-3 text-xs text-base-content/55">
+                            Pilih Indonesia untuk wilayah domestik, atau International untuk negara lain.
+                        </p>
+                    </div>
+
+                    {form.domicileType === "INTL" ? (
+                        <div>
+                            <label className={labelCls}>Negara</label>
+                            <SearchableCombobox
+                                value={form.countryCode}
+                                onChange={(option) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        countryCode: option.value,
+                                        countryName: option.label,
+                                    }))
+                                }
+                                options={countryOptions}
+                                placeholder="Pilih negara"
+                                searchPlaceholder="Cari negara"
+                                emptyMessage="Negara tidak ditemukan"
+                                triggerClassName="bg-base-100"
+                                menuClassName="bg-base-100"
+                                inputClassName="bg-base-100"
+                            />
+                            {errors.countryCode?.length ? <FieldError field="countryCode" /> : <FieldError field="countryName" />}
+                            {!errors.countryCode && !errors.countryName && selectedCountry ? (
+                                <div className="mt-1 text-xs text-base-content/45">{selectedCountry.label}</div>
+                            ) : null}
+                        </div>
+                    ) : (
+                        <IndonesiaRegionFields
+                            variant="dashboard"
+                            value={regionValue}
+                            onChange={(region) => setForm((current) => ({ ...current, ...region }))}
+                            errors={{ provinceCode: errors.provinceCode, cityCode: errors.cityCode }}
+                        />
+                    )}
 
                     <div className="rounded-box border border-base-300 bg-base-200/50 px-4 py-3 text-sm leading-6 text-base-content/60">
                         Jika email diubah, status verifikasi email akan direset. Anda bisa mengirim ulang link verifikasi dari halaman settings.

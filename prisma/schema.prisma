@@ -332,6 +332,8 @@ model User {
   // Only store encrypted value or masked value if possible.
   accountNumber     String?    @db.VarChar(255)
   accountNumberHash String?    @db.VarChar(64)
+  countryCode       String?    @db.VarChar(2)
+  countryName       String?    @db.VarChar(191)
   provinceCode      String?    @db.VarChar(16)
   provinceName      String?    @db.VarChar(191)
   cityCode          String?    @db.VarChar(16)
@@ -376,6 +378,7 @@ model User {
   claimedUploads               PendingUpload[]
 
   @@index([accountNumberHash])
+  @@index([countryCode])
   @@index([status])
   @@index([role])
   @@index([lastActiveAt])

@@ -29,7 +29,15 @@ export async function PATCH(request: NextRequest) {
         }
 
         const nextData = parsed.data;
-        const resolvedRegion = await resolveIndonesiaRegionSelection(nextData.provinceCode, nextData.cityCode);
+        const domicileType = nextData.domicileType ?? (nextData.countryCode ? "INTL" : "ID");
+        const isInternational = domicileType === "INTL";
+
+        const resolvedRegion = isInternational
+            ? null
+            : await resolveIndonesiaRegionSelection(nextData.provinceCode || "", nextData.cityCode || "");
+
+        const normalizedCountryCode = isInternational ? (nextData.countryCode || "").toUpperCase() : "ID";
+        const normalizedCountryName = isInternational ? (nextData.countryName || "") : "Indonesia";
 
         const existingUser = await prisma.user.findUnique({
             where: { id: currentUser.id },
@@ -38,6 +46,8 @@ export async function PATCH(request: NextRequest) {
                 username: true,
                 email: true,
                 phoneWhatsapp: true,
+                countryCode: true,
+                countryName: true,
                 provinceCode: true,
                 provinceName: true,
                 cityCode: true,
@@ -85,10 +95,12 @@ export async function PATCH(request: NextRequest) {
             existingUser.username !== nextData.username ? "username" : null,
             emailChanged ? "email" : null,
             existingUser.phoneWhatsapp !== nextData.phoneWhatsapp ? "phoneWhatsapp" : null,
-            existingUser.provinceCode !== resolvedRegion.provinceCode ? "provinceCode" : null,
-            existingUser.provinceName !== resolvedRegion.provinceName ? "provinceName" : null,
-            existingUser.cityCode !== resolvedRegion.cityCode ? "cityCode" : null,
-            existingUser.city !== resolvedRegion.cityName ? "city" : null,
+            existingUser.countryCode !== normalizedCountryCode ? "countryCode" : null,
+            existingUser.countryName !== normalizedCountryName ? "countryName" : null,
+            !isInternational && existingUser.provinceCode !== resolvedRegion?.provinceCode ? "provinceCode" : null,
+            !isInternational && existingUser.provinceName !== resolvedRegion?.provinceName ? "provinceName" : null,
+            !isInternational && existingUser.cityCode !== resolvedRegion?.cityCode ? "cityCode" : null,
+            !isInternational && existingUser.city !== resolvedRegion?.cityName ? "city" : null,
         ].filter(Boolean) as string[];
 
         if (changedFields.length === 0) {
@@ -99,6 +111,8 @@ export async function PATCH(request: NextRequest) {
                     username: existingUser.username,
                     email: existingUser.email,
                     phoneWhatsapp: existingUser.phoneWhatsapp,
+                    countryCode: existingUser.countryCode,
+                    countryName: existingUser.countryName,
                     provinceCode: existingUser.provinceCode,
                     provinceName: existingUser.provinceName,
                     cityCode: existingUser.cityCode,
@@ -120,16 +134,20 @@ export async function PATCH(request: NextRequest) {
                     fullName: nextData.username,
                     email: nextData.email,
                     phoneWhatsapp: nextData.phoneWhatsapp,
-                    provinceCode: resolvedRegion.provinceCode,
-                    provinceName: resolvedRegion.provinceName,
-                    cityCode: resolvedRegion.cityCode,
-                    city: resolvedRegion.cityName,
+                    countryCode: normalizedCountryCode,
+                    countryName: normalizedCountryName,
+                    provinceCode: isInternational ? null : resolvedRegion?.provinceCode,
+                    provinceName: isInternational ? null : resolvedRegion?.provinceName,
+                    cityCode: isInternational ? null : resolvedRegion?.cityCode,
+                    city: isInternational ? null : resolvedRegion?.cityName,
                     ...(emailChanged ? { emailVerifiedAt: null } : {}),
                 },
                 select: {
                     username: true,
                     email: true,
                     phoneWhatsapp: true,
+                    countryCode: true,
+                    countryName: true,
                     provinceCode: true,
                     provinceName: true,
                     cityCode: true,
@@ -149,7 +167,9 @@ export async function PATCH(request: NextRequest) {
                 emailChanged,
                 phoneChanged: changedFields.includes("phoneWhatsapp"),
                 verificationReset: emailChanged,
-                regionChanged: changedFields.some((field) => ["provinceCode", "provinceName", "cityCode", "city"].includes(field)),
+                regionChanged: changedFields.some((field) =>
+                    ["provinceCode", "provinceName", "cityCode", "city", "countryCode", "countryName"].includes(field)
+                ),
             },
         });
 
@@ -160,6 +180,8 @@ export async function PATCH(request: NextRequest) {
                 username: updatedUser.username,
                 email: updatedUser.email,
                 phoneWhatsapp: updatedUser.phoneWhatsapp,
+                countryCode: updatedUser.countryCode,
+                countryName: updatedUser.countryName,
                 provinceCode: updatedUser.provinceCode,
                 provinceName: updatedUser.provinceName,
                 cityCode: updatedUser.cityCode,

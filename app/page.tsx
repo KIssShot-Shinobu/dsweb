@@ -7,6 +7,7 @@ import { Footer } from "@/components/ui/footer";
 import { prisma } from "@/lib/prisma";
 import type { PublicTournamentCardData } from "@/components/public/tournament-card";
 import { resolveTournamentImage } from "@/lib/tournament-image";
+import { MemberDistributionMap } from "@/components/maps/member-distribution-map";
 
 export default async function Home() {
   let activeUserCount = 0;
@@ -77,6 +78,22 @@ export default async function Home() {
       <Hero />
       <About activeUserCount={activeUserCount} tournamentCount={tournamentCount} />
       <Tournaments tournaments={tournaments} />
+      <section className="border-y border-base-300 py-20 sm:py-24">
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 text-center sm:mb-10">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.32em] text-primary sm:text-sm">Global Community Distribution</p>
+            <h2 className="mb-3 text-2xl font-black text-base-content sm:text-4xl">Distribusi Member Komunitas</h2>
+            <p className="mx-auto max-w-2xl text-sm text-base-content/70 sm:text-base">Visualisasi persebaran member aktif di seluruh Indonesia, dilengkapi clustering otomatis dan detail lokasi yang jelas.</p>
+          </div>
+          <div className="card border border-base-300 bg-base-100/80 shadow-xl">
+            <div className="card-body p-4 sm:p-6">
+              <div className="h-[500px] w-full overflow-hidden rounded-box border border-base-300 bg-base-200/40">
+                <MemberDistributionMap />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
       <Socials />
       <Footer />
     </main>

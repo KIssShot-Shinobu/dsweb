@@ -111,26 +111,28 @@ const gameFixtures = [
 ];
 
 const userFixtures = [
-    { fullName: "Yugi Muto", role: "MEMBER", status: "ACTIVE", provinceCode: "31", provinceName: "DKI Jakarta", cityCode: "3171", cityName: "Kota Jakarta Pusat", gameType: "DUEL_LINKS", gameId: "100-000-001", ign: "[DS] Yugi", teamSlug: "duel-standby-alpha" },
-    { fullName: "Seto Kaiba", role: "OFFICER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3273", cityName: "Kota Bandung", gameType: "MASTER_DUEL", gameId: "100-000-002", ign: "[DS] Kaiba", teamSlug: "duel-standby-alpha" },
-    { fullName: "Joey Wheeler", role: "USER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3275", cityName: "Kota Bekasi", gameType: "DUEL_LINKS", gameId: "100-000-003", ign: "[DS] Joey", teamSlug: null },
-    { fullName: "Mai Valentine", role: "MEMBER", status: "ACTIVE", provinceCode: "35", provinceName: "Jawa Timur", cityCode: "3578", cityName: "Kota Surabaya", gameType: "MASTER_DUEL", gameId: "100-000-004", ign: "[DS] Mai", teamSlug: "duel-standby-flux" },
-    { fullName: "Tea Gardner", role: "USER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3276", cityName: "Kota Depok", gameType: "DUEL_LINKS", gameId: "100-000-005", ign: "[DS] Tea", teamSlug: null },
-    { fullName: "Tristan Taylor", role: "USER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3271", cityName: "Kota Bogor", gameType: "MASTER_DUEL", gameId: "100-000-006", ign: "[DS] Tristan", teamSlug: null },
-    { fullName: "Bakura Ryou", role: "MEMBER", status: "ACTIVE", provinceCode: "31", provinceName: "DKI Jakarta", cityCode: "3171", cityName: "Kota Jakarta Pusat", gameType: "DUEL_LINKS", gameId: "100-000-007", ign: "[DS] Bakura", teamSlug: null },
-    { fullName: "Marik Ishtar", role: "OFFICER", status: "ACTIVE", provinceCode: "36", provinceName: "Banten", cityCode: "3671", cityName: "Kota Tangerang", gameType: "MASTER_DUEL", gameId: "100-000-008", ign: "[DS] Marik", teamSlug: "duel-standby-nova" },
-    { fullName: "Pegasus Crawford", role: "USER", status: "BANNED", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3275", cityName: "Kota Bekasi", gameType: "DUEL_LINKS", gameId: "100-000-009", ign: "[DS] Pegasus", teamSlug: null },
-    { fullName: "Mokuba Kaiba", role: "USER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3273", cityName: "Kota Bandung", gameType: "MASTER_DUEL", gameId: "100-000-010", ign: "[DS] Mokuba", teamSlug: null },
-    { fullName: "Jaden Yuki", role: "MEMBER", status: "ACTIVE", provinceCode: "31", provinceName: "DKI Jakarta", cityCode: "3171", cityName: "Kota Jakarta Pusat", gameType: "DUEL_LINKS", gameId: "100-000-011", ign: "[DS] Jaden", teamSlug: "duel-standby-nova" },
-    { fullName: "Aster Phoenix", role: "OFFICER", status: "ACTIVE", provinceCode: "35", provinceName: "Jawa Timur", cityCode: "3578", cityName: "Kota Surabaya", gameType: "MASTER_DUEL", gameId: "100-000-012", ign: "[DS] Aster", teamSlug: "duel-standby-echo" },
-    { fullName: "Alexis Rhodes", role: "MEMBER", status: "ACTIVE", provinceCode: "34", provinceName: "DI Yogyakarta", cityCode: "3471", cityName: "Kota Yogyakarta", gameType: "DUEL_LINKS", gameId: "100-000-013", ign: "[DS] Alexis", teamSlug: "duel-standby-nova" },
-    { fullName: "Zane Truesdale", role: "USER", status: "ACTIVE", provinceCode: "33", provinceName: "Jawa Tengah", cityCode: "3374", cityName: "Kota Semarang", gameType: "MASTER_DUEL", gameId: "100-000-014", ign: "[DS] Zane", teamSlug: null },
-    { fullName: "Yusei Fudo", role: "MEMBER", status: "ACTIVE", provinceCode: "31", provinceName: "DKI Jakarta", cityCode: "3171", cityName: "Kota Jakarta Pusat", gameType: "DUEL_LINKS", gameId: "100-000-015", ign: "[DS] Yusei", teamSlug: "duel-standby-flux" },
-    { fullName: "Jack Atlas", role: "OFFICER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3273", cityName: "Kota Bandung", gameType: "MASTER_DUEL", gameId: "100-000-016", ign: "[DS] Jack", teamSlug: null },
-    { fullName: "Akiza Izinski", role: "MEMBER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3276", cityName: "Kota Depok", gameType: "DUEL_LINKS", gameId: "100-000-017", ign: "[DS] Akiza", teamSlug: "duel-standby-alpha" },
-    { fullName: "Crow Hogan", role: "USER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3271", cityName: "Kota Bogor", gameType: "MASTER_DUEL", gameId: "100-000-018", ign: "[DS] Crow", teamSlug: null },
-    { fullName: "Yuma Tsukumo", role: "USER", status: "ACTIVE", provinceCode: "35", provinceName: "Jawa Timur", cityCode: "3573", cityName: "Kota Malang", gameType: "DUEL_LINKS", gameId: "100-000-019", ign: "[DS] Yuma", teamSlug: null },
-    { fullName: "Kite Tenjo", role: "MEMBER", status: "ACTIVE", provinceCode: "33", provinceName: "Jawa Tengah", cityCode: "3372", cityName: "Kota Surakarta", gameType: "MASTER_DUEL", gameId: "100-000-020", ign: "[DS] Kite", teamSlug: null },
+    { fullName: "Yugi Muto", role: "MEMBER", status: "ACTIVE", provinceCode: "31", provinceName: "DKI Jakarta", cityCode: "3171", cityName: "Kota Jakarta Pusat", countryCode: "ID", countryName: "Indonesia", gameType: "DUEL_LINKS", gameId: "100-000-001", ign: "[DS] Yugi", teamSlug: "duel-standby-alpha" },
+    { fullName: "Seto Kaiba", role: "OFFICER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3273", cityName: "Kota Bandung", countryCode: "ID", countryName: "Indonesia", gameType: "MASTER_DUEL", gameId: "100-000-002", ign: "[DS] Kaiba", teamSlug: "duel-standby-alpha" },
+    { fullName: "Joey Wheeler", role: "USER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3275", cityName: "Kota Bekasi", countryCode: "ID", countryName: "Indonesia", gameType: "DUEL_LINKS", gameId: "100-000-003", ign: "[DS] Joey", teamSlug: null },
+    { fullName: "Mai Valentine", role: "MEMBER", status: "ACTIVE", provinceCode: "35", provinceName: "Jawa Timur", cityCode: "3578", cityName: "Kota Surabaya", countryCode: "ID", countryName: "Indonesia", gameType: "MASTER_DUEL", gameId: "100-000-004", ign: "[DS] Mai", teamSlug: "duel-standby-flux" },
+    { fullName: "Tea Gardner", role: "USER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3276", cityName: "Kota Depok", countryCode: "ID", countryName: "Indonesia", gameType: "DUEL_LINKS", gameId: "100-000-005", ign: "[DS] Tea", teamSlug: null },
+    { fullName: "Tristan Taylor", role: "USER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3271", cityName: "Kota Bogor", countryCode: "ID", countryName: "Indonesia", gameType: "MASTER_DUEL", gameId: "100-000-006", ign: "[DS] Tristan", teamSlug: null },
+    { fullName: "Bakura Ryou", role: "MEMBER", status: "ACTIVE", provinceCode: "31", provinceName: "DKI Jakarta", cityCode: "3171", cityName: "Kota Jakarta Pusat", countryCode: "ID", countryName: "Indonesia", gameType: "DUEL_LINKS", gameId: "100-000-007", ign: "[DS] Bakura", teamSlug: null },
+    { fullName: "Marik Ishtar", role: "OFFICER", status: "ACTIVE", provinceCode: "36", provinceName: "Banten", cityCode: "3671", cityName: "Kota Tangerang", countryCode: "ID", countryName: "Indonesia", gameType: "MASTER_DUEL", gameId: "100-000-008", ign: "[DS] Marik", teamSlug: "duel-standby-nova" },
+    { fullName: "Pegasus Crawford", role: "USER", status: "BANNED", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3275", cityName: "Kota Bekasi", countryCode: "ID", countryName: "Indonesia", gameType: "DUEL_LINKS", gameId: "100-000-009", ign: "[DS] Pegasus", teamSlug: null },
+    { fullName: "Mokuba Kaiba", role: "USER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3273", cityName: "Kota Bandung", countryCode: "ID", countryName: "Indonesia", gameType: "MASTER_DUEL", gameId: "100-000-010", ign: "[DS] Mokuba", teamSlug: null },
+    { fullName: "Jaden Yuki", role: "MEMBER", status: "ACTIVE", provinceCode: "31", provinceName: "DKI Jakarta", cityCode: "3171", cityName: "Kota Jakarta Pusat", countryCode: "ID", countryName: "Indonesia", gameType: "DUEL_LINKS", gameId: "100-000-011", ign: "[DS] Jaden", teamSlug: "duel-standby-nova" },
+    { fullName: "Aster Phoenix", role: "OFFICER", status: "ACTIVE", provinceCode: "35", provinceName: "Jawa Timur", cityCode: "3578", cityName: "Kota Surabaya", countryCode: "ID", countryName: "Indonesia", gameType: "MASTER_DUEL", gameId: "100-000-012", ign: "[DS] Aster", teamSlug: "duel-standby-echo" },
+    { fullName: "Alexis Rhodes", role: "MEMBER", status: "ACTIVE", provinceCode: "34", provinceName: "DI Yogyakarta", cityCode: "3471", cityName: "Kota Yogyakarta", countryCode: "ID", countryName: "Indonesia", gameType: "DUEL_LINKS", gameId: "100-000-013", ign: "[DS] Alexis", teamSlug: "duel-standby-nova" },
+    { fullName: "Zane Truesdale", role: "USER", status: "ACTIVE", provinceCode: "33", provinceName: "Jawa Tengah", cityCode: "3374", cityName: "Kota Semarang", countryCode: "ID", countryName: "Indonesia", gameType: "MASTER_DUEL", gameId: "100-000-014", ign: "[DS] Zane", teamSlug: null },
+    { fullName: "Yusei Fudo", role: "MEMBER", status: "ACTIVE", provinceCode: "31", provinceName: "DKI Jakarta", cityCode: "3171", cityName: "Kota Jakarta Pusat", countryCode: "ID", countryName: "Indonesia", gameType: "DUEL_LINKS", gameId: "100-000-015", ign: "[DS] Yusei", teamSlug: "duel-standby-flux" },
+    { fullName: "Jack Atlas", role: "OFFICER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3273", cityName: "Kota Bandung", countryCode: "ID", countryName: "Indonesia", gameType: "MASTER_DUEL", gameId: "100-000-016", ign: "[DS] Jack", teamSlug: null },
+    { fullName: "Akiza Izinski", role: "MEMBER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3276", cityName: "Kota Depok", countryCode: "ID", countryName: "Indonesia", gameType: "DUEL_LINKS", gameId: "100-000-017", ign: "[DS] Akiza", teamSlug: "duel-standby-alpha" },
+    { fullName: "Crow Hogan", role: "USER", status: "ACTIVE", provinceCode: "32", provinceName: "Jawa Barat", cityCode: "3271", cityName: "Kota Bogor", countryCode: "ID", countryName: "Indonesia", gameType: "MASTER_DUEL", gameId: "100-000-018", ign: "[DS] Crow", teamSlug: null },
+    { fullName: "Yuma Tsukumo", role: "USER", status: "ACTIVE", provinceCode: "35", provinceName: "Jawa Timur", cityCode: "3573", cityName: "Kota Malang", countryCode: "ID", countryName: "Indonesia", gameType: "DUEL_LINKS", gameId: "100-000-019", ign: "[DS] Yuma", teamSlug: null },
+    { fullName: "Kite Tenjo", role: "MEMBER", status: "ACTIVE", provinceCode: "33", provinceName: "Jawa Tengah", cityCode: "3372", cityName: "Kota Surakarta", countryCode: "ID", countryName: "Indonesia", gameType: "MASTER_DUEL", gameId: "100-000-020", ign: "[DS] Kite", teamSlug: null },
+    { fullName: "Akira Zaizen", role: "MEMBER", status: "ACTIVE", provinceCode: null, provinceName: null, cityCode: null, cityName: null, countryCode: "JP", countryName: "Japan", gameType: "MASTER_DUEL", gameId: "100-000-021", ign: "[DS] Akira", teamSlug: null },
+    { fullName: "Takeru Homura", role: "USER", status: "ACTIVE", provinceCode: null, provinceName: null, cityCode: null, cityName: null, countryCode: "SG", countryName: "Singapore", gameType: "DUEL_LINKS", gameId: "100-000-022", ign: "[DS] Takeru", teamSlug: null },
 ];
 const tournamentFixtures = [
     { title: "[DEV] Weekly Rush 01", gameType: "DUEL_LINKS", format: "BO3", status: "OPEN", prizePool: 150000, entryFee: 10000, startOffsetDays: 2 },
@@ -192,10 +194,14 @@ async function cleanupDevData() {
     await withRetry(() => prisma.matchDispute.deleteMany(), "cleanup matchDispute");
     await withRetry(() => prisma.matchResult.deleteMany(), "cleanup matchResult");
     await withRetry(() => prisma.matchReport.deleteMany(), "cleanup matchReport");
+    await withRetry(() => prisma.matchMessage.deleteMany(), "cleanup matchMessage");
+    await withRetry(() => prisma.matchAvailability.deleteMany(), "cleanup matchAvailability");
+    await withRetry(() => prisma.matchLineup.deleteMany(), "cleanup matchLineup");
     await withRetry(() => prisma.matchPlayer.deleteMany(), "cleanup matchPlayer");
     await withRetry(() => prisma.match.deleteMany(), "cleanup match");
     await withRetry(() => prisma.tournamentRound.deleteMany(), "cleanup tournamentRound");
     await withRetry(() => prisma.tournamentParticipant.deleteMany(), "cleanup tournamentParticipant");
+    await withRetry(() => prisma.tournamentStaff.deleteMany(), "cleanup tournamentStaff");
     await withRetry(() => prisma.tournamentAnnouncement.deleteMany(), "cleanup tournamentAnnouncement");
     await withRetry(() => prisma.treasury.deleteMany(), "cleanup treasury");
     await withRetry(() => prisma.notification.deleteMany(), "cleanup notification");
@@ -240,6 +246,8 @@ async function ensureAdminUser() {
             email: adminEmail,
             password: adminHash,
             phoneWhatsapp: process.env.ADMIN_SEED_PHONE || "+628000000001",
+            countryCode: process.env.ADMIN_SEED_COUNTRY_CODE || "ID",
+            countryName: process.env.ADMIN_SEED_COUNTRY_NAME || "Indonesia",
             provinceCode: process.env.ADMIN_SEED_PROVINCE_CODE || null,
             provinceName: process.env.ADMIN_SEED_PROVINCE_NAME || null,
             cityCode: process.env.ADMIN_SEED_CITY_CODE || null,
@@ -289,7 +297,8 @@ async function seedGames() {
 }
 
 async function seedUsers(teamMap, gameMap) {
-    console.log("Seeding 20 dev users...");
+    const totalUsers = userFixtures.length;
+    console.log(`Seeding ${totalUsers} dev users...`);
 
     const passwordHash = await bcrypt.hash(DEV_PASSWORD, 10);
     const createdUsers = [];
@@ -307,6 +316,8 @@ async function seedUsers(teamMap, gameMap) {
                 email: `dev-user-${String(index + 1).padStart(2, "0")}${DEV_EMAIL_SUFFIX}`,
                 password: passwordHash,
                 phoneWhatsapp: `+628120000${String(index + 1).padStart(4, "0")}`,
+                countryCode: fixture.countryCode || "ID",
+                countryName: fixture.countryName || "Indonesia",
                 provinceCode: fixture.provinceCode,
                 provinceName: fixture.provinceName,
                 cityCode: fixture.cityCode,
@@ -358,7 +369,7 @@ async function seedUsers(teamMap, gameMap) {
         }
 
         createdUsers.push(user);
-        process.stdout.write(`\r  -> ${index + 1}/20`);
+        process.stdout.write(`\r  -> ${index + 1}/${totalUsers}`);
     }
 
     console.log("\nUsers done.");
@@ -476,7 +487,7 @@ async function main() {
     await seedTreasury(createdUsers);
     await seedAuditLogs(createdUsers);
 
-    console.log("Dev seed complete: 4 teams, 20 users, 20 tournaments, 20 treasury transactions, 12 audit logs.");
+    console.log(`Dev seed complete: 4 teams, ${userFixtures.length} users, 20 tournaments, 20 treasury transactions, 12 audit logs.`);
     console.log(`Dev seed user password: ${DEV_PASSWORD}`);
     console.log(`Dev admin email: ${adminUser.email}`);
 }

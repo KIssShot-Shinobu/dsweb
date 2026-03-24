@@ -1,0 +1,576 @@
+{
+  "country": {
+    "name": "Indonesia",
+    "latitude": -2.5,
+    "longitude": 118.0
+  },
+  "provinces": [
+    {
+      "name": "Aceh",
+      "latitude": 5.5483,
+      "longitude": 95.3238
+    },
+    {
+      "name": "North Sumatra",
+      "latitude": 3.5952,
+      "longitude": 98.6722
+    },
+    {
+      "name": "West Sumatra",
+      "latitude": -0.9471,
+      "longitude": 100.4172
+    },
+    {
+      "name": "Riau",
+      "latitude": 0.5071,
+      "longitude": 101.4478
+    },
+    {
+      "name": "Riau Islands",
+      "latitude": 1.106,
+      "longitude": 104.05
+    },
+    {
+      "name": "Jambi",
+      "latitude": -1.6101,
+      "longitude": 103.6131
+    },
+    {
+      "name": "South Sumatra",
+      "latitude": -2.9909,
+      "longitude": 104.7566
+    },
+    {
+      "name": "Bangka Belitung",
+      "latitude": -2.7411,
+      "longitude": 106.4406
+    },
+    {
+      "name": "Bengkulu",
+      "latitude": -3.7928,
+      "longitude": 102.2608
+    },
+    {
+      "name": "Lampung",
+      "latitude": -5.45,
+      "longitude": 105.2667
+    },
+    {
+      "name": "Banten",
+      "latitude": -6.1201,
+      "longitude": 106.1503
+    },
+    {
+      "name": "DKI Jakarta",
+      "latitude": -6.2088,
+      "longitude": 106.8456
+    },
+    {
+      "name": "West Java",
+      "latitude": -6.9147,
+      "longitude": 107.6098
+    },
+    {
+      "name": "Central Java",
+      "latitude": -7.0051,
+      "longitude": 110.4381
+    },
+    {
+      "name": "DI Yogyakarta",
+      "latitude": -7.7956,
+      "longitude": 110.3695
+    },
+    {
+      "name": "East Java",
+      "latitude": -7.2575,
+      "longitude": 112.7521
+    },
+    {
+      "name": "Bali",
+      "latitude": -8.6705,
+      "longitude": 115.2126
+    },
+    {
+      "name": "West Nusa Tenggara",
+      "latitude": -8.5833,
+      "longitude": 116.1167
+    },
+    {
+      "name": "East Nusa Tenggara",
+      "latitude": -10.1772,
+      "longitude": 123.607
+    },
+    {
+      "name": "West Kalimantan",
+      "latitude": -0.0263,
+      "longitude": 109.3425
+    },
+    {
+      "name": "Central Kalimantan",
+      "latitude": -2.2096,
+      "longitude": 113.9213
+    },
+    {
+      "name": "South Kalimantan",
+      "latitude": -3.3186,
+      "longitude": 114.5944
+    },
+    {
+      "name": "East Kalimantan",
+      "latitude": -0.5021,
+      "longitude": 117.1536
+    },
+    {
+      "name": "North Kalimantan",
+      "latitude": 2.8375,
+      "longitude": 117.3653
+    },
+    {
+      "name": "North Sulawesi",
+      "latitude": 1.4748,
+      "longitude": 124.8421
+    },
+    {
+      "name": "Gorontalo",
+      "latitude": 0.5435,
+      "longitude": 123.0568
+    },
+    {
+      "name": "Central Sulawesi",
+      "latitude": -0.8986,
+      "longitude": 119.8707
+    },
+    {
+      "name": "West Sulawesi",
+      "latitude": -2.682,
+      "longitude": 118.889
+    },
+    {
+      "name": "South Sulawesi",
+      "latitude": -5.1477,
+      "longitude": 119.4327
+    },
+    {
+      "name": "Southeast Sulawesi",
+      "latitude": -3.9931,
+      "longitude": 122.519
+    },
+    {
+      "name": "Maluku",
+      "latitude": -3.6966,
+      "longitude": 128.1786
+    },
+    {
+      "name": "North Maluku",
+      "latitude": 0.7881,
+      "longitude": 127.377
+    },
+    {
+      "name": "Papua",
+      "latitude": -2.5337,
+      "longitude": 140.7181
+    },
+    {
+      "name": "West Papua",
+      "latitude": -0.8636,
+      "longitude": 134.064
+    },
+    {
+      "name": "Papua Highlands",
+      "latitude": -4.1025,
+      "longitude": 138.9543
+    },
+    {
+      "name": "Papua Central",
+      "latitude": -3.3667,
+      "longitude": 135.5
+    },
+    {
+      "name": "Papua South",
+      "latitude": -8.4964,
+      "longitude": 140.3946
+    },
+    {
+      "name": "Papua Southwest",
+      "latitude": -0.8762,
+      "longitude": 131.2558
+    },
+    {
+      "name": "Sumatera Utara",
+      "latitude": 3.5952,
+      "longitude": 98.6722
+    },
+    {
+      "name": "Sumatera Barat",
+      "latitude": -0.9471,
+      "longitude": 100.4172
+    },
+    {
+      "name": "Sumatera Selatan",
+      "latitude": -2.9909,
+      "longitude": 104.7566
+    },
+    {
+      "name": "Kepulauan Riau",
+      "latitude": 1.106,
+      "longitude": 104.05
+    },
+    {
+      "name": "Kepulauan Bangka Belitung",
+      "latitude": -2.7411,
+      "longitude": 106.4406
+    },
+    {
+      "name": "Jawa Barat",
+      "latitude": -6.9147,
+      "longitude": 107.6098
+    },
+    {
+      "name": "Jawa Tengah",
+      "latitude": -7.0051,
+      "longitude": 110.4381
+    },
+    {
+      "name": "Jawa Timur",
+      "latitude": -7.2575,
+      "longitude": 112.7521
+    },
+    {
+      "name": "Daerah Istimewa Yogyakarta",
+      "latitude": -7.7956,
+      "longitude": 110.3695
+    },
+    {
+      "name": "DIY",
+      "latitude": -7.7956,
+      "longitude": 110.3695
+    },
+    {
+      "name": "Jogja",
+      "latitude": -7.7956,
+      "longitude": 110.3695
+    },
+    {
+      "name": "Yogyakarta",
+      "latitude": -7.7956,
+      "longitude": 110.3695
+    },
+    {
+      "name": "Nusa Tenggara Barat",
+      "latitude": -8.5833,
+      "longitude": 116.1167
+    },
+    {
+      "name": "Nusa Tenggara Timur",
+      "latitude": -10.1772,
+      "longitude": 123.607
+    },
+    {
+      "name": "Kalimantan Barat",
+      "latitude": -0.0263,
+      "longitude": 109.3425
+    },
+    {
+      "name": "Kalimantan Tengah",
+      "latitude": -2.2096,
+      "longitude": 113.9213
+    },
+    {
+      "name": "Kalimantan Selatan",
+      "latitude": -3.3186,
+      "longitude": 114.5944
+    },
+    {
+      "name": "Kalimantan Timur",
+      "latitude": -0.5021,
+      "longitude": 117.1536
+    },
+    {
+      "name": "Kalimantan Utara",
+      "latitude": 2.8375,
+      "longitude": 117.3653
+    },
+    {
+      "name": "Sulawesi Utara",
+      "latitude": 1.4748,
+      "longitude": 124.8421
+    },
+    {
+      "name": "Sulawesi Tengah",
+      "latitude": -0.8986,
+      "longitude": 119.8707
+    },
+    {
+      "name": "Sulawesi Selatan",
+      "latitude": -5.1477,
+      "longitude": 119.4327
+    },
+    {
+      "name": "Sulawesi Tenggara",
+      "latitude": -3.9931,
+      "longitude": 122.519
+    },
+    {
+      "name": "Sulawesi Barat",
+      "latitude": -2.682,
+      "longitude": 118.889
+    },
+    {
+      "name": "Maluku Utara",
+      "latitude": 0.7881,
+      "longitude": 127.377
+    },
+    {
+      "name": "Papua Barat",
+      "latitude": -0.8636,
+      "longitude": 134.064
+    },
+    {
+      "name": "Papua Pegunungan",
+      "latitude": -4.1025,
+      "longitude": 138.9543
+    },
+    {
+      "name": "Papua Tengah",
+      "latitude": -3.3667,
+      "longitude": 135.5
+    },
+    {
+      "name": "Papua Selatan",
+      "latitude": -8.4964,
+      "longitude": 140.3946
+    },
+    {
+      "name": "Papua Barat Daya",
+      "latitude": -0.8762,
+      "longitude": 131.2558
+    },
+    {
+      "name": "Daerah Khusus Ibukota Jakarta",
+      "latitude": -6.2088,
+      "longitude": 106.8456
+    },
+    {
+      "name": "Daerah Khusus Ibu Kota Jakarta",
+      "latitude": -6.2088,
+      "longitude": 106.8456
+    },
+    {
+      "name": "DKI",
+      "latitude": -6.2088,
+      "longitude": 106.8456
+    }
+  ],
+  "cities": [
+    {
+      "name": "Jakarta",
+      "province": "DKI Jakarta",
+      "latitude": -6.2088,
+      "longitude": 106.8456
+    },
+    {
+      "name": "Surabaya",
+      "province": "East Java",
+      "latitude": -7.2575,
+      "longitude": 112.7521
+    },
+    {
+      "name": "Bandung",
+      "province": "West Java",
+      "latitude": -6.9147,
+      "longitude": 107.6098
+    },
+    {
+      "name": "Medan",
+      "province": "North Sumatra",
+      "latitude": 3.5952,
+      "longitude": 98.6722
+    },
+    {
+      "name": "Semarang",
+      "province": "Central Java",
+      "latitude": -6.9667,
+      "longitude": 110.4167
+    },
+    {
+      "name": "Makassar",
+      "province": "South Sulawesi",
+      "latitude": -5.1477,
+      "longitude": 119.4327
+    },
+    {
+      "name": "Palembang",
+      "province": "South Sumatra",
+      "latitude": -2.9909,
+      "longitude": 104.7566
+    },
+    {
+      "name": "Denpasar",
+      "province": "Bali",
+      "latitude": -8.6705,
+      "longitude": 115.2126
+    },
+    {
+      "name": "Yogyakarta",
+      "province": "DI Yogyakarta",
+      "latitude": -7.7956,
+      "longitude": 110.3695
+    },
+    {
+      "name": "Bekasi",
+      "province": "West Java",
+      "latitude": -6.2383,
+      "longitude": 106.9756
+    },
+    {
+      "name": "Depok",
+      "province": "West Java",
+      "latitude": -6.4025,
+      "longitude": 106.7942
+    },
+    {
+      "name": "Tangerang",
+      "province": "Banten",
+      "latitude": -6.1783,
+      "longitude": 106.6319
+    },
+    {
+      "name": "Bogor",
+      "province": "West Java",
+      "latitude": -6.5971,
+      "longitude": 106.806
+    },
+    {
+      "name": "Malang",
+      "province": "East Java",
+      "latitude": -7.9839,
+      "longitude": 112.6214
+    },
+    {
+      "name": "Batam",
+      "province": "Riau Islands",
+      "latitude": 1.0456,
+      "longitude": 104.03
+    },
+    {
+      "name": "Pekanbaru",
+      "province": "Riau",
+      "latitude": 0.5071,
+      "longitude": 101.4478
+    },
+    {
+      "name": "Padang",
+      "province": "West Sumatra",
+      "latitude": -0.9471,
+      "longitude": 100.4172
+    },
+    {
+      "name": "Bandar Lampung",
+      "province": "Lampung",
+      "latitude": -5.45,
+      "longitude": 105.2667
+    },
+    {
+      "name": "Pontianak",
+      "province": "West Kalimantan",
+      "latitude": -0.0263,
+      "longitude": 109.3425
+    },
+    {
+      "name": "Banjarmasin",
+      "province": "South Kalimantan",
+      "latitude": -3.3186,
+      "longitude": 114.5944
+    },
+    {
+      "name": "Samarinda",
+      "province": "East Kalimantan",
+      "latitude": -0.5021,
+      "longitude": 117.1536
+    },
+    {
+      "name": "Balikpapan",
+      "province": "East Kalimantan",
+      "latitude": -1.2654,
+      "longitude": 116.8312
+    },
+    {
+      "name": "Manado",
+      "province": "North Sulawesi",
+      "latitude": 1.4748,
+      "longitude": 124.8421
+    },
+    {
+      "name": "Kendari",
+      "province": "Southeast Sulawesi",
+      "latitude": -3.9931,
+      "longitude": 122.519
+    },
+    {
+      "name": "Palu",
+      "province": "Central Sulawesi",
+      "latitude": -0.8986,
+      "longitude": 119.8707
+    },
+    {
+      "name": "Mataram",
+      "province": "West Nusa Tenggara",
+      "latitude": -8.5833,
+      "longitude": 116.1167
+    },
+    {
+      "name": "Kupang",
+      "province": "East Nusa Tenggara",
+      "latitude": -10.1772,
+      "longitude": 123.607
+    },
+    {
+      "name": "Jayapura",
+      "province": "Papua",
+      "latitude": -2.5337,
+      "longitude": 140.7181
+    },
+    {
+      "name": "Ambon",
+      "province": "Maluku",
+      "latitude": -3.6966,
+      "longitude": 128.1786
+    },
+    {
+      "name": "Ternate",
+      "province": "North Maluku",
+      "latitude": 0.7881,
+      "longitude": 127.377
+    },
+    {
+      "name": "Sorong",
+      "province": "Papua Southwest",
+      "latitude": -0.8762,
+      "longitude": 131.2558
+    },
+    {
+      "name": "Banda Aceh",
+      "province": "Aceh",
+      "latitude": 5.5483,
+      "longitude": 95.3238
+    },
+    {
+      "name": "Jambi",
+      "province": "Jambi",
+      "latitude": -1.6101,
+      "longitude": 103.6131
+    },
+    {
+      "name": "Surakarta",
+      "province": "Central Java",
+      "latitude": -7.5666,
+      "longitude": 110.8167
+    },
+    {
+      "name": "Solo",
+      "province": "Central Java",
+      "latitude": -7.5666,
+      "longitude": 110.8167
+    }
+  ]
+}

@@ -146,6 +146,88 @@ paths:
       responses:
         "200":
           description: Session payload
+  /api/public/members/distribution:
+    get:
+      summary: Get public guild member distribution map points
+      responses:
+        "200":
+          description: Distribution points and summary stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        username:
+                          type: string
+                        province:
+                          type: string
+                          nullable: true
+                        city:
+                          type: string
+                          nullable: true
+                        country:
+                          type: string
+                          nullable: true
+                        latitude:
+                          type: number
+                        longitude:
+                          type: number
+                        memberCount:
+                          type: integer
+                          nullable: true
+                      required:
+                        - id
+                        - username
+                        - province
+                        - city
+                        - latitude
+                        - longitude
+                  stats:
+                    type: object
+                    properties:
+                      totalMembers:
+                        type: integer
+                      topCities:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            count:
+                              type: integer
+                          required:
+                            - name
+                            - count
+                      topProvince:
+                        type: object
+                        nullable: true
+                        properties:
+                          name:
+                            type: string
+                          count:
+                            type: integer
+                        required:
+                          - name
+                          - count
+                    required:
+                      - totalMembers
+                      - topCities
+                      - topProvince
+                required:
+                  - success
+                  - data
+                  - stats
   /api/profile:
     put:
       summary: Update account identity and region fields for the current user

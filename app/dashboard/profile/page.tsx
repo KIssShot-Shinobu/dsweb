@@ -168,6 +168,8 @@ export default async function ProfilePage() {
                                     username={accountName}
                                     email={user.email}
                                     phoneWhatsapp={user.phoneWhatsapp || ""}
+                                    countryCode={user.countryCode || ""}
+                                    countryName={user.countryName || ""}
                                     provinceCode={user.provinceCode || ""}
                                     provinceName={user.provinceName || ""}
                                     cityCode={user.cityCode || ""}

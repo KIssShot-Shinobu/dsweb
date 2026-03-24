@@ -33,6 +33,8 @@ async function main() {
                 email: adminEmail,
                 password: hash,
                 phoneWhatsapp: process.env.ADMIN_SEED_PHONE || "+628000000001",
+                countryCode: process.env.ADMIN_SEED_COUNTRY_CODE || "ID",
+                countryName: process.env.ADMIN_SEED_COUNTRY_NAME || "Indonesia",
                 provinceCode: process.env.ADMIN_SEED_PROVINCE_CODE || null,
                 provinceName: process.env.ADMIN_SEED_PROVINCE_NAME || null,
                 cityCode: process.env.ADMIN_SEED_CITY_CODE || null,

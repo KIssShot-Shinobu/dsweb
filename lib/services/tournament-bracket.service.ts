@@ -977,7 +977,15 @@ export async function syncOrCreateTournamentBracket(
 const normalizeAttachmentUrls = (value: unknown) =>
     Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 
-async function purgeMatchMessageAttachments(prisma: PrismaClient, matchId: string) {
+type ResolveMatchOptions = {
+    deleteUploadFileByUrl?: (url?: string | null) => void | Promise<void>;
+};
+
+async function purgeMatchMessageAttachments(
+    prisma: PrismaClient,
+    matchId: string,
+    deleteUpload: (url?: string | null) => void | Promise<void> = deleteUploadFileByUrl,
+) {
     const messages = await prisma.matchMessage.findMany({
         where: { matchId, attachmentUrls: { not: null } },
         select: { id: true, attachmentUrls: true },
@@ -987,7 +995,7 @@ async function purgeMatchMessageAttachments(prisma: PrismaClient, matchId: strin
 
     const urls = messages.flatMap((message) => normalizeAttachmentUrls(message.attachmentUrls));
     if (urls.length > 0) {
-        await Promise.allSettled(urls.map((url) => deleteUploadFileByUrl(url)));
+        await Promise.allSettled(urls.map((url) => Promise.resolve(deleteUpload(url))));
     }
 
     await prisma.matchMessage.updateMany({
@@ -996,7 +1004,12 @@ async function purgeMatchMessageAttachments(prisma: PrismaClient, matchId: strin
     });
 }
 
-export async function resolveMatchResult(prisma: PrismaClient, matchId: string, result: { scoreA: number; scoreB: number; winnerId: string; source: MatchResultSource; confirmedById?: string | null }) {
+export async function resolveMatchResult(
+    prisma: PrismaClient,
+    matchId: string,
+    result: { scoreA: number; scoreB: number; winnerId: string; source: MatchResultSource; confirmedById?: string | null },
+    options: ResolveMatchOptions = {},
+) {
     await prisma.$transaction(async (tx) => {
         await tx.match.update({
             where: { id: matchId },
@@ -1044,7 +1057,7 @@ export async function resolveMatchResult(prisma: PrismaClient, matchId: string, 
     });
 
     try {
-        await purgeMatchMessageAttachments(prisma, matchId);
+        await purgeMatchMessageAttachments(prisma, matchId, options.deleteUploadFileByUrl);
     } catch (error) {
         console.error("[Match Message Purge]", error);
     }
