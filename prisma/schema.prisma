@@ -183,6 +183,7 @@ model Team {
   invites               TeamInvite[]
   joinRequests          TeamJoinRequest[]
   tournamentParticipants TournamentParticipant[]
+  matchLineups          MatchLineup[]
 }
 
 model Tournament {
@@ -205,6 +206,7 @@ model Tournament {
   forfeitMode TournamentForfeitMode @default(CHECKIN_ONLY)
   minPlayers Int?
   maxPlayers Int?
+  lineupSize Int?
   bracketSize Int?
   registrationOpen DateTime?
   registrationClose DateTime?
@@ -356,6 +358,7 @@ model User {
   matchMessages                MatchMessage[]
   matchAvailabilityProposals   MatchAvailability[]      @relation("MatchAvailabilityProposedBy")
   matchAvailabilitySelections  MatchAvailability[]      @relation("MatchAvailabilitySelectedBy")
+  matchLineupsSubmitted        MatchLineup[]            @relation("MatchLineupSubmittedBy")
   emailVerificationToken       EmailVerificationToken?
   passwordResetToken           PasswordResetToken?
   badges                       UserBadge[]
@@ -690,6 +693,7 @@ model Match {
   result   MatchResult?
   messages MatchMessage[]
   availabilities MatchAvailability[]
+  lineups MatchLineup[]
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -786,6 +790,23 @@ model MatchAvailability {
 
   @@index([matchId, status])
   @@index([expiresAt])
+}
+
+model MatchLineup {
+  id            String   @id @default(cuid())
+  matchId       String
+  match         Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamId        String
+  team          Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  submittedById String
+  submittedBy   User     @relation("MatchLineupSubmittedBy", fields: [submittedById], references: [id], onDelete: Cascade)
+  memberIds     Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([matchId, teamId])
+  @@index([matchId])
+  @@index([teamId])
 }
 
 model MatchMessage {

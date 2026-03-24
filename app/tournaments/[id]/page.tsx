@@ -328,6 +328,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                                     tournamentTitle={tournament.title}
                                                     tournamentUrl={tournamentUrl}
                                                     tournamentTimeZone={tournamentTimeZone}
+                                                    lineupSize={tournament.lineupSize ?? null}
                                                 />
                                             </>
                                         ) : null}

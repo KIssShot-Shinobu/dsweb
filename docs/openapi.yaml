@@ -738,6 +738,10 @@ paths:
                   type: number
                 maxPlayers:
                   type: integer
+                lineupSize:
+                  type: integer
+                  minimum: 1
+                  nullable: true
                 status:
                   $ref: "#/components/schemas/TournamentStatus"
       responses:
@@ -815,6 +819,10 @@ paths:
                   type: number
                 maxPlayers:
                   type: integer
+                lineupSize:
+                  type: integer
+                  minimum: 1
+                  nullable: true
                 status:
                   $ref: "#/components/schemas/TournamentStatus"
       responses:
@@ -1164,6 +1172,82 @@ paths:
           description: Unauthorized
         "403":
           description: Forbidden
+  /api/matches/{id}/lineup:
+    get:
+      summary: Get match lineup and roster (team tournaments)
+      security:
+        - authjsSessionCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lineup payload
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Match not found
+    post:
+      summary: Submit match lineup
+      security:
+        - authjsSessionCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - memberIds
+              properties:
+                memberIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Lineup saved
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "409":
+          description: Lineup locked
+  /api/matches/{id}/start:
+    post:
+      summary: Start match (set status ONGOING)
+      security:
+        - authjsSessionCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Match started
+        "400":
+          description: Invalid status
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Match not found
   /api/matches/{id}/availability:
     get:
       summary: List availability proposals for a match

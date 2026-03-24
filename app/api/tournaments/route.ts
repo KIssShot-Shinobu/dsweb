@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
                 : data.mode
                   ? data.mode !== "INDIVIDUAL"
                   : false;
+        const lineupSize = isTeamTournament ? (data.lineupSize ?? null) : null;
 
         const tournament = await prisma.tournament.create({
             data: {
@@ -164,6 +165,7 @@ export async function POST(request: NextRequest) {
                 maxPlayers: data.maxPlayers ?? null,
                 minPlayers: data.minPlayers ?? null,
                 bracketSize: data.bracketSize ?? null,
+                lineupSize,
                 checkinRequired: data.checkinRequired ?? false,
                 forfeitEnabled: data.forfeitEnabled ?? false,
                 forfeitGraceMinutes: data.forfeitGraceMinutes ?? 15,

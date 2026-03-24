@@ -50,6 +50,34 @@ type MatchAvailability = {
     selectedBy: { id: string; username: string | null; fullName: string | null } | null;
 };
 
+type LineupRosterMember = {
+    id: string;
+    name: string;
+    role: string;
+};
+
+type LineupTeam = {
+    teamId: string;
+    teamName: string;
+    memberIds: string[];
+    members: { id: string; name: string }[];
+    submittedBy: { id: string; name: string } | null;
+    updatedAt: string;
+};
+
+type LineupData = {
+    enabled: boolean;
+    lineupSize: number | null;
+    locked: boolean;
+    matchStatus: string;
+    myTeamId: string | null;
+    canSubmit: boolean;
+    canStart: boolean;
+    roster: LineupRosterMember[];
+    lineups: LineupTeam[];
+    opponentHidden?: boolean;
+};
+
 const MAX_EVIDENCE = 3;
 const MAX_AVAILABILITY_SLOTS = 3;
 
@@ -137,15 +165,17 @@ export function TournamentMyMatch({
     tournamentTitle,
     tournamentUrl,
     tournamentTimeZone,
+    lineupSize,
 }: {
     match: MatchSummary;
     currentUserId?: string | null;
     tournamentTitle: string;
     tournamentUrl: string;
     tournamentTimeZone: string;
+    lineupSize?: number | null;
 }) {
     const router = useRouter();
-    const { success, error } = useToast();
+    const { success, error, warning } = useToast();
     const [scoreA, setScoreA] = useState(match.report?.scoreA ?? 0);
     const [scoreB, setScoreB] = useState(match.report?.scoreB ?? 0);
     const [winnerId, setWinnerId] = useState(match.report?.winnerId ?? "");
@@ -159,6 +189,11 @@ export function TournamentMyMatch({
     const [availabilityLoading, setAvailabilityLoading] = useState(false);
     const [availabilitySubmitting, setAvailabilitySubmitting] = useState(false);
     const [selectingSlot, setSelectingSlot] = useState<string | null>(null);
+    const [lineupData, setLineupData] = useState<LineupData | null>(null);
+    const [lineupLoading, setLineupLoading] = useState(false);
+    const [lineupSubmitting, setLineupSubmitting] = useState(false);
+    const [startingMatch, setStartingMatch] = useState(false);
+    const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
     const winnerOptions = useMemo(() => {
         const options: Array<{ value: string; label: string }> = [];
@@ -171,6 +206,8 @@ export function TournamentMyMatch({
     const canDispute = !match.hasOpenDispute && match.status !== "COMPLETED";
     const readOnlyChat = match.status === "COMPLETED";
     const availabilityDisabled = match.status === "COMPLETED";
+    const lineupEnabled = lineupSize !== null && lineupSize !== undefined;
+    const lineupSizeValue = lineupData?.lineupSize ?? (lineupSize ?? null);
 
     const fetchAvailability = async () => {
         setAvailabilityLoading(true);
@@ -192,6 +229,39 @@ export function TournamentMyMatch({
     useEffect(() => {
         fetchAvailability();
     }, [match.id]);
+
+    const fetchLineup = async () => {
+        if (!lineupEnabled) return;
+        setLineupLoading(true);
+        try {
+            const res = await fetch(`/api/matches/${match.id}/lineup`);
+            const data = await res.json();
+            if (res.ok) {
+                setLineupData(data.data || null);
+            } else {
+                error(data.message || "Gagal memuat lineup.");
+            }
+        } catch {
+            error("Kesalahan jaringan.");
+        } finally {
+            setLineupLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!lineupEnabled) return;
+        fetchLineup();
+    }, [match.id, lineupEnabled]);
+
+    useEffect(() => {
+        if (!lineupData?.enabled || !lineupData.myTeamId) return;
+        const myLineup = lineupData.lineups.find((lineup) => lineup.teamId === lineupData.myTeamId);
+        if (myLineup) {
+            setSelectedMembers(myLineup.memberIds);
+        } else {
+            setSelectedMembers([]);
+        }
+    }, [lineupData]);
 
     const updateAvailabilitySlot = (index: number, value: string) => {
         setAvailabilitySlots((prev) => prev.map((slot, slotIndex) => (slotIndex === index ? value : slot)));
@@ -256,6 +326,65 @@ export function TournamentMyMatch({
             err instanceof Error ? error(err.message) : error("Gagal memilih slot.");
         } finally {
             setSelectingSlot(null);
+        }
+    };
+
+    const toggleLineupMember = (memberId: string) => {
+        if (!lineupSizeValue) return;
+        setSelectedMembers((prev) => {
+            if (prev.includes(memberId)) {
+                return prev.filter((id) => id !== memberId);
+            }
+            if (prev.length >= lineupSizeValue) {
+                warning(`Lineup maksimal ${lineupSizeValue} pemain.`);
+                return prev;
+            }
+            return [...prev, memberId];
+        });
+    };
+
+    const handleSubmitLineup = async () => {
+        if (!lineupSizeValue) return;
+        if (selectedMembers.length !== lineupSizeValue) {
+            warning(`Lineup harus berisi ${lineupSizeValue} pemain.`);
+            return;
+        }
+        setLineupSubmitting(true);
+        try {
+            const res = await fetch(`/api/matches/${match.id}/lineup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ memberIds: selectedMembers }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || "Gagal menyimpan lineup.");
+            }
+            success(data.message || "Lineup tersimpan.");
+            router.refresh();
+            fetchLineup();
+        } catch (err) {
+            err instanceof Error ? error(err.message) : error("Gagal menyimpan lineup.");
+        } finally {
+            setLineupSubmitting(false);
+        }
+    };
+
+    const handleStartMatch = async () => {
+        setStartingMatch(true);
+        try {
+            const res = await fetch(`/api/matches/${match.id}/start`, { method: "POST" });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || "Gagal memulai match.");
+            }
+            success(data.message || "Match dimulai.");
+            router.refresh();
+            fetchLineup();
+        } catch (err) {
+            err instanceof Error ? error(err.message) : error("Gagal memulai match.");
+        } finally {
+            setStartingMatch(false);
         }
     };
 
@@ -444,6 +573,134 @@ export function TournamentMyMatch({
                     <div className="mt-3 text-xs text-base-content/50">Match sudah selesai. Availability ditutup.</div>
                 )}
             </div>
+
+            {lineupEnabled ? (
+                <div className="rounded-box border border-base-300 bg-base-200/40 p-4 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/60">Lineup</div>
+                            <p className="text-xs text-base-content/55">Kapten submit lineup sebelum match dimulai.</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button type="button" className={`${btnOutline} btn-xs`} onClick={fetchLineup} disabled={lineupLoading}>
+                                Refresh
+                            </button>
+                            {lineupData?.canStart ? (
+                                <button type="button" className={`${btnPrimary} btn-xs`} onClick={handleStartMatch} disabled={startingMatch}>
+                                    {startingMatch ? "Memulai..." : "Start Match"}
+                                </button>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    <div className="mt-3 space-y-3">
+                        {lineupLoading ? (
+                            <div className="text-xs text-base-content/50">Memuat lineup...</div>
+                        ) : !lineupData ? (
+                            <div className="rounded-box border border-dashed border-base-300 p-3 text-center text-xs text-base-content/50">
+                                Lineup belum tersedia.
+                            </div>
+                        ) : !lineupData.enabled ? (
+                            <div className="rounded-box border border-dashed border-base-300 p-3 text-center text-xs text-base-content/50">
+                                Lineup belum diaktifkan untuk turnamen ini.
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/60">
+                                    <span>Lineup size: {lineupData.lineupSize}</span>
+                                    <span className={`badge badge-outline ${lineupData.locked ? "badge-warning" : "badge-success"}`}>
+                                        {lineupData.locked ? "Locked" : "Draft"}
+                                    </span>
+                                </div>
+
+                                {lineupData.lineups.length === 0 ? (
+                                    <div className="rounded-box border border-dashed border-base-300 p-3 text-center text-xs text-base-content/50">
+                                        Belum ada lineup yang disubmit.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {lineupData.lineups.map((lineup) => (
+                                            <div key={lineup.teamId} className="rounded-box border border-base-300 bg-base-100/70 p-3">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <div className="text-xs font-semibold text-base-content">{lineup.teamName}</div>
+                                                    <div className="text-[11px] text-base-content/45">
+                                                        {new Date(lineup.updatedAt).toLocaleString("id-ID")}
+                                                    </div>
+                                                </div>
+                                                <div className="mt-2 text-xs text-base-content/70">
+                                                    {lineup.members.map((member) => member.name).join(", ")}
+                                                </div>
+                                                {lineup.submittedBy ? (
+                                                    <div className="mt-2 text-[11px] text-base-content/45">
+                                                        Disubmit oleh {lineup.submittedBy.name}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {lineupData.opponentHidden ? (
+                                    <div className="rounded-box border border-base-300 bg-base-100/70 p-3 text-xs text-base-content/55">
+                                        Lineup lawan akan muncul setelah match dimulai.
+                                    </div>
+                                ) : null}
+
+                                {lineupData.canSubmit ? (
+                                    <div className="space-y-3">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-base-content/70">
+                                            <span>Pilih lineup</span>
+                                            <span>
+                                                {selectedMembers.length} / {lineupSizeValue ?? 0}
+                                            </span>
+                                        </div>
+                                        {lineupData.roster.length === 0 ? (
+                                            <div className="rounded-box border border-dashed border-base-300 p-3 text-center text-xs text-base-content/50">
+                                                Roster belum tersedia.
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                                {lineupData.roster.map((member) => (
+                                                    <label
+                                                        key={member.id}
+                                                        className="flex cursor-pointer items-center justify-between rounded-box border border-base-300 bg-base-100/70 px-3 py-2 text-xs text-base-content/70"
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-xs"
+                                                                checked={selectedMembers.includes(member.id)}
+                                                                onChange={() => toggleLineupMember(member.id)}
+                                                                disabled={lineupSubmitting}
+                                                            />
+                                                            <span className="font-semibold text-base-content">{member.name}</span>
+                                                        </span>
+                                                        <span className="badge badge-ghost badge-xs">{member.role}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                                            <button
+                                                type="button"
+                                                className={`${btnPrimary} w-full sm:w-auto`}
+                                                onClick={handleSubmitLineup}
+                                                disabled={lineupSubmitting}
+                                            >
+                                                {lineupSubmitting ? "Menyimpan..." : "Simpan Lineup"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-xs text-base-content/55">
+                                        {lineupData.locked ? "Lineup terkunci karena match sudah dimulai." : "Hanya captain yang dapat mengatur lineup."}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+            ) : null}
 
             <div className="space-y-3">
                 <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">Report Match</div>

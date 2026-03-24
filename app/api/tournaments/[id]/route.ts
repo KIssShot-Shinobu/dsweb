@@ -73,6 +73,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             typeof updateData.isTeamTournament === "boolean" ||
             typeof updateData.mode === "string" ||
             updateData.forfeitEnabled === true ||
+            updateData.lineupSize !== undefined ||
             typeof updateData.startAt === "string" ||
             typeof updateData.registrationOpen === "string" ||
             typeof updateData.registrationClose === "string" ||
@@ -98,6 +99,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
             if (nextIsTeam && nextMode === "INDIVIDUAL") {
                 return NextResponse.json({ success: false, message: "Mode team wajib dipilih" }, { status: 400 });
+            }
+        }
+
+        if (updateData.lineupSize !== undefined) {
+            const nextIsTeam =
+                typeof updateData.isTeamTournament === "boolean"
+                    ? updateData.isTeamTournament
+                    : currentTournament?.isTeamTournament ?? false;
+            const nextMode = typeof updateData.mode === "string" ? updateData.mode : currentTournament?.mode ?? "INDIVIDUAL";
+            const lineupValue = updateData.lineupSize;
+
+            if (lineupValue !== null && (!nextIsTeam || nextMode === "INDIVIDUAL")) {
+                return NextResponse.json({ success: false, message: "Lineup hanya tersedia untuk turnamen team" }, { status: 400 });
             }
         }
 

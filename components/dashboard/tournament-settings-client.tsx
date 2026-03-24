@@ -63,6 +63,7 @@ type TournamentForm = {
     status: string;
     maxPlayers: string;
     isTeamTournament: boolean;
+    lineupSize: string;
 };
 
 export function TournamentSettingsClient({ tournamentId }: { tournamentId: string }) {
@@ -89,6 +90,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
         status: "OPEN",
         maxPlayers: "",
         isTeamTournament: false,
+        lineupSize: "",
     });
 
     useEffect(() => {
@@ -123,6 +125,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                         status: tournament.status,
                         maxPlayers: tournament.maxPlayers ? String(tournament.maxPlayers) : "",
                         isTeamTournament: Boolean(tournament.isTeamTournament || (tournament.mode && tournament.mode !== "INDIVIDUAL")),
+                        lineupSize: tournament.lineupSize ? String(tournament.lineupSize) : "",
                     });
                 } else {
                     error(data.message || "Gagal memuat turnamen.");
@@ -165,6 +168,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                     prizePool: form.prizePool,
                     status: form.status,
                     maxPlayers: form.maxPlayers ? Number(form.maxPlayers) : undefined,
+                    lineupSize: form.isTeamTournament ? (form.lineupSize ? Number(form.lineupSize) : null) : null,
                 }),
             });
             const data = await res.json();
@@ -287,6 +291,23 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                                 Bracket akan menyesuaikan ke ukuran power-of-two terdekat.
                             </p>
                         </div>
+                        {form.isTeamTournament ? (
+                            <div>
+                                <label className={labelCls}>Lineup Size (opsional)</label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    step={1}
+                                    className={inputCls}
+                                    value={form.lineupSize}
+                                    onChange={(event) => setForm((prev) => ({ ...prev, lineupSize: event.target.value }))}
+                                    placeholder="Contoh: 3"
+                                />
+                                <p className="mt-2 text-xs text-base-content/45">
+                                    Captain akan submit lineup sebelum match dimulai.
+                                </p>
+                            </div>
+                        ) : null}
                         <div>
                             <label className={labelCls}>Entry Fee (Rp)</label>
                             <input

@@ -50,6 +50,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Sengketa match mendukung upload bukti (screenshot) saat report/dispute untuk mempercepat verifikasi.
 - Match chat/notes per match untuk koordinasi jadwal/hasil (pemain + referee + admin + pengurus team), lampiran otomatis dihapus saat match selesai.
 - Match availability: pemain mengusulkan 1-3 slot jadwal, lawan memilih (tercatat audit + notifikasi).
+- Team lineup submission per match (kapten submit lineup; terkunci saat match ONGOING; lawan melihat setelah match dimulai).
 - Tournament timezone + export kalender (ICS) untuk match terjadwal dan jadwal start event.
 - Diskualifikasi peserta dari dashboard dengan auto-advance match aktif + audit log.
   - Penjadwalan match + reminder otomatis 30 menit sebelum match dimulai (notifikasi in-app).
@@ -491,6 +492,8 @@ cmd /c npm run dev
   - `prisma/migrations_manual/20260320_match_messages.rollback.sql`
   - `prisma/migrations_manual/20260320_match_availability.sql`
   - `prisma/migrations_manual/20260320_match_availability.rollback.sql`
+  - `prisma/migrations_manual/20260320_match_lineup.sql`
+  - `prisma/migrations_manual/20260320_match_lineup.rollback.sql`
 
 ## Aturan Update Dokumentasi
 

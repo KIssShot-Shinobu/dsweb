@@ -98,6 +98,7 @@ export function getDefaultTournamentForm() {
         groupCount: 2,
         playersPerGroup: 8,
         maxPlayers: DEFAULT_MAX_PLAYERS,
+        lineupSize: "",
         participationRules: "",
         registrationStart: "",
         registrationEnd: "",
@@ -129,6 +130,7 @@ export function buildTournamentPayload(formData: TournamentFormState) {
         forfeitEnabled: formData.forfeitEnabled,
         forfeitGraceMinutes: formData.forfeitGraceMinutes,
         forfeitMode: formData.forfeitMode,
+        lineupSize: formData.isTeamTournament ? (formData.lineupSize ? Number(formData.lineupSize) : null) : null,
         startAt: formData.startAt,
         image: formData.image,
     };
@@ -576,6 +578,7 @@ export function TournamentForm({
                                     setFormData((prev) => ({
                                         ...prev,
                                         isTeamTournament: checked,
+                                        lineupSize: checked ? prev.lineupSize : "",
                                         mode: checked ? (prev.mode === "INDIVIDUAL" ? "TEAM_BOARD" : prev.mode) : "INDIVIDUAL",
                                     }));
                                 }}
@@ -591,6 +594,23 @@ export function TournamentForm({
                                 />
                                 <p className="mt-2 text-xs text-base-content/50">
                                     Pendaftaran hanya untuk captain, vice captain, dan manager.
+                                </p>
+                            </div>
+                        ) : null}
+                        {formData.isTeamTournament ? (
+                            <div>
+                                <label className={labelCls}>Lineup Size (opsional)</label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    step={1}
+                                    className={inputCls}
+                                    value={formData.lineupSize}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, lineupSize: event.target.value }))}
+                                    placeholder="Contoh: 3"
+                                />
+                                <p className="mt-2 text-xs text-base-content/45">
+                                    Isi jika ingin captain submit lineup sebelum match dimulai.
                                 </p>
                             </div>
                         ) : null}

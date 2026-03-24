@@ -382,6 +382,7 @@ const tournamentBaseSchema = z.object({
     forfeitEnabled: z.boolean().optional(),
     forfeitGraceMinutes: z.coerce.number().int().min(1, "Grace minutes minimal 1").optional(),
     forfeitMode: z.enum(TOURNAMENT_FORFEIT_MODE_VALUES, { message: "Mode forfeit tidak valid" }).optional(),
+    lineupSize: z.union([z.coerce.number().int().min(1, "Lineup size minimal 1"), z.null()]).optional(),
     image: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload lokal").optional().or(z.literal("")),
 });
 
@@ -394,6 +395,15 @@ export const tournamentSchema = tournamentBaseSchema.superRefine((data, ctx) => 
                 path: ["mode"],
             });
         }
+    }
+
+    const isTeamMode = Boolean(data.isTeamTournament || (data.mode && data.mode !== "INDIVIDUAL"));
+    if (data.lineupSize && !isTeamMode) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Lineup hanya tersedia untuk turnamen team",
+            path: ["lineupSize"],
+        });
     }
 
     if (data.forfeitEnabled && !data.checkinRequired) {
@@ -484,6 +494,10 @@ export const matchAvailabilitySelectSchema = z.object({
     slot: availabilitySlotSchema,
 });
 
+export const matchLineupSchema = z.object({
+    memberIds: z.array(z.string().cuid("User ID tidak valid")).min(1, "Minimal 1 pemain"),
+});
+
 export type MatchReportInput = z.infer<typeof matchReportSchema>;
 export type MatchDisputeInput = z.infer<typeof matchDisputeSchema>;
 export type MatchAdminResolveInput = z.infer<typeof matchAdminResolveSchema>;
@@ -493,6 +507,7 @@ export type MatchMessageUpdateInput = z.infer<typeof matchMessageUpdateSchema>;
 export type MatchScheduleInput = z.infer<typeof matchScheduleSchema>;
 export type MatchAvailabilityInput = z.infer<typeof matchAvailabilitySchema>;
 export type MatchAvailabilitySelectInput = z.infer<typeof matchAvailabilitySelectSchema>;
+export type MatchLineupInput = z.infer<typeof matchLineupSchema>;
 
 
 
