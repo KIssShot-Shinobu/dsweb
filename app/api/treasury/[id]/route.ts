@@ -16,6 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
                 user: {
                     select: {
                         fullName: true,
+                        username: true,
                     },
                 },
             },
@@ -58,12 +59,18 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
             data: {
                 amount: nextAmount,
                 description: parsed.data.description,
+                category: parsed.data.category,
+                method: parsed.data.method,
+                status: parsed.data.status ?? "CLEARED",
+                counterparty: parsed.data.counterparty ? parsed.data.counterparty : null,
+                referenceCode: parsed.data.referenceCode ? parsed.data.referenceCode : null,
                 userId: parsed.data.userId ?? null,
             },
             include: {
                 user: {
                     select: {
                         fullName: true,
+                        username: true,
                     },
                 },
             },
@@ -79,12 +86,22 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
                     ? {
                         amount: previous.amount,
                         description: previous.description,
+                        category: previous.category,
+                        method: previous.method,
+                        status: previous.status,
+                        counterparty: previous.counterparty,
+                        referenceCode: previous.referenceCode,
                         userId: previous.userId,
                     }
                     : null,
                 after: {
                     amount: transaction.amount,
                     description: transaction.description,
+                    category: transaction.category,
+                    method: transaction.method,
+                    status: transaction.status,
+                    counterparty: transaction.counterparty,
+                    referenceCode: transaction.referenceCode,
                     userId: transaction.userId,
                     type: parsed.data.type,
                 },
@@ -121,6 +138,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Params 
             details: {
                 amount: deleted.amount,
                 description: deleted.description,
+                category: deleted.category,
+                method: deleted.method,
+                status: deleted.status,
+                counterparty: deleted.counterparty,
+                referenceCode: deleted.referenceCode,
                 userId: deleted.userId,
             },
         });

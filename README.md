@@ -41,7 +41,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - Aksi manajemen team kini diarahkan dari dashboard; halaman publik tidak lagi menampilkan tombol manage agar lebih ringan.
 - Captain bisa menghapus team dari halaman manage ketika roster sudah kosong (hanya captain tersisa).
 - Halaman `Users` (`/dashboard/users`) tetap fokus ke moderasi global akun, role komunitas, dan status user. Admin tidak lagi assign/unassign roster team dari dashboard users.
-- Treasury transaksi + analytics ringkas dengan filter server-side; halaman treasury sekarang default ke semua periode agar sinkron dengan total data dashboard.
+- Treasury profesional: kategori/method/status, CSV export, monthly summary, dan filter server-side; halaman treasury default ke semua periode agar sinkron dengan total data dashboard.
 - Dashboard summary memakai endpoint terpusat `/api/dashboard/summary`, termasuk ringkasan guild members, assigned team, dan total team aktif.
 - Upload file gambar (screenshot/profile) via API. Dashboard kini hanya menampilkan avatar user aktif di header agar layout tidak boros.
 - Audit log aktivitas user/admin.
@@ -332,9 +332,9 @@ Lainnya:
 - `POST /api/team/delete`
 - `POST /api/team/leave`
 - `PATCH /api/team/update`
-- `GET/POST /api/treasury`, `GET/PUT/DELETE /api/treasury/:id`
+- `GET/POST /api/treasury`, `GET/PUT/DELETE /api/treasury/:id`, `GET /api/treasury/export`
 - `GET /api/admin/users` dan `PUT /api/admin/users/:id/status` tetap tersedia sebagai alias kompatibilitas
-- `GET /api/treasury` mendukung `page`, `limit`, `month`, `year`, `type`, `userId`
+- `GET /api/treasury` mendukung `page`, `limit`, `month`, `year`, `type`, `userId`, `category`, `method`, `status`, `search`, `includeSummary`, `summaryYear`, `public`
 - `POST /api/upload`
 - `POST /api/upload/public` (membuat temp upload publik non-auth, rate limit 5/jam/IP)
 - `GET /api/upload/public/:id` (preview temp upload publik milik IP yang sama)
@@ -488,6 +488,8 @@ cmd /c npm run dev
   - `prisma/migrations_manual/20260319_tournament_forfeit_settings.rollback.sql`
   - `prisma/migrations_manual/20260320_tournament_timezone.sql`
   - `prisma/migrations_manual/20260320_tournament_timezone.rollback.sql`
+  - `prisma/migrations_manual/20260324_treasury_professional.sql`
+  - `prisma/migrations_manual/20260324_treasury_professional.rollback.sql`
   - `prisma/migrations_manual/20260320_match_messages.sql`
   - `prisma/migrations_manual/20260320_match_messages.rollback.sql`
   - `prisma/migrations_manual/20260320_match_availability.sql`

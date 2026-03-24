@@ -8,7 +8,7 @@ interface Transaction {
     amount: number;
     description: string;
     createdAt: string;
-    user: { fullName: string } | null;
+    user: { fullName: string; username?: string | null } | null;
 }
 
 export function TreasuryCard({

@@ -288,9 +288,18 @@ model Treasury {
   amount      Int
   currency    String   @default("IDR") @db.VarChar(10)
   description String
+  category    String   @default("OTHER") @db.VarChar(50)
+  method      String   @default("OTHER") @db.VarChar(30)
+  status      String   @default("CLEARED") @db.VarChar(20)
+  counterparty String? @db.VarChar(191)
+  referenceCode String? @db.VarChar(50)
   createdAt   DateTime @default(now())
   userId      String?
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([category])
+  @@index([status])
 }
 
 //  New: Auth / Registration System 

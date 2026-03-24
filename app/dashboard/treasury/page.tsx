@@ -16,14 +16,28 @@ import {
     DashboardPageShell,
     DashboardPanel,
 } from "@/components/dashboard/page-shell";
+import { AnalyticsChart } from "@/components/dashboard/analytics-chart";
+import {
+    TREASURY_CATEGORIES,
+    TREASURY_CATEGORY_LABELS,
+    TREASURY_METHOD_LABELS,
+    TREASURY_METHODS,
+    TREASURY_STATUS,
+    TREASURY_STATUS_LABELS,
+} from "@/lib/treasury-constants";
 
 interface Transaction {
     id: string;
     amount: number;
     description: string;
+    category: string;
+    method: string;
+    status: string;
+    counterparty: string | null;
+    referenceCode: string | null;
     createdAt: string;
     userId: string | null;
-    user: { fullName: string } | null;
+    user: { fullName: string; username?: string | null } | null;
 }
 
 interface UserOption {
@@ -31,6 +45,14 @@ interface UserOption {
     fullName: string;
     role: string;
 }
+
+type MonthlyTotal = {
+    label: string;
+    income: number;
+    expense: number;
+};
+
+type CategoryBreakdown = Record<string, { income: number; expense: number }>;
 
 const PER_PAGE = 10;
 const UNDO_DURATION = 5000;
@@ -46,6 +68,30 @@ const filterOptions = [
     { value: "KELUAR", label: "Pengeluaran" },
 ];
 
+const categoryOptions = [
+    { value: "ALL", label: "Semua Kategori" },
+    ...TREASURY_CATEGORIES.map((value) => ({
+        value,
+        label: TREASURY_CATEGORY_LABELS[value],
+    })),
+];
+
+const methodOptions = [
+    { value: "ALL", label: "Semua Metode" },
+    ...TREASURY_METHODS.map((value) => ({
+        value,
+        label: TREASURY_METHOD_LABELS[value],
+    })),
+];
+
+const statusOptions = [
+    { value: "ALL", label: "Semua Status" },
+    ...TREASURY_STATUS.map((value) => ({
+        value,
+        label: TREASURY_STATUS_LABELS[value],
+    })),
+];
+
 export default function TreasuryPage() {
     const currentYear = new Date().getFullYear();
 
@@ -56,15 +102,32 @@ export default function TreasuryPage() {
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({ amount: 0, description: "", type: "MASUK", userId: "NONE" });
+    const [formData, setFormData] = useState({
+        amount: 0,
+        description: "",
+        type: "MASUK",
+        category: "OTHER",
+        method: "OTHER",
+        status: "CLEARED",
+        counterparty: "",
+        referenceCode: "",
+        userId: "NONE",
+    });
     const [editingId, setEditingId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [page, setPage] = useState(1);
     const [filter, setFilter] = useState<"ALL" | "MASUK" | "KELUAR">("ALL");
     const [month, setMonth] = useState("ALL");
     const [year, setYear] = useState("ALL");
+    const [category, setCategory] = useState("ALL");
+    const [method, setMethod] = useState("ALL");
+    const [status, setStatus] = useState("ALL");
+    const [search, setSearch] = useState("");
     const [users, setUsers] = useState<UserOption[]>([]);
     const [usersLoading, setUsersLoading] = useState(true);
+    const [monthlyTotals, setMonthlyTotals] = useState<MonthlyTotal[]>([]);
+    const [categoryBreakdown, setCategoryBreakdown] = useState<CategoryBreakdown>({});
+    const [summaryYear, setSummaryYear] = useState(new Date().getFullYear());
 
     const { success, error } = useToast();
     const [confirmState, setConfirmState] = useState<{ open: boolean; id: string; label: string }>({ open: false, id: "", label: "" });
@@ -86,14 +149,29 @@ export default function TreasuryPage() {
 
     const fetchTreasury = useCallback(() => {
         setLoading(true);
+        const summaryYearValue = year !== "ALL" ? year : String(new Date().getFullYear());
         const params = new URLSearchParams({
             month,
             year,
             page: String(page),
             limit: String(PER_PAGE),
+            includeSummary: "1",
+            summaryYear: summaryYearValue,
         });
         if (filter !== "ALL") {
             params.set("type", filter);
+        }
+        if (category !== "ALL") {
+            params.set("category", category);
+        }
+        if (method !== "ALL") {
+            params.set("method", method);
+        }
+        if (status !== "ALL") {
+            params.set("status", status);
+        }
+        if (search.trim()) {
+            params.set("search", search.trim());
         }
 
         fetch(`/api/treasury?${params.toString()}`)
@@ -104,6 +182,9 @@ export default function TreasuryPage() {
                 setIncome(data.income || 0);
                 setExpense(data.expense || 0);
                 setTotal(data.total || 0);
+                setMonthlyTotals(data.monthlyTotals || []);
+                setCategoryBreakdown(data.categoryBreakdown || {});
+                setSummaryYear(data.summaryYear || new Date().getFullYear());
             })
             .catch(() => {
                 setTransactions([]);
@@ -111,9 +192,11 @@ export default function TreasuryPage() {
                 setIncome(0);
                 setExpense(0);
                 setTotal(0);
+                setMonthlyTotals([]);
+                setCategoryBreakdown({});
             })
             .finally(() => setLoading(false));
-    }, [filter, month, page, year]);
+    }, [category, filter, method, month, page, search, status, year]);
 
     const fetchUsers = useCallback(() => {
         setUsersLoading(true);
@@ -152,6 +235,11 @@ export default function TreasuryPage() {
                     type: formData.type,
                     amount: Math.abs(Number(formData.amount)),
                     description: formData.description,
+                    category: formData.category,
+                    method: formData.method,
+                    status: formData.status,
+                    counterparty: formData.counterparty || null,
+                    referenceCode: formData.referenceCode || null,
                     userId: formData.userId === "NONE" ? null : formData.userId,
                 }),
             });
@@ -176,6 +264,11 @@ export default function TreasuryPage() {
             amount: Math.abs(tx.amount),
             description: tx.description,
             type: tx.amount >= 0 ? "MASUK" : "KELUAR",
+            category: tx.category || "OTHER",
+            method: tx.method || "OTHER",
+            status: tx.status || "CLEARED",
+            counterparty: tx.counterparty || "",
+            referenceCode: tx.referenceCode || "",
             userId: tx.userId || "NONE",
         });
         setEditingId(tx.id);
@@ -222,7 +315,17 @@ export default function TreasuryPage() {
     };
 
     const resetForm = () => {
-        setFormData({ amount: 0, description: "", type: "MASUK", userId: "NONE" });
+        setFormData({
+            amount: 0,
+            description: "",
+            type: "MASUK",
+            category: "OTHER",
+            method: "OTHER",
+            status: "CLEARED",
+            counterparty: "",
+            referenceCode: "",
+            userId: "NONE",
+        });
         setEditingId(null);
         setShowModal(false);
     };
@@ -282,14 +385,75 @@ export default function TreasuryPage() {
                 </div>
 
                 <DashboardPanel
+                    title="Monthly Summary"
+                    description={`Ringkasan arus kas tahun ${summaryYear}.`}
+                >
+                    <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+                        <AnalyticsChart data={monthlyTotals} loading={loading} title="Monthly Treasury" />
+                        <div className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm font-semibold text-base-content">Category Breakdown</div>
+                                <div className="text-xs text-base-content/50">Net</div>
+                            </div>
+                            <div className="mt-4 space-y-3">
+                                {Object.keys(categoryBreakdown).length === 0 ? (
+                                    <div className="text-xs text-base-content/45">Belum ada data kategori.</div>
+                                ) : (
+                                    Object.entries(categoryBreakdown)
+                                        .sort((a, b) => (b[1].income - b[1].expense) - (a[1].income - a[1].expense))
+                                        .map(([key, value]) => (
+                                        <div key={key} className="flex items-center justify-between text-xs">
+                                            <span className="text-base-content/70">
+                                                {TREASURY_CATEGORY_LABELS[key as keyof typeof TREASURY_CATEGORY_LABELS] ?? key}
+                                            </span>
+                                            <span className="font-semibold text-base-content">
+                                                {formatCurrency(value.income - value.expense)}
+                                            </span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </DashboardPanel>
+
+                <DashboardPanel
                     title="Daftar Transaksi"
                     description={`Menampilkan ${total} transaksi pada periode yang dipilih.`}
                     action={(
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-                            <FormSelect value={month} onChange={(value) => { setMonth(value); setPage(1); }} options={monthOptions} className="w-full sm:w-36" />
+                            <input
+                                type="text"
+                                className="input input-bordered w-full sm:w-52"
+                                placeholder="Cari deskripsi/ref"
+                                value={search}
+                                onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+                            />
+                            <FormSelect value={month} onChange={(value) => { setMonth(value); setPage(1); }} options={monthOptions} className="w-full sm:w-32" />
                             <FormSelect value={year} onChange={(value) => { setYear(value); setPage(1); }} options={yearOptions} className="w-full sm:w-28" />
-                            <FormSelect value={filter} onChange={(value) => { setFilter(value as "ALL" | "MASUK" | "KELUAR"); setPage(1); }} options={filterOptions} className="w-full sm:w-36" />
-                            <button className={`${btnOutline} btn-sm`} onClick={() => { setMonth("ALL"); setYear("ALL"); setFilter("ALL"); setPage(1); }}>
+                            <FormSelect value={filter} onChange={(value) => { setFilter(value as "ALL" | "MASUK" | "KELUAR"); setPage(1); }} options={filterOptions} className="w-full sm:w-32" />
+                            <FormSelect value={category} onChange={(value) => { setCategory(value); setPage(1); }} options={categoryOptions} className="w-full sm:w-40" />
+                            <FormSelect value={method} onChange={(value) => { setMethod(value); setPage(1); }} options={methodOptions} className="w-full sm:w-36" />
+                            <FormSelect value={status} onChange={(value) => { setStatus(value); setPage(1); }} options={statusOptions} className="w-full sm:w-32" />
+                            <a
+                                className={`${btnOutline} btn-sm`}
+                                href={`/api/treasury/export?month=${month}&year=${year}&type=${filter !== "ALL" ? filter : ""}&category=${category !== "ALL" ? category : ""}&method=${method !== "ALL" ? method : ""}&status=${status !== "ALL" ? status : ""}&search=${encodeURIComponent(search.trim())}`}
+                            >
+                                Export CSV
+                            </a>
+                            <button
+                                className={`${btnOutline} btn-sm`}
+                                onClick={() => {
+                                    setMonth("ALL");
+                                    setYear("ALL");
+                                    setFilter("ALL");
+                                    setCategory("ALL");
+                                    setMethod("ALL");
+                                    setStatus("ALL");
+                                    setSearch("");
+                                    setPage(1);
+                                }}
+                            >
                                 Reset
                             </button>
                         </div>
@@ -312,10 +476,25 @@ export default function TreasuryPage() {
                                             {transaction.amount >= 0 ? "+" : "-"}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <div className="truncate text-sm font-semibold text-base-content">{transaction.description}</div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <div className="truncate text-sm font-semibold text-base-content">{transaction.description}</div>
+                                                <span className="rounded-full border border-base-300 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-base-content/60">
+                                                    {TREASURY_CATEGORY_LABELS[transaction.category as keyof typeof TREASURY_CATEGORY_LABELS] ?? transaction.category}
+                                                </span>
+                                                <span className={`badge badge-outline badge-xs ${transaction.status === "CLEARED" ? "badge-success" : transaction.status === "PENDING" ? "badge-warning" : "badge-ghost"}`}>
+                                                    {TREASURY_STATUS_LABELS[transaction.status as keyof typeof TREASURY_STATUS_LABELS] ?? transaction.status}
+                                                </span>
+                                            </div>
                                             <div className="truncate text-xs text-base-content/45">
                                                 {formatDate(transaction.createdAt)} - {transaction.user?.username || transaction.user?.fullName || "Kas umum"}
                                             </div>
+                                            {transaction.counterparty || transaction.referenceCode ? (
+                                                <div className="truncate text-[11px] text-base-content/40">
+                                                    {transaction.counterparty ? `Counterparty: ${transaction.counterparty}` : "Counterparty: -"}
+                                                    {" • "}
+                                                    {transaction.referenceCode ? `Ref: ${transaction.referenceCode}` : "Ref: -"}
+                                                </div>
+                                            ) : null}
                                         </div>
                                         <div className={`text-sm font-bold ${transaction.amount >= 0 ? "text-success" : "text-error"}`}>
                                             {transaction.amount >= 0 ? "+" : "-"}
@@ -340,6 +519,18 @@ export default function TreasuryPage() {
                         <FormSelect value={formData.type} onChange={(value) => setFormData((prev) => ({ ...prev, type: value }))} options={transactionTypeOptions} />
                     </div>
                     <div>
+                        <label className={labelCls}>Kategori</label>
+                        <FormSelect value={formData.category} onChange={(value) => setFormData((prev) => ({ ...prev, category: value }))} options={categoryOptions.filter((option) => option.value !== "ALL")} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Metode Pembayaran</label>
+                        <FormSelect value={formData.method} onChange={(value) => setFormData((prev) => ({ ...prev, method: value }))} options={methodOptions.filter((option) => option.value !== "ALL")} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Status</label>
+                        <FormSelect value={formData.status} onChange={(value) => setFormData((prev) => ({ ...prev, status: value }))} options={statusOptions.filter((option) => option.value !== "ALL")} />
+                    </div>
+                    <div>
                         <label className={labelCls}>Terkait User</label>
                         <FormSelect value={formData.userId} onChange={(value) => setFormData((prev) => ({ ...prev, userId: value }))} options={userSelectOptions} disabled={usersLoading} />
                     </div>
@@ -358,6 +549,26 @@ export default function TreasuryPage() {
                     <div>
                         <label className={labelCls}>Deskripsi</label>
                         <input type="text" className={inputCls} value={formData.description} onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))} required placeholder="Contoh: Iuran bulanan guild" />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Counterparty</label>
+                        <input
+                            type="text"
+                            className={inputCls}
+                            value={formData.counterparty}
+                            onChange={(event) => setFormData((prev) => ({ ...prev, counterparty: event.target.value }))}
+                            placeholder="Contoh: Sponsor ABC / Vendor XYZ"
+                        />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Reference Code</label>
+                        <input
+                            type="text"
+                            className={inputCls}
+                            value={formData.referenceCode}
+                            onChange={(event) => setFormData((prev) => ({ ...prev, referenceCode: event.target.value }))}
+                            placeholder="INV-2026-001"
+                        />
                     </div>
                     <div className="flex justify-end gap-3">
                         <button type="button" className={btnOutline} onClick={resetForm}>Batal</button>

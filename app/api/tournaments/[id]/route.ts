@@ -100,6 +100,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             if (nextIsTeam && nextMode === "INDIVIDUAL") {
                 return NextResponse.json({ success: false, message: "Mode team wajib dipilih" }, { status: 400 });
             }
+
+            if (!nextIsTeam || nextMode === "INDIVIDUAL") {
+                updateData.lineupSize = null;
+            }
         }
 
         if (updateData.lineupSize !== undefined) {

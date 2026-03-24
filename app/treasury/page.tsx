@@ -4,14 +4,29 @@ import { useEffect, useMemo, useState } from "react";
 import { Footer } from "@/components/ui/footer";
 import { Navbar } from "@/components/ui/navbar";
 import { FormSelect } from "@/components/dashboard/form-select";
+import { AnalyticsChart } from "@/components/dashboard/analytics-chart";
+import { TREASURY_CATEGORIES, TREASURY_CATEGORY_LABELS } from "@/lib/treasury-constants";
 
 type Transaction = {
     id: string;
     amount: number;
     description: string;
+    category: string;
+    method: string;
+    status: string;
+    counterparty: string | null;
+    referenceCode: string | null;
     createdAt: string;
-    user: { fullName: string } | null;
+    user: { fullName: string; username?: string | null } | null;
 };
+
+type MonthlyTotal = {
+    label: string;
+    income: number;
+    expense: number;
+};
+
+type CategoryBreakdown = Record<string, { income: number; expense: number }>;
 
 const filterOptions = [
     { value: "ALL", label: "Semua" },
@@ -32,22 +47,31 @@ export default function PublicTreasuryPage() {
     const [filter, setFilter] = useState<"ALL" | "MASUK" | "KELUAR">("ALL");
     const [month, setMonth] = useState("ALL");
     const [year, setYear] = useState("ALL");
+    const [category, setCategory] = useState("ALL");
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState<string | null>(null);
+    const [monthlyTotals, setMonthlyTotals] = useState<MonthlyTotal[]>([]);
+    const [categoryBreakdown, setCategoryBreakdown] = useState<CategoryBreakdown>({});
+    const [summaryYear, setSummaryYear] = useState(new Date().getFullYear());
 
     useEffect(() => {
         setPage(1);
-    }, [filter, month, year]);
+    }, [filter, month, year, category]);
 
     useEffect(() => {
         setLoading(true);
+        const summaryYearValue = year !== "ALL" ? year : String(new Date().getFullYear());
         const params = new URLSearchParams({
             month,
             year,
             page: String(page),
             limit: String(PER_PAGE),
+            includeSummary: "1",
+            public: "1",
+            summaryYear: summaryYearValue,
         });
         if (filter !== "ALL") params.set("type", filter);
+        if (category !== "ALL") params.set("category", category);
 
         fetch(`/api/treasury?${params.toString()}`)
             .then((res) => res.json())
@@ -57,6 +81,9 @@ export default function PublicTreasuryPage() {
                 setIncome(data.income || 0);
                 setExpense(data.expense || 0);
                 setTotal(data.total || 0);
+                setMonthlyTotals(data.monthlyTotals || []);
+                setCategoryBreakdown(data.categoryBreakdown || {});
+                setSummaryYear(data.summaryYear || new Date().getFullYear());
                 setMessage(null);
             })
             .catch(() => {
@@ -65,10 +92,12 @@ export default function PublicTreasuryPage() {
                 setIncome(0);
                 setExpense(0);
                 setTotal(0);
+                setMonthlyTotals([]);
+                setCategoryBreakdown({});
                 setMessage("Kas belum dapat ditampilkan saat ini.");
             })
             .finally(() => setLoading(false));
-    }, [filter, month, page, year]);
+    }, [filter, month, page, year, category]);
 
     const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PER_PAGE)), [total]);
 
@@ -103,6 +132,14 @@ export default function PublicTreasuryPage() {
         })),
     ];
 
+    const categoryOptions = [
+        { value: "ALL", label: "Semua Kategori" },
+        ...TREASURY_CATEGORIES.map((value) => ({
+            value,
+            label: TREASURY_CATEGORY_LABELS[value],
+        })),
+    ];
+
     return (
         <main className="min-h-screen bg-transparent text-base-content">
             <Navbar />
@@ -119,33 +156,68 @@ export default function PublicTreasuryPage() {
             </section>
 
             <section className="mx-auto max-w-[1400px] px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-                <div className="stats stats-vertical w-full border border-base-300 bg-base-100/80 shadow-sm sm:stats-horizontal">
-                    <div className="stat">
-                        <div className="stat-title">Saldo Bersih</div>
-                        <div className="stat-value text-primary">{loading ? "..." : formatCurrency(balance)}</div>
-                        <div className="stat-desc">Total saldo terkini</div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
+                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Saldo Bersih</div>
+                        <div className="mt-3 text-2xl font-black text-primary">{loading ? "..." : formatCurrency(balance)}</div>
+                        <div className="text-xs text-base-content/50">Total saldo terkini</div>
                     </div>
-                    <div className="stat">
-                        <div className="stat-title">Pemasukan</div>
-                        <div className="stat-value text-success">{loading ? "..." : formatCurrency(income)}</div>
-                        <div className="stat-desc">Total arus masuk</div>
+                    <div className="rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
+                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Pemasukan</div>
+                        <div className="mt-3 text-2xl font-black text-success">{loading ? "..." : formatCurrency(income)}</div>
+                        <div className="text-xs text-base-content/50">Arus masuk periode aktif</div>
                     </div>
-                    <div className="stat">
-                        <div className="stat-title">Pengeluaran</div>
-                        <div className="stat-value text-error">{loading ? "..." : formatCurrency(expense)}</div>
-                        <div className="stat-desc">Total arus keluar</div>
+                    <div className="rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
+                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Pengeluaran</div>
+                        <div className="mt-3 text-2xl font-black text-error">{loading ? "..." : formatCurrency(expense)}</div>
+                        <div className="text-xs text-base-content/50">Arus keluar periode aktif</div>
                     </div>
-                    <div className="stat">
-                        <div className="stat-title">Transaksi</div>
-                        <div className="stat-value">{loading ? "..." : total}</div>
-                        <div className="stat-desc">Total record</div>
+                    <div className="rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
+                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Net Flow</div>
+                        <div className="mt-3 text-2xl font-black text-base-content">{loading ? "..." : formatCurrency(income - expense)}</div>
+                        <div className="text-xs text-base-content/50">Pemasukan minus pengeluaran</div>
                     </div>
                 </div>
 
-                <div className="mt-8 grid gap-3 sm:gap-4 md:grid-cols-[1fr_160px_140px]">
+                <div className="mt-8 grid gap-4 lg:grid-cols-[2fr_1fr]">
+                    <AnalyticsChart data={monthlyTotals} loading={loading} title="Monthly Treasury" />
+                    <div className="rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-sm font-semibold text-base-content">Category Breakdown</div>
+                                <div className="text-xs text-base-content/55">Tahun {summaryYear}</div>
+                            </div>
+                        </div>
+                        <div className="mt-4 space-y-3">
+                            {Object.keys(categoryBreakdown).length === 0 ? (
+                                <div className="text-xs text-base-content/50">Belum ada data kategori.</div>
+                            ) : (
+                                Object.entries(categoryBreakdown)
+                                    .sort((a, b) => (b[1].income - b[1].expense) - (a[1].income - a[1].expense))
+                                    .map(([key, value]) => (
+                                    <div key={key} className="flex items-center justify-between text-xs">
+                                        <span className="text-base-content/70">{TREASURY_CATEGORY_LABELS[key as keyof typeof TREASURY_CATEGORY_LABELS] ?? key}</span>
+                                        <span className="font-semibold text-base-content">
+                                            {formatCurrency(value.income - value.expense)}
+                                        </span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-8 grid gap-3 sm:gap-4 lg:grid-cols-[1.1fr_1fr_1fr_1fr_auto]">
                     <FormSelect value={month} onChange={setMonth} options={monthOptions} />
                     <FormSelect value={year} onChange={setYear} options={yearOptions} />
                     <FormSelect value={filter} onChange={(value) => setFilter(value as "ALL" | "MASUK" | "KELUAR")} options={filterOptions} />
+                    <FormSelect value={category} onChange={setCategory} options={categoryOptions} />
+                    <a
+                        className="btn btn-outline"
+                        href={`/api/treasury/export?public=1&month=${month}&year=${year}&type=${filter !== "ALL" ? filter : ""}&category=${category !== "ALL" ? category : ""}`}
+                    >
+                        Download CSV
+                    </a>
                 </div>
 
                 {message ? (
@@ -170,7 +242,12 @@ export default function PublicTreasuryPage() {
                                     {transaction.amount >= 0 ? "MASUK" : "KELUAR"}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <div className="truncate text-xs font-semibold text-base-content sm:text-sm">{transaction.description}</div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="truncate text-xs font-semibold text-base-content sm:text-sm">{transaction.description}</div>
+                                        <span className="rounded-full border border-base-200 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-base-content/55">
+                                            {TREASURY_CATEGORY_LABELS[transaction.category as keyof typeof TREASURY_CATEGORY_LABELS] ?? transaction.category}
+                                        </span>
+                                    </div>
                                     <div className="truncate text-[11px] text-base-content/60 sm:text-xs">
                                         {formatDate(transaction.createdAt)} - {transaction.user?.username || transaction.user?.fullName || "Kas umum"}
                                     </div>

@@ -4,13 +4,30 @@ type TreasuryCreateResult = {
     id?: string;
     amount: number;
     description: string;
+    category: string;
+    method: string;
+    status: string;
+    counterparty?: string | null;
+    referenceCode?: string | null;
     userId: string | null;
     user?: { fullName: string } | null;
 };
 
 type TreasuryPrismaLike = {
     treasury: {
-        create: (args: { data: { amount: number; description: string; userId: string | null }; include: { user: { select: { fullName: boolean } } } }) => Promise<TreasuryCreateResult>;
+        create: (args: {
+            data: {
+                amount: number;
+                description: string;
+                category: string;
+                method: string;
+                status: string;
+                counterparty: string | null;
+                referenceCode: string | null;
+                userId: string | null;
+            };
+            include: { user: { select: { fullName: boolean } } };
+        }) => Promise<TreasuryCreateResult>;
     };
 };
 
@@ -24,6 +41,11 @@ export async function createTreasuryEntry(
         data: {
             amount: finalAmount,
             description: input.description,
+            category: input.category,
+            method: input.method,
+            status: input.status ?? "CLEARED",
+            counterparty: input.counterparty ? input.counterparty : null,
+            referenceCode: input.referenceCode ? input.referenceCode : null,
             userId: input.userId || null,
         },
         include: {

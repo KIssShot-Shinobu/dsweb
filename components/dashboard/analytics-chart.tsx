@@ -9,9 +9,10 @@ interface ChartItem {
 interface AnalyticsChartProps {
     data?: ChartItem[];
     loading?: boolean;
+    title?: string;
 }
 
-export function AnalyticsChart({ data = [], loading = false }: AnalyticsChartProps) {
+export function AnalyticsChart({ data = [], loading = false, title = "Weekly Treasury" }: AnalyticsChartProps) {
     const maxValue = data.length > 0 ? Math.max(...data.flatMap((item) => [item.income, item.expense]), 1) : 1;
 
     if (loading) {
@@ -19,7 +20,7 @@ export function AnalyticsChart({ data = [], loading = false }: AnalyticsChartPro
             <div className="card border border-base-300 bg-base-100 shadow-md">
                 <div className="card-body p-0">
                     <div className="flex items-center justify-between border-b border-base-300 px-5 py-4">
-                        <span className="text-base font-semibold text-base-content">Weekly Treasury</span>
+                        <span className="text-base font-semibold text-base-content">{title}</span>
                     </div>
                     <div className="p-5">
                         <div className="flex h-40 items-end justify-between gap-2">
@@ -44,7 +45,7 @@ export function AnalyticsChart({ data = [], loading = false }: AnalyticsChartPro
             <div className="card border border-base-300 bg-base-100 shadow-md">
                 <div className="card-body p-0">
                     <div className="flex items-center justify-between border-b border-base-300 px-5 py-4">
-                        <span className="text-base font-semibold text-base-content">Weekly Treasury</span>
+                        <span className="text-base font-semibold text-base-content">{title}</span>
                     </div>
                     <div className="flex h-40 items-center justify-center p-5 text-sm text-base-content/45">
                         No transaction data
@@ -58,7 +59,7 @@ export function AnalyticsChart({ data = [], loading = false }: AnalyticsChartPro
         <div className="card border border-base-300 bg-base-100 shadow-md">
             <div className="card-body p-0">
                 <div className="flex items-center justify-between border-b border-base-300 px-5 py-4">
-                    <span className="text-base font-semibold text-base-content">Weekly Treasury</span>
+                    <span className="text-base font-semibold text-base-content">{title}</span>
                     <div className="flex items-center gap-4 text-xs text-base-content/45">
                         <span className="flex items-center gap-1.5">
                             <span className="inline-block h-2.5 w-2.5 rounded-full bg-success" />

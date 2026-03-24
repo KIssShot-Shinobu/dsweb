@@ -128,6 +128,7 @@ export async function GET() {
                     user: {
                         select: {
                             fullName: true,
+                            username: true,
                         },
                     },
                 },

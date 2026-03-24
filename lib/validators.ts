@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { formatGameId, isFormattedGameId, normalizeGameIdDigits } from "@/lib/game-id";
 import { parseLocalDateTime } from "@/lib/datetime";
+import { TREASURY_CATEGORIES, TREASURY_METHODS, TREASURY_STATUS } from "@/lib/treasury-constants";
 
 const IGN_REGEX = /^[A-Za-z0-9 _.\-\[\]()]{2,32}$/;
 const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
@@ -306,12 +307,29 @@ export type TournamentParticipantBulkInput = z.infer<typeof tournamentParticipan
 export const treasurySchema = z.object({
     type: z.enum(["MASUK", "KELUAR"], { message: "Tipe transaksi wajib diisi" }),
     amount: z.coerce.number().min(1, "Nominal tidak boleh 0"),
+    category: z.enum(TREASURY_CATEGORIES, { message: "Kategori tidak valid" }),
+    method: z.enum(TREASURY_METHODS, { message: "Metode pembayaran tidak valid" }),
+    status: z.enum(TREASURY_STATUS, { message: "Status transaksi tidak valid" }).default("CLEARED"),
     description: z
         .string()
         .trim()
         .min(3, "Keterangan minimal 3 karakter")
         .max(191, "Keterangan terlalu panjang")
         .regex(SAFE_TEXT_REGEX, "Keterangan mengandung karakter yang tidak diizinkan"),
+    counterparty: z
+        .string()
+        .trim()
+        .max(191, "Counterparty terlalu panjang")
+        .regex(SAFE_TEXT_REGEX, "Counterparty mengandung karakter yang tidak diizinkan")
+        .optional()
+        .or(z.literal("")),
+    referenceCode: z
+        .string()
+        .trim()
+        .max(50, "Kode referensi terlalu panjang")
+        .regex(SAFE_TEXT_REGEX, "Kode referensi mengandung karakter yang tidak diizinkan")
+        .optional()
+        .or(z.literal("")),
     userId: z.string().cuid("User ID tidak valid").optional().nullable(),
 });
 

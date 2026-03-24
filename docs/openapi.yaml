@@ -597,23 +597,52 @@ paths:
         - in: query
           name: month
           schema:
-            type: integer
+            type: string
         - in: query
           name: year
           schema:
-            type: integer
+            type: string
         - in: query
           name: type
           schema:
             type: string
             enum:
-              - SEMUA
               - MASUK
               - KELUAR
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: method
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
         - in: query
           name: userId
           schema:
             type: string
+        - in: query
+          name: includeSummary
+          schema:
+            type: integer
+            enum: [0, 1]
+        - in: query
+          name: summaryYear
+          schema:
+            type: integer
+        - in: query
+          name: public
+          schema:
+            type: integer
+            enum: [0, 1]
       responses:
         "200":
           description: Treasury list
@@ -630,6 +659,9 @@ paths:
               required:
                 - type
                 - amount
+                - category
+                - method
+                - status
                 - description
               properties:
                 type:
@@ -639,8 +671,20 @@ paths:
                     - KELUAR
                 amount:
                   type: number
+                category:
+                  type: string
+                method:
+                  type: string
+                status:
+                  type: string
                 description:
                   type: string
+                counterparty:
+                  type: string
+                  nullable: true
+                referenceCode:
+                  type: string
+                  nullable: true
                 userId:
                   type:
                     - string
@@ -650,6 +694,49 @@ paths:
           description: Treasury transaction created
         "403":
           description: Forbidden
+  /api/treasury/export:
+    get:
+      summary: Export treasury transactions as CSV
+      parameters:
+        - in: query
+          name: month
+          schema:
+            type: string
+        - in: query
+          name: year
+          schema:
+            type: string
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum:
+              - MASUK
+              - KELUAR
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: method
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: public
+          schema:
+            type: integer
+            enum: [0, 1]
+      responses:
+        "200":
+          description: CSV export
   /api/tournaments:
     get:
       summary: List tournaments for public site and dashboard

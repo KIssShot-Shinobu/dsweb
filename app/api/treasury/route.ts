@@ -4,52 +4,30 @@ import { treasurySchema } from "@/lib/validators";
 import { logAudit } from "@/lib/audit-logger";
 import { createTreasuryEntry } from "@/lib/services/treasury-service";
 import { getServerCurrentUser } from "@/lib/server-current-user";
-
-function buildTreasuryWhere(searchParams: URLSearchParams) {
-    const userId = searchParams.get("userId");
-    const month = searchParams.get("month");
-    const year = searchParams.get("year");
-    const type = searchParams.get("type");
-
-    const where: Record<string, unknown> = {};
-    if (userId) where.userId = userId;
-
-    if (month && year) {
-        const parsedMonth = parseInt(month, 10);
-        const parsedYear = parseInt(year, 10);
-        if (!isNaN(parsedMonth) && !isNaN(parsedYear)) {
-            where.createdAt = {
-                gte: new Date(parsedYear, parsedMonth - 1, 1),
-                lt: new Date(parsedYear, parsedMonth, 1),
-            };
-        }
-    }
-
-    if (type === "MASUK") {
-        where.amount = { gt: 0 };
-    } else if (type === "KELUAR") {
-        where.amount = { lt: 0 };
-    }
-
-    return where;
-}
+import { buildMonthlyBuckets, buildTreasuryWhere } from "@/lib/treasury-query";
 
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get("page") || "1", 10);
         const limit = parseInt(searchParams.get("limit") || "10", 10);
+        const includeSummary = searchParams.get("includeSummary") === "1";
+        const isPublic = searchParams.get("public") === "1";
         const where = buildTreasuryWhere(searchParams);
-        const summaryWhere = buildTreasuryWhere(new URLSearchParams(searchParams.toString()));
+        const summaryWhere = buildTreasuryWhere(new URLSearchParams(searchParams.toString()), { ignoreSearch: true });
         delete (summaryWhere as { amount?: unknown }).amount;
 
-        const [transactions, total, aggregate, incomeAggregate, expenseAggregate] = await Promise.all([
+        const summaryYearValue = searchParams.get("summaryYear") || searchParams.get("year") || String(new Date().getFullYear());
+        const summaryYear = Number.isNaN(Number(summaryYearValue)) ? new Date().getFullYear() : parseInt(summaryYearValue, 10);
+
+        const [transactions, total, aggregate, incomeAggregate, expenseAggregate, summaryTransactions, breakdownTransactions] = await Promise.all([
             prisma.treasury.findMany({
                 where,
                 include: {
                     user: {
                         select: {
                             fullName: true,
+                            username: true,
                         },
                     },
                 },
@@ -82,17 +60,74 @@ export async function GET(request: NextRequest) {
                     amount: true,
                 },
             }),
+            includeSummary
+                ? prisma.treasury.findMany({
+                      where: {
+                          ...buildTreasuryWhere(new URLSearchParams(searchParams.toString()), { ignoreMonth: true, ignoreSearch: true }),
+                          createdAt: {
+                              gte: new Date(summaryYear, 0, 1),
+                              lt: new Date(summaryYear + 1, 0, 1),
+                          },
+                      },
+                      select: { amount: true, createdAt: true, category: true },
+                  })
+                : Promise.resolve([]),
+            includeSummary
+                ? prisma.treasury.findMany({
+                      where: summaryWhere,
+                      select: { amount: true, category: true },
+                  })
+                : Promise.resolve([]),
         ]);
+
+        const normalizedTransactions = isPublic
+            ? transactions.map((transaction) => ({
+                  ...transaction,
+                  counterparty: null,
+                  referenceCode: null,
+              }))
+            : transactions;
+
+        const monthlyTotals = includeSummary
+            ? (() => {
+                  const buckets = buildMonthlyBuckets(summaryYear);
+                  summaryTransactions.forEach((transaction) => {
+                      const monthIndex = new Date(transaction.createdAt).getMonth();
+                      if (transaction.amount >= 0) {
+                          buckets[monthIndex].income += transaction.amount;
+                      } else {
+                          buckets[monthIndex].expense += Math.abs(transaction.amount);
+                      }
+                  });
+                  return buckets;
+              })()
+            : [];
+
+        const categoryBreakdown = includeSummary
+            ? breakdownTransactions.reduce<Record<string, { income: number; expense: number }>>((acc, transaction) => {
+                  const key = transaction.category || "OTHER";
+                  if (!acc[key]) {
+                      acc[key] = { income: 0, expense: 0 };
+                  }
+                  if (transaction.amount >= 0) {
+                      acc[key].income += transaction.amount;
+                  } else {
+                      acc[key].expense += Math.abs(transaction.amount);
+                  }
+                  return acc;
+              }, {})
+            : {};
 
         return NextResponse.json({
             success: true,
-            transactions,
+            transactions: normalizedTransactions,
             total,
             page,
             limit,
             balance: aggregate._sum.amount || 0,
             income: incomeAggregate._sum.amount || 0,
             expense: Math.abs(expenseAggregate._sum.amount || 0),
+            ...(includeSummary ? { monthlyTotals, categoryBreakdown, summaryYear } : {}),
         });
     } catch (error) {
         console.error("Error fetching treasury:", error);
@@ -125,6 +160,11 @@ export async function POST(request: NextRequest) {
                 type: validBody.data.type,
                 amount: transaction.amount,
                 description: transaction.description,
+                category: transaction.category,
+                method: transaction.method,
+                status: transaction.status,
+                counterparty: transaction.counterparty,
+                referenceCode: transaction.referenceCode,
                 userId: transaction.userId,
             },
         });

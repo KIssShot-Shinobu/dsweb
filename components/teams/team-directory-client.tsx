@@ -94,59 +94,49 @@ export function TeamDirectoryClient({
                             const canRequestJoin = isLoggedIn && !hasActiveTeam && !team.viewerMembership && !hasPendingJoin && !hasPendingInvite;
 
                             return (
-                                <article key={team.id} className="card border border-base-300 bg-base-100 shadow-sm">
-                                    <div className="card-body gap-3 p-4 sm:gap-4 sm:p-5">
+                                <article
+                                    key={team.id}
+                                    className="card border border-base-300 bg-base-100 shadow-sm transition-shadow duration-200 hover:shadow-md"
+                                >
+                                    <div className="card-body gap-4 p-4 sm:gap-5 sm:p-5">
                                         <div className="flex items-start gap-3 sm:gap-4">
                                             <TeamAvatar name={team.name} avatarUrl={team.logoUrl} size="lg" />
                                             <div className="space-y-2">
                                                 <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="rounded-full border border-base-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-base-content/55">
+                                                        Team
+                                                    </span>
                                                     <h3 className="text-lg font-semibold sm:text-xl">{team.name}</h3>
                                                     <span className={`badge ${team.isActive ? "badge-success" : "badge-ghost"}`}>
                                                         {team.isActive ? "Aktif" : "Nonaktif"}
                                                     </span>
-                                                    {team.viewerMembership ? <span className="badge badge-primary badge-outline">Member</span> : null}
                                                     {hasPendingInvite ? <span className="badge badge-secondary badge-outline">Ada Invite</span> : null}
                                                     {hasPendingJoin ? (
                                                         <span className="badge badge-warning badge-outline">Menunggu</span>
                                                     ) : null}
                                                 </div>
-                                                <p className="text-xs text-base-content/70 sm:text-sm">
+                                                <p className="text-xs leading-relaxed text-base-content/70 sm:text-sm">
                                                     {team.description || "Belum ada deskripsi team."}
                                                 </p>
-                                                <div className="flex flex-wrap gap-2 text-xs text-base-content/70">
-                                                    <span className="badge badge-outline">{team.memberCount} member</span>
-                                                    <span className="badge badge-outline">Captain: {team.captain?.user.username || team.captain?.user.fullName || "-"}</span>
+                                                <div className="flex flex-wrap items-center gap-2 text-[11px] text-base-content/50">
+                                                    <span className="rounded-full border border-base-200 px-2.5 py-1">
+                                                        Roster: {team.memberCount}
+                                                    </span>
+                                                    <span className="text-base-content/40">•</span>
+                                                    <span>
+                                                        Captain: {team.captain?.user.username || team.captain?.user.fullName || "-"}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
-                                            <div className="rounded-box bg-base-200/70 p-3">
-                                                <div className="text-xs text-base-content/60">Vice Captain</div>
-                                                <div className="text-lg font-semibold">{team.viceCaptains.length}</div>
-                                            </div>
-                                            <div className="rounded-box bg-base-200/70 p-3">
-                                                <div className="text-xs text-base-content/60">Manager</div>
-                                                <div className="text-lg font-semibold">{team.managers.length}</div>
-                                            </div>
-                                            <div className="rounded-box bg-base-200/70 p-3">
-                                                <div className="text-xs text-base-content/60">Coach</div>
-                                                <div className="text-lg font-semibold">{team.coaches.length}</div>
-                                            </div>
-                                            <div className="rounded-box bg-base-200/70 p-3">
-                                                <div className="text-xs text-base-content/60">Player</div>
-                                                <div className="text-lg font-semibold">{team.players.length}</div>
-                                            </div>
-                                        </div>
+                                        <div className="h-px w-full bg-base-200/80" />
 
                                         <div className="card-actions flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                             <Link href={`/teams/${team.slug}`} className="btn btn-outline btn-sm">
                                                 Lihat Detail
                                             </Link>
                                             <div className="flex gap-2">
-                                                {hasPendingInvite ? (
-                                                    <span className="badge badge-secondary">Ada Invite</span>
-                                                ) : null}
                                                 {hasPendingJoin ? (
                                                     <button type="button" className="btn btn-outline btn-sm" disabled>
                                                         Menunggu Persetujuan
