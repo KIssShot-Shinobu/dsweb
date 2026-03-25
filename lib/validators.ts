@@ -335,18 +335,102 @@ export const treasurySchema = z.object({
 
 export type TreasuryInput = z.infer<typeof treasurySchema>;
 
-export const updateGameProfileSchema = z.object({
-    gameType: z.string().trim().min(2, "Pilih game"),
-    ign: z.string().min(1, "IGN tidak boleh kosong"),
-    gameId: z
-        .string()
-        .trim()
-        .min(1, "Game ID / DUELIST ID tidak boleh kosong")
-        .transform((value) => formatGameId(value))
-        .refine((value) => normalizeGameIdDigits(value).length === 9 && isFormattedGameId(value), "Game ID harus terdiri dari 9 angka dengan format XXX-XXX-XXX"),
-});
+export const updateGameProfileSchema = z
+    .object({
+        gameType: z.string().trim().min(2, "Pilih game"),
+        ign: z.string().min(1, "IGN tidak boleh kosong"),
+        gameId: z.string().trim().min(1, "Game ID / DUELIST ID tidak boleh kosong"),
+    })
+    .superRefine((data, ctx) => {
+        const isNumeric = ["DUEL_LINKS", "MASTER_DUEL"].includes(String(data.gameType || "").toUpperCase());
+        if (isNumeric) {
+            const formatted = formatGameId(data.gameId);
+            if (normalizeGameIdDigits(formatted).length !== 9 || !isFormattedGameId(formatted)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Game ID harus terdiri dari 9 angka dengan format XXX-XXX-XXX",
+                    path: ["gameId"],
+                });
+            }
+            return;
+        }
+
+        if (data.gameId.trim().length < 2) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Game ID / In-game name minimal 2 karakter",
+                path: ["gameId"],
+            });
+            return;
+        }
+
+        if (data.gameId.trim().length > 64) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Game ID / In-game name terlalu panjang",
+                path: ["gameId"],
+            });
+            return;
+        }
+
+        if (!SAFE_TEXT_REGEX.test(data.gameId.trim())) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Game ID / In-game name mengandung karakter yang tidak valid",
+                path: ["gameId"],
+            });
+        }
+    })
+    .transform((data) => ({
+        ...data,
+        gameId: ["DUEL_LINKS", "MASTER_DUEL"].includes(String(data.gameType || "").toUpperCase())
+            ? formatGameId(data.gameId)
+            : data.gameId.trim(),
+    }));
 
 export type UpdateGameProfileInput = z.infer<typeof updateGameProfileSchema>;
+
+const gameCodeSchema = z
+    .string()
+    .trim()
+    .min(2, "Kode game minimal 2 karakter")
+    .max(50, "Kode game terlalu panjang")
+    .regex(/^[A-Za-z0-9_]+$/, "Kode game hanya boleh huruf, angka, dan underscore")
+    .transform((value) => value.toUpperCase());
+
+const gameNameSchema = z
+    .string()
+    .trim()
+    .min(2, "Nama game minimal 2 karakter")
+    .max(191, "Nama game terlalu panjang");
+
+const gameTypeSchema = z
+    .string()
+    .trim()
+    .max(50, "Tipe game terlalu panjang")
+    .optional()
+    .or(z.literal(""));
+
+export const adminGameCreateSchema = z
+    .object({
+        code: gameCodeSchema,
+        name: gameNameSchema,
+        type: gameTypeSchema.optional(),
+        isOnline: z.boolean().optional(),
+    })
+    .strict();
+
+export const adminGameUpdateSchema = z
+    .object({
+        name: gameNameSchema.optional(),
+        type: gameTypeSchema.optional(),
+        isOnline: z.boolean().optional(),
+    })
+    .strict()
+    .refine(
+        (data) => typeof data.name === "string" || typeof data.type === "string" || typeof data.isOnline === "boolean",
+        { message: "Tidak ada perubahan" }
+    );
 
 export const profileAvatarSchema = z.object({
     avatarUrl: z.union([z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload lokal"), z.null()]),

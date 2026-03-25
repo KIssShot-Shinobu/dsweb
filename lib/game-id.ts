@@ -12,3 +12,9 @@ export function formatGameId(value: string) {
 export function isFormattedGameId(value: string) {
     return /^\d{3}-\d{3}-\d{3}$/.test(value);
 }
+
+const NUMERIC_GAME_CODES = new Set(["DUEL_LINKS", "MASTER_DUEL"]);
+
+export function requiresNumericGameId(gameCode: string) {
+    return NUMERIC_GAME_CODES.has(String(gameCode || "").toUpperCase());
+}

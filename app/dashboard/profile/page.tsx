@@ -58,8 +58,6 @@ export default async function ProfilePage() {
         ign: account.ign,
         screenshotUrl: account.screenshotUrl,
     }));
-    const duelLinksProfile = gameProfiles.find((profile) => profile.gameType === "DUEL_LINKS");
-    const masterDuelProfile = gameProfiles.find((profile) => profile.gameType === "MASTER_DUEL");
     const activeTeam = userWithProfiles ? getActiveTeamSnapshot(userWithProfiles) : { team: null, teamJoinedAt: null };
 
     const roleColors: Record<string, string> = {
@@ -186,16 +184,12 @@ export default async function ProfilePage() {
                                         {profile.gameSectionTitle}
                                     </div>
                                     <ProfileGameSection
-                                        duelLinksProfile={
-                                            duelLinksProfile
-                                                ? { gameType: "DUEL_LINKS", ign: duelLinksProfile.ign, gameId: duelLinksProfile.gameId }
-                                                : undefined
-                                        }
-                                        masterDuelProfile={
-                                            masterDuelProfile
-                                                ? { gameType: "MASTER_DUEL", ign: masterDuelProfile.ign, gameId: masterDuelProfile.gameId }
-                                                : undefined
-                                        }
+                                        profiles={gameProfiles.map((profile) => ({
+                                            gameType: profile.gameType,
+                                            gameName: profile.gameName,
+                                            ign: profile.ign,
+                                            gameId: profile.gameId,
+                                        }))}
                                     />
                                 </div>
                             </div>

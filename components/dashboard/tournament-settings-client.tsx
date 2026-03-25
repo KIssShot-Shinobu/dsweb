@@ -10,6 +10,7 @@ import { DEFAULT_TIMEZONE, getTimeZoneOptions } from "@/lib/timezones";
 import { formatLocalDateTimeInTimeZone } from "@/lib/datetime";
 import { useLocale } from "@/hooks/use-locale";
 import { getIntlLocale } from "@/lib/i18n/format";
+import { useGames } from "@/hooks/use-games";
 
 const parseIdrInput = (value: string) => {
     const numeric = Number(value.replace(/[^0-9]/g, ""));
@@ -41,6 +42,7 @@ type TournamentForm = {
 export function TournamentSettingsClient({ tournamentId }: { tournamentId: string }) {
     const { t, locale } = useLocale();
     const { success, error } = useToast();
+    const { games, loading: gamesLoading } = useGames({ scope: "admin" });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const timeZoneOptions = useMemo(() => getTimeZoneOptions(), []);
@@ -66,13 +68,21 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
         lineupSize: "",
     });
     const formatIdrInput = (value: number) => new Intl.NumberFormat(getIntlLocale(locale)).format(value);
+    const gameOptions = useMemo(() => {
+        const mapped = games.map((game) => ({ value: game.code, label: game.name }));
+        if (form.gameType && !mapped.some((option) => option.value === form.gameType)) {
+            mapped.unshift({ value: form.gameType, label: form.gameType });
+        }
+        if (mapped.length === 0) {
+            return [{ value: "", label: t.dashboard.games.emptyOption }];
+        }
+        return mapped;
+    }, [form.gameType, games, t.dashboard.games.emptyOption]);
+
     const selectOptions = useMemo(() => {
         const options = t.dashboard.tournamentOptions;
         return {
-            gameType: [
-                { value: "DUEL_LINKS", label: options.gameType.duelLinks },
-                { value: "MASTER_DUEL", label: options.gameType.masterDuel },
-            ],
+            gameType: gameOptions,
             format: [
                 { value: "BO1", label: options.format.bo1 },
                 { value: "BO3", label: options.format.bo3 },
@@ -94,7 +104,15 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                 { value: "SCHEDULE_NO_SHOW", label: options.forfeitMode.scheduleNoShow },
             ],
         };
-    }, [t]);
+    }, [gameOptions, t]);
+
+    useEffect(() => {
+        if (!form.gameType && games.length > 0) {
+            setForm((prev) => ({ ...prev, gameType: games[0].code }));
+        }
+    }, [form.gameType, games]);
+
+    const gameSelectDisabled = gamesLoading || gameOptions.length === 0 || gameOptions[0].value === "";
 
     useEffect(() => {
         let active = true;
@@ -256,7 +274,15 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                         <div>
                             <label className={labelCls}>{t.dashboard.tournamentSettings.fields.game}</label>
-                            <FormSelect value={form.gameType} onChange={(value) => setForm((prev) => ({ ...prev, gameType: value }))} options={selectOptions.gameType} />
+                            <FormSelect
+                                value={form.gameType}
+                                onChange={(value) => setForm((prev) => ({ ...prev, gameType: value }))}
+                                options={selectOptions.gameType}
+                                disabled={gameSelectDisabled}
+                            />
+                            {gameSelectDisabled ? (
+                                <p className="mt-2 text-xs text-base-content/55">{t.dashboard.tournamentSettings.hints.gameUnavailable}</p>
+                            ) : null}
                         </div>
                         <div>
                             <label className={labelCls}>{t.dashboard.tournamentSettings.fields.matchFormat}</label>

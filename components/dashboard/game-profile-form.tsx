@@ -3,17 +3,21 @@
 import { useState } from "react";
 import { useToast } from "@/components/dashboard/toast";
 import { btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
-import { formatGameId } from "@/lib/game-id";
+import { formatGameId, requiresNumericGameId } from "@/lib/game-id";
 import { useLocale } from "@/hooks/use-locale";
 
 interface GameProfile {
     gameType: string;
+    gameName?: string;
     ign: string;
     gameId: string;
 }
 
 interface GameProfileFormProps {
-    gameType: "DUEL_LINKS" | "MASTER_DUEL";
+    gameType: string;
+    gameName?: string;
+    badge?: string;
+    accent?: string;
     initialData?: GameProfile;
     onSaved?: () => void;
     embedded?: boolean;
@@ -21,19 +25,38 @@ interface GameProfileFormProps {
 
 export function GameProfileForm({
     gameType,
+    gameName,
+    badge,
+    accent,
     initialData,
     onSaved,
     embedded = false,
 }: GameProfileFormProps) {
     const { t } = useLocale();
     const [ign, setIgn] = useState(initialData?.ign || "");
-    const [gameId, setGameId] = useState(formatGameId(initialData?.gameId || ""));
+    const initialGameId = requiresNumericGameId(gameType)
+        ? formatGameId(initialData?.gameId || "")
+        : (initialData?.gameId || "");
+    const [gameId, setGameId] = useState(initialGameId);
     const [loading, setLoading] = useState(false);
     const { success, error } = useToast();
 
-    const title = gameType === "DUEL_LINKS" ? t.dashboard.profile.gameForm.titles.duelLinks : t.dashboard.profile.gameForm.titles.masterDuel;
-    const idLabel = gameType === "DUEL_LINKS" ? t.dashboard.profile.gameForm.idLabelDuelLinks : t.dashboard.profile.gameForm.idLabelMasterDuel;
-    const isMasterDuel = gameType === "MASTER_DUEL";
+    const isNumericGame = requiresNumericGameId(gameType);
+    const title = gameType === "DUEL_LINKS"
+        ? t.dashboard.profile.gameForm.titles.duelLinks
+        : gameType === "MASTER_DUEL"
+          ? t.dashboard.profile.gameForm.titles.masterDuel
+          : gameName || gameType;
+    const idLabel = gameType === "DUEL_LINKS"
+        ? t.dashboard.profile.gameForm.idLabelDuelLinks
+        : gameType === "MASTER_DUEL"
+          ? t.dashboard.profile.gameForm.idLabelMasterDuel
+          : t.dashboard.profile.gameForm.idLabelGeneric;
+    const idPlaceholder = isNumericGame
+        ? t.dashboard.profile.gameForm.gameIdPlaceholder
+        : t.dashboard.profile.gameForm.gameIdPlaceholderGeneric;
+    const badgeLabel = badge || (isNumericGame ? (gameType === "MASTER_DUEL" ? "MD" : "DL") : (gameType.slice(0, 2).toUpperCase()));
+    const badgeAccent = accent || (gameType === "MASTER_DUEL" ? "from-red-600 to-orange-600" : "from-blue-600 to-cyan-500");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,7 +66,7 @@ export function GameProfileForm({
             const res = await fetch("/api/profile/game", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ gameType, ign, gameId }),
+                body: JSON.stringify({ gameType, ign, gameId: isNumericGame ? formatGameId(gameId) : gameId }),
             });
 
             const data = await res.json();
@@ -67,8 +90,8 @@ export function GameProfileForm({
     return (
         <form onSubmit={handleSubmit} className={containerCls}>
             <div className="mb-4 flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-lg ${isMasterDuel ? "bg-gradient-to-br from-red-600 to-orange-600" : "bg-gradient-to-br from-blue-600 to-cyan-500"}`}>
-                    {isMasterDuel ? "MD" : "DL"}
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-lg bg-gradient-to-br ${badgeAccent}`}>
+                    {badgeLabel}
                 </div>
                 <div>
                     <h3 className="text-sm font-bold uppercase tracking-wider text-base-content">{title}</h3>
@@ -93,10 +116,10 @@ export function GameProfileForm({
                     <input
                         type="text"
                         value={gameId}
-                        inputMode="numeric"
-                        placeholder={t.dashboard.profile.gameForm.gameIdPlaceholder}
+                        inputMode={isNumericGame ? "numeric" : "text"}
+                        placeholder={idPlaceholder}
                         className={inputCls}
-                        onChange={(e) => setGameId(formatGameId(e.target.value))}
+                        onChange={(e) => setGameId(isNumericGame ? formatGameId(e.target.value) : e.target.value)}
                         required
                     />
                 </div>

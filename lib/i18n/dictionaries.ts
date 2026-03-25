@@ -854,42 +854,6 @@ const id = {
                 TREASURY_DELETED: "Treasury Dihapus",
             },
         },
-        profile: {
-            kicker: "Profil Player",
-            title: "Profil Saya",
-            description: "Identitas akun, role komunitas, team aktif, dan profil game Anda dalam tampilan yang lebih ringkas.",
-            summary: {
-                title: "Ringkasan Akun",
-                description: "Informasi utama akun, profil game, dan jejak aktivitas singkat disusun berurutan agar lebih mudah dipindai.",
-            },
-            activeTeam: {
-                label: "Team Aktif",
-                joinedSince: (date: string) => `Bergabung sejak ${date}`,
-            },
-            stats: {
-                tournaments: "Turnamen",
-                gameProfiles: "Profil Game",
-                verified: "Terverifikasi",
-                reputation: "Reputasi",
-            },
-            meta: {
-                lastActive: "Terakhir Aktif",
-                registered: "Terdaftar",
-            },
-            gameSectionTitle: "Profil Game",
-            recentActivity: {
-                title: "Aktivitas Terbaru",
-                empty: "Belum ada aktivitas tercatat.",
-            },
-            teamName: {
-                publicUser: "User publik",
-                noTeam: "Belum masuk team",
-            },
-            emailVerification: {
-                verified: "Terverifikasi",
-                unverified: "Belum Verifikasi",
-            },
-        },
         settings: {
             kicker: "Account Center",
             title: "Pengaturan",
@@ -939,6 +903,13 @@ const id = {
             title: "Treasury",
             description:
                 "Kelola kas guild, hubungkan transaksi ke user aktif bila diperlukan, dan pantau arus masuk-keluar dengan default semua periode agar sinkron dengan data dashboard.",
+            cardTitle: "Treasury",
+            cardDescription: "Ringkasan saldo kas guild dan transaksi paling baru.",
+            currentBalance: "Saldo Terkini",
+            emptyTitle: "Belum ada transaksi",
+            emptyDescription: "Tambahkan transaksi pertama untuk melihat perubahan saldo kas guild di dashboard ini.",
+            addTransaction: "Tambah transaksi",
+            commonCash: "Kas umum",
             actions: {
                 addTransaction: "+ Tambah Transaksi",
                 exportCsv: "Ekspor CSV",
@@ -1111,6 +1082,7 @@ const id = {
                 treasury: "Treasury",
                 dashboard: "Dashboard",
                 auditLogs: "Audit Logs",
+                games: "Game",
             },
             footer: {
                 logout: "Logout",
@@ -1684,6 +1656,7 @@ const id = {
                 bracketSize: "Bracket akan menyesuaikan ke ukuran power-of-two terdekat.",
                 lineup: "Captain akan submit lineup sebelum match dimulai.",
                 forfeitUnavailable: "Aktifkan check-in untuk menggunakan auto-forfeit.",
+                gameUnavailable: "Belum ada game aktif. Tambahkan game terlebih dahulu.",
             },
             placeholders: {
                 maxPlayers: "Contoh: 32",
@@ -1773,14 +1746,15 @@ const id = {
                 publishNow: "Publikasikan Sekarang",
                 allowEditUntilStart: "Izinkan Edit hingga Mulai",
             },
-            hints: {
-                timezone: "Jadwal dan kalender mengikuti timezone ini.",
-                onlineMode: "Aktifkan untuk event yang berjalan secara online.",
-                checkInEnabled: "Gunakan check-in sebelum bracket dimulai.",
-                forfeitUnavailable: "Aktifkan check-in untuk menggunakan auto-forfeit.",
-                details: "Gunakan Markdown untuk heading, list, dan highlight.",
-                teamMode: "Pendaftaran hanya untuk captain, vice captain, dan manager.",
-                lineupSize: "Isi jika ingin captain submit lineup sebelum match dimulai.",
+                hints: {
+                    timezone: "Jadwal dan kalender mengikuti timezone ini.",
+                    onlineMode: "Aktifkan untuk event yang berjalan secara online.",
+                    checkInEnabled: "Gunakan check-in sebelum bracket dimulai.",
+                    forfeitUnavailable: "Aktifkan check-in untuk menggunakan auto-forfeit.",
+                    gameUnavailable: "Belum ada game aktif. Tambahkan game terlebih dahulu.",
+                    details: "Gunakan Markdown untuk heading, list, dan highlight.",
+                    teamMode: "Pendaftaran hanya untuk captain, vice captain, dan manager.",
+                    lineupSize: "Isi jika ingin captain submit lineup sebelum match dimulai.",
                 bracketSize: "Bracket akan menyesuaikan ke ukuran power-of-two terdekat.",
                 publishPreview: "Preview halaman turnamen untuk memastikan semua informasi sudah rapi sebelum publikasi.",
             },
@@ -1829,6 +1803,40 @@ const id = {
             maxPlayersLabel: (count: number) => `${count} pemain`,
         },
         profile: {
+            kicker: "Profil Player",
+            title: "Profil Saya",
+            description: "Identitas akun, role komunitas, team aktif, dan profil game Anda dalam tampilan yang lebih ringkas.",
+            summary: {
+                title: "Ringkasan Akun",
+                description: "Informasi utama akun, profil game, dan jejak aktivitas singkat disusun berurutan agar lebih mudah dipindai.",
+            },
+            activeTeam: {
+                label: "Team Aktif",
+                joinedSince: (date: string) => `Bergabung sejak ${date}`,
+            },
+            stats: {
+                tournaments: "Turnamen",
+                gameProfiles: "Profil Game",
+                verified: "Terverifikasi",
+                reputation: "Reputasi",
+            },
+            meta: {
+                lastActive: "Terakhir Aktif",
+                registered: "Terdaftar",
+            },
+            gameSectionTitle: "Profil Game",
+            recentActivity: {
+                title: "Aktivitas Terbaru",
+                empty: "Belum ada aktivitas tercatat.",
+            },
+            teamName: {
+                publicUser: "User publik",
+                noTeam: "Belum masuk team",
+            },
+            emailVerification: {
+                verified: "Terverifikasi",
+                unverified: "Belum Verifikasi",
+            },
             account: {
                 sectionTitle: "Data Akun",
                 sectionDescription: "Klik ringkasan ini untuk mengubah username, email, WhatsApp, dan wilayah domisili.",
@@ -1927,7 +1935,9 @@ const id = {
                 ignPlaceholder: "[DS] Player",
                 idLabelDuelLinks: "DUELIST ID",
                 idLabelMasterDuel: "Duelist ID",
+                idLabelGeneric: "Game ID / In-Game Name",
                 gameIdPlaceholder: "123-456-789",
+                gameIdPlaceholderGeneric: "Masukkan in-game name / ID",
                 actions: {
                     saving: "Menyimpan...",
                     saveChanges: "Simpan Perubahan",
@@ -1942,14 +1952,16 @@ const id = {
             },
             gameSection: {
                 cards: {
+                    subtitle: "Data akun game",
+                    generic: {
+                        idLabel: "Game ID / In-Game Name",
+                    },
                     duelLinks: {
                         title: "Duel Links",
-                        subtitle: "Data akun game",
                         idLabel: "DUELIST ID",
                     },
                     masterDuel: {
                         title: "Master Duel",
-                        subtitle: "Data akun game",
                         idLabel: "Duelist ID",
                     },
                 },
@@ -2128,14 +2140,105 @@ const id = {
                 confirm: "Aktifkan Kembali",
             },
         },
-        treasury: {
-            cardTitle: "Treasury",
-            cardDescription: "Ringkasan saldo kas guild dan transaksi paling baru.",
-            currentBalance: "Saldo Terkini",
-            emptyTitle: "Belum ada transaksi",
-            emptyDescription: "Tambahkan transaksi pertama untuk melihat perubahan saldo kas guild di dashboard ini.",
-            addTransaction: "Tambah transaksi",
-            commonCash: "Kas umum",
+        games: {
+            kicker: "Administrasi",
+            title: "Games",
+            description: "Kelola daftar game yang tersedia untuk pembuatan turnamen dan profil member.",
+            panelTitle: "Daftar Game",
+            panelDescription: (count: number) => `${count} game terdaftar`,
+            emptyTitle: "Belum ada game",
+            emptyDescription: "Tambahkan game baru agar bisa dipakai di turnamen dan profil member.",
+            emptyOption: "Belum ada game aktif",
+            fields: {
+                code: "Kode Game",
+                name: "Nama Game",
+                type: "Tipe",
+                status: "Status",
+            },
+            placeholders: {
+                code: "CONTOH_GAME",
+                name: "Nama game",
+                type: "ONLINE / OFFLINE (opsional)",
+            },
+            status: {
+                active: "Aktif",
+                inactive: "Nonaktif",
+            },
+            labels: {
+                createdAt: (date: string) => `Dibuat ${date}`,
+            },
+            actions: {
+                create: "+ Tambah Game",
+                edit: "Edit",
+                save: "Simpan",
+                saving: "Menyimpan...",
+                toggle: "Ubah Status",
+            },
+            modal: {
+                createTitle: "Tambah Game Baru",
+                editTitle: "Edit Game",
+                subtitle: "Atur game yang dapat dipakai untuk turnamen dan profil.",
+            },
+            success: {
+                created: "Game berhasil dibuat.",
+                updated: "Game berhasil diperbarui.",
+                activated: "Game diaktifkan.",
+                deactivated: "Game dinonaktifkan.",
+            },
+            errors: {
+                saveFailed: "Gagal menyimpan game.",
+                toggleFailed: "Gagal memperbarui status game.",
+            },
+        },
+        games: {
+            kicker: "Administration",
+            title: "Games",
+            description: "Manage the games that can be used for tournaments and player profiles.",
+            panelTitle: "Game Catalog",
+            panelDescription: (count: number) => `${count} games listed`,
+            emptyTitle: "No games yet",
+            emptyDescription: "Add a game to enable it for tournaments and player profiles.",
+            emptyOption: "No active games yet",
+            fields: {
+                code: "Game Code",
+                name: "Game Name",
+                type: "Type",
+                status: "Status",
+            },
+            placeholders: {
+                code: "EXAMPLE_GAME",
+                name: "Game name",
+                type: "ONLINE / OFFLINE (optional)",
+            },
+            status: {
+                active: "Active",
+                inactive: "Inactive",
+            },
+            labels: {
+                createdAt: (date: string) => `Created ${date}`,
+            },
+            actions: {
+                create: "+ Add Game",
+                edit: "Edit",
+                save: "Save",
+                saving: "Saving...",
+                toggle: "Change Status",
+            },
+            modal: {
+                createTitle: "Add New Game",
+                editTitle: "Edit Game",
+                subtitle: "Control which games are available across tournaments and profiles.",
+            },
+            success: {
+                created: "Game created.",
+                updated: "Game updated.",
+                activated: "Game activated.",
+                deactivated: "Game deactivated.",
+            },
+            errors: {
+                saveFailed: "Failed to save game.",
+                toggleFailed: "Failed to update game status.",
+            },
         },
         tournaments: {
             overview: {
@@ -3404,42 +3507,6 @@ const en: typeof id = {
                 TREASURY_DELETED: "Treasury Deleted",
             },
         },
-        profile: {
-            kicker: "Player Profile",
-            title: "My Profile",
-            description: "Account identity, community role, active team, and game profiles in a tighter summary.",
-            summary: {
-                title: "Account Summary",
-                description: "Core account info, game profiles, and activity snapshots arranged for fast scanning.",
-            },
-            activeTeam: {
-                label: "Active Team",
-                joinedSince: (date: string) => `Joined since ${date}`,
-            },
-            stats: {
-                tournaments: "Tournaments",
-                gameProfiles: "Game Profiles",
-                verified: "Verified",
-                reputation: "Reputation",
-            },
-            meta: {
-                lastActive: "Last Active",
-                registered: "Registered",
-            },
-            gameSectionTitle: "Game Profiles",
-            recentActivity: {
-                title: "Recent Activity",
-                empty: "No activity logged yet.",
-            },
-            teamName: {
-                publicUser: "Public user",
-                noTeam: "No team yet",
-            },
-            emailVerification: {
-                verified: "Verified",
-                unverified: "Unverified",
-            },
-        },
         settings: {
             kicker: "Account Center",
             title: "Settings",
@@ -3489,6 +3556,13 @@ const en: typeof id = {
             title: "Treasury",
             description:
                 "Manage guild cash flow, link transactions to active users when needed, and monitor inflow/outflow with all periods shown by default.",
+            cardTitle: "Treasury",
+            cardDescription: "Summary of guild cash balance and latest transactions.",
+            currentBalance: "Current Balance",
+            emptyTitle: "No transactions yet",
+            emptyDescription: "Add the first transaction to track treasury changes here.",
+            addTransaction: "Add transaction",
+            commonCash: "Community cash",
             actions: {
                 addTransaction: "+ Add Transaction",
                 exportCsv: "Export CSV",
@@ -3660,6 +3734,7 @@ const en: typeof id = {
                 treasury: "Treasury",
                 dashboard: "Dashboard",
                 auditLogs: "Audit Logs",
+                games: "Games",
             },
             footer: {
                 logout: "Sign out",
@@ -4234,6 +4309,7 @@ const en: typeof id = {
                 bracketSize: "Bracket adjusts to the nearest power-of-two.",
                 lineup: "Captains submit lineups before the match starts.",
                 forfeitUnavailable: "Enable check-in to use auto-forfeit.",
+                gameUnavailable: "No active games yet. Add a game first.",
             },
             placeholders: {
                 maxPlayers: "Example: 32",
@@ -4323,14 +4399,15 @@ const en: typeof id = {
                 publishNow: "Publish Now",
                 allowEditUntilStart: "Allow Editing Until Start",
             },
-            hints: {
-                timezone: "Schedules and calendars follow this timezone.",
-                onlineMode: "Enable for events that run online.",
-                checkInEnabled: "Require check-in before the bracket starts.",
-                forfeitUnavailable: "Enable check-in to use auto-forfeit.",
-                details: "Use Markdown for headings, lists, and highlights.",
-                teamMode: "Registration is restricted to captain, vice captain, and manager.",
-                lineupSize: "Use if captains should submit lineups before matches start.",
+                hints: {
+                    timezone: "Schedules and calendars follow this timezone.",
+                    onlineMode: "Enable for events that run online.",
+                    checkInEnabled: "Require check-in before the bracket starts.",
+                    forfeitUnavailable: "Enable check-in to use auto-forfeit.",
+                    gameUnavailable: "No active games yet. Add a game first.",
+                    details: "Use Markdown for headings, lists, and highlights.",
+                    teamMode: "Registration is restricted to captain, vice captain, and manager.",
+                    lineupSize: "Use if captains should submit lineups before matches start.",
                 bracketSize: "Bracket adjusts to the nearest power-of-two.",
                 publishPreview: "Preview the tournament page to verify everything before publishing.",
             },
@@ -4379,6 +4456,40 @@ const en: typeof id = {
             maxPlayersLabel: (count: number) => `${count} players`,
         },
         profile: {
+            kicker: "Player Profile",
+            title: "My Profile",
+            description: "Account identity, community role, active team, and game profiles in a tighter summary.",
+            summary: {
+                title: "Account Summary",
+                description: "Core account info, game profiles, and activity snapshots arranged for fast scanning.",
+            },
+            activeTeam: {
+                label: "Active Team",
+                joinedSince: (date: string) => `Joined since ${date}`,
+            },
+            stats: {
+                tournaments: "Tournaments",
+                gameProfiles: "Game Profiles",
+                verified: "Verified",
+                reputation: "Reputation",
+            },
+            meta: {
+                lastActive: "Last Active",
+                registered: "Registered",
+            },
+            gameSectionTitle: "Game Profiles",
+            recentActivity: {
+                title: "Recent Activity",
+                empty: "No activity logged yet.",
+            },
+            teamName: {
+                publicUser: "Public user",
+                noTeam: "No team yet",
+            },
+            emailVerification: {
+                verified: "Verified",
+                unverified: "Unverified",
+            },
             account: {
                 sectionTitle: "Account Data",
                 sectionDescription: "Click this summary to update your username, email, WhatsApp, and domicile region.",
@@ -4477,7 +4588,9 @@ const en: typeof id = {
                 ignPlaceholder: "[DS] Player",
                 idLabelDuelLinks: "DUELIST ID",
                 idLabelMasterDuel: "Duelist ID",
+                idLabelGeneric: "Game ID / In-Game Name",
                 gameIdPlaceholder: "123-456-789",
+                gameIdPlaceholderGeneric: "Enter in-game name / ID",
                 actions: {
                     saving: "Saving...",
                     saveChanges: "Save Changes",
@@ -4492,14 +4605,16 @@ const en: typeof id = {
             },
             gameSection: {
                 cards: {
+                    subtitle: "Game account data",
+                    generic: {
+                        idLabel: "Game ID / In-Game Name",
+                    },
                     duelLinks: {
                         title: "Duel Links",
-                        subtitle: "Game account data",
                         idLabel: "DUELIST ID",
                     },
                     masterDuel: {
                         title: "Master Duel",
-                        subtitle: "Game account data",
                         idLabel: "Duelist ID",
                     },
                 },
@@ -4677,15 +4792,6 @@ const en: typeof id = {
                     `${name} will be reactivated and can access features based on their role.`,
                 confirm: "Reactivate",
             },
-        },
-        treasury: {
-            cardTitle: "Treasury",
-            cardDescription: "Summary of guild cash balance and latest transactions.",
-            currentBalance: "Current Balance",
-            emptyTitle: "No transactions yet",
-            emptyDescription: "Add the first transaction to track treasury changes here.",
-            addTransaction: "Add transaction",
-            commonCash: "Community cash",
         },
         tournaments: {
             overview: {

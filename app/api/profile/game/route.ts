@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { updateGameProfileSchema } from "@/lib/validators";
 import { getServerCurrentUser } from "@/lib/server-current-user";
-import { normalizeGameIdDigits } from "@/lib/game-id";
+import { normalizeGameIdDigits, requiresNumericGameId } from "@/lib/game-id";
 import { resolveGameByCodeOrId } from "@/lib/game";
 
 // POST /api/profile/game - Create or Update Game Profile
@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        const gameIdCandidates = Array.from(new Set([gameId, normalizeGameIdDigits(gameId)].filter(Boolean)));
+        const isNumericGame = requiresNumericGameId(game.code);
+        const gameIdCandidates = Array.from(
+            new Set(isNumericGame ? [gameId, normalizeGameIdDigits(gameId)] : [gameId]).values()
+        ).filter(Boolean);
 
         const duplicateGameId = await prisma.playerGameAccount.findFirst({
             where: {

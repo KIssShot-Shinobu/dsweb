@@ -42,9 +42,10 @@ function getStatusClass(status: string) {
 }
 
 function getGameAccent(gameType: string) {
-    return gameType === "MASTER_DUEL"
-        ? "from-secondary/25 via-base-200 to-warning/15"
-        : "from-info/20 via-base-200 to-primary/10";
+    const upper = gameType.toUpperCase();
+    if (upper.includes("MASTER")) return "from-secondary/25 via-base-200 to-warning/15";
+    if (upper.includes("DUEL")) return "from-info/20 via-base-200 to-primary/10";
+    return "from-emerald-400/20 via-base-200 to-sky-400/10";
 }
 
 export function PublicTournamentCard({ tournament, compact = false }: TournamentCardProps) {
@@ -77,7 +78,7 @@ export function PublicTournamentCard({ tournament, compact = false }: Tournament
                     </div>
                     <div>
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-base-content/55 sm:text-[11px]">
-                            {tournament.gameName ?? (tournament.gameType === "MASTER_DUEL" ? t.tournament.gameMasterDuel : t.tournament.gameDuelLinks)}
+                            {tournament.gameName ?? tournament.gameType}
                         </p>
                         <h3 className="line-clamp-2 text-lg font-black leading-tight text-base-content sm:text-xl lg:text-2xl">{tournament.title}</h3>
                     </div>

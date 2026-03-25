@@ -20,12 +20,14 @@ import {
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { useLocale } from "@/hooks/use-locale";
 import { formatCurrency, formatDateTime } from "@/lib/i18n/format";
+import { useGames } from "@/hooks/use-games";
 
 interface Tournament {
     id: string;
     title: string;
     description: string | null;
-    gameType: "DUEL_LINKS" | "MASTER_DUEL";
+    gameType: string;
+    gameName?: string;
     format: "BO1" | "BO3" | "BO5";
     status: "OPEN" | "ONGOING" | "COMPLETED" | "CANCELLED";
     structure?: "SINGLE_ELIM" | "DOUBLE_ELIM" | "SWISS";
@@ -55,6 +57,7 @@ const EMPTY_SUMMARY = { open: 0, ongoing: 0, completed: 0, cancelled: 0 };
 
 export default function AdminTournamentsPage() {
     const { locale, t } = useLocale();
+    const { games } = useGames({ scope: "admin" });
     const selectOptions = {
         filterStatus: [
             { value: "ALL", label: t.dashboard.tournamentsAdmin.filters.statusAll },
@@ -63,12 +66,11 @@ export default function AdminTournamentsPage() {
             { value: "COMPLETED", label: "COMPLETED" },
             { value: "CANCELLED", label: "CANCELLED" },
         ],
-        filterGameType: [
-            { value: "ALL", label: t.dashboard.tournamentsAdmin.filters.gameAll },
-            { value: "DUEL_LINKS", label: t.dashboard.tournamentsAdmin.filters.duelLinks },
-            { value: "MASTER_DUEL", label: t.dashboard.tournamentsAdmin.filters.masterDuel },
-        ],
     };
+    const gameFilterOptions = useMemo(() => ([
+        { value: "ALL", label: t.dashboard.tournamentsAdmin.filters.gameAll },
+        ...games.map((game) => ({ value: game.code, label: game.name })),
+    ]), [games, t.dashboard.tournamentsAdmin.filters.gameAll]);
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -209,6 +211,18 @@ export default function AdminTournamentsPage() {
         });
 
     const publishedSummary = useMemo(() => summary.open + summary.ongoing, [summary]);
+    const getGameBadge = (code: string) => {
+        const normalized = code.replace(/_/g, " ").trim();
+        const upper = normalized.toUpperCase();
+        if (upper.includes("MASTER")) return "MD";
+        if (upper.includes("DUEL")) return "DL";
+        const initials = normalized
+            .split(" ")
+            .filter(Boolean)
+            .map((word) => word[0]?.toUpperCase())
+            .join("");
+        return initials.slice(0, 2) || code.slice(0, 2).toUpperCase();
+    };
 
     return (
         <DashboardPageShell>
@@ -252,7 +266,7 @@ export default function AdminTournamentsPage() {
                                 className={`${searchInputCls} h-9 sm:w-52`}
                             />
                             <FormSelect value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={selectOptions.filterStatus} className="w-full sm:w-36" />
-                            <FormSelect value={gameTypeFilter} onChange={(value) => { setGameTypeFilter(value); setPage(1); }} options={selectOptions.filterGameType} className="w-full sm:w-36" />
+                            <FormSelect value={gameTypeFilter} onChange={(value) => { setGameTypeFilter(value); setPage(1); }} options={gameFilterOptions} className="w-full sm:w-36" />
                         </div>
                     )}
                 >
@@ -282,13 +296,13 @@ export default function AdminTournamentsPage() {
                                                 {tournament.image ? (
                                                     // eslint-disable-next-line @next/next/no-img-element
                                                     <img src={normalizeAssetUrl(tournament.image) || ""} alt={tournament.title} className="h-full w-full object-cover" />
-                                                ) : tournament.gameType === "MASTER_DUEL" ? "MD" : "DL"}
+                                                ) : getGameBadge(tournament.gameType)}
                                             </div>
 
                                             <div className="min-w-0 flex-1">
                                                 <div className="truncate text-sm font-semibold text-base-content">{tournament.title}</div>
                                                 <div className="mt-1 truncate text-xs text-base-content/45">
-                                                    {tournament.gameType} - {tournament.format} - {formatDate(tournament.startAt)}
+                                                    {(tournament.gameName || tournament.gameType)} - {tournament.format} - {formatDate(tournament.startAt)}
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
                                                     <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">

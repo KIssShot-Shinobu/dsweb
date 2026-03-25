@@ -37,7 +37,18 @@ export function TournamentList({
     loading?: boolean;
 }) {
     const { t, locale } = useLocale();
-    const getGameIcon = (gameType: string) => (gameType.toLowerCase().includes("master") ? "MD" : "DL");
+    const getGameIcon = (gameType: string) => {
+        const upper = gameType.toUpperCase();
+        if (upper.includes("MASTER")) return "MD";
+        if (upper.includes("DUEL")) return "DL";
+        const initials = gameType
+            .replace(/_/g, " ")
+            .split(" ")
+            .filter(Boolean)
+            .map((word) => word[0]?.toUpperCase())
+            .join("");
+        return initials.slice(0, 2) || gameType.slice(0, 2).toUpperCase();
+    };
 
     return (
         <DashboardPanel
@@ -72,7 +83,7 @@ export function TournamentList({
                 <div className="space-y-3">
                     {tournaments.map((tournament) => (
                         <div key={tournament.id} className="flex items-center gap-3 rounded-box border border-base-300 bg-base-200/40 p-3 transition-all hover:border-primary/20 hover:bg-base-100 sm:p-4">
-                            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-bold ${tournament.gameType.toLowerCase().includes("master") ? "bg-secondary/12 text-secondary" : "bg-info/12 text-info"}`}>
+                            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-bold ${tournament.gameType.toLowerCase().includes("master") ? "bg-secondary/12 text-secondary" : tournament.gameType.toLowerCase().includes("duel") ? "bg-info/12 text-info" : "bg-emerald-500/12 text-emerald-500"}`}>
                                 {getGameIcon(tournament.gameType)}
                             </div>
                             <div className="min-w-0 flex-1">

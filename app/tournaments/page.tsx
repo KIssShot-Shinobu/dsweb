@@ -6,6 +6,7 @@ import { Navbar } from "@/components/ui/navbar";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { PublicTournamentCard, type PublicTournamentCardData } from "@/components/public/tournament-card";
 import { useLocale } from "@/hooks/use-locale";
+import { useGames } from "@/hooks/use-games";
 
 type TournamentResponse = PublicTournamentCardData & {
     _count?: { participants: number };
@@ -13,6 +14,7 @@ type TournamentResponse = PublicTournamentCardData & {
 
 export default function PublicTournamentsPage() {
     const { t } = useLocale();
+    const { games } = useGames();
     const statusOptions = [
         { value: "ALL", label: t.publicTournaments.statusAll },
         { value: "OPEN", label: t.tournament.status.OPEN },
@@ -23,8 +25,7 @@ export default function PublicTournamentsPage() {
 
     const gameOptions = [
         { value: "ALL", label: t.publicTournaments.gameAll },
-        { value: "DUEL_LINKS", label: t.tournament.gameDuelLinks },
-        { value: "MASTER_DUEL", label: t.tournament.gameMasterDuel },
+        ...games.map((game) => ({ value: game.code, label: game.name })),
     ];
 
     const [tournaments, setTournaments] = useState<PublicTournamentCardData[]>([]);

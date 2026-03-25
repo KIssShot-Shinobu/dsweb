@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { normalizeAssetUrl } from "@/lib/asset-url";
@@ -9,6 +9,7 @@ import { DateTimePickerInput } from "@/components/ui/date-time-picker";
 import { DEFAULT_TIMEZONE, getTimeZoneOptions } from "@/lib/timezones";
 import { useLocale } from "@/hooks/use-locale";
 import { getIntlLocale } from "@/lib/i18n/format";
+import { useGames } from "@/hooks/use-games";
 
 const DEFAULT_MAX_PLAYERS = "32";
 const parseIdrInput = (value: string) => {
@@ -22,7 +23,7 @@ export function getDefaultTournamentForm() {
     return {
         title: "",
         description: "",
-        gameType: "DUEL_LINKS",
+        gameType: "",
         format: "BO3",
         status: "OPEN",
         structure: "SINGLE_ELIM",
@@ -135,6 +136,7 @@ export function TournamentForm({
     showStatus?: boolean;
 }) {
     const { t, locale } = useLocale();
+    const { games, loading: gamesLoading } = useGames();
     const [confirmPublishOpen, setConfirmPublishOpen] = useState(false);
     const [pendingSubmit, setPendingSubmit] = useState(false);
     const timeZoneOptions = useMemo(() => getTimeZoneOptions(), []);
@@ -154,13 +156,20 @@ export function TournamentForm({
         aspect: 16 / 9,
     });
     const formatIdrInput = (value: number) => new Intl.NumberFormat(getIntlLocale(locale)).format(value);
+    const gameOptions = useMemo(() => {
+        if (games.length === 0) {
+            return [{ value: "", label: t.dashboard.games.emptyOption }];
+        }
+        return games.map((game) => ({
+            value: game.code,
+            label: game.name,
+        }));
+    }, [games, t.dashboard.games.emptyOption]);
+
     const selectOptions = useMemo(() => {
         const options = t.dashboard.tournamentOptions;
         return {
-            gameType: [
-                { value: "DUEL_LINKS", label: options.gameType.duelLinks },
-                { value: "MASTER_DUEL", label: options.gameType.masterDuel },
-            ],
+            gameType: gameOptions,
             format: [
                 { value: "BO1", label: options.format.bo1 },
                 { value: "BO3", label: options.format.bo3 },
@@ -195,7 +204,15 @@ export function TournamentForm({
                 { value: "SCHEDULE_NO_SHOW", label: options.forfeitMode.scheduleNoShow },
             ],
         };
-    }, [t]);
+    }, [gameOptions, t]);
+
+    useEffect(() => {
+        if (!formData.gameType && games.length > 0) {
+            setFormData((prev) => ({ ...prev, gameType: games[0].code }));
+        }
+    }, [formData.gameType, games, setFormData]);
+
+    const gameSelectDisabled = gamesLoading || games.length === 0;
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -292,7 +309,15 @@ export function TournamentForm({
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
                                 <label className={labelCls}>{t.dashboard.tournamentForm.labels.gameSelection}</label>
-                                <FormSelect value={formData.gameType} onChange={(value) => setFormData((prev) => ({ ...prev, gameType: value }))} options={selectOptions.gameType} />
+                            <FormSelect
+                                value={formData.gameType}
+                                onChange={(value) => setFormData((prev) => ({ ...prev, gameType: value }))}
+                                options={selectOptions.gameType}
+                                disabled={gameSelectDisabled}
+                            />
+                            {gameSelectDisabled ? (
+                                <p className="mt-2 text-xs text-base-content/55">{t.dashboard.tournamentForm.hints.gameUnavailable}</p>
+                            ) : null}
                             </div>
                             <div>
                                 <label className={labelCls}>{t.dashboard.tournamentForm.labels.startTime}</label>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
     HelpCircle,
     Home,
+    Gamepad2,
     LayoutDashboard,
     LogOut,
     ScrollText,
@@ -37,6 +38,7 @@ const ICONS = {
     users: UserCheck,
     teams: Shield,
     audit: ScrollText,
+    games: Gamepad2,
     logout: LogOut,
     home: Home,
 } as const;
@@ -88,6 +90,7 @@ export function Sidebar() {
             items: [
                 { name: t.dashboard.sidebar.items.dashboard, href: "/dashboard", icon: "dashboard", minRole: "ADMIN" },
                 { name: t.dashboard.sidebar.items.auditLogs, href: "/dashboard/audit-logs", icon: "audit", minRole: "ADMIN" },
+                { name: t.dashboard.sidebar.items.games, href: "/dashboard/games", icon: "games", minRole: "ADMIN" },
             ],
         },
     ];
