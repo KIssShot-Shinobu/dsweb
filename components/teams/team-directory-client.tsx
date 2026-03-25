@@ -126,7 +126,7 @@ export function TeamDirectoryClient({
                                                     <span className="rounded-full border border-base-200 px-2.5 py-1">
                                                         {t.teams.public.directory.rosterLabel(team.memberCount)}
                                                     </span>
-                                                    <span className="text-base-content/40">•</span>
+                                                    <span className="text-base-content/40">·</span>
                                                     <span>{t.teams.public.directory.captainLabel(team.captain?.user.username || team.captain?.user.fullName || "-")}</span>
                                                 </div>
                                             </div>

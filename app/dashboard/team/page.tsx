@@ -13,10 +13,14 @@ import { requireDashboardUser } from "@/lib/dashboard-auth";
 import { prisma } from "@/lib/prisma";
 import { createTeamService } from "@/lib/services/team.service";
 import { isTeamRosterLocked } from "@/lib/team-roster-lock";
+import { getServerLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 const teamService = createTeamService();
 
 export default async function MyTeamPage() {
+    const locale = await getServerLocale();
+    const t = getDictionary(locale);
     const user = await requireDashboardUser();
 
     const activeMembership = await prisma.teamMember.findFirst({
@@ -35,11 +39,11 @@ export default async function MyTeamPage() {
             <DashboardPageShell>
                 <div className={dashboardStackCls}>
                     <DashboardPageHeader
-                        kicker="Team"
-                        title="Team Saya"
-                        description="Kelola roster dan info team langsung dari dashboard."
+                        kicker={t.dashboard.myTeam.kicker}
+                        title={t.dashboard.myTeam.title}
+                        description={t.dashboard.myTeam.description}
                     />
-                    <DashboardPanel title="Belum Terhubung Team" description="Anda belum punya team aktif saat ini.">
+                    <DashboardPanel title={t.dashboard.myTeam.emptyPanelTitle} description={t.dashboard.myTeam.emptyPanelDescription}>
                         <TeamRequestPanel />
                     </DashboardPanel>
                 </div>
@@ -65,14 +69,14 @@ export default async function MyTeamPage() {
             <DashboardPageShell>
                 <div className={dashboardStackCls}>
                     <DashboardPageHeader
-                        kicker="Team"
-                        title="Team Saya"
-                        description="Hanya captain dan pengurus team yang ditunjuk bisa mengelola roster."
+                        kicker={t.dashboard.myTeam.kicker}
+                        title={t.dashboard.myTeam.title}
+                        description={t.dashboard.myTeam.descriptionRestricted}
                     />
-                    <DashboardPanel title="Akses Terbatas" description="Role Anda belum punya izin manajemen team.">
+                    <DashboardPanel title={t.dashboard.myTeam.restrictedPanelTitle} description={t.dashboard.myTeam.restrictedPanelDescription}>
                         <DashboardEmptyState
-                            title="Tidak punya akses"
-                            description="Minta captain memberikan role pengurus agar bisa mengelola roster."
+                            title={t.dashboard.myTeam.restrictedEmptyTitle}
+                            description={t.dashboard.myTeam.restrictedEmptyDescription}
                         />
                     </DashboardPanel>
                 </div>

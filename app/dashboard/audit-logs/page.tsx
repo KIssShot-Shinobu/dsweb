@@ -34,58 +34,54 @@ type AuditLog = {
     } | null;
 };
 
-const ACTION_OPTIONS = [
-    { value: "ALL", label: "Semua Aksi" },
-    { value: "LOGIN_SUCCESS", label: "Login Berhasil" },
-    { value: "LOGIN_FAILED", label: "Login Gagal" },
-    { value: "USER_REGISTERED", label: "Registrasi User" },
-    { value: "USER_APPROVED", label: "User Disetujui" },
-    { value: "USER_BANNED", label: "User Diblokir" },
-    { value: "PASSWORD_RESET_SUCCESS", label: "Password Diubah/Reset" },
-    { value: "OAUTH_GOOGLE_LOGIN_SUCCESS", label: "Google Login" },
-    { value: "OAUTH_GOOGLE_ACCOUNT_LINKED", label: "Google Ditautkan" },
-    { value: "OAUTH_GOOGLE_ACCOUNT_CREATED", label: "User Baru dari Google" },
-    { value: "OAUTH_DISCORD_LOGIN_SUCCESS", label: "Discord Login" },
-    { value: "OAUTH_DISCORD_ACCOUNT_LINKED", label: "Discord Ditautkan" },
-    { value: "OAUTH_DISCORD_ACCOUNT_CREATED", label: "User Baru dari Discord" },
-    { value: "SENSITIVE_FIELD_CHANGED", label: "Perubahan Data Sensitif" },
-    { value: "TOURNAMENT_REGISTERED", label: "Daftar Turnamen" },
-    { value: "TOURNAMENT_STARTED", label: "Turnamen Dimulai" },
-    { value: "TOURNAMENT_CHECKIN_UPDATED", label: "Check-in Turnamen" },
-    { value: "TOURNAMENT_PARTICIPANT_UPDATED", label: "Update Peserta Turnamen" },
-    { value: "TOURNAMENT_PARTICIPANT_REMOVED", label: "Hapus Peserta Turnamen" },
-    { value: "TOURNAMENT_PARTICIPANT_CHECKIN_TOGGLED", label: "Check-in Peserta" },
-    { value: "TOURNAMENT_PARTICIPANT_DISQUALIFIED", label: "Peserta Didiskualifikasi" },
-    { value: "TOURNAMENT_WAITLISTED", label: "Peserta Masuk Waitlist" },
-    { value: "TOURNAMENT_WAITLIST_PROMOTED", label: "Peserta Naik dari Waitlist" },
-    { value: "TOURNAMENT_ANNOUNCEMENT_CREATED", label: "Pengumuman Turnamen Dibuat" },
-    { value: "TOURNAMENT_ANNOUNCEMENT_UPDATED", label: "Pengumuman Turnamen Diubah" },
-    { value: "TOURNAMENT_ANNOUNCEMENT_DELETED", label: "Pengumuman Turnamen Dihapus" },
-    { value: "REFEREE_ASSIGNED", label: "Referee Ditugaskan" },
-    { value: "REFEREE_REMOVED", label: "Referee Dihapus" },
-    { value: "MATCH_REPORTED", label: "Laporan Match" },
-    { value: "MATCH_CONFIRMED", label: "Match Dikonfirmasi" },
-    { value: "MATCH_CONFIRMED_BY_REFEREE", label: "Match Dikonfirmasi Referee" },
-    { value: "MATCH_ADMIN_RESOLVED", label: "Match Diresolve Admin" },
-    { value: "MATCH_DISPUTE_RESOLVED", label: "Sengketa Match Diselesaikan" },
-    { value: "MATCH_SCHEDULED", label: "Match Dijadwalkan" },
-    { value: "MATCH_RESCHEDULED", label: "Jadwal Match Diubah" },
-    { value: "MATCH_FORFEITED", label: "Match Forfeit Otomatis" },
-    { value: "MATCH_STARTED", label: "Match Dimulai" },
-    { value: "MATCH_LINEUP_SUBMITTED", label: "Lineup Match Disubmit" },
-    { value: "MATCH_LINEUP_UPDATED", label: "Lineup Match Diubah" },
-    { value: "RATE_LIMIT_HIT", label: "Rate Limit" },
-    { value: "ROLE_CHANGED", label: "Perubahan Role" },
-    { value: "TREASURY_ADDED", label: "Treasury Ditambah" },
-    { value: "TREASURY_UPDATED", label: "Treasury Diubah" },
-    { value: "TREASURY_DELETED", label: "Treasury Dihapus" },
-];
+const ACTION_VALUES = [
+    "ALL",
+    "LOGIN_SUCCESS",
+    "LOGIN_FAILED",
+    "USER_REGISTERED",
+    "USER_APPROVED",
+    "USER_BANNED",
+    "PASSWORD_RESET_SUCCESS",
+    "OAUTH_GOOGLE_LOGIN_SUCCESS",
+    "OAUTH_GOOGLE_ACCOUNT_LINKED",
+    "OAUTH_GOOGLE_ACCOUNT_CREATED",
+    "OAUTH_DISCORD_LOGIN_SUCCESS",
+    "OAUTH_DISCORD_ACCOUNT_LINKED",
+    "OAUTH_DISCORD_ACCOUNT_CREATED",
+    "SENSITIVE_FIELD_CHANGED",
+    "TOURNAMENT_REGISTERED",
+    "TOURNAMENT_STARTED",
+    "TOURNAMENT_CHECKIN_UPDATED",
+    "TOURNAMENT_PARTICIPANT_UPDATED",
+    "TOURNAMENT_PARTICIPANT_REMOVED",
+    "TOURNAMENT_PARTICIPANT_CHECKIN_TOGGLED",
+    "TOURNAMENT_PARTICIPANT_DISQUALIFIED",
+    "TOURNAMENT_WAITLISTED",
+    "TOURNAMENT_WAITLIST_PROMOTED",
+    "TOURNAMENT_ANNOUNCEMENT_CREATED",
+    "TOURNAMENT_ANNOUNCEMENT_UPDATED",
+    "TOURNAMENT_ANNOUNCEMENT_DELETED",
+    "REFEREE_ASSIGNED",
+    "REFEREE_REMOVED",
+    "MATCH_REPORTED",
+    "MATCH_CONFIRMED",
+    "MATCH_CONFIRMED_BY_REFEREE",
+    "MATCH_ADMIN_RESOLVED",
+    "MATCH_DISPUTE_RESOLVED",
+    "MATCH_SCHEDULED",
+    "MATCH_RESCHEDULED",
+    "MATCH_FORFEITED",
+    "MATCH_STARTED",
+    "MATCH_LINEUP_SUBMITTED",
+    "MATCH_LINEUP_UPDATED",
+    "RATE_LIMIT_HIT",
+    "ROLE_CHANGED",
+    "TREASURY_ADDED",
+    "TREASURY_UPDATED",
+    "TREASURY_DELETED",
+] as const;
 
-const PAGE_SIZE_OPTIONS = [
-    { value: "10", label: "10 / halaman" },
-    { value: "20", label: "20 / halaman" },
-    { value: "50", label: "50 / halaman" },
-];
+const PAGE_SIZE_VALUES = [10, 20, 50];
 
 function useAuditLogs(
     page: number,
@@ -148,10 +144,6 @@ const formatDetails = (detailsStr: string | null) => {
     }
 };
 
-const ACTION_LABELS: Record<string, string> = Object.fromEntries(
-    ACTION_OPTIONS.filter((item) => item.value !== "ALL").map((item) => [item.value, item.label])
-);
-
 const getActionBadgeColor = (action: string) => {
     if (action.startsWith("OAUTH_GOOGLE") || action.startsWith("OAUTH_DISCORD")) {
         return "border-success/20 bg-success/10 text-success";
@@ -169,7 +161,7 @@ const getActionBadgeColor = (action: string) => {
 };
 
 export default function AuditLogsPage() {
-    const { locale } = useLocale();
+    const { locale, t } = useLocale();
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState("20");
     const [actionFilter, setActionFilter] = useState("ALL");
@@ -179,6 +171,31 @@ export default function AuditLogsPage() {
     const [dateEnd, setDateEnd] = useState("");
     const [appliedDateRange, setAppliedDateRange] = useState({ start: "", end: "" });
     const [exportMessage, setExportMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
+
+    const actionOptions = useMemo(
+        () =>
+            ACTION_VALUES.map((value) => ({
+                value,
+                label: value === "ALL" ? t.dashboard.auditLogs.actionAll : t.dashboard.auditLogs.actionLabels[value],
+            })),
+        [t]
+    );
+
+    const actionLabels = useMemo(
+        () =>
+            Object.fromEntries(
+                ACTION_VALUES.filter((value) => value !== "ALL").map((value) => [
+                    value,
+                    t.dashboard.auditLogs.actionLabels[value as keyof typeof t.dashboard.auditLogs.actionLabels],
+                ])
+            ) as Record<string, string>,
+        [t]
+    );
+
+    const pageSizeOptions = useMemo(
+        () => PAGE_SIZE_VALUES.map((value) => ({ value: String(value), label: t.dashboard.auditLogs.pageSizeLabel(value) })),
+        [t]
+    );
 
     const limitValue = Math.max(1, Number(limit) || 20);
     const { logs, total, loading } = useAuditLogs(page, limitValue, actionFilter, search, appliedDateRange);
@@ -221,7 +238,7 @@ export default function AuditLogsPage() {
                 const json = await res.json().catch(() => null);
                 setExportMessage({
                     type: "error",
-                    text: json?.message || "Gagal mengekspor CSV",
+                    text: json?.message || t.dashboard.auditLogs.export.failed,
                 });
                 return;
             }
@@ -237,12 +254,12 @@ export default function AuditLogsPage() {
             window.URL.revokeObjectURL(url);
             setExportMessage({
                 type: "success",
-                text: "Export CSV berhasil dibuat.",
+                text: t.dashboard.auditLogs.export.success,
             });
         } catch {
             setExportMessage({
                 type: "error",
-                text: "Terjadi kesalahan saat mengekspor data.",
+                text: t.dashboard.auditLogs.export.network,
             });
         }
     };
@@ -251,12 +268,12 @@ export default function AuditLogsPage() {
         <DashboardPageShell>
             <div className={dashboardStackCls}>
                 <DashboardPageHeader
-                    kicker="Audit Trail"
-                    title="Audit Logs"
-                    description="Pantau aktivitas auth, perubahan data sensitif, tournament, treasury, dan operasi operator dari satu halaman yang lebih mudah dipindai."
+                    kicker={t.dashboard.auditLogs.kicker}
+                    title={t.dashboard.auditLogs.title}
+                    description={t.dashboard.auditLogs.description}
                     actions={
                         <button onClick={handleExportCsv} className={btnOutline}>
-                            Export CSV
+                            {t.dashboard.auditLogs.actions.exportCsv}
                         </button>
                     }
                 />
@@ -268,18 +285,33 @@ export default function AuditLogsPage() {
                 ) : null}
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <DashboardMetricCard label="Log Halaman Ini" value={loading ? "..." : logs.length} meta="Jumlah log pada halaman aktif" tone="accent" />
-                    <DashboardMetricCard label="Aksi Gagal / Risiko" value={loading ? "..." : summary.failed} meta="Gagal login atau user diblokir" tone="danger" />
-                    <DashboardMetricCard label="Auth + Sensitive" value={loading ? "..." : summary.auth + summary.sensitive} meta="Aktivitas auth dan perubahan sensitif" tone="success" />
+                    <DashboardMetricCard
+                        label={t.dashboard.auditLogs.metrics.pageLogsLabel}
+                        value={loading ? "..." : logs.length}
+                        meta={t.dashboard.auditLogs.metrics.pageLogsMeta}
+                        tone="accent"
+                    />
+                    <DashboardMetricCard
+                        label={t.dashboard.auditLogs.metrics.riskyLabel}
+                        value={loading ? "..." : summary.failed}
+                        meta={t.dashboard.auditLogs.metrics.riskyMeta}
+                        tone="danger"
+                    />
+                    <DashboardMetricCard
+                        label={t.dashboard.auditLogs.metrics.authLabel}
+                        value={loading ? "..." : summary.auth + summary.sensitive}
+                        meta={t.dashboard.auditLogs.metrics.authMeta}
+                        tone="success"
+                    />
                 </div>
 
-                <DashboardPanel title="Filter Audit" description="Cari user, target, atau rentang tanggal agar investigasi lebih cepat.">
+                <DashboardPanel title={t.dashboard.auditLogs.filters.title} description={t.dashboard.auditLogs.filters.description}>
                     <div className={filterBarCls}>
                         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[220px_minmax(0,1fr)_160px_160px_150px_auto]">
-                            <FormSelect value={actionFilter} onChange={(value) => { setActionFilter(value); setPage(1); }} options={ACTION_OPTIONS} />
+                            <FormSelect value={actionFilter} onChange={(value) => { setActionFilter(value); setPage(1); }} options={actionOptions} />
                             <input
                                 type="text"
-                                placeholder="Cari user, target, atau action..."
+                                placeholder={t.dashboard.auditLogs.filters.searchPlaceholder}
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && applyFilters()}
@@ -293,22 +325,22 @@ export default function AuditLogsPage() {
                                     setLimit(value);
                                     setPage(1);
                                 }}
-                                options={PAGE_SIZE_OPTIONS}
+                                options={pageSizeOptions}
                             />
                             <button onClick={applyFilters} className={btnPrimary}>
-                                Terapkan
+                                {t.dashboard.auditLogs.filters.apply}
                             </button>
                         </div>
                     </div>
                 </DashboardPanel>
 
-                <DashboardPanel title="Daftar Audit Logs" description={`Menampilkan ${total} log yang sesuai dengan filter sekarang.`}>
+                <DashboardPanel title={t.dashboard.auditLogs.list.title} description={t.dashboard.auditLogs.list.description(total)}>
                     {loading ? (
                         <div className="rounded-box border border-base-300 bg-base-200/40 px-5 py-12 text-center text-sm text-base-content/60">
-                            Memuat data log...
+                            {t.dashboard.auditLogs.list.loading}
                         </div>
                     ) : logs.length === 0 ? (
-                        <DashboardEmptyState title="Tidak ada log ditemukan" description="Coba ubah filter action, kata kunci pencarian, atau rentang tanggal." />
+                        <DashboardEmptyState title={t.dashboard.auditLogs.list.emptyTitle} description={t.dashboard.auditLogs.list.emptyDescription} />
                     ) : (
                         <div className="space-y-3">
                             {logs.map((log) => (
@@ -317,30 +349,45 @@ export default function AuditLogsPage() {
                                         <div className="space-y-3">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getActionBadgeColor(log.action)}`}>
-                                                    {ACTION_LABELS[log.action] ?? log.action}
+                                                    {actionLabels[log.action] ?? log.action}
                                                 </span>
-                                                <span className="rounded-full bg-base-100 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50" title={log.userId || "SYSTEM"}>
-                                                    {!log.userId || log.userId === "0" ? "SYSTEM" : log.userId.slice(-8)}
+                                                <span
+                                                    className="rounded-full bg-base-100 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50"
+                                                    title={log.userId || t.dashboard.auditLogs.labels.system}
+                                                >
+                                                    {!log.userId || log.userId === "0" ? t.dashboard.auditLogs.labels.system : log.userId.slice(-8)}
                                                 </span>
                                                 <span className="text-xs text-base-content/45">{formatLogDate(log.createdAt)}</span>
                                             </div>
                                             <div>
-                                                <div className="text-sm font-semibold text-base-content">{log.user?.username || log.user?.fullName || "System Event"}</div>
+                                                <div className="text-sm font-semibold text-base-content">
+                                                    {log.user?.username || log.user?.fullName || t.dashboard.auditLogs.labels.systemEvent}
+                                                </div>
                                                 <div className="text-xs text-base-content/45 break-words">{log.user?.email || log.ipAddress}</div>
                                             </div>
                                         </div>
 
                                         <div className="grid gap-3 text-sm text-base-content/60 sm:grid-cols-2 xl:min-w-[420px]">
                                             <div>
-                                                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Request</div>
+                                                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">
+                                                    {t.dashboard.auditLogs.labels.request}
+                                                </div>
                                                 <div className="mt-2 break-all font-mono text-xs text-base-content/60">
                                                     {[log.requestMethod, log.requestPath, log.responseStatus].filter(Boolean).join(" - ") || "-"}
                                                 </div>
                                             </div>
                                             <div>
-                                                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Target</div>
-                                                <div className="mt-2 break-words text-xs text-base-content/60">{log.targetType || "NONE"}</div>
-                                                {log.reason ? <div className="mt-1 text-xs text-error">Reason: {log.reason}</div> : null}
+                                                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">
+                                                    {t.dashboard.auditLogs.labels.target}
+                                                </div>
+                                                <div className="mt-2 break-words text-xs text-base-content/60">
+                                                    {log.targetType || t.dashboard.auditLogs.labels.none}
+                                                </div>
+                                                {log.reason ? (
+                                                    <div className="mt-1 text-xs text-error">
+                                                        {t.dashboard.auditLogs.labels.reason}: {log.reason}
+                                                    </div>
+                                                ) : null}
                                             </div>
                                         </div>
                                     </div>

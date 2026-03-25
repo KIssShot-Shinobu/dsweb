@@ -157,7 +157,7 @@ export function TournamentBracket({
         });
 
         return { singleMatches: single, upperMatches: upper, lowerMatches: lower };
-    }, [data]);
+    }, [data, t]);
 
     const clampScale = (value: number) => Math.min(1.8, Math.max(0.6, value));
     const zoomIn = () => setScaleFactor((prev) => clampScale(prev + 0.15));

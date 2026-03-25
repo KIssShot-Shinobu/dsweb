@@ -107,7 +107,7 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
                 <main className="flex-1 p-4 sm:p-5 lg:p-6">{children}</main>
             </div>
             <div className="drawer-side z-50">
-                <label htmlFor="tournament-admin-drawer" aria-label="close sidebar" className="drawer-overlay bg-black/40 lg:hidden" />
+                <label htmlFor="tournament-admin-drawer" aria-label={t.common.close} className="drawer-overlay bg-black/40 lg:hidden" />
                 <aside className="min-h-full w-72 border-r border-base-300 bg-base-100/95 backdrop-blur lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
                     <div className="flex items-center justify-between border-b border-base-300 px-5 py-4">
                         <div>

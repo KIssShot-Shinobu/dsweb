@@ -19,11 +19,8 @@ import {
 import { AnalyticsChart } from "@/components/dashboard/analytics-chart";
 import {
     TREASURY_CATEGORIES,
-    TREASURY_CATEGORY_LABELS,
-    TREASURY_METHOD_LABELS,
     TREASURY_METHODS,
     TREASURY_STATUS,
-    TREASURY_STATUS_LABELS,
 } from "@/lib/treasury-constants";
 import { useLocale } from "@/hooks/use-locale";
 import { formatCurrency as formatCurrencyIntl, formatDateTime, getIntlLocale } from "@/lib/i18n/format";
@@ -59,43 +56,8 @@ type CategoryBreakdown = Record<string, { income: number; expense: number }>;
 const PER_PAGE = 10;
 const UNDO_DURATION = 5000;
 
-const transactionTypeOptions = [
-    { value: "MASUK", label: "Pemasukan" },
-    { value: "KELUAR", label: "Pengeluaran" },
-];
-
-const filterOptions = [
-    { value: "ALL", label: "Semua" },
-    { value: "MASUK", label: "Pemasukan" },
-    { value: "KELUAR", label: "Pengeluaran" },
-];
-
-const categoryOptions = [
-    { value: "ALL", label: "Semua Kategori" },
-    ...TREASURY_CATEGORIES.map((value) => ({
-        value,
-        label: TREASURY_CATEGORY_LABELS[value],
-    })),
-];
-
-const methodOptions = [
-    { value: "ALL", label: "Semua Metode" },
-    ...TREASURY_METHODS.map((value) => ({
-        value,
-        label: TREASURY_METHOD_LABELS[value],
-    })),
-];
-
-const statusOptions = [
-    { value: "ALL", label: "Semua Status" },
-    ...TREASURY_STATUS.map((value) => ({
-        value,
-        label: TREASURY_STATUS_LABELS[value],
-    })),
-];
-
 export default function TreasuryPage() {
-    const { locale } = useLocale();
+    const { locale, t } = useLocale();
     const currentYear = new Date().getFullYear();
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -132,6 +94,60 @@ export default function TreasuryPage() {
     const [categoryBreakdown, setCategoryBreakdown] = useState<CategoryBreakdown>({});
     const [summaryYear, setSummaryYear] = useState(new Date().getFullYear());
 
+    const categoryLabels = t.dashboard.treasury.categoryLabels;
+    const methodLabels = t.dashboard.treasury.methodLabels;
+    const statusLabels = t.dashboard.treasury.statusLabels;
+
+    const transactionTypeOptions = useMemo(
+        () => [
+            { value: "MASUK", label: t.dashboard.treasury.transactionTypes.income },
+            { value: "KELUAR", label: t.dashboard.treasury.transactionTypes.expense },
+        ],
+        [t]
+    );
+
+    const filterOptions = useMemo(
+        () => [
+            { value: "ALL", label: t.dashboard.treasury.filters.all },
+            { value: "MASUK", label: t.dashboard.treasury.transactionTypes.income },
+            { value: "KELUAR", label: t.dashboard.treasury.transactionTypes.expense },
+        ],
+        [t]
+    );
+
+    const categoryOptions = useMemo(
+        () => [
+            { value: "ALL", label: t.dashboard.treasury.filters.allCategories },
+            ...TREASURY_CATEGORIES.map((value) => ({
+                value,
+                label: categoryLabels[value] ?? value,
+            })),
+        ],
+        [categoryLabels, t]
+    );
+
+    const methodOptions = useMemo(
+        () => [
+            { value: "ALL", label: t.dashboard.treasury.filters.allMethods },
+            ...TREASURY_METHODS.map((value) => ({
+                value,
+                label: methodLabels[value] ?? value,
+            })),
+        ],
+        [methodLabels, t]
+    );
+
+    const statusOptions = useMemo(
+        () => [
+            { value: "ALL", label: t.dashboard.treasury.filters.allStatus },
+            ...TREASURY_STATUS.map((value) => ({
+                value,
+                label: statusLabels[value] ?? value,
+            })),
+        ],
+        [statusLabels, t]
+    );
+
     const { success, error } = useToast();
     const [confirmState, setConfirmState] = useState<{ open: boolean; id: string; label: string }>({ open: false, id: "", label: "" });
     const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
@@ -139,13 +155,13 @@ export default function TreasuryPage() {
 
     const userSelectOptions = useMemo(
         () => [
-            { value: "NONE", label: "Kas umum / tanpa user" },
+            { value: "NONE", label: t.dashboard.treasury.labels.generalCashFull },
             ...users.map((user) => ({
                 value: user.id,
                 label: `${user.fullName} (${user.role})`,
             })),
         ],
-        [users]
+        [t, users]
     );
 
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -251,12 +267,12 @@ export default function TreasuryPage() {
             if (res.ok) {
                 fetchTreasury();
                 resetForm();
-                success(editingId ? "Transaksi berhasil diperbarui." : "Transaksi berhasil ditambahkan.");
+                success(editingId ? t.dashboard.treasury.toasts.updated : t.dashboard.treasury.toasts.created);
             } else {
-                error(data?.message || data?.error || "Gagal menyimpan transaksi.");
+                error(data?.message || data?.error || t.dashboard.treasury.toasts.saveFailed);
             }
         } catch {
-            error("Kesalahan jaringan. Coba lagi.");
+            error(t.dashboard.treasury.toasts.networkError);
         } finally {
             setSubmitting(false);
         }
@@ -283,10 +299,10 @@ export default function TreasuryPage() {
         try {
             const res = await fetch(`/api/treasury/${id}`, { method: "DELETE" });
             if (!res.ok) {
-                error("Gagal menghapus transaksi.");
+                error(t.dashboard.treasury.toasts.deleteFailed);
             }
         } catch {
-            error("Kesalahan jaringan saat menghapus transaksi.");
+            error(t.dashboard.treasury.toasts.deleteNetwork);
         } finally {
             fetchTreasury();
         }
@@ -314,7 +330,7 @@ export default function TreasuryPage() {
         if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
         setPendingDelete(null);
         fetchTreasury();
-        success("Penghapusan dibatalkan.");
+        success(t.dashboard.treasury.undo.cancelled);
     };
 
     const resetForm = () => {
@@ -351,7 +367,7 @@ export default function TreasuryPage() {
         });
 
     const monthOptions = [
-        { value: "ALL", label: "Semua Bulan" },
+        { value: "ALL", label: t.dashboard.treasury.filters.allMonths },
         ...Array.from({ length: 12 }, (_, index) => {
             const value = index + 1;
             return {
@@ -362,7 +378,7 @@ export default function TreasuryPage() {
     ];
 
     const yearOptions = [
-        { value: "ALL", label: "Semua Tahun" },
+        { value: "ALL", label: t.dashboard.treasury.filters.allYears },
         ...[currentYear - 1, currentYear, currentYear + 1].map((value) => ({
             value: String(value),
             label: String(value),
@@ -373,40 +389,45 @@ export default function TreasuryPage() {
         <DashboardPageShell>
             <div className={dashboardStackCls}>
                 <DashboardPageHeader
-                    kicker="Finance Desk"
-                    title="Treasury"
-                    description="Kelola kas guild, hubungkan transaksi ke user aktif bila diperlukan, dan pantau arus masuk-keluar dengan default semua periode agar sinkron dengan data dashboard."
-                    actions={<button className={btnPrimary} onClick={() => setShowModal(true)}>+ Tambah Transaksi</button>}
+                    kicker={t.dashboard.treasury.kicker}
+                    title={t.dashboard.treasury.title}
+                    description={t.dashboard.treasury.description}
+                    actions={<button className={btnPrimary} onClick={() => setShowModal(true)}>{t.dashboard.treasury.actions.addTransaction}</button>}
                 />
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <DashboardMetricCard label="Saldo Tersaring" value={loading ? "..." : formatCurrency(balance)} meta={month === "ALL" && year === "ALL" ? "Default menampilkan seluruh periode" : "Posisi saldo sesuai filter periode"} tone="accent" />
-                    <DashboardMetricCard label="Pemasukan" value={loading ? "..." : formatCurrency(income)} meta="Total transaksi masuk" tone="success" />
-                    <DashboardMetricCard label="Pengeluaran" value={loading ? "..." : formatCurrency(expense)} meta="Total transaksi keluar" tone="danger" />
-                    <DashboardMetricCard label="Jumlah Transaksi" value={loading ? "..." : total} meta="Total record pada periode aktif" />
+                    <DashboardMetricCard
+                        label={t.dashboard.treasury.metrics.filteredBalance}
+                        value={loading ? "..." : formatCurrency(balance)}
+                        meta={month === "ALL" && year === "ALL" ? t.dashboard.treasury.metrics.filteredBalanceAllMeta : t.dashboard.treasury.metrics.filteredBalanceMeta}
+                        tone="accent"
+                    />
+                    <DashboardMetricCard label={t.dashboard.treasury.metrics.income} value={loading ? "..." : formatCurrency(income)} meta={t.dashboard.treasury.metrics.incomeMeta} tone="success" />
+                    <DashboardMetricCard label={t.dashboard.treasury.metrics.expense} value={loading ? "..." : formatCurrency(expense)} meta={t.dashboard.treasury.metrics.expenseMeta} tone="danger" />
+                    <DashboardMetricCard label={t.dashboard.treasury.metrics.total} value={loading ? "..." : total} meta={t.dashboard.treasury.metrics.totalMeta} />
                 </div>
 
                 <DashboardPanel
-                    title="Monthly Summary"
-                    description={`Ringkasan arus kas tahun ${summaryYear}.`}
+                    title={t.dashboard.treasury.summary.title}
+                    description={t.dashboard.treasury.summary.description(summaryYear)}
                 >
                     <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-                        <AnalyticsChart data={monthlyTotals} loading={loading} title="Monthly Treasury" />
+                        <AnalyticsChart data={monthlyTotals} loading={loading} title={t.dashboard.treasury.summary.chartTitle} />
                         <div className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm">
                             <div className="flex items-center justify-between">
-                                <div className="text-sm font-semibold text-base-content">Category Breakdown</div>
-                                <div className="text-xs text-base-content/50">Net</div>
+                                <div className="text-sm font-semibold text-base-content">{t.dashboard.treasury.summary.categoryTitle}</div>
+                                <div className="text-xs text-base-content/50">{t.dashboard.treasury.summary.netLabel}</div>
                             </div>
                             <div className="mt-4 space-y-3">
                                 {Object.keys(categoryBreakdown).length === 0 ? (
-                                    <div className="text-xs text-base-content/45">Belum ada data kategori.</div>
+                                    <div className="text-xs text-base-content/45">{t.dashboard.treasury.summary.emptyCategory}</div>
                                 ) : (
                                     Object.entries(categoryBreakdown)
                                         .sort((a, b) => (b[1].income - b[1].expense) - (a[1].income - a[1].expense))
                                         .map(([key, value]) => (
                                         <div key={key} className="flex items-center justify-between text-xs">
                                             <span className="text-base-content/70">
-                                                {TREASURY_CATEGORY_LABELS[key as keyof typeof TREASURY_CATEGORY_LABELS] ?? key}
+                                                {categoryLabels[key as keyof typeof categoryLabels] ?? key}
                                             </span>
                                             <span className="font-semibold text-base-content">
                                                 {formatCurrency(value.income - value.expense)}
@@ -420,14 +441,14 @@ export default function TreasuryPage() {
                 </DashboardPanel>
 
                 <DashboardPanel
-                    title="Daftar Transaksi"
-                    description={`Menampilkan ${total} transaksi pada periode yang dipilih.`}
+                    title={t.dashboard.treasury.list.title}
+                    description={t.dashboard.treasury.list.description(total)}
                     action={(
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                             <input
                                 type="text"
                                 className="input input-bordered w-full sm:w-52"
-                                placeholder="Cari deskripsi/ref"
+                                placeholder={t.dashboard.treasury.list.searchPlaceholder}
                                 value={search}
                                 onChange={(event) => { setSearch(event.target.value); setPage(1); }}
                             />
@@ -441,7 +462,7 @@ export default function TreasuryPage() {
                                 className={`${btnOutline} btn-sm`}
                                 href={`/api/treasury/export?month=${month}&year=${year}&type=${filter !== "ALL" ? filter : ""}&category=${category !== "ALL" ? category : ""}&method=${method !== "ALL" ? method : ""}&status=${status !== "ALL" ? status : ""}&search=${encodeURIComponent(search.trim())}`}
                             >
-                                Export CSV
+                                {t.dashboard.treasury.actions.exportCsv}
                             </a>
                             <button
                                 className={`${btnOutline} btn-sm`}
@@ -456,7 +477,7 @@ export default function TreasuryPage() {
                                     setPage(1);
                                 }}
                             >
-                                Reset
+                                {t.dashboard.treasury.actions.reset}
                             </button>
                         </div>
                     )}
@@ -468,7 +489,7 @@ export default function TreasuryPage() {
                             ))}
                         </div>
                     ) : transactions.length === 0 ? (
-                        <DashboardEmptyState title="Belum ada transaksi" description="Tidak ada data untuk periode dan filter ini. Tambahkan transaksi baru atau ganti filter bulan." />
+                        <DashboardEmptyState title={t.dashboard.treasury.list.emptyTitle} description={t.dashboard.treasury.list.emptyDescription} />
                     ) : (
                         <>
                             <div className="space-y-3">
@@ -481,20 +502,24 @@ export default function TreasuryPage() {
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <div className="truncate text-sm font-semibold text-base-content">{transaction.description}</div>
                                                 <span className="rounded-full border border-base-300 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-base-content/60">
-                                                    {TREASURY_CATEGORY_LABELS[transaction.category as keyof typeof TREASURY_CATEGORY_LABELS] ?? transaction.category}
+                                                    {categoryLabels[transaction.category as keyof typeof categoryLabels] ?? transaction.category}
                                                 </span>
                                                 <span className={`badge badge-outline badge-xs ${transaction.status === "CLEARED" ? "badge-success" : transaction.status === "PENDING" ? "badge-warning" : "badge-ghost"}`}>
-                                                    {TREASURY_STATUS_LABELS[transaction.status as keyof typeof TREASURY_STATUS_LABELS] ?? transaction.status}
+                                                    {statusLabels[transaction.status as keyof typeof statusLabels] ?? transaction.status}
                                                 </span>
                                             </div>
                                             <div className="truncate text-xs text-base-content/45">
-                                                {formatDate(transaction.createdAt)} - {transaction.user?.username || transaction.user?.fullName || "Kas umum"}
+                                                {formatDate(transaction.createdAt)} - {transaction.user?.username || transaction.user?.fullName || t.dashboard.treasury.labels.generalCash}
                                             </div>
                                             {transaction.counterparty || transaction.referenceCode ? (
                                                 <div className="truncate text-[11px] text-base-content/40">
-                                                    {transaction.counterparty ? `Counterparty: ${transaction.counterparty}` : "Counterparty: -"}
-                                                    {" • "}
-                                                    {transaction.referenceCode ? `Ref: ${transaction.referenceCode}` : "Ref: -"}
+                                                    {transaction.counterparty
+                                                        ? `${t.dashboard.treasury.labels.counterparty}: ${transaction.counterparty}`
+                                                        : `${t.dashboard.treasury.labels.counterparty}: -`}
+                                                    {" · "}
+                                                    {transaction.referenceCode
+                                                        ? `${t.dashboard.treasury.labels.reference}: ${transaction.referenceCode}`
+                                                        : `${t.dashboard.treasury.labels.reference}: -`}
                                                 </div>
                                             ) : null}
                                         </div>
@@ -514,30 +539,34 @@ export default function TreasuryPage() {
                 </DashboardPanel>
             </div>
 
-            <Modal open={showModal} onClose={resetForm} title={editingId ? "Edit Transaksi" : "Tambah Transaksi Baru"}>
+            <Modal
+                open={showModal}
+                onClose={resetForm}
+                title={editingId ? t.dashboard.treasury.form.titleEdit : t.dashboard.treasury.form.titleCreate}
+            >
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className={labelCls}>Tipe Transaksi</label>
+                        <label className={labelCls}>{t.dashboard.treasury.form.type}</label>
                         <FormSelect value={formData.type} onChange={(value) => setFormData((prev) => ({ ...prev, type: value }))} options={transactionTypeOptions} />
                     </div>
                     <div>
-                        <label className={labelCls}>Kategori</label>
+                        <label className={labelCls}>{t.dashboard.treasury.form.category}</label>
                         <FormSelect value={formData.category} onChange={(value) => setFormData((prev) => ({ ...prev, category: value }))} options={categoryOptions.filter((option) => option.value !== "ALL")} />
                     </div>
                     <div>
-                        <label className={labelCls}>Metode Pembayaran</label>
+                        <label className={labelCls}>{t.dashboard.treasury.form.method}</label>
                         <FormSelect value={formData.method} onChange={(value) => setFormData((prev) => ({ ...prev, method: value }))} options={methodOptions.filter((option) => option.value !== "ALL")} />
                     </div>
                     <div>
-                        <label className={labelCls}>Status</label>
+                        <label className={labelCls}>{t.dashboard.treasury.form.status}</label>
                         <FormSelect value={formData.status} onChange={(value) => setFormData((prev) => ({ ...prev, status: value }))} options={statusOptions.filter((option) => option.value !== "ALL")} />
                     </div>
                     <div>
-                        <label className={labelCls}>Terkait User</label>
+                        <label className={labelCls}>{t.dashboard.treasury.form.user}</label>
                         <FormSelect value={formData.userId} onChange={(value) => setFormData((prev) => ({ ...prev, userId: value }))} options={userSelectOptions} disabled={usersLoading} />
                     </div>
                     <div>
-                        <label className={labelCls}>Nominal (IDR)</label>
+                        <label className={labelCls}>{t.dashboard.treasury.form.amount}</label>
                         <input
                             type="text"
                             inputMode="numeric"
@@ -545,44 +574,58 @@ export default function TreasuryPage() {
                             value={formData.amount ? formatIdrInput(formData.amount) : ""}
                             onChange={(event) => setFormData((prev) => ({ ...prev, amount: parseIdrInput(event.target.value) }))}
                             required
-                            placeholder="10000"
+                            placeholder={t.dashboard.treasury.form.amountPlaceholder}
                         />
                     </div>
                     <div>
-                        <label className={labelCls}>Deskripsi</label>
-                        <input type="text" className={inputCls} value={formData.description} onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))} required placeholder="Contoh: Iuran bulanan guild" />
+                        <label className={labelCls}>{t.dashboard.treasury.form.description}</label>
+                        <input
+                            type="text"
+                            className={inputCls}
+                            value={formData.description}
+                            onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
+                            required
+                            placeholder={t.dashboard.treasury.form.descriptionPlaceholder}
+                        />
                     </div>
                     <div>
-                        <label className={labelCls}>Counterparty</label>
+                        <label className={labelCls}>{t.dashboard.treasury.form.counterparty}</label>
                         <input
                             type="text"
                             className={inputCls}
                             value={formData.counterparty}
                             onChange={(event) => setFormData((prev) => ({ ...prev, counterparty: event.target.value }))}
-                            placeholder="Contoh: Sponsor ABC / Vendor XYZ"
+                            placeholder={t.dashboard.treasury.form.counterpartyPlaceholder}
                         />
                     </div>
                     <div>
-                        <label className={labelCls}>Reference Code</label>
+                        <label className={labelCls}>{t.dashboard.treasury.form.reference}</label>
                         <input
                             type="text"
                             className={inputCls}
                             value={formData.referenceCode}
                             onChange={(event) => setFormData((prev) => ({ ...prev, referenceCode: event.target.value }))}
-                            placeholder="INV-2026-001"
+                            placeholder={t.dashboard.treasury.form.referencePlaceholder}
                         />
                     </div>
                     <div className="flex justify-end gap-3">
-                        <button type="button" className={btnOutline} onClick={resetForm}>Batal</button>
+                        <button type="button" className={btnOutline} onClick={resetForm}>{t.dashboard.treasury.form.cancel}</button>
                         <button type="submit" className={btnPrimary} disabled={submitting}>
-                            {submitting ? "Menyimpan..." : editingId ? "Update" : "Tambah Transaksi"}
+                            {submitting ? t.dashboard.treasury.form.saving : editingId ? t.dashboard.treasury.form.update : t.dashboard.treasury.form.add}
                         </button>
                     </div>
                 </form>
             </Modal>
 
-            <ConfirmModal open={confirmState.open} title="Hapus Transaksi" message={`Hapus "${confirmState.label}"? Anda punya 5 detik untuk undo.`} confirmLabel="Hapus" onConfirm={handleConfirmDelete} onCancel={() => setConfirmState({ open: false, id: "", label: "" })} />
-            <UndoSnackbar open={!!pendingDelete} message={`"${pendingDelete?.label}" akan dihapus`} duration={UNDO_DURATION} onUndo={handleUndo} />
+            <ConfirmModal
+                open={confirmState.open}
+                title={t.dashboard.treasury.confirmDelete.title}
+                message={t.dashboard.treasury.confirmDelete.message(confirmState.label)}
+                confirmLabel={t.dashboard.treasury.confirmDelete.confirm}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setConfirmState({ open: false, id: "", label: "" })}
+            />
+            <UndoSnackbar open={!!pendingDelete} message={t.dashboard.treasury.undo.message(pendingDelete?.label ?? "")} duration={UNDO_DURATION} onUndo={handleUndo} />
         </DashboardPageShell>
     );
 }

@@ -52,19 +52,6 @@ interface TeamRequestRow {
     };
 }
 
-const STATUS_OPTIONS = [
-    { value: "ALL", label: "Semua Team" },
-    { value: "ACTIVE", label: "Aktif" },
-    { value: "INACTIVE", label: "Nonaktif" },
-];
-
-const REQUEST_STATUS_OPTIONS = [
-    { value: "ALL", label: "Semua Status" },
-    { value: "PENDING", label: "Pending" },
-    { value: "APPROVED", label: "Disetujui" },
-    { value: "REJECTED", label: "Ditolak" },
-];
-
 const emptyForm = {
     name: "",
     description: "",
@@ -73,7 +60,7 @@ const emptyForm = {
 };
 
 export default function TeamsPage() {
-    const { locale } = useLocale();
+    const { t, locale } = useLocale();
     const { user } = useCurrentUser();
     const [teams, setTeams] = useState<TeamRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -95,6 +82,20 @@ export default function TeamsPage() {
     const { success, error: toastError } = useToast();
 
     const isAdmin = ["ADMIN", "FOUNDER"].includes(user?.role || "");
+    const statusOptions = [
+        { value: "ALL", label: t.dashboard.teams.statusOptions.all },
+        { value: "ACTIVE", label: t.dashboard.teams.statusOptions.active },
+        { value: "INACTIVE", label: t.dashboard.teams.statusOptions.inactive },
+    ];
+    const requestStatusOptions = [
+        { value: "ALL", label: t.dashboard.teams.requestStatusOptions.all },
+        { value: "PENDING", label: t.dashboard.teams.requestStatusOptions.pending },
+        { value: "APPROVED", label: t.dashboard.teams.requestStatusOptions.approved },
+        { value: "REJECTED", label: t.dashboard.teams.requestStatusOptions.rejected },
+    ];
+    const requestStatusLabel =
+        t.dashboard.teams.requests.statusLabels[requestStatus as keyof typeof t.dashboard.teams.requests.statusLabels] ??
+        requestStatus;
 
     const fetchTeams = useCallback(() => {
         setLoading(true);
@@ -104,9 +105,9 @@ export default function TeamsPage() {
             .then((data) => {
                 setTeams(data.data || []);
             })
-            .catch(() => toastError("Gagal memuat daftar team"))
+            .catch(() => toastError(t.dashboard.teams.toasts.loadTeamsFailed))
             .finally(() => setLoading(false));
-    }, [search, status, toastError]);
+    }, [search, status, toastError, t]);
 
     const fetchRequests = useCallback(() => {
         if (!isAdmin) return;
@@ -118,9 +119,9 @@ export default function TeamsPage() {
             .then((data) => {
                 setRequests(data.data || []);
             })
-            .catch(() => toastError("Gagal memuat request team"))
+            .catch(() => toastError(t.dashboard.teams.toasts.loadRequestsFailed))
             .finally(() => setRequestLoading(false));
-    }, [isAdmin, requestStatus, toastError]);
+    }, [isAdmin, requestStatus, toastError, t]);
 
     useEffect(() => {
         const timer = setTimeout(fetchTeams, 0);
@@ -171,13 +172,13 @@ export default function TeamsPage() {
         const data = await response.json();
 
         if (!response.ok) {
-            toastError(data.message || "Gagal menyimpan team");
+            toastError(data.message || t.dashboard.teams.toasts.saveFailed);
             setSaving(false);
             return;
         }
 
         setSaving(false);
-        success(editingTeam ? "Perubahan team berhasil disimpan." : "Team baru berhasil dibuat.");
+        success(editingTeam ? t.dashboard.teams.toasts.updateSuccess : t.dashboard.teams.toasts.createSuccess);
         resetModal();
         fetchTeams();
     };
@@ -197,12 +198,12 @@ export default function TeamsPage() {
 
             if (res.ok && data?.url) {
                 setForm((current) => ({ ...current, logoUrl: data.url }));
-                success("Logo team berhasil diupload.");
+                success(t.dashboard.teams.toasts.logoUploadSuccess);
             } else {
-                toastError(data?.message || "Gagal upload logo.");
+                toastError(data?.message || t.dashboard.teams.toasts.logoUploadFailed);
             }
         } catch {
-            toastError("Kesalahan jaringan saat upload logo.");
+            toastError(t.dashboard.teams.toasts.logoUploadNetwork);
         } finally {
             setUploadingLogo(false);
         }
@@ -216,11 +217,11 @@ export default function TeamsPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                toastError(data.error || data.message || "Gagal menyetujui request.");
+                toastError(data.error || data.message || t.dashboard.teams.toasts.approveFailed);
                 return;
             }
 
-            success(`Request team "${request.teamName}" disetujui.`);
+            success(t.dashboard.teams.toasts.approveSuccess(request.teamName));
             fetchRequests();
             fetchTeams();
         } finally {
@@ -241,11 +242,11 @@ export default function TeamsPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                toastError(data.error || data.message || "Gagal menolak request.");
+                toastError(data.error || data.message || t.dashboard.teams.toasts.rejectFailed);
                 return;
             }
 
-            success(`Request team "${rejectTarget.teamName}" ditolak.`);
+            success(t.dashboard.teams.toasts.rejectSuccess(rejectTarget.teamName));
             setRejectModalOpen(false);
             setRejectReason("");
             setRejectTarget(null);
@@ -260,11 +261,11 @@ export default function TeamsPage() {
         const data = await response.json();
 
         if (!response.ok) {
-            toastError(data.message || "Gagal menghapus team");
+            toastError(data.message || t.dashboard.teams.toasts.deleteFailed);
             return;
         }
 
-        success(`Team ${team.name} berhasil dihapus.`);
+        success(t.dashboard.teams.toasts.deleteSuccess(team.name));
         fetchTeams();
     };
 
@@ -278,40 +279,40 @@ export default function TeamsPage() {
     const helperText = useMemo(
         () =>
             isAdmin
-                ? "Role MEMBER ke atas bisa dihubungkan ke team. User publik tetap bisa aktif tanpa team."
-                : "Halaman ini menampilkan struktur team Duel Standby dan roster aktif yang sudah ditetapkan admin.",
-        [isAdmin]
+                ? t.dashboard.teams.helperAdmin
+                : t.dashboard.teams.helperViewer,
+        [isAdmin, t]
     );
 
     return (
         <DashboardPageShell>
             <div className={dashboardStackCls}>
                 <DashboardPageHeader
-                    kicker="Guild Teams"
-                    title="Teams"
-                    description="Kelola roster Duel Standby tanpa mencampur status member komunitas dengan afiliasi team."
-                    actions={isAdmin ? <button onClick={openCreate} className={btnPrimary}>Buat Team</button> : null}
+                    kicker={t.dashboard.teams.kicker}
+                    title={t.dashboard.teams.title}
+                    description={t.dashboard.teams.description}
+                    actions={isAdmin ? <button onClick={openCreate} className={btnPrimary}>{t.dashboard.teams.createButton}</button> : null}
                 />
 
                 {isAdmin ? (
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                        <DashboardPanel title="Team Requests" description="Review request pembuatan team dari user, setujui atau tolak dengan cepat.">
+                        <DashboardPanel title={t.dashboard.teams.requests.panelTitle} description={t.dashboard.teams.requests.panelDescription}>
                         <div className={filterBarCls}>
                             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
                                 <div className="text-sm text-base-content/60">
-                                    {requestLoading ? "Memuat request..." : `${requests.length} request ditemukan`}
+                                    {requestLoading ? t.dashboard.teams.requests.loading : t.dashboard.teams.requests.count(requests.length)}
                                 </div>
-                                <FormSelect value={requestStatus} onChange={setRequestStatus} options={REQUEST_STATUS_OPTIONS} className="w-full" />
+                                <FormSelect value={requestStatus} onChange={setRequestStatus} options={requestStatusOptions} className="w-full" />
                             </div>
                             {hasRequestFilter ? (
                                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/45">
-                                    <span>Filter aktif: {requestStatus}</span>
+                                    <span>{t.dashboard.teams.requests.filterActive(requestStatusLabel)}</span>
                                     <button
                                         type="button"
                                         onClick={() => setRequestStatus("ALL")}
                                         className="font-medium text-primary transition-colors hover:text-primary/80"
                                     >
-                                        Reset Filter
+                                        {t.dashboard.teams.requests.resetFilter}
                                     </button>
                                 </div>
                             ) : null}
@@ -325,9 +326,9 @@ export default function TeamsPage() {
                             </div>
                         ) : requests.length === 0 ? (
                             <DashboardEmptyState
-                                title="Belum ada request"
-                                description="Request pembuatan team akan muncul di sini saat user mengajukan."
-                                actionLabel={hasRequestFilter ? "Reset Filter" : undefined}
+                                title={t.dashboard.teams.requests.emptyTitle}
+                                description={t.dashboard.teams.requests.emptyDescription}
+                                actionLabel={hasRequestFilter ? t.dashboard.teams.requests.resetFilter : undefined}
                                 actionHref={hasRequestFilter ? "/dashboard/teams" : undefined}
                             />
                         ) : (
@@ -367,17 +368,17 @@ export default function TeamsPage() {
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <div className="truncate text-base font-semibold text-base-content">{request.teamName}</div>
                                                     <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${statusTone}`}>
-                                                        {request.status}
+                                                        {t.dashboard.teams.requests.statusLabels[request.status as keyof typeof t.dashboard.teams.requests.statusLabels] ?? request.status}
                                                     </span>
                                                 </div>
                                                 <div className="mt-1 text-sm text-base-content/60">
-                                                    {request.description || "Tanpa deskripsi."}
+                                                    {request.description || t.dashboard.teams.requests.descriptionEmpty}
                                                 </div>
                                                 <div className="mt-2 text-xs text-base-content/50">
-                                                    Oleh {request.requester.fullName} (@{request.requester.username}) - {request.requester.email}
+                                                    {t.dashboard.teams.requests.byline(request.requester.fullName, request.requester.username, request.requester.email)}
                                                 </div>
                                                 <div className="mt-2 text-[11px] text-base-content/45">
-                                                    Dikirim {formatDate(request.createdAt, locale)}
+                                                    {t.dashboard.teams.requests.submittedAt(formatDate(request.createdAt, locale))}
                                                 </div>
                                             </div>
 
@@ -390,7 +391,9 @@ export default function TeamsPage() {
                                                             className={btnPrimary}
                                                             disabled={requestActionId === request.id}
                                                         >
-                                                            {requestActionId === request.id ? "Memproses..." : "Setujui"}
+                                                            {requestActionId === request.id
+                                                                ? t.dashboard.teams.requests.processing
+                                                                : t.dashboard.teams.requests.approve}
                                                         </button>
                                                         <button
                                                             type="button"
@@ -401,11 +404,11 @@ export default function TeamsPage() {
                                                             className={btnDanger}
                                                             disabled={requestActionId === request.id}
                                                         >
-                                                            Tolak
+                                                            {t.dashboard.teams.requests.reject}
                                                         </button>
                                                     </>
                                                 ) : (
-                                                    <span className="text-xs text-base-content/45">Sudah diproses</span>
+                                                    <span className="text-xs text-base-content/45">{t.dashboard.teams.requests.processed}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -416,46 +419,44 @@ export default function TeamsPage() {
                     </DashboardPanel>
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                        <DashboardMetricCard label="Total Teams" value={loading ? "..." : teams.length} meta="Seluruh team terdaftar" tone="accent" />
-                        <DashboardMetricCard label="Teams Aktif" value={loading ? "..." : activeTeams} meta="Roster aktif saat ini" tone="success" />
-                        <DashboardMetricCard label="Avg. Roster" value={loading ? "..." : avgRoster} meta="Rata-rata anggota per team" tone="default" />
-                        <DashboardMetricCard label="Teams Nonaktif" value={loading ? "..." : inactiveTeams} meta="Belum aktif dipakai" tone="danger" />
+                        <DashboardMetricCard label={t.dashboard.teams.metrics.totalLabel} value={loading ? "..." : teams.length} meta={t.dashboard.teams.metrics.totalMeta} tone="accent" />
+                        <DashboardMetricCard label={t.dashboard.teams.metrics.activeLabel} value={loading ? "..." : activeTeams} meta={t.dashboard.teams.metrics.activeMeta} tone="success" />
+                        <DashboardMetricCard label={t.dashboard.teams.metrics.avgLabel} value={loading ? "..." : avgRoster} meta={t.dashboard.teams.metrics.avgMeta} tone="default" />
+                        <DashboardMetricCard label={t.dashboard.teams.metrics.inactiveLabel} value={loading ? "..." : inactiveTeams} meta={t.dashboard.teams.metrics.inactiveMeta} tone="danger" />
                     </div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <DashboardMetricCard label="Total Teams" value={loading ? "..." : teams.length} meta="Seluruh team yang tersedia di Duel Standby" tone="accent" />
-                    <DashboardMetricCard label="Teams Aktif" value={loading ? "..." : activeTeams} meta="Team yang masih bisa dipakai untuk roster aktif" tone="success" />
+                    <DashboardMetricCard label={t.dashboard.teams.metrics.totalLabel} value={loading ? "..." : teams.length} meta={t.dashboard.teams.metrics.viewerTotalMeta} tone="accent" />
+                    <DashboardMetricCard label={t.dashboard.teams.metrics.activeLabel} value={loading ? "..." : activeTeams} meta={t.dashboard.teams.metrics.viewerActiveMeta} tone="success" />
                     <DashboardMetricCard
-                        label="Avg. Roster"
+                        label={t.dashboard.teams.metrics.avgLabel}
                         value={loading ? "..." : avgRoster}
-                        meta={`${helperText} ${inactiveTeams ? `Saat ini ada ${inactiveTeams} team nonaktif.` : ""}`.trim()}
+                        meta={`${helperText} ${inactiveTeams ? t.dashboard.teams.metrics.inactiveNotice(inactiveTeams) : ""}`.trim()}
                         tone="default"
                     />
                 </div>
             )}
 
                 <DashboardPanel
-                    title="Roster Team"
-                    description="Buka detail team untuk melihat roster lengkap dan mengatur assignment anggota dengan lebih nyaman."
+                    title={t.dashboard.teams.list.panelTitle}
+                    description={t.dashboard.teams.list.panelDescription}
                     action={(
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <input
                                 type="text"
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
-                                placeholder="Cari nama team..."
+                                placeholder={t.dashboard.teams.list.searchPlaceholder}
                                 className={`${searchInputCls} h-9 sm:w-48`}
                             />
-                            <FormSelect value={status} onChange={setStatus} options={STATUS_OPTIONS} className="w-full sm:w-44" />
+                            <FormSelect value={status} onChange={setStatus} options={statusOptions} className="w-full sm:w-44" />
                         </div>
                     )}
                 >
                     {isFiltering ? (
                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/45">
-                            <span>
-                                Menampilkan {teams.length} team untuk filter yang sedang aktif.
-                            </span>
+                            <span>{t.dashboard.teams.list.filterSummary(teams.length)}</span>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -464,7 +465,7 @@ export default function TeamsPage() {
                                 }}
                                 className="font-medium text-primary transition-colors hover:text-primary/80"
                             >
-                                Reset Filter
+                                {t.dashboard.teams.list.resetFilter}
                             </button>
                         </div>
                     ) : null}
@@ -476,13 +477,13 @@ export default function TeamsPage() {
                         </div>
                     ) : teams.length === 0 ? (
                         <DashboardEmptyState
-                            title={isFiltering ? "Tidak ada team yang cocok" : "Belum ada team"}
+                            title={isFiltering ? t.dashboard.teams.list.emptyFilteredTitle : t.dashboard.teams.list.emptyTitle}
                             description={
                                 isFiltering
-                                    ? "Coba longgarkan kata kunci atau ubah status filter agar daftar team muncul kembali."
-                                    : "Buat struktur team dulu, lalu hubungkan member Duel Standby dari halaman detail team atau halaman Users."
+                                    ? t.dashboard.teams.list.emptyFilteredDescription
+                                    : t.dashboard.teams.list.emptyDescription
                             }
-                            actionLabel={isFiltering ? "Reset Filter" : undefined}
+                            actionLabel={isFiltering ? t.dashboard.teams.list.resetFilter : undefined}
                             actionHref={isFiltering ? "/dashboard/teams" : undefined}
                         />
                     ) : (
@@ -519,36 +520,38 @@ export default function TeamsPage() {
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <div className="truncate text-base font-semibold text-base-content">{team.name}</div>
                                                 <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${statusTone}`}>
-                                                    {team.isActive ? "Aktif" : "Nonaktif"}
+                                                    {team.isActive ? t.dashboard.teams.list.statusActive : t.dashboard.teams.list.statusInactive}
                                                 </span>
                                             </div>
                                             <div className="mt-1 text-sm text-base-content/60">
-                                                {team.description || "Belum ada deskripsi team."}
+                                                {team.description || t.dashboard.teams.list.descriptionEmpty}
                                             </div>
                                             <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-base-content/50">
-                                                <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1">Roster {team.memberCount}</span>
                                                 <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1">
-                                                    Dibuat {formatDate(team.createdAt, locale)}
+                                                    {t.dashboard.teams.list.rosterLabel(team.memberCount)}
                                                 </span>
                                                 <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1">
-                                                    Update {formatDate(team.updatedAt, locale)}
+                                                    {t.dashboard.teams.list.createdLabel(formatDate(team.createdAt, locale))}
+                                                </span>
+                                                <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1">
+                                                    {t.dashboard.teams.list.updatedLabel(formatDate(team.updatedAt, locale))}
                                                 </span>
                                             </div>
                                         </div>
 
                                         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                                             <Link href={`/dashboard/teams/${team.id}`} className={btnPrimary}>
-                                                Detail
+                                                {t.dashboard.teams.list.detail}
                                             </Link>
                                             {isAdmin ? (
                                                 <button onClick={() => openEdit(team)} className={btnOutline}>
-                                                    Edit
+                                                    {t.dashboard.teams.list.edit}
                                                 </button>
                                             ) : null}
                                             {isAdmin ? (
-                                                <div className={team.memberCount > 0 ? "tooltip tooltip-top" : ""} data-tip="Kosongkan roster sebelum hapus.">
+                                                <div className={team.memberCount > 0 ? "tooltip tooltip-top" : ""} data-tip={t.dashboard.teams.list.deleteHint}>
                                                     <button onClick={() => setTeamToDelete(team)} className={btnDanger} disabled={team.memberCount > 0}>
-                                                        Hapus
+                                                        {t.dashboard.teams.list.delete}
                                                     </button>
                                                 </div>
                                             ) : null}
@@ -567,40 +570,40 @@ export default function TeamsPage() {
                     <div className="relative w-full max-w-xl rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
                         <div className="space-y-1">
                             <h2 className="text-xl font-bold text-base-content">
-                                {editingTeam ? "Edit Team" : "Buat Team"}
+                                {editingTeam ? t.dashboard.teams.modal.editTitle : t.dashboard.teams.modal.createTitle}
                             </h2>
                             <p className="text-xs text-base-content/55">
-                                Isi data inti team untuk kebutuhan roster.
+                                {t.dashboard.teams.modal.subtitle}
                             </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
                             <div className="space-y-3">
                                 <label className="block">
-                                    <span className={labelCls}>Nama Team</span>
+                                    <span className={labelCls}>{t.dashboard.teams.modal.nameLabel}</span>
                                     <input
                                         value={form.name}
                                         onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
                                         className={inputCls}
-                                        placeholder="Contoh: Duel Standby Alpha"
+                                        placeholder={t.dashboard.teams.modal.namePlaceholder}
                                         required
                                     />
                                 </label>
                             </div>
 
                             <label className="block">
-                                <span className={labelCls}>Deskripsi (Opsional)</span>
+                                <span className={labelCls}>{t.dashboard.teams.modal.descriptionLabel}</span>
                                 <textarea
                                     value={form.description}
                                     onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                                     rows={3}
                                     className={`${inputCls} resize-none`}
-                                    placeholder="Ringkas dan jelas."
+                                    placeholder={t.dashboard.teams.modal.descriptionPlaceholder}
                                 />
                             </label>
 
                             <div className="space-y-3">
-                                <label className={labelCls}>Upload Logo Team</label>
+                                <label className={labelCls}>{t.dashboard.teams.modal.uploadLabel}</label>
                                 <input
                                     type="file"
                                     accept="image/png,image/jpeg,image/jpg,image/webp"
@@ -614,13 +617,13 @@ export default function TeamsPage() {
                                     }}
                                     disabled={uploadingLogo}
                                 />
-                                {uploadingLogo ? <p className="text-xs text-base-content/45">Mengupload logo...</p> : null}
+                                {uploadingLogo ? <p className="text-xs text-base-content/45">{t.dashboard.teams.modal.uploading}</p> : null}
                                 {form.logoUrl ? (
                                     <div className="flex items-center gap-3 rounded-box border border-base-300 bg-base-200/40 p-3">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={normalizeAssetUrl(form.logoUrl) || ""}
-                                            alt="Preview logo team"
+                                            alt={t.dashboard.teams.modal.previewAlt}
                                             className="h-16 w-16 rounded-xl object-cover"
                                         />
                                         <button
@@ -628,26 +631,30 @@ export default function TeamsPage() {
                                             onClick={() => setForm((current) => ({ ...current, logoUrl: "" }))}
                                             className="text-xs font-medium text-error hover:text-error/80"
                                         >
-                                            Hapus logo
+                                            {t.dashboard.teams.modal.removeLogo}
                                         </button>
                                     </div>
                                 ) : null}
                             </div>
 
                             <label className="block">
-                                <span className={labelCls}>Status</span>
+                                <span className={labelCls}>{t.dashboard.teams.modal.statusLabel}</span>
                                 <FormSelect
                                     value={form.isActive ? "ACTIVE" : "INACTIVE"}
                                     onChange={(value) => setForm((current) => ({ ...current, isActive: value === "ACTIVE" }))}
-                                    options={STATUS_OPTIONS.filter((option) => option.value !== "ALL")}
+                                    options={statusOptions.filter((option) => option.value !== "ALL")}
                                     className="w-full"
                                 />
                             </label>
 
                             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                                <button type="button" onClick={resetModal} className={btnOutline}>Batal</button>
+                                <button type="button" onClick={resetModal} className={btnOutline}>{t.dashboard.teams.modal.cancel}</button>
                                 <button type="submit" className={btnPrimary} disabled={saving || uploadingLogo}>
-                                    {saving ? "Menyimpan..." : editingTeam ? "Simpan" : "Buat Team"}
+                                    {saving
+                                        ? t.dashboard.teams.modal.saving
+                                        : editingTeam
+                                            ? t.dashboard.teams.modal.save
+                                            : t.dashboard.teams.modal.create}
                                 </button>
                             </div>
                         </form>
@@ -668,22 +675,21 @@ export default function TeamsPage() {
                     <div className="relative w-full max-w-lg rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
                         <div className="space-y-2">
                             <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-error">
-                                Konfirmasi Tolak
+                                {t.dashboard.teams.rejectModal.kicker}
                             </div>
-                            <h2 className="text-xl font-bold text-base-content">Tolak request team?</h2>
+                            <h2 className="text-xl font-bold text-base-content">{t.dashboard.teams.rejectModal.title}</h2>
                             <p className="text-sm leading-6 text-base-content/60">
-                                Request dari <span className="font-semibold text-base-content">{rejectTarget.requester.fullName}</span> untuk team{" "}
-                                <span className="font-semibold text-base-content">{rejectTarget.teamName}</span> akan ditolak.
+                                {t.dashboard.teams.rejectModal.description(rejectTarget.requester.fullName, rejectTarget.teamName)}
                             </p>
                         </div>
 
                         <label className="mt-4 block">
-                            <span className={labelCls}>Alasan (Opsional)</span>
+                            <span className={labelCls}>{t.dashboard.teams.rejectModal.reasonLabel}</span>
                             <textarea
                                 className={`${inputCls} min-h-[104px] resize-none`}
                                 value={rejectReason}
                                 onChange={(event) => setRejectReason(event.target.value)}
-                                placeholder="Contoh: Nama team sudah digunakan."
+                                placeholder={t.dashboard.teams.rejectModal.reasonPlaceholder}
                             />
                         </label>
 
@@ -697,7 +703,7 @@ export default function TeamsPage() {
                                 }}
                                 className={btnOutline}
                             >
-                                Batal
+                                {t.dashboard.teams.rejectModal.cancel}
                             </button>
                             <button
                                 type="button"
@@ -705,7 +711,9 @@ export default function TeamsPage() {
                                 className={btnDanger}
                                 disabled={requestActionId === rejectTarget.id}
                             >
-                                {requestActionId === rejectTarget.id ? "Memproses..." : "Tolak Request"}
+                                {requestActionId === rejectTarget.id
+                                    ? t.dashboard.teams.rejectModal.processing
+                                    : t.dashboard.teams.rejectModal.reject}
                             </button>
                         </div>
                     </div>
@@ -718,27 +726,26 @@ export default function TeamsPage() {
                     <div className="relative w-full max-w-lg rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
                         <div className="space-y-2">
                             <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-error">
-                                Konfirmasi Hapus
+                                {t.dashboard.teams.deleteModal.kicker}
                             </div>
-                            <h2 className="text-xl font-bold text-base-content">Hapus team ini?</h2>
+                            <h2 className="text-xl font-bold text-base-content">{t.dashboard.teams.deleteModal.title}</h2>
                             <p className="text-sm leading-6 text-base-content/60">
-                                Team <span className="font-semibold text-base-content">{teamToDelete.name}</span> akan dihapus permanen.
-                                Pastikan roster team ini sudah kosong sebelum melanjutkan.
+                                {t.dashboard.teams.deleteModal.description(teamToDelete.name)}
                             </p>
                         </div>
 
                         <div className="mt-5 rounded-box border border-base-300 bg-base-200/40 p-4 text-sm">
                             <div className="font-semibold text-base-content">{teamToDelete.name}</div>
                             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-base-content/45">
-                                <span>{teamToDelete.isActive ? "Team aktif" : "Team nonaktif"}</span>
+                                <span>{teamToDelete.isActive ? t.dashboard.teams.deleteModal.metaActive : t.dashboard.teams.deleteModal.metaInactive}</span>
                                 <span>|</span>
-                                <span>Roster saat ini: {teamToDelete.memberCount}</span>
+                                <span>{t.dashboard.teams.deleteModal.metaRoster(teamToDelete.memberCount)}</span>
                             </div>
                         </div>
 
                         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
                             <button type="button" onClick={() => setTeamToDelete(null)} className={btnOutline}>
-                                Batal
+                                {t.dashboard.teams.deleteModal.cancel}
                             </button>
                             <button
                                 type="button"
@@ -751,7 +758,7 @@ export default function TeamsPage() {
                                 }}
                                 className={btnDanger}
                             >
-                                Ya, Hapus Team
+                                {t.dashboard.teams.deleteModal.confirm}
                             </button>
                         </div>
                     </div>

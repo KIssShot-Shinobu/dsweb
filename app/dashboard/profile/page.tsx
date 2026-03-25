@@ -7,7 +7,7 @@ import { ProfileGameSection } from "@/components/dashboard/profile-game-section"
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { dashboardStackCls } from "@/components/dashboard/form-styles";
 import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
-import { getServerLocale } from "@/lib/i18n/server";
+import { getServerDictionary } from "@/lib/i18n/server";
 import { formatDate, formatDateTime } from "@/lib/i18n/format";
 
 type GameProfileView = {
@@ -19,7 +19,8 @@ type GameProfileView = {
 };
 
 export default async function ProfilePage() {
-    const locale = await getServerLocale();
+    const { locale, t } = await getServerDictionary();
+    const profile = t.dashboard.profile;
     const user = await getCurrentUser();
     if (!user) redirect("/login");
 
@@ -75,11 +76,11 @@ export default async function ProfilePage() {
     };
 
     const accountName = userWithProfiles?.username || user.username || user.fullName;
-    const teamName = activeTeam.team?.name || (user.role === "USER" ? "Public User" : "Belum masuk team");
+    const teamName = activeTeam.team?.name || (user.role === "USER" ? profile.teamName.publicUser : profile.teamName.noTeam);
     const teamJoinedAt = activeTeam.teamJoinedAt
         ? formatDate(activeTeam.teamJoinedAt, locale, { day: "numeric", month: "long", year: "numeric" })
         : "-";
-    const emailVerificationLabel = user.emailVerified ? "Terverifikasi" : "Belum Verifikasi";
+    const emailVerificationLabel = user.emailVerified ? profile.emailVerification.verified : profile.emailVerification.unverified;
     const emailVerificationClass = user.emailVerified
         ? "border-success/20 bg-success/10 text-success"
         : "border-warning/20 bg-warning/10 text-warning";
@@ -88,15 +89,15 @@ export default async function ProfilePage() {
     const reputationPoints = reputation._sum.points || 0;
 
     const stats = [
-        { label: "Turnamen", value: tournamentsJoined, color: "text-primary" },
-        { label: "Profil Game", value: totalProfiles, color: "text-base-content" },
-        { label: "Terverifikasi", value: verifiedProfiles, color: "text-success" },
-        { label: "Reputasi", value: reputationPoints, color: "text-error" },
+        { label: profile.stats.tournaments, value: tournamentsJoined, color: "text-primary" },
+        { label: profile.stats.gameProfiles, value: totalProfiles, color: "text-base-content" },
+        { label: profile.stats.verified, value: verifiedProfiles, color: "text-success" },
+        { label: profile.stats.reputation, value: reputationPoints, color: "text-error" },
     ];
 
     const accountMetaRows = [
         {
-            label: "Terakhir Aktif",
+            label: profile.meta.lastActive,
             value: formatDateTime(user.lastActiveAt, locale, {
                 day: "numeric",
                 month: "short",
@@ -106,7 +107,7 @@ export default async function ProfilePage() {
             }),
         },
         {
-            label: "Terdaftar",
+            label: profile.meta.registered,
             value: formatDate(user.createdAt, locale, {
                 day: "numeric",
                 month: "long",
@@ -119,14 +120,14 @@ export default async function ProfilePage() {
         <DashboardPageShell>
             <div className={dashboardStackCls}>
                 <DashboardPageHeader
-                    kicker="Player Profile"
-                    title="Profil Saya"
-                    description="Identitas akun, role komunitas, team aktif, dan profile game Anda dalam tampilan yang lebih ringkas."
+                    kicker={profile.kicker}
+                    title={profile.title}
+                    description={profile.description}
                 />
 
                 <DashboardPanel
-                    title="Ringkasan Akun"
-                    description="Informasi utama akun, profile game, dan jejak aktivitas singkat disusun berurutan agar lebih mudah dipindai."
+                    title={profile.summary.title}
+                    description={profile.summary.description}
                 >
                     <div className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
                         <div className="rounded-box border border-base-300 bg-base-200/40 p-6 shadow-sm">
@@ -150,9 +151,9 @@ export default async function ProfilePage() {
                             </div>
 
                             <div className="mt-5 rounded-box border border-info/20 bg-info/10 px-4 py-3">
-                                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-info">Team Aktif</div>
+                                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-info">{profile.activeTeam.label}</div>
                                 <div className="mt-1 text-sm font-semibold text-base-content">{teamName}</div>
-                                <div className="mt-1 text-xs text-base-content/60">Bergabung sejak {teamJoinedAt}</div>
+                                <div className="mt-1 text-xs text-base-content/60">{profile.activeTeam.joinedSince(teamJoinedAt)}</div>
                             </div>
 
                             <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -182,7 +183,7 @@ export default async function ProfilePage() {
 
                                 <div className="mt-4 border-t border-base-300 pt-4">
                                     <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">
-                                        Profile Game
+                                        {profile.gameSectionTitle}
                                     </div>
                                     <ProfileGameSection
                                         duelLinksProfile={
@@ -209,10 +210,10 @@ export default async function ProfilePage() {
                             </div>
 
                             <div className="border-t border-base-300 pt-4">
-                                <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Aktivitas Terbaru</div>
+                                <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">{profile.recentActivity.title}</div>
                                 {recentAuditLogs.length === 0 ? (
                                     <div className="rounded-box border border-dashed border-base-300 bg-base-100 px-4 py-3 text-sm text-base-content/60">
-                                        Belum ada aktivitas tercatat.
+                                        {profile.recentActivity.empty}
                                     </div>
                                 ) : (
                                     <div className="space-y-2">

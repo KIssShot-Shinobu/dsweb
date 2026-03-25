@@ -7,6 +7,8 @@ import { Navbar } from "@/components/ui/navbar";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createTeamService } from "@/lib/services/team.service";
+import { getServerLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 const teamService = createTeamService();
 
@@ -56,7 +58,7 @@ function RoleBlock({
                     <span className="badge badge-outline">{members.length}</span>
                 </div>
                 {members.length === 0 ? (
-                    <div className="alert alert-info mt-4">Belum ada member untuk role ini.</div>
+                    <div className="alert alert-info mt-4">{t.teams.public.detail.roleEmpty}</div>
                 ) : (
                     <div className="mt-4 space-y-3">
                         {members.map((member) => (
@@ -79,6 +81,8 @@ function RoleBlock({
 }
 
 export default async function TeamDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+    const locale = await getServerLocale();
+    const t = getDictionary(locale);
     const { slug } = await params;
     const user = await getCurrentUser();
 
@@ -118,21 +122,21 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ slu
                                 <div className="flex flex-wrap items-center gap-2">
                                     <h1 className="text-3xl font-black tracking-tight text-base-content">{team.name}</h1>
                                     <span className={`badge ${team.isActive ? "badge-success" : "badge-ghost"}`}>
-                                        {team.isActive ? "Aktif" : "Nonaktif"}
+                                        {team.isActive ? t.teams.public.detail.statusActive : t.teams.public.detail.statusInactive}
                                     </span>
-                                    {team.viewerMembership ? <span className="badge badge-primary badge-outline">Anda Anggota</span> : null}
-                                    {pendingInvite ? <span className="badge badge-secondary badge-outline">Ada Invite</span> : null}
+                                    {team.viewerMembership ? <span className="badge badge-primary badge-outline">{t.teams.public.detail.memberBadge}</span> : null}
+                                    {pendingInvite ? <span className="badge badge-secondary badge-outline">{t.teams.public.detail.inviteBadge}</span> : null}
                                     {team.viewerHasPendingJoin ? (
-                                        <span className="badge badge-warning badge-outline">Menunggu Persetujuan</span>
+                                        <span className="badge badge-warning badge-outline">{t.teams.public.detail.pendingBadge}</span>
                                     ) : null}
                                 </div>
                                 <p className="max-w-3xl text-base text-base-content/75">
-                                    {team.description || "Belum ada deskripsi team."}
+                                    {team.description || t.teams.public.detail.descriptionEmpty}
                                 </p>
                                 <div className="flex flex-wrap gap-2">
-                                    <span className="badge badge-outline">{team.memberCount} member aktif</span>
+                                    <span className="badge badge-outline">{t.teams.public.detail.memberCount(team.memberCount)}</span>
                                     {team.captain ? (
-                                        <span className="badge badge-outline">Captain: {team.captain.user.fullName}</span>
+                                        <span className="badge badge-outline">{t.teams.public.detail.captainLabel(team.captain.user.fullName)}</span>
                                     ) : null}
                                 </div>
                             </div>
@@ -152,28 +156,38 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ slu
                 <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-6">
                         <RoleBlock
-                            title="Captain"
-                            description="Pemimpin utama yang mengatur keputusan dan roster."
+                            title={t.teams.public.detail.roles.captain}
+                            description={t.teams.public.detail.roleDescriptions.captain}
                             members={team.captain ? [team.captain] : []}
                         />
                         <RoleBlock
-                            title="Vice Captains"
-                            description="Pendamping captain untuk koordinasi dan operasional harian."
+                            title={t.teams.public.detail.roles.viceCaptains}
+                            description={t.teams.public.detail.roleDescriptions.viceCaptains}
                             members={team.viceCaptains}
                         />
-                        <RoleBlock title="Players" description="Roster aktif yang turun bertanding." members={team.players} />
+                        <RoleBlock
+                            title={t.teams.public.detail.roles.players}
+                            description={t.teams.public.detail.roleDescriptions.players}
+                            members={team.players}
+                        />
                     </div>
                     <div className="space-y-6">
-                        <RoleBlock title="Managers" description="Pengelola administratif dan komunikasi." members={team.managers} />
-                        <RoleBlock title="Coaches" description="Strategi dan latihan untuk performa tim." members={team.coaches} />
+                        <RoleBlock
+                            title={t.teams.public.detail.roles.managers}
+                            description={t.teams.public.detail.roleDescriptions.managers}
+                            members={team.managers}
+                        />
+                        <RoleBlock
+                            title={t.teams.public.detail.roles.coaches}
+                            description={t.teams.public.detail.roleDescriptions.coaches}
+                            members={team.coaches}
+                        />
                         <section className="card border border-base-300 bg-base-100 shadow-sm">
                             <div className="card-body">
-                                <h2 className="card-title">Info</h2>
-                                <p className="text-sm text-base-content/70">
-                                    Pengelolaan roster dilakukan di dashboard oleh captain dan pengurus team.
-                                </p>
+                                <h2 className="card-title">{t.teams.public.detail.infoTitle}</h2>
+                                <p className="text-sm text-base-content/70">{t.teams.public.detail.infoBody}</p>
                                 <Link href="/teams" className="btn btn-outline justify-start">
-                                    Direktori Teams
+                                    {t.teams.public.detail.infoAction}
                                 </Link>
                             </div>
                         </section>

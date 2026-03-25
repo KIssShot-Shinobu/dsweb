@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { btnDanger, btnOutline, btnPrimary, dashboardStackCls, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { clientLogout } from "@/lib/client-auth";
+import { useLocale } from "@/hooks/use-locale";
 
 type MeUser = {
     id: string;
@@ -14,6 +15,7 @@ type MeUser = {
 };
 
 export default function SettingsPage() {
+    const { t } = useLocale();
     const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -50,12 +52,12 @@ export default function SettingsPage() {
             const response = await fetch("/api/auth/verify-email/resend", { method: "POST" });
             const data = await response.json();
             if (!response.ok || !data?.success) {
-                setVerifyMessage({ type: "error", text: data?.message || "Gagal kirim ulang verifikasi email." });
+                setVerifyMessage({ type: "error", text: data?.message || t.dashboard.settings.verification.resendFailed });
                 return;
             }
-            setVerifyMessage({ type: "success", text: data.message || "Link verifikasi berhasil dikirim ulang." });
+            setVerifyMessage({ type: "success", text: data.message || t.dashboard.settings.verification.resendSuccess });
         } catch {
-            setVerifyMessage({ type: "error", text: "Terjadi gangguan jaringan." });
+            setVerifyMessage({ type: "error", text: t.dashboard.settings.verification.networkError });
         } finally {
             setVerifyLoading(false);
         }
@@ -76,17 +78,17 @@ export default function SettingsPage() {
             const data = await response.json();
 
             if (!response.ok || !data?.success) {
-                setError(data?.message || "Gagal mengubah password.");
+                setError(data?.message || t.dashboard.settings.password.changeFailed);
                 return;
             }
 
-            setSuccessMessage(data.message || "Password berhasil diubah. Silakan login ulang.");
+            setSuccessMessage(data.message || t.dashboard.settings.password.changeSuccess);
             setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
             setTimeout(() => {
                 void clientLogout("/login");
             }, 1200);
         } catch {
-            setError("Terjadi gangguan jaringan.");
+            setError(t.dashboard.settings.password.networkError);
         } finally {
             setLoading(false);
         }
@@ -96,14 +98,14 @@ export default function SettingsPage() {
         <DashboardPageShell>
             <div className={dashboardStackCls}>
                 <DashboardPageHeader
-                    kicker="Account Center"
-                    title="Pengaturan"
-                    description="Kelola verifikasi email dan keamanan akun dari satu halaman yang lebih minimal."
+                    kicker={t.dashboard.settings.kicker}
+                    title={t.dashboard.settings.title}
+                    description={t.dashboard.settings.description}
                 />
 
                 <DashboardPanel
-                    title="Akun & Keamanan"
-                    description="Status verifikasi email dan perubahan password digabung dalam satu panel agar tetap ringan dipakai."
+                    title={t.dashboard.settings.panel.title}
+                    description={t.dashboard.settings.panel.description}
                 >
                     {verifyMessage ? (
                         <div
@@ -121,21 +123,21 @@ export default function SettingsPage() {
                         <div className="rounded-box border border-base-300 bg-base-200/40 p-5 shadow-sm">
                             <div className="space-y-3">
                                 <div className="border-b border-base-300 pb-3">
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Username</div>
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">{t.dashboard.settings.account.username}</div>
                                     <div className="mt-2 text-sm font-semibold text-base-content">
-                                        {meLoading ? "Memuat..." : me ? `@${me.username}` : "Tidak tersedia"}
+                                        {meLoading ? t.dashboard.settings.account.loading : me ? `@${me.username}` : t.dashboard.settings.account.unavailable}
                                     </div>
                                 </div>
 
                                 <div className="border-b border-base-300 pb-3">
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Email</div>
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">{t.dashboard.settings.account.email}</div>
                                     <div className="mt-2 text-sm font-medium text-base-content">
-                                        {meLoading ? "Memuat..." : me?.email || "Tidak bisa memuat email"}
+                                        {meLoading ? t.dashboard.settings.account.loading : me?.email || t.dashboard.settings.account.emailUnavailable}
                                     </div>
                                 </div>
 
                                 <div>
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">Status Verifikasi</div>
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">{t.dashboard.settings.account.verification}</div>
                                     <div className="mt-2 flex flex-wrap items-center gap-3">
                                         <span
                                             className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${
@@ -144,11 +146,11 @@ export default function SettingsPage() {
                                                     : "border-warning/25 bg-warning/10 text-warning"
                                             }`}
                                         >
-                                            {meLoading ? "Memuat..." : me?.emailVerified ? "Terverifikasi" : "Belum Verifikasi"}
+                                            {meLoading ? t.dashboard.settings.account.loading : me?.emailVerified ? t.dashboard.settings.verification.verified : t.dashboard.settings.verification.unverified}
                                         </span>
                                         {!meLoading && me && !me.emailVerified ? (
                                             <button onClick={handleResendVerification} disabled={verifyLoading} className={btnOutline}>
-                                                {verifyLoading ? "Mengirim..." : "Kirim Ulang Verifikasi"}
+                                                {verifyLoading ? t.dashboard.settings.verification.resending : t.dashboard.settings.verification.resend}
                                             </button>
                                         ) : null}
                                     </div>
@@ -158,16 +160,16 @@ export default function SettingsPage() {
 
                         <div className="rounded-box border border-base-300 bg-base-200/40 p-5 shadow-sm">
                             <div className="mb-4">
-                                <div className="text-sm font-semibold text-base-content">Ubah Password</div>
+                                <div className="text-sm font-semibold text-base-content">{t.dashboard.settings.password.title}</div>
                                 <p className="mt-1 text-sm text-base-content/60">
-                                    Setelah password diubah, sesi login saat ini akan ditutup dan Anda perlu masuk kembali.
+                                    {t.dashboard.settings.password.description}
                                 </p>
                             </div>
 
                             {meLoading ? (
-                                <p className="text-sm text-base-content/60">Memuat data akun...</p>
+                                <p className="text-sm text-base-content/60">{t.dashboard.settings.loadingAccount}</p>
                             ) : !me ? (
-                                <p className="text-sm text-error">Tidak bisa memuat data akun.</p>
+                                <p className="text-sm text-error">{t.dashboard.settings.loadAccountFailed}</p>
                             ) : (
                                 <>
                                     {error ? (
@@ -183,33 +185,33 @@ export default function SettingsPage() {
 
                                     <form onSubmit={handleChangePassword} className="space-y-4">
                                         <div>
-                                            <label className={labelCls}>Password Saat Ini</label>
+                                            <label className={labelCls}>{t.dashboard.settings.password.currentLabel}</label>
                                             <input
                                                 type="password"
                                                 className={inputCls}
-                                                placeholder="********"
+                                                placeholder={t.dashboard.settings.password.currentPlaceholder}
                                                 value={form.currentPassword}
                                                 onChange={(event) => setForm({ ...form, currentPassword: event.target.value })}
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className={labelCls}>Password Baru</label>
+                                            <label className={labelCls}>{t.dashboard.settings.password.newLabel}</label>
                                             <input
                                                 type="password"
                                                 className={inputCls}
-                                                placeholder="Min. 8 karakter"
+                                                placeholder={t.dashboard.settings.password.newPlaceholder}
                                                 value={form.newPassword}
                                                 onChange={(event) => setForm({ ...form, newPassword: event.target.value })}
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className={labelCls}>Konfirmasi Password Baru</label>
+                                            <label className={labelCls}>{t.dashboard.settings.password.confirmLabel}</label>
                                             <input
                                                 type="password"
                                                 className={inputCls}
-                                                placeholder="Ulangi password baru"
+                                                placeholder={t.dashboard.settings.password.confirmPlaceholder}
                                                 value={form.confirmPassword}
                                                 onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })}
                                                 required
@@ -217,7 +219,7 @@ export default function SettingsPage() {
                                         </div>
                                         <div className="flex flex-col gap-2 sm:flex-row">
                                             <button type="submit" disabled={loading} className={btnPrimary}>
-                                                {loading ? "Menyimpan..." : "Simpan Password"}
+                                                {loading ? t.dashboard.settings.password.saving : t.dashboard.settings.password.save}
                                             </button>
                                             <button
                                                 type="button"
@@ -226,7 +228,7 @@ export default function SettingsPage() {
                                                 }}
                                                 className={btnDanger}
                                             >
-                                                Keluar dari Akun
+                                                {t.dashboard.settings.password.logout}
                                             </button>
                                         </div>
                                     </form>

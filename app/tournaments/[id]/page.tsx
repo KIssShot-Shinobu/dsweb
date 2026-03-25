@@ -264,7 +264,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                     </div>
                                 </div>
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
-                                    <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">Prize Pool</div>
+                                    <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">{t.tournament.prizePoolLabel}</div>
                                     <div className="text-sm font-semibold text-primary">{formatCurrency(tournament.prizePool, locale)}</div>
                                 </div>
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">

@@ -4,8 +4,10 @@ import { Bell } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NotificationDropdown } from "./NotificationDropdown";
 import type { NotificationView } from "./NotificationItem";
+import { useLocale } from "@/hooks/use-locale";
 
 export function NotificationBell({ isLoggedIn }: { isLoggedIn: boolean }) {
+    const { t } = useLocale();
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [notifications, setNotifications] = useState<NotificationView[]>([]);
@@ -118,7 +120,7 @@ export function NotificationBell({ isLoggedIn }: { isLoggedIn: boolean }) {
                 type="button"
                 onClick={() => setOpen((current) => !current)}
                 className="btn btn-ghost btn-circle border border-base-300 bg-base-100/80"
-                title="Notifications"
+                title={t.notifications.title}
             >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 ? (

@@ -62,7 +62,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         let isMounted = true;
@@ -93,7 +93,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
         return () => {
             isMounted = false;
         };
-    }, [value.provinceCode]);
+    }, [value.provinceCode, t]);
 
     const provinceError = getFieldErrorMessage(errors?.provinceCode);
     const cityError = getFieldErrorMessage(errors?.cityCode);

@@ -101,7 +101,7 @@ export function Sidebar() {
             className={`drawer-side fixed inset-0 z-[70] lg:static lg:inset-auto ${isOpen ? "" : "pointer-events-none lg:pointer-events-auto"}`}
         >
             <label
-                aria-label="close sidebar"
+                aria-label={t.common.close}
                 className={`drawer-overlay bg-black/40 transition-opacity duration-200 lg:hidden ${isOpen ? "opacity-100" : "opacity-0"}`}
                 onClick={close}
             />
@@ -117,7 +117,7 @@ export function Sidebar() {
                                 <div className="text-xs text-base-content/50">{t.dashboard.sidebar.brandSubtitle}</div>
                             </div>
                         </div>
-                        <button onClick={close} className="btn btn-ghost btn-sm btn-circle lg:hidden" aria-label="Close">
+                        <button onClick={close} className="btn btn-ghost btn-sm btn-circle lg:hidden" aria-label={t.common.close}>
                             <X className="h-4 w-4" />
                         </button>
                     </div>
