@@ -14,17 +14,13 @@ import { formatLocalDateTimeInTimeZone, formatDisplayDateTimeInTimeZone } from "
 import { DEFAULT_TIMEZONE } from "@/lib/timezones";
 import { buildGoogleCalendarUrl } from "@/lib/google-calendar";
 import { getAppUrl } from "@/lib/runtime-config";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getServerLocale } from "@/lib/i18n/server";
+import { formatCurrency } from "@/lib/i18n/format";
+import type { Locale } from "@/lib/i18n/locales";
 
-function formatCurrency(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-    }).format(amount);
-}
-
-function formatDate(value: Date, timeZone: string) {
-    return formatDisplayDateTimeInTimeZone(value, timeZone);
+function formatDate(value: Date, timeZone: string, locale: Locale) {
+    return formatDisplayDateTimeInTimeZone(value, timeZone, locale);
 }
 
 function getStatusTone(status: string) {
@@ -34,12 +30,8 @@ function getStatusTone(status: string) {
     return "badge-ghost";
 }
 
-function getStatusLabel(status: string) {
-    if (status === "OPEN") return "Registrasi Dibuka";
-    if (status === "ONGOING") return "Sedang Berlangsung";
-    if (status === "COMPLETED") return "Selesai";
-    if (status === "CANCELLED") return "Dibatalkan";
-    return status;
+function getStatusLabel(status: string, labels: Record<string, string>) {
+    return labels[status] ?? status;
 }
 
 function resolveParticipantName(participant?: { guestName: string | null; user?: { fullName: string | null; username: string | null } | null }) {
@@ -49,6 +41,8 @@ function resolveParticipantName(participant?: { guestName: string | null; user?:
 
 export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
+    const locale = await getServerLocale();
+    const t = getDictionary(locale);
     const currentUser = await getCurrentUser();
     const tournament = await prisma.tournament.findUnique({
         where: { id },
@@ -139,7 +133,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               title: tournament.title,
               start: tournament.startAt,
               end: new Date(tournament.startAt.getTime() + 120 * 60 * 1000),
-              details: `Tournament: ${tournament.title}\n${tournamentUrl}`,
+              details: `${t.tournamentDetail.calendarTitle}: ${tournament.title}\n${tournamentUrl}`,
               timeZone: tournamentTimeZone,
           })
         : null;
@@ -148,7 +142,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               id: myMatch.id,
               status: myMatch.status,
               scheduledAt: myMatch.scheduledAt ? formatLocalDateTimeInTimeZone(myMatch.scheduledAt, tournamentTimeZone) : null,
-              scheduledAtLabel: myMatch.scheduledAt ? formatDisplayDateTimeInTimeZone(myMatch.scheduledAt, tournamentTimeZone) : null,
+              scheduledAtLabel: myMatch.scheduledAt ? formatDisplayDateTimeInTimeZone(myMatch.scheduledAt, tournamentTimeZone, locale) : null,
               scheduledAtUtc: myMatch.scheduledAt ? myMatch.scheduledAt.toISOString() : null,
               playerA: myMatch.playerA ? { id: myMatch.playerA.id, name: resolveParticipantName(myMatch.playerA) } : null,
               playerB: myMatch.playerB ? { id: myMatch.playerB.id, name: resolveParticipantName(myMatch.playerB) } : null,
@@ -173,14 +167,18 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         const badgeClass =
             status === "VERIFIED" ? "badge-success" : status === "REJECTED" ? "badge-error" : "badge-warning";
         const label =
-            status === "VERIFIED" ? "Terverifikasi" : status === "REJECTED" ? "Ditolak" : "Menunggu Verifikasi";
+            status === "VERIFIED"
+                ? t.tournamentDetail.paymentVerified
+                : status === "REJECTED"
+                  ? t.tournamentDetail.paymentRejected
+                  : t.tournamentDetail.paymentPending;
         const verifiedAtLabel = participantForUser.paymentVerifiedAt
-            ? new Date(participantForUser.paymentVerifiedAt).toLocaleString("id-ID")
+            ? formatDisplayDateTimeInTimeZone(participantForUser.paymentVerifiedAt, tournamentTimeZone, locale)
             : null;
         return (
             <div className="rounded-box border border-base-300 bg-base-200/50 p-4 text-sm">
                 <div className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">
-                    Status Pembayaran
+                    {t.tournamentDetail.paymentStatusTitle}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                     <span className={`badge ${badgeClass}`}>{label}</span>
@@ -191,16 +189,16 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                             target="_blank"
                             rel="noreferrer"
                         >
-                            Lihat Bukti
+                            {t.tournamentDetail.viewProof}
                         </a>
                     ) : null}
                 </div>
                 {verifiedAtLabel && status === "VERIFIED" ? (
-                    <p className="mt-2 text-xs text-base-content/60">Terverifikasi pada {verifiedAtLabel}</p>
+                    <p className="mt-2 text-xs text-base-content/60">{t.tournamentDetail.verifiedAtLabel(verifiedAtLabel)}</p>
                 ) : null}
                 {status === "REJECTED" ? (
                     <p className="mt-2 text-xs text-base-content/60">
-                        Bukti pembayaran ditolak. Silakan upload ulang bukti pembayaran di tombol registrasi.
+                        {t.tournamentDetail.paymentRejectedNote}
                     </p>
                 ) : null}
             </div>
@@ -230,29 +228,29 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                 <div className="relative flex min-h-[320px] flex-col justify-end p-8">
                                     <div className="mb-4 flex flex-wrap items-center gap-3">
                                         <span className={`badge h-auto px-4 py-1.5 text-xs font-bold uppercase tracking-[0.25em] ${getStatusTone(tournament.status)}`}>
-                                            {getStatusLabel(tournament.status)}
+                                            {getStatusLabel(tournament.status, t.tournament.status as Record<string, string>)}
                                         </span>
                                         <span className="badge badge-outline h-auto px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em]">
                                             {tournament.format}
                                         </span>
                                         <span className="badge badge-outline h-auto px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em]">
-                                            {tournament.game?.name ?? "Game"}
+                                            {tournament.game?.name ?? t.tournamentDetail.gameFallback}
                                         </span>
                                     </div>
                                     <h1 className="max-w-4xl text-4xl font-black leading-tight text-base-content sm:text-5xl">{tournament.title}</h1>
                                     <p className="mt-4 max-w-3xl text-base leading-7 text-base-content/65">
-                                        {tournament.description?.trim() || "Event komunitas Duel Standby dengan informasi yang jelas, ritme kompetitif yang sehat, dan pengalaman bermain yang lebih terstruktur."}
+                                        {tournament.description?.trim() || t.tournamentDetail.defaultDescription}
                                     </p>
                                 </div>
                             </div>
                             <div className="grid gap-4 p-6 md:grid-cols-4">
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
-                                    <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">Jadwal Event</div>
-                                    <div className="text-sm font-semibold text-base-content">{formatDate(tournament.startAt, tournamentTimeZone)}</div>
+                                    <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">{t.tournament.scheduleLabel}</div>
+                                    <div className="text-sm font-semibold text-base-content">{formatDate(tournament.startAt, tournamentTimeZone, locale)}</div>
                                     <div className="mt-2 flex flex-wrap gap-2">
                                         {tournamentCalendarUrl ? (
                                             <a className="btn btn-primary btn-xs" href={tournamentCalendarUrl} target="_blank" rel="noreferrer">
-                                                Add to Google Calendar
+                                                {t.tournamentDetail.addToCalendar}
                                             </a>
                                         ) : null}
                                         <a
@@ -261,25 +259,25 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                             target="_blank"
                                             rel="noreferrer"
                                         >
-                                            Download ICS
+                                            {t.tournamentDetail.downloadIcs}
                                         </a>
                                     </div>
                                 </div>
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
                                     <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">Prize Pool</div>
-                                    <div className="text-sm font-semibold text-primary">{formatCurrency(tournament.prizePool)}</div>
+                                    <div className="text-sm font-semibold text-primary">{formatCurrency(tournament.prizePool, locale)}</div>
                                 </div>
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
-                                    <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">Biaya Masuk</div>
-                                    <div className="text-sm font-semibold text-base-content">{tournament.entryFee > 0 ? formatCurrency(tournament.entryFee) : "Tanpa biaya"}</div>
+                                    <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">{t.tournamentDetail.entryFeeLabel}</div>
+                                    <div className="text-sm font-semibold text-base-content">{tournament.entryFee > 0 ? formatCurrency(tournament.entryFee, locale) : t.tournament.freeEntry}</div>
                                 </div>
                                 <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
-                                    <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">Peserta Terdaftar</div>
+                                    <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.24em] text-base-content/45">{t.tournamentDetail.participantsLabel}</div>
                                     <div className="text-sm font-semibold text-base-content">
-                                        {maxPlayers ? `${participantCount} / ${maxPlayers}` : `${participantCount} pemain`}
+                                        {maxPlayers ? t.tournamentDetail.participantsCount(participantCount, maxPlayers) : t.tournamentDetail.participantsOnly(participantCount)}
                                     </div>
                                     {waitlistCount > 0 ? (
-                                        <div className="mt-2 text-xs text-base-content/60">{waitlistCount} di waitlist</div>
+                                        <div className="mt-2 text-xs text-base-content/60">{t.tournamentDetail.waitlistLabel(waitlistCount)}</div>
                                     ) : null}
                                 </div>
                             </div>
@@ -289,10 +287,10 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                             <div className="card border border-base-300 bg-base-100 shadow-xl lg:sticky lg:top-28">
                                 <div className="card-body space-y-6 p-6">
                                     <div>
-                                        <div className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-primary">Pendaftaran</div>
-                                        <h2 className="mb-2 text-2xl font-black text-base-content">Amankan slot Anda</h2>
+                                        <div className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-primary">{t.tournamentDetail.registrationBadge}</div>
+                                        <h2 className="mb-2 text-2xl font-black text-base-content">{t.tournamentDetail.registrationTitle}</h2>
                                         <p className="mb-5 text-sm leading-6 text-base-content/60">
-                                            Pelajari detail event, pastikan formatnya sesuai, lalu daftar langsung selama registrasi masih dibuka.
+                                            {t.tournamentDetail.registrationSubtitle}
                                         </p>
                                         <TournamentRegisterButton
                                             tournamentId={tournament.id}
@@ -307,7 +305,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                         {paymentNotifications.length > 0 ? (
                                             <div className="rounded-box border border-base-300 bg-base-200/50 p-4 text-sm">
                                                 <div className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">
-                                                    Notifikasi Pembayaran
+                                                    {t.tournamentDetail.paymentNotifications}
                                                 </div>
                                                 <div className="space-y-2 text-xs text-base-content/70">
                                                     {paymentNotifications.map((notification) => (
@@ -337,14 +335,14 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                     <div className="divider my-1" />
 
                                     <div>
-                                        <div className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-primary">Roster Peserta</div>
+                                        <div className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-primary">{t.tournamentDetail.rosterTitle}</div>
                                         {rosterParticipants.length === 0 ? (
-                                            <p className="text-sm text-base-content/60">Belum ada peserta terdaftar. Jadilah yang pertama mengisi bracket ini.</p>
+                                            <p className="text-sm text-base-content/60">{t.tournamentDetail.rosterEmpty}</p>
                                         ) : (
                                             <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
                                                 {rosterParticipants.map((participant, index) => {
-                                                    const displayName = participant.user?.username || participant.user?.fullName || participant.guestName || "Guest";
-                                                    const roleLabel = participant.user?.role || "Guest";
+                                                    const displayName = participant.user?.username || participant.user?.fullName || participant.guestName || t.tournamentDetail.guestLabel;
+                                                    const roleLabel = participant.user?.role || t.tournamentDetail.guestLabel;
                                                     const avatarUrl = participant.user?.avatarUrl ? normalizeAssetUrl(participant.user.avatarUrl) : null;
 
                                                     return (
@@ -368,7 +366,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                                                     <div className="flex flex-wrap items-center gap-2">
                                                                         <div className="font-semibold text-base-content">{displayName}</div>
                                                                         {!participant.user ? (
-                                                                            <span className="badge badge-outline badge-sm">Guest</span>
+                                                                            <span className="badge badge-outline badge-sm">{t.tournamentDetail.guestLabel}</span>
                                                                         ) : null}
                                                                     </div>
                                                                     <div className="text-xs text-base-content/50">{participant.gameId}</div>
@@ -397,9 +395,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                         <div className="card-body gap-6 p-6">
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div>
-                                    <div className="text-xs font-bold uppercase tracking-[0.28em] text-primary">Bracket</div>
-                                    <h2 className="mt-2 text-2xl font-black text-base-content">Rangkaian Pertandingan</h2>
-                                    <p className="mt-2 text-sm text-base-content/60">Pantau progress pertandingan dan status setiap match secara real-time.</p>
+                                    <div className="text-xs font-bold uppercase tracking-[0.28em] text-primary">{t.tournamentDetail.bracketBadge}</div>
+                                    <h2 className="mt-2 text-2xl font-black text-base-content">{t.tournamentDetail.bracketTitle}</h2>
+                                    <p className="mt-2 text-sm text-base-content/60">{t.tournamentDetail.bracketSubtitle}</p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]">
                                     <span className="badge badge-outline">{tournament.structure.replace("_", " ")}</span>

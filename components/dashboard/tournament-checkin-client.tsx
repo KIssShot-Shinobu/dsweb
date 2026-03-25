@@ -5,6 +5,8 @@ import { DashboardMetricCard, DashboardPageHeader, DashboardPageShell, Dashboard
 import { btnOutline, btnPrimary } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
 import { DateTimePickerInput } from "@/components/ui/date-time-picker";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDateTime } from "@/lib/i18n/format";
 
 type SummaryResponse = {
     tournament: {
@@ -19,6 +21,7 @@ type SummaryResponse = {
 };
 
 export function TournamentCheckInClient({ tournamentId }: { tournamentId: string }) {
+    const { locale, t } = useLocale();
     const { success, error } = useToast();
     const [summary, setSummary] = useState<SummaryResponse | null>(null);
     const [updating, setUpdating] = useState(false);
@@ -36,10 +39,10 @@ export function TournamentCheckInClient({ tournamentId }: { tournamentId: string
                 if (res.ok) {
                     setSummary(data);
                 } else {
-                    error(data.message || "Gagal memuat check-in.");
+                    error(data.message || t.dashboard.checkIn.errors.loadFailed);
                 }
             } catch {
-                if (active) error("Kesalahan jaringan.");
+                if (active) error(t.dashboard.checkIn.errors.network);
             }
         };
 
@@ -81,9 +84,9 @@ export function TournamentCheckInClient({ tournamentId }: { tournamentId: string
             const data = await res.json();
             if (res.ok) {
                 if (payload.action) {
-                    success(payload.action === "OPEN" ? "Check-in dibuka." : "Check-in ditutup.");
+                    success(payload.action === "OPEN" ? t.dashboard.checkIn.success.opened : t.dashboard.checkIn.success.closed);
                 } else {
-                    success(payload.checkInAt ? "Jadwal check-in diperbarui." : "Jadwal check-in dihapus.");
+                    success(payload.checkInAt ? t.dashboard.checkIn.success.scheduleUpdated : t.dashboard.checkIn.success.scheduleCleared);
                 }
                 setSummary((prev) =>
                     prev
@@ -98,10 +101,10 @@ export function TournamentCheckInClient({ tournamentId }: { tournamentId: string
                         : prev
                 );
             } else {
-                error(data.message || "Gagal memperbarui check-in.");
+                error(data.message || t.dashboard.checkIn.errors.updateFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.checkIn.errors.network);
         } finally {
             setUpdating(false);
         }
@@ -117,47 +120,47 @@ export function TournamentCheckInClient({ tournamentId }: { tournamentId: string
 
     const checkInStatus = checkinRequired
         ? summary?.tournament?.checkInOpen
-            ? "Check-in sedang dibuka"
-            : "Check-in belum dibuka"
-        : "Check-in tidak diaktifkan";
+            ? t.dashboard.checkIn.statusOpen
+            : t.dashboard.checkIn.statusClosed
+        : t.dashboard.checkIn.statusDisabled;
     const scheduleLabel = summary?.tournament?.checkInAt
         ? (() => {
               const date = new Date(summary.tournament.checkInAt);
               if (Number.isNaN(date.getTime())) {
-                  return "Jadwal tidak valid";
+                  return t.dashboard.checkIn.scheduleInvalid;
               }
-              return `Dijadwalkan ${date.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}`;
+              return t.dashboard.checkIn.scheduleSet(formatDateTime(date, locale, { dateStyle: "medium", timeStyle: "short" }));
           })()
-        : "Belum ada jadwal";
+        : t.dashboard.checkIn.scheduleEmpty;
 
     return (
         <DashboardPageShell>
             <div className="space-y-6">
                 <DashboardPageHeader
-                    kicker="Check-In"
-                    title="Kontrol Check-In"
-                    description="Buka check-in dan pantau progres konfirmasi peserta."
+                    kicker={t.dashboard.checkIn.kicker}
+                    title={t.dashboard.checkIn.title}
+                    description={t.dashboard.checkIn.description}
                     actions={
                         <>
                             <button className={btnPrimary} disabled={updating || !checkinRequired || summary?.tournament?.checkInOpen} onClick={() => updateCheckIn({ action: "OPEN" })}>
-                                Open Check-In
+                                {t.dashboard.checkIn.open}
                             </button>
                             <button className={btnOutline} disabled={updating || !checkinRequired || !summary?.tournament?.checkInOpen} onClick={() => updateCheckIn({ action: "CLOSE" })}>
-                                Close Check-In
+                                {t.dashboard.checkIn.close}
                             </button>
                         </>
                     }
                 />
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <DashboardMetricCard label="Registered Players" value={registered} />
-                    <DashboardMetricCard label="Checked-in Players" value={checkedIn} meta={checkInStatus} />
+                    <DashboardMetricCard label={t.dashboard.checkIn.registeredLabel} value={registered} />
+                    <DashboardMetricCard label={t.dashboard.checkIn.checkedInLabel} value={checkedIn} meta={checkInStatus} />
                 </div>
 
-                <DashboardPanel title="Jadwal Check-In" description="Atur waktu check-in agar peserta tahu kapan harus konfirmasi.">
+                <DashboardPanel title={t.dashboard.checkIn.panelTitle} description={t.dashboard.checkIn.panelDescription}>
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/60">Waktu Check-In</label>
+                            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/60">{t.dashboard.checkIn.scheduleLabel}</label>
                             <DateTimePickerInput
                                 value={scheduleValue}
                                 onChange={setScheduleValue}
@@ -168,19 +171,19 @@ export function TournamentCheckInClient({ tournamentId }: { tournamentId: string
                         </div>
                         <div className="flex flex-wrap gap-2">
                             <button className={btnPrimary} type="button" disabled={updating || !checkinRequired} onClick={handleScheduleSave}>
-                                Simpan Jadwal
+                                {t.dashboard.checkIn.saveSchedule}
                             </button>
                             <button className={btnOutline} type="button" disabled={updating || !checkinRequired || !summary?.tournament?.checkInAt} onClick={handleScheduleClear}>
-                                Hapus Jadwal
+                                {t.dashboard.checkIn.clearSchedule}
                             </button>
                         </div>
                     </div>
                 </DashboardPanel>
 
-                <DashboardPanel title="Check-in Progress" description="Progres check-in akan tersedia setelah fitur diaktifkan.">
+                <DashboardPanel title={t.dashboard.checkIn.progressTitle} description={t.dashboard.checkIn.progressDescription}>
                     <div className="space-y-3">
                         <progress className="progress progress-primary w-full" value={progress} max={100} />
-                        <div className="text-sm text-base-content/60">{progress}% peserta sudah check-in.</div>
+                        <div className="text-sm text-base-content/60">{t.dashboard.checkIn.progressText(progress)}</div>
                     </div>
                 </DashboardPanel>
             </div>

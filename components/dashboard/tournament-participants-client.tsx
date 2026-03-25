@@ -9,6 +9,8 @@ import { DashboardEmptyState, DashboardPageHeader, DashboardPageShell, Dashboard
 import { btnOutline, btnPrimary, inputCls, labelCls, searchInputCls } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
 import { normalizeAssetUrl } from "@/lib/asset-url";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDate, formatDateTime } from "@/lib/i18n/format";
 
 function getInitials(name: string) {
     return name
@@ -78,6 +80,7 @@ export function TournamentParticipantsClient({
     entryFee?: number;
     tournamentStatus?: string;
 }) {
+    const { locale, t } = useLocale();
     const { success, error } = useToast();
     const [participants, setParticipants] = useState<ParticipantRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -111,7 +114,7 @@ export function TournamentParticipantsClient({
 
     const toastSyncInfo = (fallback: string, data?: SyncInfo) => {
         if (typeof data?.syncedCount === "number" && typeof data?.pendingCount === "number") {
-            success(`${fallback} ${data.syncedCount} peserta masuk bracket, ${data.pendingCount} menunggu slot kosong.`);
+            success(t.dashboard.participants.syncToast(data.syncedCount, data.pendingCount, fallback));
             return;
         }
         success(fallback);
@@ -131,10 +134,10 @@ export function TournamentParticipantsClient({
                 setParticipants(data.participants);
                 setTotal(data.total);
             } else {
-                error("Gagal memuat peserta.");
+                error(t.dashboard.participants.errors.loadFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.participants.errors.network);
         } finally {
             setLoading(false);
         }
@@ -168,10 +171,10 @@ export function TournamentParticipantsClient({
                 if (res.ok) {
                     setCandidateResults(data.users || []);
                 } else {
-                    error(data.message || "Gagal mencari user.");
+                    error(data.message || t.dashboard.participants.errors.searchUserFailed);
                 }
             } catch {
-                error("Kesalahan jaringan.");
+                error(t.dashboard.participants.errors.network);
             } finally {
                 setCandidateLoading(false);
             }
@@ -193,14 +196,14 @@ export function TournamentParticipantsClient({
             });
             const data = await res.json();
             if (res.ok) {
-                success("Data peserta diperbarui.");
+                success(t.dashboard.participants.success.updated);
                 setEditing(null);
                 fetchParticipants();
             } else {
-                error(data.message || "Gagal update peserta.");
+                error(data.message || t.dashboard.participants.errors.updateFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.participants.errors.network);
         }
     };
 
@@ -212,14 +215,14 @@ export function TournamentParticipantsClient({
             });
             const data = await res.json();
             if (res.ok) {
-                success("Peserta dihapus dari turnamen.");
+                success(t.dashboard.participants.success.removed);
                 setConfirmRemove(null);
                 fetchParticipants();
             } else {
-                error(data.message || "Gagal menghapus peserta.");
+                error(data.message || t.dashboard.participants.errors.removeFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.participants.errors.network);
         }
     };
 
@@ -232,14 +235,14 @@ export function TournamentParticipantsClient({
             });
             const data = await res.json();
             if (res.ok) {
-                success("Peserta didiskualifikasi.");
+                success(t.dashboard.participants.success.disqualified);
                 setConfirmDisqualify(null);
                 fetchParticipants();
             } else {
-                error(data.message || "Gagal mendiskualifikasi peserta.");
+                error(data.message || t.dashboard.participants.errors.disqualifyFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.participants.errors.network);
         } finally {
             setDisqualifying(false);
         }
@@ -252,13 +255,13 @@ export function TournamentParticipantsClient({
             });
             const data = await res.json();
             if (res.ok) {
-                success(participant.checkedInAt ? "Check-in dibatalkan." : "Peserta berhasil check-in.");
+                success(participant.checkedInAt ? t.dashboard.participants.success.checkInRemoved : t.dashboard.participants.success.checkInAdded);
                 fetchParticipants();
             } else {
-                error(data.message || "Gagal memperbarui check-in.");
+                error(data.message || t.dashboard.participants.errors.checkinFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.participants.errors.network);
         }
     };
 
@@ -275,15 +278,15 @@ export function TournamentParticipantsClient({
 
     const handleAddUser = async () => {
         if (rosterLocked) {
-            error("Roster terkunci karena turnamen sedang berjalan.");
+            error(t.dashboard.participants.errors.rosterLocked);
             return;
         }
         if (!selectedUser) {
-            error("Pilih user terlebih dahulu.");
+            error(t.dashboard.participants.errors.selectUser);
             return;
         }
         if (!addUserGameId.trim()) {
-            error("In-game name wajib diisi.");
+            error(t.dashboard.participants.errors.gameIdRequired);
             return;
         }
         setSubmitting(true);
@@ -295,14 +298,14 @@ export function TournamentParticipantsClient({
             });
             const data = await res.json();
             if (res.ok) {
-                toastSyncInfo("Peserta berhasil ditambahkan.", data);
+                toastSyncInfo(t.dashboard.participants.success.added, data);
                 resetAddModal();
                 fetchParticipants();
             } else {
-                error(data.message || "Gagal menambahkan peserta.");
+                error(data.message || t.dashboard.participants.errors.addFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.participants.errors.network);
         } finally {
             setSubmitting(false);
         }
@@ -310,15 +313,15 @@ export function TournamentParticipantsClient({
 
     const handleAddGuest = async () => {
         if (rosterLocked) {
-            error("Roster terkunci karena turnamen sedang berjalan.");
+            error(t.dashboard.participants.errors.rosterLocked);
             return;
         }
         if (!guestName.trim()) {
-            error("Nama guest wajib diisi.");
+            error(t.dashboard.participants.errors.guestNameRequired);
             return;
         }
         if (!guestGameId.trim()) {
-            error("Game ID wajib diisi.");
+            error(t.dashboard.participants.errors.guestGameIdRequired);
             return;
         }
         setSubmitting(true);
@@ -330,14 +333,14 @@ export function TournamentParticipantsClient({
             });
             const data = await res.json();
             if (res.ok) {
-                toastSyncInfo("Guest berhasil ditambahkan.", data);
+                toastSyncInfo(t.dashboard.participants.success.guestAdded, data);
                 resetAddModal();
                 fetchParticipants();
             } else {
-                error(data.message || "Gagal menambahkan guest.");
+                error(data.message || t.dashboard.participants.errors.addGuestFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.participants.errors.network);
         } finally {
             setSubmitting(false);
         }
@@ -345,11 +348,11 @@ export function TournamentParticipantsClient({
 
     const handleBulkAdd = async () => {
         if (rosterLocked) {
-            error("Roster terkunci karena turnamen sedang berjalan.");
+            error(t.dashboard.participants.errors.rosterLocked);
             return;
         }
         if (!bulkText.trim()) {
-            error("Data bulk tidak boleh kosong.");
+            error(t.dashboard.participants.errors.bulkEmpty);
             return;
         }
         setSubmitting(true);
@@ -362,17 +365,22 @@ export function TournamentParticipantsClient({
             const data = await res.json();
             if (res.ok) {
                 toastSyncInfo(
-                    `Bulk selesai. Added ${data.result.added}, waitlisted ${data.result.waitlisted ?? 0}, skipped ${data.result.skipped}, failed ${data.result.failed.length}.`,
+                    t.dashboard.participants.bulkToast(
+                        data.result.added,
+                        data.result.waitlisted ?? 0,
+                        data.result.skipped,
+                        data.result.failed.length
+                    ),
                     data
                 );
                 setBulkText("");
                 setShowBulkModal(false);
                 fetchParticipants();
             } else {
-                error(data.message || "Gagal bulk add.");
+                error(data.message || t.dashboard.participants.errors.bulkFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.participants.errors.network);
         } finally {
             setSubmitting(false);
         }
@@ -393,9 +401,9 @@ export function TournamentParticipantsClient({
     };
 
     const renderPaymentLabel = (status: ParticipantRow["paymentStatus"]) => {
-        if (status === "VERIFIED") return "Verified";
-        if (status === "REJECTED") return "Rejected";
-        return "Pending";
+        if (status === "VERIFIED") return t.dashboard.participants.status.paymentVerified;
+        if (status === "REJECTED") return t.dashboard.participants.status.paymentRejected;
+        return t.dashboard.participants.status.paymentPending;
     };
 
     const handlePaymentDecision = async (participant: ParticipantRow, status: "VERIFIED" | "REJECTED") => {
@@ -407,13 +415,13 @@ export function TournamentParticipantsClient({
             });
             const data = await res.json();
             if (res.ok) {
-                success("Status pembayaran diperbarui.");
+                success(t.dashboard.participants.success.paymentUpdated);
                 fetchParticipants();
             } else {
-                error(data.message || "Gagal memperbarui pembayaran.");
+                error(data.message || t.dashboard.participants.errors.paymentUpdateFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.participants.errors.network);
         }
     };
 
@@ -423,19 +431,19 @@ export function TournamentParticipantsClient({
         <DashboardPageShell>
             <div className="space-y-6">
                 <DashboardPageHeader
-                    kicker="Participants"
-                    title="Daftar Peserta"
-                    description="Kelola data peserta, update in-game name, dan pantau status check-in."
+                    kicker={t.dashboard.participants.kicker}
+                    title={t.dashboard.participants.title}
+                    description={t.dashboard.participants.description}
                     actions={
                         isTeamTournament ? (
-                            <span className="badge badge-outline">Team Tournament</span>
+                            <span className="badge badge-outline">{t.dashboard.participants.teamTournamentBadge}</span>
                         ) : (
                             <>
                                 <button className={btnOutline} onClick={() => setShowBulkModal(true)} disabled={rosterLocked}>
-                                    Bulk Add
+                                    {t.dashboard.participants.bulkAdd}
                                 </button>
                                 <button className={btnPrimary} onClick={() => setShowAddModal(true)} disabled={rosterLocked}>
-                                    Tambah Peserta
+                                    {t.dashboard.participants.addParticipant}
                                 </button>
                             </>
                         )
@@ -443,13 +451,13 @@ export function TournamentParticipantsClient({
                 />
                 {rosterLocked ? (
                     <div className="alert alert-warning">
-                        <span>Roster terkunci karena turnamen sudah ONGOING. Tambah/hapus peserta dinonaktifkan.</span>
+                        <span>{t.dashboard.participants.rosterLockedNotice}</span>
                     </div>
                 ) : null}
 
                 <DashboardPanel
-                    title="Peserta Terdaftar"
-                    description="Gunakan search untuk menemukan peserta tertentu."
+                    title={t.dashboard.participants.panelTitle}
+                    description={t.dashboard.participants.panelDescription}
                     action={
                         <input
                             type="text"
@@ -464,13 +472,13 @@ export function TournamentParticipantsClient({
                                     setSearch(nextValue);
                                 }, 250);
                             }}
-                            placeholder="Cari peserta..."
+                            placeholder={t.dashboard.participants.searchPlaceholder}
                         />
                     }
                 >
                     {isTeamTournament ? (
                         <div className="mb-4 rounded-box border border-base-300 bg-base-200/40 px-3 py-3 text-xs text-base-content/60">
-                            Turnamen team: pendaftaran hanya lewat registrasi team (captain/vice/manager).
+                            {t.dashboard.participants.teamTournamentNote}
                         </div>
                     ) : null}
                     {loading ? (
@@ -481,20 +489,20 @@ export function TournamentParticipantsClient({
                         </div>
                     ) : !hasData ? (
                         <DashboardEmptyState
-                            title="Belum ada peserta"
-                            description="Peserta akan muncul setelah registrasi dibuka."
+                            title={t.dashboard.participants.emptyTitle}
+                            description={t.dashboard.participants.emptyDescription}
                         />
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="table">
                                 <thead>
                                     <tr>
-                                        <th>{isTeamTournament ? "Team" : "Player"}</th>
-                                        <th>{isTeamTournament ? "Team Name" : "In-game Name"}</th>
-                                        <th>Discord ID</th>
-                                        <th>Registrasi</th>
-                                        <th>Check-in</th>
-                                        {isPaidTournament ? <th>Payment</th> : null}
+                                        <th>{isTeamTournament ? t.dashboard.participants.table.team : t.dashboard.participants.table.player}</th>
+                                        <th>{isTeamTournament ? t.dashboard.participants.table.teamName : t.dashboard.participants.table.ign}</th>
+                                        <th>{t.dashboard.participants.table.discordId}</th>
+                                        <th>{t.dashboard.participants.table.registeredAt}</th>
+                                        <th>{t.dashboard.participants.table.checkIn}</th>
+                                        {isPaidTournament ? <th>{t.dashboard.participants.table.payment}</th> : null}
                                         <th></th>
                                     </tr>
                                 </thead>
@@ -505,7 +513,7 @@ export function TournamentParticipantsClient({
                                             participant.user?.username ||
                                             participant.user?.fullName ||
                                             participant.guestName ||
-                                            "Guest";
+                                            t.dashboard.participants.labels.guest;
                                         const avatarUrl = normalizeAssetUrl(participant.team?.logoUrl || participant.user?.avatarUrl || "");
 
                                         return (
@@ -532,14 +540,14 @@ export function TournamentParticipantsClient({
                                                                 {displayName}
                                                             </div>
                                                             {!participant.user && !participant.team ? (
-                                                                <span className="badge badge-outline badge-xs">Guest</span>
+                                                                <span className="badge badge-outline badge-xs">{t.dashboard.participants.badges.guest}</span>
                                                             ) : null}
-                                                            {participant.team ? <span className="badge badge-outline badge-xs">Team</span> : null}
+                                                            {participant.team ? <span className="badge badge-outline badge-xs">{t.dashboard.participants.badges.team}</span> : null}
                                                             {participant.status === "WAITLIST" ? (
-                                                                <span className="badge badge-warning badge-xs">Waitlist</span>
+                                                                <span className="badge badge-warning badge-xs">{t.dashboard.participants.badges.waitlist}</span>
                                                             ) : null}
                                                             {participant.status === "DISQUALIFIED" ? (
-                                                                <span className="badge badge-error badge-xs">Disqualified</span>
+                                                                <span className="badge badge-error badge-xs">{t.dashboard.participants.badges.disqualified}</span>
                                                             ) : null}
                                                         </div>
                                                         <div className="text-xs text-base-content/50">
@@ -547,7 +555,7 @@ export function TournamentParticipantsClient({
                                                                 ? participant.team.slug
                                                                 : participant.user
                                                                   ? `@${participant.user.username}`
-                                                                  : "Peserta non-user"}
+                                                                  : t.dashboard.participants.labels.nonUser}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -557,11 +565,11 @@ export function TournamentParticipantsClient({
                                             </td>
                                             <td className="text-sm text-base-content/70">{participant.user?.discordId || "-"}</td>
                                             <td className="text-sm text-base-content/70">
-                                                {new Date(participant.joinedAt).toLocaleDateString("id-ID")}
+                                                {formatDate(participant.joinedAt, locale)}
                                             </td>
                                             <td>
                                                 <span className={`badge ${participant.checkedInAt ? "badge-success" : "badge-ghost"}`}>
-                                                    {participant.checkedInAt ? "Checked In" : "Belum"}
+                                                    {participant.checkedInAt ? t.dashboard.participants.status.checkedIn : t.dashboard.participants.status.notCheckedIn}
                                                 </span>
                                             </td>
                                             {isPaidTournament ? (
@@ -572,7 +580,7 @@ export function TournamentParticipantsClient({
                                                         </span>
                                                         {participant.paymentStatus === "VERIFIED" && participant.paymentVerifiedAt ? (
                                                             <span className="text-[11px] text-base-content/55">
-                                                                {new Date(participant.paymentVerifiedAt).toLocaleString("id-ID")}
+                                                                {formatDateTime(participant.paymentVerifiedAt, locale)}
                                                             </span>
                                                         ) : null}
                                                         {participant.paymentProofUrl ? (
@@ -582,7 +590,7 @@ export function TournamentParticipantsClient({
                                                                 rel="noreferrer"
                                                                 className="btn btn-outline btn-xs"
                                                             >
-                                                                Lihat Bukti
+                                                                {t.dashboard.participants.actions.viewProof}
                                                             </a>
                                                         ) : (
                                                             <span className="text-xs text-base-content/50">-</span>
@@ -594,14 +602,14 @@ export function TournamentParticipantsClient({
                                                                     className="btn btn-success btn-outline btn-xs"
                                                                     onClick={() => handlePaymentDecision(participant, "VERIFIED")}
                                                                 >
-                                                                    Approve
+                                                                    {t.dashboard.participants.actions.approve}
                                                                 </button>
                                                                 <button
                                                                     type="button"
                                                                     className="btn btn-error btn-outline btn-xs"
                                                                     onClick={() => handlePaymentDecision(participant, "REJECTED")}
                                                                 >
-                                                                    Reject
+                                                                    {t.dashboard.participants.actions.reject}
                                                                 </button>
                                                             </div>
                                                         ) : null}
@@ -616,11 +624,11 @@ export function TournamentParticipantsClient({
                                                         onClick={() => toggleCheckIn(participant)}
                                                         disabled={participant.status === "WAITLIST" || participant.status === "DISQUALIFIED"}
                                                     >
-                                                        {participant.checkedInAt ? "Uncheck" : "Check-in"}
+                                                        {participant.checkedInAt ? t.dashboard.participants.actions.uncheck : t.dashboard.participants.actions.checkIn}
                                                     </button>
                                                     {!isTeamTournament ? (
                                                         <button type="button" className={`${btnOutline} btn-xs`} onClick={() => openEdit(participant)}>
-                                                            Edit
+                                                            {t.dashboard.participants.actions.edit}
                                                         </button>
                                                     ) : null}
                                                     <button
@@ -629,10 +637,10 @@ export function TournamentParticipantsClient({
                                                         onClick={() => setConfirmDisqualify(participant)}
                                                         disabled={participant.status === "DISQUALIFIED"}
                                                     >
-                                                        Disqualify
+                                                        {t.dashboard.participants.actions.disqualify}
                                                     </button>
                                                     <button type="button" className="btn btn-error btn-outline btn-xs" onClick={() => setConfirmRemove(participant)}>
-                                                        Remove
+                                                        {t.dashboard.participants.actions.remove}
                                                     </button>
                                                 </div>
                                             </td>
@@ -653,18 +661,18 @@ export function TournamentParticipantsClient({
             </div>
 
             {!isTeamTournament ? (
-            <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title="Edit Peserta">
+            <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title={t.dashboard.participants.modals.editTitle}>
                 <div className="space-y-4">
                     <div>
-                        <label className={labelCls}>In-game Name / ID</label>
+                        <label className={labelCls}>{t.dashboard.participants.modals.editLabel}</label>
                         <input className={inputCls} value={gameId} onChange={(event) => setGameId(event.target.value)} />
                     </div>
                     <div className="flex justify-end gap-2">
                         <button type="button" className={btnOutline} onClick={() => setEditing(null)}>
-                            Batal
+                            {t.common.cancel}
                         </button>
                         <button type="button" className={btnPrimary} onClick={handleSave}>
-                            Simpan
+                            {t.dashboard.participants.modals.save}
                         </button>
                     </div>
                 </div>
@@ -672,35 +680,35 @@ export function TournamentParticipantsClient({
             ) : null}
 
             {!isTeamTournament ? (
-            <Modal open={showAddModal} onClose={resetAddModal} title="Tambah Peserta" size="lg">
+            <Modal open={showAddModal} onClose={resetAddModal} title={t.dashboard.participants.modals.addTitle} size="lg">
                 <div className="space-y-5">
                     <div className="tabs tabs-boxed">
                         <button type="button" className={`tab ${activeTab === "user" ? "tab-active" : ""}`} onClick={() => setActiveTab("user")}>
-                            User
+                            {t.dashboard.participants.modals.userTab}
                         </button>
                         <button type="button" className={`tab ${activeTab === "guest" ? "tab-active" : ""}`} onClick={() => setActiveTab("guest")}>
-                            Guest
+                            {t.dashboard.participants.modals.guestTab}
                         </button>
                     </div>
 
                     {activeTab === "user" ? (
                         <div className="space-y-4">
                             <div>
-                                <label className={labelCls}>Cari User</label>
+                                <label className={labelCls}>{t.dashboard.participants.modals.searchUserLabel}</label>
                                 <input
                                     className={inputCls}
                                     value={candidateQuery}
                                     onChange={(event) => setCandidateQuery(event.target.value)}
-                                    placeholder="Cari nama, username, atau email"
+                                    placeholder={t.dashboard.participants.modals.searchUserPlaceholder}
                                 />
                             </div>
                             <div className="space-y-2">
                                 {candidateLoading ? (
-                                    <div className="text-xs text-base-content/60">Memuat hasil...</div>
+                                    <div className="text-xs text-base-content/60">{t.dashboard.participants.modals.searchLoading}</div>
                                 ) : candidateQuery.trim().length < 2 ? (
-                                    <div className="text-xs text-base-content/50">Masukkan minimal 2 karakter untuk mencari.</div>
+                                    <div className="text-xs text-base-content/50">{t.dashboard.participants.modals.searchHint}</div>
                                 ) : candidateResults.length === 0 ? (
-                                    <div className="text-xs text-base-content/50">Tidak ada hasil.</div>
+                                    <div className="text-xs text-base-content/50">{t.dashboard.participants.modals.searchEmpty}</div>
                                 ) : (
                                     candidateResults.map((user) => (
                                         <button
@@ -714,59 +722,59 @@ export function TournamentParticipantsClient({
                                             <div>
                                                 <div className="font-semibold text-base-content">{user.username || user.fullName}</div>
                                                 <div className="text-xs text-base-content/50">
-                                                    {user.fullName && user.fullName !== user.username ? `${user.fullName} • ` : ""}
+                                                    {user.fullName && user.fullName !== user.username ? `${user.fullName} · ` : ""}
                                                     {user.email}
                                                 </div>
                                             </div>
-                                            {selectedUser?.id === user.id ? <span className="badge badge-primary badge-sm">Dipilih</span> : null}
+                                            {selectedUser?.id === user.id ? <span className="badge badge-primary badge-sm">{t.dashboard.participants.modals.selected}</span> : null}
                                         </button>
                                     ))
                                 )}
                             </div>
                             <div>
-                                <label className={labelCls}>In-game Name / ID</label>
+                                <label className={labelCls}>{t.dashboard.participants.modals.addUserGameIdLabel}</label>
                                 <input
                                     className={inputCls}
                                     value={addUserGameId}
                                     onChange={(event) => setAddUserGameId(event.target.value)}
-                                    placeholder="Masukkan IGN / Game ID"
+                                    placeholder={t.dashboard.participants.modals.addUserGameIdPlaceholder}
                                 />
                             </div>
                             <div className="flex justify-end gap-2">
                                 <button type="button" className={btnOutline} onClick={resetAddModal}>
-                                    Batal
+                                    {t.common.cancel}
                                 </button>
                                 <button type="button" className={btnPrimary} onClick={handleAddUser} disabled={submitting}>
-                                    {submitting ? "Menyimpan..." : "Tambah User"}
+                                    {submitting ? t.dashboard.participants.modals.saving : t.dashboard.participants.modals.addUser}
                                 </button>
                             </div>
                         </div>
                     ) : (
                         <div className="space-y-4">
                             <div>
-                                <label className={labelCls}>Nama Guest</label>
+                                <label className={labelCls}>{t.dashboard.participants.modals.addGuestNameLabel}</label>
                                 <input
                                     className={inputCls}
                                     value={guestName}
                                     onChange={(event) => setGuestName(event.target.value)}
-                                    placeholder="Nama peserta"
+                                    placeholder={t.dashboard.participants.modals.addGuestNamePlaceholder}
                                 />
                             </div>
                             <div>
-                                <label className={labelCls}>In-game Name / ID</label>
+                                <label className={labelCls}>{t.dashboard.participants.modals.addGuestGameIdLabel}</label>
                                 <input
                                     className={inputCls}
                                     value={guestGameId}
                                     onChange={(event) => setGuestGameId(event.target.value)}
-                                    placeholder="Masukkan IGN / Game ID"
+                                    placeholder={t.dashboard.participants.modals.addGuestGameIdPlaceholder}
                                 />
                             </div>
                             <div className="flex justify-end gap-2">
                                 <button type="button" className={btnOutline} onClick={resetAddModal}>
-                                    Batal
+                                    {t.common.cancel}
                                 </button>
                                 <button type="button" className={btnPrimary} onClick={handleAddGuest} disabled={submitting}>
-                                    {submitting ? "Menyimpan..." : "Tambah Guest"}
+                                    {submitting ? t.dashboard.participants.modals.saving : t.dashboard.participants.modals.addGuest}
                                 </button>
                             </div>
                         </div>
@@ -776,45 +784,45 @@ export function TournamentParticipantsClient({
             ) : null}
 
             {!isTeamTournament ? (
-            <Modal open={showBulkModal} onClose={() => setShowBulkModal(false)} title="Bulk Add Peserta" size="lg">
+            <Modal open={showBulkModal} onClose={() => setShowBulkModal(false)} title={t.dashboard.participants.modals.bulkTitle} size="lg">
                 <div className="space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/60">
-                        <div>Quick fill untuk testing atau seed cepat.</div>
+                        <div>{t.dashboard.participants.modals.bulkQuickFill}</div>
                         <div className="flex items-center gap-2">
                             <button
                                 type="button"
                                 className="btn btn-ghost btn-xs"
                                 onClick={() => setBulkText(buildBulkTemplate(32))}
                             >
-                                Generate 32
+                                {t.dashboard.participants.modals.bulkGenerate}
                             </button>
                             <button
                                 type="button"
                                 className="btn btn-ghost btn-xs"
                                 onClick={() => setBulkText("")}
                             >
-                                Clear
+                                {t.dashboard.participants.modals.bulkClear}
                             </button>
                         </div>
                     </div>
                     <div>
-                        <label className={labelCls}>Format (Nama | Game ID)</label>
+                        <label className={labelCls}>{t.dashboard.participants.modals.bulkFormatLabel}</label>
                         <textarea
                             className={`${inputCls} min-h-[180px] resize-y`}
                             value={bulkText}
                             onChange={(event) => setBulkText(event.target.value)}
-                            placeholder={`Contoh:\nAlpha Player | 123-456-789\nBeta Duelist | 987-654-321`}
+                            placeholder={t.dashboard.participants.modals.bulkPlaceholder}
                         />
                     </div>
                     <div className="text-xs text-base-content/55">
-                        Gunakan satu peserta per baris, pisahkan nama dan Game ID dengan tanda |.
+                        {t.dashboard.participants.modals.bulkHint}
                     </div>
                     <div className="flex justify-end gap-2">
                         <button type="button" className={btnOutline} onClick={() => setShowBulkModal(false)}>
-                            Batal
+                            {t.common.cancel}
                         </button>
                         <button type="button" className={btnPrimary} onClick={handleBulkAdd} disabled={submitting}>
-                            {submitting ? "Memproses..." : "Proses Bulk"}
+                            {submitting ? t.dashboard.participants.modals.bulkProcessing : t.dashboard.participants.modals.bulkProcess}
                         </button>
                     </div>
                 </div>
@@ -823,17 +831,17 @@ export function TournamentParticipantsClient({
 
             <ConfirmModal
                 open={Boolean(confirmRemove)}
-                title="Hapus peserta?"
-                message="Peserta akan dihapus dari turnamen. Aksi ini hanya bisa dilakukan saat turnamen masih OPEN."
-                confirmLabel="Hapus"
+                title={t.dashboard.participants.confirmRemoveTitle}
+                message={t.dashboard.participants.confirmRemoveMessage}
+                confirmLabel={t.common.delete}
                 onConfirm={handleRemove}
                 onCancel={() => setConfirmRemove(null)}
             />
             <ConfirmModal
                 open={Boolean(confirmDisqualify)}
-                title="Diskualifikasi peserta?"
-                message="Peserta akan ditandai sebagai DISQUALIFIED. Match aktif akan di-advance otomatis bila ada lawan."
-                confirmLabel={disqualifying ? "Memproses..." : "Disqualify"}
+                title={t.dashboard.participants.confirmDisqualifyTitle}
+                message={t.dashboard.participants.confirmDisqualifyMessage}
+                confirmLabel={disqualifying ? t.dashboard.participants.disqualifyProcessing : t.dashboard.participants.actions.disqualify}
                 onConfirm={handleDisqualify}
                 onCancel={() => setConfirmDisqualify(null)}
             />

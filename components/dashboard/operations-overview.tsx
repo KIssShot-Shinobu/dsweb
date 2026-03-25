@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { useLocale } from "@/hooks/use-locale";
 
 interface UserStats {
     total: number;
@@ -13,56 +14,48 @@ interface UserStats {
     activeTeams: number;
 }
 
-type QuickLink = {
-    href: string;
-    title: string;
-    description: string;
-    icon: string;
-};
-
-const QUICK_LINKS: QuickLink[] = [
-    {
-        href: "/dashboard/users",
-        title: "Users",
-        description: "Kelola akun publik, role komunitas, dan status user dari satu halaman.",
-        icon: "U",
-    },
-    {
-        href: "/dashboard/teams",
-        title: "Teams",
-        description: "Atur roster Duel Standby tanpa mencampur status member dengan afiliasi team.",
-        icon: "G",
-    },
-    {
-        href: "/dashboard/audit-logs",
-        title: "Audit Logs",
-        description: "Pantau perubahan penting sistem dan aktivitas operator.",
-        icon: "A",
-    },
-];
-
 export function OperationsOverview({ stats, loading = false }: { stats: UserStats; loading?: boolean }) {
+    const { t } = useLocale();
+    const quickLinks = [
+        {
+            href: "/dashboard/users",
+            title: t.dashboard.operations.quickLinks.usersTitle,
+            description: t.dashboard.operations.quickLinks.usersDescription,
+            icon: "U",
+        },
+        {
+            href: "/dashboard/teams",
+            title: t.dashboard.operations.quickLinks.teamsTitle,
+            description: t.dashboard.operations.quickLinks.teamsDescription,
+            icon: "G",
+        },
+        {
+            href: "/dashboard/audit-logs",
+            title: t.dashboard.operations.quickLinks.auditTitle,
+            description: t.dashboard.operations.quickLinks.auditDescription,
+            icon: "A",
+        },
+    ];
+
     return (
         <section className="card border border-base-300 bg-base-100 shadow-md">
             <div className="card-body p-5 sm:p-6">
                 <div className="flex flex-col gap-1">
-                    <h2 className="text-lg font-black tracking-tight text-base-content">Ringkasan Operasional</h2>
-                    <p className="text-sm text-base-content/60">
-                        Kontrol utama dashboard disatukan di halaman ini tanpa mencampur akun publik, member Duel Standby, dan roster team.
-                    </p>
+                    <h2 className="text-lg font-black tracking-tight text-base-content">{t.dashboard.operations.title}</h2>
+                    <p className="text-sm text-base-content/60">{t.dashboard.operations.description}</p>
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    <StatCard label="Total User" value={loading ? "..." : stats.total} icon="U" change="Seluruh akun terdaftar" primary />
-                    <StatCard label="Guild Members" value={loading ? "..." : stats.guildMembers} icon="M" change="Member Duel Standby" />
-                    <StatCard label="Assigned Team" value={loading ? "..." : stats.assignedToTeam} icon="T" change="Member yang sudah masuk team" />
-                    <StatCard label="Aktif" value={loading ? "..." : stats.active} icon="A" change="Akun siap dipakai" />
-                    <StatCard label="Teams" value={loading ? "..." : stats.teams} icon="G" change={`${loading ? "..." : stats.activeTeams} team aktif`} />
-                    <StatCard label="Banned" value={loading ? "..." : stats.banned} icon="B" change="Akun diblokir" changeType="negative" />
+                    <StatCard label={t.dashboard.operations.stats.totalUsers} value={loading ? "..." : stats.total} icon="U" change={t.dashboard.operations.stats.totalUsersMeta} primary />
+                    <StatCard label={t.dashboard.operations.stats.guildMembers} value={loading ? "..." : stats.guildMembers} icon="M" change={t.dashboard.operations.stats.guildMembersMeta} />
+                    <StatCard label={t.dashboard.operations.stats.assignedTeam} value={loading ? "..." : stats.assignedToTeam} icon="T" change={t.dashboard.operations.stats.assignedTeamMeta} />
+                    <StatCard label={t.dashboard.operations.stats.active} value={loading ? "..." : stats.active} icon="A" change={t.dashboard.operations.stats.activeMeta} />
+                    <StatCard label={t.dashboard.operations.stats.teams} value={loading ? "..." : stats.teams} icon="G" change={loading ? "..." : t.dashboard.operations.stats.teamsMeta(stats.activeTeams)} />
+                    <StatCard label={t.dashboard.operations.stats.banned} value={loading ? "..." : stats.banned} icon="B" change={t.dashboard.operations.stats.bannedMeta} changeType="negative" />
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-3 xl:grid-cols-3">
-                    {QUICK_LINKS.map((link) => (
+                    {quickLinks.map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}

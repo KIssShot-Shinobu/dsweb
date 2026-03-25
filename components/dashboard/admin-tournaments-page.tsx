@@ -18,6 +18,8 @@ import {
     DashboardPanel,
 } from "@/components/dashboard/page-shell";
 import { normalizeAssetUrl } from "@/lib/asset-url";
+import { useLocale } from "@/hooks/use-locale";
+import { formatCurrency, formatDateTime } from "@/lib/i18n/format";
 
 interface Tournament {
     id: string;
@@ -49,24 +51,24 @@ interface TournamentResponse {
 const UNDO_DURATION = 5000;
 const PER_PAGE = 10;
 
-const selectOptions = {
-    filterStatus: [
-        { value: "ALL", label: "Semua Status" },
-        { value: "OPEN", label: "OPEN" },
-        { value: "ONGOING", label: "ONGOING" },
-        { value: "COMPLETED", label: "COMPLETED" },
-        { value: "CANCELLED", label: "CANCELLED" },
-    ],
-    filterGameType: [
-        { value: "ALL", label: "Semua Game" },
-        { value: "DUEL_LINKS", label: "Duel Links" },
-        { value: "MASTER_DUEL", label: "Master Duel" },
-    ],
-};
-
 const EMPTY_SUMMARY = { open: 0, ongoing: 0, completed: 0, cancelled: 0 };
 
 export default function AdminTournamentsPage() {
+    const { locale, t } = useLocale();
+    const selectOptions = {
+        filterStatus: [
+            { value: "ALL", label: t.dashboard.tournamentsAdmin.filters.statusAll },
+            { value: "OPEN", label: "OPEN" },
+            { value: "ONGOING", label: "ONGOING" },
+            { value: "COMPLETED", label: "COMPLETED" },
+            { value: "CANCELLED", label: "CANCELLED" },
+        ],
+        filterGameType: [
+            { value: "ALL", label: t.dashboard.tournamentsAdmin.filters.gameAll },
+            { value: "DUEL_LINKS", label: t.dashboard.tournamentsAdmin.filters.duelLinks },
+            { value: "MASTER_DUEL", label: t.dashboard.tournamentsAdmin.filters.masterDuel },
+        ],
+    };
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -125,11 +127,11 @@ export default function AdminTournamentsPage() {
     const handleStartBracket = async (tournament: Tournament) => {
         const participantCount = tournament._count?.participants ?? 0;
         if (tournament.status !== "OPEN") {
-            error("Bracket hanya bisa dibuat saat turnamen masih OPEN.");
+            error(t.dashboard.tournamentsAdmin.errors.bracketOpenOnly);
             return;
         }
         if (participantCount < 2) {
-            error("Minimal 2 peserta untuk membuat bracket.");
+            error(t.dashboard.tournamentsAdmin.errors.minParticipants);
             return;
         }
 
@@ -137,13 +139,13 @@ export default function AdminTournamentsPage() {
             const res = await fetch(`/api/tournaments/${tournament.id}/start`, { method: "POST" });
             const data = await res.json();
             if (res.ok) {
-                success(data?.message || "Turnamen dimulai.");
+                success(data?.message || t.dashboard.tournamentsAdmin.success.started);
                 fetchTournaments();
             } else {
-                error(data?.message || "Gagal membuat bracket.");
+                error(data?.message || t.dashboard.tournamentsAdmin.errors.startFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.tournamentsAdmin.errors.network);
         }
     };
 
@@ -155,10 +157,10 @@ export default function AdminTournamentsPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                error(data.message || "Gagal menghapus turnamen.");
+                error(data.message || t.dashboard.tournamentsAdmin.errors.deleteFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.tournamentsAdmin.errors.network);
         } finally {
             fetchTournaments();
         }
@@ -189,17 +191,16 @@ export default function AdminTournamentsPage() {
         if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
         if (pendingDelete) {
             setTournaments((prev) => [pendingDelete.item, ...prev].slice(0, PER_PAGE));
-            success(`"${pendingDelete.title}" dipulihkan.`);
+            success(t.dashboard.tournamentsAdmin.undoSuccess(pendingDelete.title));
         }
         setPendingDelete(null);
         fetchTournaments();
     };
 
-    const formatCurrency = (amount: number) =>
-        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
+    const formatCurrencyValue = (amount: number) => formatCurrency(amount, locale, "IDR");
 
     const formatDate = (dateString: string) =>
-        new Date(dateString).toLocaleDateString("id-ID", {
+        formatDateTime(dateString, locale, {
             day: "numeric",
             month: "short",
             year: "numeric",
@@ -213,26 +214,26 @@ export default function AdminTournamentsPage() {
         <DashboardPageShell>
             <div className={dashboardStackCls}>
                 <DashboardPageHeader
-                    kicker="Event Control"
-                    title="Tournaments"
-                    description="Kelola jadwal event, thumbnail, hadiah, dan pergerakan status bracket dari satu halaman yang lebih ringkas."
+                    kicker={t.dashboard.tournamentsAdmin.kicker}
+                    title={t.dashboard.tournamentsAdmin.title}
+                    description={t.dashboard.tournamentsAdmin.description}
                     actions={
                         <Link href="/dashboard/tournaments/new" className={btnPrimary}>
-                            + Buat Turnamen
+                            {t.dashboard.tournamentsAdmin.create}
                         </Link>
                     }
                 />
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <DashboardMetricCard label="Open" value={loading ? "..." : summary.open} meta="Registrasi dibuka" tone="accent" />
-                    <DashboardMetricCard label="Ongoing" value={loading ? "..." : summary.ongoing} meta="Sedang berjalan" tone="success" />
-                    <DashboardMetricCard label="Completed" value={loading ? "..." : summary.completed} meta="Event selesai" />
-                    <DashboardMetricCard label="Published Total" value={loading ? "..." : publishedSummary} meta="Open + ongoing yang tampil ke user" />
+                    <DashboardMetricCard label={t.dashboard.tournamentsAdmin.metrics.open} value={loading ? "..." : summary.open} meta={t.dashboard.tournamentsAdmin.metrics.openMeta} tone="accent" />
+                    <DashboardMetricCard label={t.dashboard.tournamentsAdmin.metrics.ongoing} value={loading ? "..." : summary.ongoing} meta={t.dashboard.tournamentsAdmin.metrics.ongoingMeta} tone="success" />
+                    <DashboardMetricCard label={t.dashboard.tournamentsAdmin.metrics.completed} value={loading ? "..." : summary.completed} meta={t.dashboard.tournamentsAdmin.metrics.completedMeta} />
+                    <DashboardMetricCard label={t.dashboard.tournamentsAdmin.metrics.publishedTotal} value={loading ? "..." : publishedSummary} meta={t.dashboard.tournamentsAdmin.metrics.publishedMeta} />
                 </div>
 
                 <DashboardPanel
-                    title="Daftar Tournament"
-                    description={`Menampilkan ${total} turnamen yang sesuai dengan filter aktif.`}
+                    title={t.dashboard.tournamentsAdmin.panelTitle}
+                    description={t.dashboard.tournamentsAdmin.panelDescription(total)}
                     action={(
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                             <input
@@ -247,7 +248,7 @@ export default function AdminTournamentsPage() {
                                         setSearch(nextValue);
                                     }, 250);
                                 }}
-                                placeholder="Cari turnamen..."
+                                placeholder={t.dashboard.tournamentsAdmin.searchPlaceholder}
                                 className={`${searchInputCls} h-9 sm:w-52`}
                             />
                             <FormSelect value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={selectOptions.filterStatus} className="w-full sm:w-36" />
@@ -262,7 +263,7 @@ export default function AdminTournamentsPage() {
                             ))}
                         </div>
                     ) : tournaments.length === 0 ? (
-                        <DashboardEmptyState title="Tidak ada turnamen" description="Coba ubah filter atau buat turnamen baru untuk mengisi halaman ini." actionHref="/dashboard/tournaments" actionLabel="Reset via halaman ini" />
+                        <DashboardEmptyState title={t.dashboard.tournamentsAdmin.emptyTitle} description={t.dashboard.tournamentsAdmin.emptyDescription} actionHref="/dashboard/tournaments" actionLabel={t.dashboard.tournamentsAdmin.emptyAction} />
                     ) : (
                         <>
                             <div className="space-y-3">
@@ -290,12 +291,17 @@ export default function AdminTournamentsPage() {
                                                     {tournament.gameType} - {tournament.format} - {formatDate(tournament.startAt)}
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">Hadiah {formatCurrency(tournament.prizePool)}</span>
-                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">Entry {tournament.entryFee === 0 ? "FREE" : formatCurrency(tournament.entryFee)}</span>
                                                     <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">
-                                                        {tournament.maxPlayers
-                                                            ? `${tournament._count?.participants || 0} / ${tournament.maxPlayers} peserta`
-                                                            : `${tournament._count?.participants || 0} peserta`}
+                                                        {t.dashboard.tournamentsAdmin.labels.prize} {formatCurrencyValue(tournament.prizePool)}
+                                                    </span>
+                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">
+                                                        {t.dashboard.tournamentsAdmin.labels.entry} {tournament.entryFee === 0 ? t.dashboard.tournamentsAdmin.labels.freeEntry : formatCurrencyValue(tournament.entryFee)}
+                                                    </span>
+                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">
+                                                        {t.dashboard.tournamentsAdmin.labels.participants(
+                                                            tournament._count?.participants || 0,
+                                                            tournament.maxPlayers
+                                                        )}
                                                     </span>
                                                 </div>
                                             </div>
@@ -314,13 +320,13 @@ export default function AdminTournamentsPage() {
                                                                 disabled={tournament.status !== "OPEN" || (tournament._count?.participants ?? 0) < 2}
                                                                 className={`${btnPrimary} btn-sm disabled:opacity-40`}
                                                             >
-                                                                Start Bracket
+                                                                {t.dashboard.tournamentsAdmin.actions.startBracket}
                                                             </button>
                                                             <Link href={`/dashboard/tournaments/${tournament.id}`} className={`${btnOutline} btn-sm`}>
-                                                                Admin Dashboard
+                                                                {t.dashboard.tournamentsAdmin.actions.adminDashboard}
                                                             </Link>
                                                             <Link href={`/tournaments/${tournament.id}`} className={`${btnOutline} btn-sm`}>
-                                                                Lihat Detail
+                                                                {t.dashboard.tournamentsAdmin.actions.viewDetail}
                                                             </Link>
                                                         </div>
                                                     }
@@ -340,14 +346,14 @@ export default function AdminTournamentsPage() {
 
             <ConfirmModal
                 open={confirmState.open}
-                title="Hapus Turnamen"
-                message={`Hapus turnamen "${confirmState.title}"? Anda punya 5 detik untuk undo.`}
-                confirmLabel="Hapus"
+                title={t.dashboard.tournamentsAdmin.confirmDeleteTitle}
+                message={t.dashboard.tournamentsAdmin.confirmDeleteMessage(confirmState.title)}
+                confirmLabel={t.dashboard.tournamentsAdmin.confirmDeleteLabel}
                 onConfirm={handleConfirmDelete}
                 onCancel={() => setConfirmState({ open: false, id: "", title: "" })}
             />
 
-            <UndoSnackbar open={!!pendingDelete} message={`"${pendingDelete?.title}" akan dihapus`} duration={UNDO_DURATION} onUndo={handleUndo} />
+            <UndoSnackbar open={!!pendingDelete} message={pendingDelete ? t.dashboard.tournamentsAdmin.undoMessage(pendingDelete.title) : ""} duration={UNDO_DURATION} onUndo={handleUndo} />
 
         </DashboardPageShell>
     );

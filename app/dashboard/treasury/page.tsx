@@ -25,6 +25,8 @@ import {
     TREASURY_STATUS,
     TREASURY_STATUS_LABELS,
 } from "@/lib/treasury-constants";
+import { useLocale } from "@/hooks/use-locale";
+import { formatCurrency as formatCurrencyIntl, formatDateTime, getIntlLocale } from "@/lib/i18n/format";
 
 interface Transaction {
     id: string;
@@ -93,6 +95,7 @@ const statusOptions = [
 ];
 
 export default function TreasuryPage() {
+    const { locale } = useLocale();
     const currentYear = new Date().getFullYear();
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -330,17 +333,16 @@ export default function TreasuryPage() {
         setShowModal(false);
     };
 
-    const formatIdrInput = (value: number) => new Intl.NumberFormat("id-ID").format(value);
+    const formatIdrInput = (value: number) => new Intl.NumberFormat(getIntlLocale(locale)).format(value);
     const parseIdrInput = (value: string) => {
         const numeric = Number(value.replace(/[^0-9]/g, ""));
         return Number.isNaN(numeric) ? 0 : numeric;
     };
 
-    const formatCurrency = (amount: number) =>
-        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
+    const formatCurrency = (amount: number) => formatCurrencyIntl(amount, locale, "IDR");
 
     const formatDate = (dateString: string) =>
-        new Date(dateString).toLocaleDateString("id-ID", {
+        formatDateTime(dateString, locale, {
             day: "numeric",
             month: "short",
             year: "numeric",
@@ -354,7 +356,7 @@ export default function TreasuryPage() {
             const value = index + 1;
             return {
                 value: String(value),
-                label: new Date(2000, value - 1).toLocaleString("id-ID", { month: "short" }),
+                label: new Date(2000, value - 1).toLocaleString(getIntlLocale(locale), { month: "short" }),
             };
         }),
     ];

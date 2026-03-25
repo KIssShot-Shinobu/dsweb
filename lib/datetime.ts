@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import "dayjs/locale/id";
+import { getIntlLocale } from "@/lib/i18n/format";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/locales";
 
 dayjs.extend(customParseFormat);
 dayjs.locale("id");
@@ -67,9 +69,13 @@ export function formatLocalDateTimeInTimeZone(value: Date | null | undefined, ti
     return formatLocalDate(value, timeZone);
 }
 
-export function formatDisplayDateTimeInTimeZone(value: Date | null | undefined, timeZone: string) {
+export function formatDisplayDateTimeInTimeZone(
+    value: Date | null | undefined,
+    timeZone: string,
+    locale: Locale = DEFAULT_LOCALE
+) {
     if (!value) return "";
-    return new Intl.DateTimeFormat("id-ID", {
+    return new Intl.DateTimeFormat(getIntlLocale(locale), {
         timeZone,
         day: "numeric",
         month: "short",

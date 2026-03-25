@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { DashboardEmptyState, DashboardPanel } from "@/components/dashboard/page-shell";
+import { useLocale } from "@/hooks/use-locale";
+import { formatCurrency, formatDate } from "@/lib/i18n/format";
 
 interface Transaction {
     id: string;
@@ -20,20 +22,15 @@ export function TreasuryCard({
     recentTransactions: Transaction[];
     loading?: boolean;
 }) {
-    const formatCurrency = (amount: number) =>
-        new Intl.NumberFormat("id-ID", {
-            style: "currency",
-            currency: "IDR",
-            minimumFractionDigits: 0,
-        }).format(amount);
+    const { t, locale } = useLocale();
 
     return (
         <DashboardPanel
-            title="Treasury"
-            description="Ringkasan saldo kas guild dan transaksi paling baru."
+            title={t.dashboard.treasury.cardTitle}
+            description={t.dashboard.treasury.cardDescription}
             action={
                 <Link href="/dashboard/treasury" className="btn btn-outline btn-sm rounded-box">
-                    View All
+                    {t.common.viewAll}
                 </Link>
             }
         >
@@ -47,8 +44,12 @@ export function TreasuryCard({
             ) : (
                 <div className="space-y-4">
                     <div className="rounded-box border border-primary/30 bg-primary/10 px-5 py-6 text-center">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary/80">Current Balance</div>
-                        <div className="mt-3 text-3xl font-black tracking-tight text-base-content">{formatCurrency(balance)}</div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary/80">
+                            {t.dashboard.treasury.currentBalance}
+                        </div>
+                        <div className="mt-3 text-3xl font-black tracking-tight text-base-content">
+                            {formatCurrency(balance, locale, "IDR")}
+                        </div>
                     </div>
 
                     {recentTransactions.length > 0 ? (
@@ -58,28 +59,28 @@ export function TreasuryCard({
                                     <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-sm font-bold ${transaction.amount >= 0 ? "bg-success/12 text-success" : "bg-error/12 text-error"}`}>
                                         {transaction.amount >= 0 ? "+" : "-"}
                                     </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="truncate text-sm font-semibold text-base-content">{transaction.description}</div>
-                                        <div className="text-xs text-base-content/50">
-                                            {new Date(transaction.createdAt).toLocaleDateString("id-ID")} - {transaction.user?.username || transaction.user?.fullName || "Kas umum"}
+                                        <div className="min-w-0 flex-1">
+                                            <div className="truncate text-sm font-semibold text-base-content">{transaction.description}</div>
+                                            <div className="text-xs text-base-content/50">
+                                            {formatDate(transaction.createdAt, locale)} - {transaction.user?.username || transaction.user?.fullName || t.dashboard.treasury.commonCash}
+                                            </div>
+                                        </div>
+                                        <div className={`flex-shrink-0 text-sm font-semibold ${transaction.amount >= 0 ? "text-success" : "text-error"}`}>
+                                            {transaction.amount >= 0 ? "+" : "-"}
+                                        {formatCurrency(Math.abs(transaction.amount), locale, "IDR")}
                                         </div>
                                     </div>
-                                    <div className={`flex-shrink-0 text-sm font-semibold ${transaction.amount >= 0 ? "text-success" : "text-error"}`}>
-                                        {transaction.amount >= 0 ? "+" : "-"}
-                                        {formatCurrency(Math.abs(transaction.amount))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <DashboardEmptyState
-                            title="Belum ada transaksi"
-                            description="Tambahkan transaksi pertama untuk melihat perubahan saldo kas guild di dashboard ini."
-                            actionHref="/dashboard/treasury"
-                            actionLabel="Tambah transaksi"
-                        />
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <DashboardEmptyState
+                                title={t.dashboard.treasury.emptyTitle}
+                                description={t.dashboard.treasury.emptyDescription}
+                                actionHref="/dashboard/treasury"
+                                actionLabel={t.dashboard.treasury.addTransaction}
+                            />
+                        )}
+                    </div>
             )}
         </DashboardPanel>
     );

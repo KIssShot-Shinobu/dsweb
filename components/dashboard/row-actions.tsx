@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { btnDanger, btnOutline } from "@/components/dashboard/form-styles";
+import { useLocale } from "@/hooks/use-locale";
 
 type RowActionsProps = {
     onEdit: () => void;
@@ -15,18 +16,21 @@ type RowActionsProps = {
 export function RowActions({
     onEdit,
     onDelete,
-    editLabel = "Edit",
-    deleteLabel = "Hapus",
+    editLabel,
+    deleteLabel,
     extra,
     className = "",
 }: RowActionsProps) {
+    const { t } = useLocale();
+    const resolvedEditLabel = editLabel ?? t.common.edit;
+    const resolvedDeleteLabel = deleteLabel ?? t.common.delete;
     return (
         <div className={`flex flex-wrap items-center gap-2 ${className}`}>
             <button onClick={onEdit} className={`${btnOutline} btn-sm`}>
-                {editLabel}
+                {resolvedEditLabel}
             </button>
             <button onClick={onDelete} className={`${btnDanger} btn-sm`}>
-                {deleteLabel}
+                {resolvedDeleteLabel}
             </button>
             {extra}
         </div>

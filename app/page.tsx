@@ -8,8 +8,12 @@ import { prisma } from "@/lib/prisma";
 import type { PublicTournamentCardData } from "@/components/public/tournament-card";
 import { resolveTournamentImage } from "@/lib/tournament-image";
 import { MemberDistributionMap } from "@/components/maps/member-distribution-map";
+import { getServerLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default async function Home() {
+  const locale = await getServerLocale();
+  const t = getDictionary(locale);
   let activeUserCount = 0;
   let tournamentCount = 0;
   let tournaments: PublicTournamentCardData[] = [];
@@ -81,9 +85,9 @@ export default async function Home() {
       <section className="border-y border-base-300 py-20 sm:py-24">
         <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
           <div className="mb-8 text-center sm:mb-10">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.32em] text-primary sm:text-sm">Global Community Distribution</p>
-            <h2 className="mb-3 text-2xl font-black text-base-content sm:text-4xl">Distribusi Member Komunitas</h2>
-            <p className="mx-auto max-w-2xl text-sm text-base-content/70 sm:text-base">Visualisasi persebaran member aktif di seluruh Indonesia, dilengkapi clustering otomatis dan detail lokasi yang jelas.</p>
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.32em] text-primary sm:text-sm">{t.home.distributionBadge}</p>
+            <h2 className="mb-3 text-2xl font-black text-base-content sm:text-4xl">{t.home.distributionTitle}</h2>
+            <p className="mx-auto max-w-2xl text-sm text-base-content/70 sm:text-base">{t.home.distributionSubtitle}</p>
           </div>
           <div className="card border border-base-300 bg-base-100/80 shadow-xl">
             <div className="card-body p-4 sm:p-6">

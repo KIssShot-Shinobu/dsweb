@@ -5,6 +5,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale } from "@/hooks/use-locale";
 
 type DistributionItem = {
     id: string;
@@ -34,9 +35,12 @@ const TILE_ATTRIBUTION = "© OpenStreetMap contributors • © CARTO";
 const DEFAULT_CENTER: [number, number] = [-2.5, 118.0];
 const DEFAULT_ZOOM = 4;
 
-function buildPopupContent(item: DistributionItem) {
-    const label = item.memberCount && item.memberCount > 1 ? `${item.memberCount} Members` : item.username;
-    const location = item.city || item.province || item.country || "International";
+function buildPopupContent(
+    item: DistributionItem,
+    labels: { members: string; member: string; international: string }
+) {
+    const label = item.memberCount && item.memberCount > 1 ? `${item.memberCount} ${labels.members}` : item.username;
+    const location = item.city || item.province || item.country || labels.international;
     return `
         <div style="min-width: 140px; font-size: 12px;">
             <div style="font-weight: 700; color: #e5feff; margin-bottom: 4px;">${label}</div>
@@ -45,9 +49,14 @@ function buildPopupContent(item: DistributionItem) {
     `;
 }
 
-function buildTooltipContent(item: DistributionItem) {
-    const location = item.city || item.province || item.country || "International";
-    return item.memberCount && item.memberCount > 1 ? `${location} • ${item.memberCount} Members` : `${item.username} • ${location}`;
+function buildTooltipContent(
+    item: DistributionItem,
+    labels: { members: string; member: string; international: string }
+) {
+    const location = item.city || item.province || item.country || labels.international;
+    return item.memberCount && item.memberCount > 1
+        ? `${location} • ${item.memberCount} ${labels.members}`
+        : `${item.username} • ${location}`;
 }
 
 export function MemberDistributionMap() {
@@ -59,6 +68,7 @@ export function MemberDistributionMap() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [mapReady, setMapReady] = useState(false);
+    const { t } = useLocale();
 
     useEffect(() => {
         let cancelled = false;
@@ -69,7 +79,7 @@ export function MemberDistributionMap() {
             .then(async (response) => {
                 const json = (await response.json()) as ApiResponse;
                 if (!response.ok || !json.success) {
-                    throw new Error("Gagal memuat data distribusi member.");
+                    throw new Error(t.map.error);
                 }
                 if (!cancelled) {
                     setItems(json.data || []);
@@ -77,7 +87,7 @@ export function MemberDistributionMap() {
             })
             .catch((err: unknown) => {
                 if (!cancelled) {
-                    setError(err instanceof Error ? err.message : "Gagal memuat data distribusi member.");
+                    setError(err instanceof Error ? err.message : t.map.error);
                 }
             })
             .finally(() => {
@@ -87,7 +97,7 @@ export function MemberDistributionMap() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [t.map.error]);
 
     useEffect(() => {
         if (!mapContainerRef.current || mapRef.current) return;
@@ -158,8 +168,22 @@ export function MemberDistributionMap() {
             });
 
             const marker = L.marker([item.latitude, item.longitude], { icon });
-            marker.bindTooltip(buildTooltipContent(item), { direction: "top", opacity: 0.9, offset: [0, -8] });
-            marker.bindPopup(buildPopupContent(item), { closeButton: false, maxWidth: 220 });
+            marker.bindTooltip(
+                buildTooltipContent(item, {
+                    members: t.map.membersLabel,
+                    member: t.map.memberLabel,
+                    international: t.map.locationFallback,
+                }),
+                { direction: "top", opacity: 0.9, offset: [0, -8] }
+            );
+            marker.bindPopup(
+                buildPopupContent(item, {
+                    members: t.map.membersLabel,
+                    member: t.map.memberLabel,
+                    international: t.map.locationFallback,
+                }),
+                { closeButton: false, maxWidth: 220 }
+            );
             marker.on("click", () => {
                 const nextZoom = Math.min(mapRef.current.getZoom() + 2, 8);
                 mapRef.current.setView([item.latitude, item.longitude], nextZoom, { animate: true });
@@ -177,7 +201,7 @@ export function MemberDistributionMap() {
             const bounds = clusterGroup.getBounds();
             mapRef.current.fitBounds(bounds, { padding: [80, 80], maxZoom: 6.5 });
         }
-    }, [items, mapReady]);
+    }, [items, mapReady, t.map.membersLabel, t.map.memberLabel, t.map.locationFallback]);
 
     if (error) {
         return (
@@ -191,7 +215,7 @@ export function MemberDistributionMap() {
         <div className="relative h-full w-full">
             {loading && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-box bg-base-200/70 text-sm text-base-content/70">
-                    Memuat peta distribusi...
+                    {t.map.loading}
                 </div>
             )}
             <div ref={mapContainerRef} className="h-full w-full rounded-box" />

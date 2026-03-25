@@ -1,3 +1,6 @@
+import type { Locale } from "@/lib/i18n/locales";
+import { getIntlLocale } from "@/lib/i18n/format";
+
 type TreasuryWhereOptions = {
     ignoreMonth?: boolean;
     ignoreSearch?: boolean;
@@ -59,11 +62,12 @@ export function buildTreasuryWhere(searchParams: URLSearchParams, options: Treas
     return where;
 }
 
-export function buildMonthlyBuckets(year: number) {
+export function buildMonthlyBuckets(year: number, locale: Locale) {
+    const intlLocale = getIntlLocale(locale);
     return Array.from({ length: 12 }, (_, index) => {
         const date = new Date(year, index, 1);
         return {
-            label: date.toLocaleString("id-ID", { month: "short" }),
+            label: date.toLocaleString(intlLocale, { month: "short" }),
             income: 0,
             expense: 0,
         };

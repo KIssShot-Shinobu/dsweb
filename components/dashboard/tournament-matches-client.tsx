@@ -10,6 +10,7 @@ import { useToast } from "@/components/dashboard/toast";
 import { DateTimePickerInput } from "@/components/ui/date-time-picker";
 import { MatchChatThread } from "@/components/shared/match-chat-thread";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useLocale } from "@/hooks/use-locale";
 
 type MatchRow = {
     id: string;
@@ -33,22 +34,22 @@ type MatchResponse = {
     limit: number;
 };
 
-const STATUS_OPTIONS = [
-    { value: "ALL", label: "Semua Status" },
-    { value: "PENDING", label: "PENDING" },
-    { value: "READY", label: "READY" },
-    { value: "ONGOING", label: "ONGOING" },
-    { value: "RESULT_SUBMITTED", label: "RESULT SUBMITTED" },
-    { value: "CONFIRMED", label: "CONFIRMED" },
-    { value: "DISPUTED", label: "DISPUTED" },
-    { value: "COMPLETED", label: "COMPLETED" },
-] as const;
-
 const PER_PAGE = 20;
 
 export function TournamentMatchesClient({ tournamentId }: { tournamentId: string }) {
     const { success, error } = useToast();
     const { user } = useCurrentUser();
+    const { t } = useLocale();
+    const statusOptions = [
+        { value: "ALL", label: t.dashboard.matches.statusAll },
+        { value: "PENDING", label: "PENDING" },
+        { value: "READY", label: "READY" },
+        { value: "ONGOING", label: "ONGOING" },
+        { value: "RESULT_SUBMITTED", label: "RESULT SUBMITTED" },
+        { value: "CONFIRMED", label: "CONFIRMED" },
+        { value: "DISPUTED", label: "DISPUTED" },
+        { value: "COMPLETED", label: "COMPLETED" },
+    ] as const;
     const [matches, setMatches] = useState<MatchRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -64,8 +65,8 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
 
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
     const resolveParticipantName = (participant?: MatchRow["playerA"]) => {
-        if (!participant) return "TBD";
-        return participant.user?.username || participant.user?.fullName || participant.guestName || "TBD";
+        if (!participant) return t.match.tbd;
+        return participant.user?.username || participant.user?.fullName || participant.guestName || t.match.tbd;
     };
 
     const fetchMatches = async () => {
@@ -82,10 +83,10 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                 setMatches(data.matches);
                 setTotal(data.total);
             } else {
-                error("Gagal memuat daftar match.");
+                error(t.dashboard.matches.errors.loadFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.matches.errors.network);
         } finally {
             setLoading(false);
         }
@@ -120,12 +121,12 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
         if (activeMatch.playerA) options.push({ value: activeMatch.playerA.id, label: resolveParticipantName(activeMatch.playerA) });
         if (activeMatch.playerB) options.push({ value: activeMatch.playerB.id, label: resolveParticipantName(activeMatch.playerB) });
         return options;
-    }, [activeMatch]);
+    }, [activeMatch, t]);
 
     const handleResolve = async () => {
         if (!activeMatch) return;
         if (!winnerId) {
-            error("Pilih pemenang terlebih dahulu.");
+            error(t.dashboard.matches.errors.selectWinner);
             return;
         }
 
@@ -141,14 +142,14 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
             });
             const data = await res.json();
             if (res.ok) {
-                success("Hasil match diperbarui.");
+                success(t.dashboard.matches.success.matchUpdated);
                 setActiveMatch(null);
                 fetchMatches();
             } else {
-                error(data.message || "Gagal mengubah hasil match.");
+                error(data.message || t.dashboard.matches.errors.updateFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.matches.errors.network);
         }
     };
 
@@ -163,14 +164,14 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
             });
             const data = await res.json();
             if (res.ok) {
-                success(data?.message || "Jadwal match diperbarui.");
+                success(data?.message || t.dashboard.matches.success.scheduleUpdated);
                 setScheduleMatch(null);
                 fetchMatches();
             } else {
-                error(data?.message || "Gagal mengubah jadwal match.");
+                error(data?.message || t.dashboard.matches.errors.scheduleFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.matches.errors.network);
         } finally {
             setScheduleSubmitting(false);
         }
@@ -179,16 +180,16 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
     const formatSchedule = (match: MatchRow) => {
         if (match.scheduledAtLabel) return match.scheduledAtLabel;
         if (match.scheduledAt) return match.scheduledAt;
-        return "-";
+        return t.dashboard.matches.missingSchedule;
     };
 
     return (
         <DashboardPageShell>
             <div className="space-y-6">
                 <DashboardPageHeader
-                    kicker="Matches"
-                    title="Daftar Match"
-                    description="Kelola hasil pertandingan, set pemenang, dan monitor status."
+                    kicker={t.dashboard.matches.kicker}
+                    title={t.dashboard.matches.title}
+                    description={t.dashboard.matches.description}
                     actions={
                         <FormSelect
                             value={statusFilter}
@@ -196,13 +197,13 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                 setStatusFilter(value);
                                 setPage(1);
                             }}
-                            options={STATUS_OPTIONS}
+                            options={statusOptions}
                             className="w-full sm:w-48"
                         />
                     }
                 />
 
-                <DashboardPanel title="Match List" description="Klik action untuk mengatur hasil pertandingan.">
+                <DashboardPanel title={t.dashboard.matches.panelTitle} description={t.dashboard.matches.panelDescription}>
                     {loading ? (
                         <div className="space-y-3">
                             {[1, 2, 3].map((row) => (
@@ -211,20 +212,20 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                         </div>
                     ) : matches.length === 0 ? (
                         <DashboardEmptyState
-                            title="Belum ada match"
-                            description="Match akan muncul setelah bracket dibuat."
+                            title={t.dashboard.matches.emptyTitle}
+                            description={t.dashboard.matches.emptyDescription}
                         />
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="table">
                                 <thead>
                                     <tr>
-                                        <th>Round</th>
-                                        <th>Player 1</th>
-                                        <th>Player 2</th>
-                                        <th>Jadwal</th>
-                                        <th>Score</th>
-                                        <th>Status</th>
+                                        <th>{t.dashboard.matches.table.round}</th>
+                                        <th>{t.dashboard.matches.table.player1}</th>
+                                        <th>{t.dashboard.matches.table.player2}</th>
+                                        <th>{t.dashboard.matches.table.schedule}</th>
+                                        <th>{t.dashboard.matches.table.score}</th>
+                                        <th>{t.dashboard.matches.table.status}</th>
                                         <th></th>
                                     </tr>
                                 </thead>
@@ -244,10 +245,10 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                             <td className="text-right">
                                                 <div className="flex flex-wrap justify-end gap-2">
                                                     <button className={`${btnOutline} btn-xs`} onClick={() => openScheduleModal(match)}>
-                                                        Schedule
+                                                        {t.dashboard.matches.actions.schedule}
                                                     </button>
                                                     <button className={`${btnOutline} btn-xs`} onClick={() => openMatchModal(match)}>
-                                                        Edit Result
+                                                        {t.dashboard.matches.actions.editResult}
                                                     </button>
                                                 </div>
                                             </td>
@@ -266,12 +267,12 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                 </DashboardPanel>
             </div>
 
-            <Modal open={Boolean(activeMatch)} onClose={() => setActiveMatch(null)} title="Atur Hasil Match">
+            <Modal open={Boolean(activeMatch)} onClose={() => setActiveMatch(null)} title={t.dashboard.matches.modal.title}>
                 {activeMatch ? (
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
-                                <label className={labelCls}>Score Player 1</label>
+                                <label className={labelCls}>{t.dashboard.matches.modal.scoreA}</label>
                                 <input
                                     type="number"
                                     min={0}
@@ -285,7 +286,7 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                 />
                             </div>
                             <div>
-                                <label className={labelCls}>Score Player 2</label>
+                                <label className={labelCls}>{t.dashboard.matches.modal.scoreB}</label>
                                 <input
                                     type="number"
                                     min={0}
@@ -300,34 +301,34 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                             </div>
                         </div>
                         <div>
-                            <label className={labelCls}>Winner</label>
-                            <FormSelect value={winnerId} onChange={setWinnerId} options={winnerOptions} placeholder="Pilih pemenang" />
+                            <label className={labelCls}>{t.dashboard.matches.modal.winner}</label>
+                            <FormSelect value={winnerId} onChange={setWinnerId} options={winnerOptions} placeholder={t.dashboard.matches.modal.winnerPlaceholder} />
                         </div>
                         <div className="rounded-box border border-base-300 bg-base-100/80 p-4">
                             <MatchChatThread matchId={activeMatch.id} currentUserId={user?.id ?? null} readOnly={activeMatch.status === "COMPLETED"} />
                         </div>
                         <div className="flex justify-end gap-2">
                             <button className={btnOutline} type="button" onClick={() => setActiveMatch(null)}>
-                                Batal
+                                {t.common.cancel}
                             </button>
                             <button className={btnPrimary} type="button" onClick={handleResolve}>
-                                Simpan
+                                {t.common.save}
                             </button>
                         </div>
                     </div>
                 ) : null}
             </Modal>
 
-            <Modal open={Boolean(scheduleMatch)} onClose={() => setScheduleMatch(null)} title="Jadwalkan Match">
+            <Modal open={Boolean(scheduleMatch)} onClose={() => setScheduleMatch(null)} title={t.dashboard.matches.scheduleModal.title}>
                 {scheduleMatch ? (
                     <div className="space-y-4">
                         <div>
-                            <label className={labelCls}>Tanggal & Waktu</label>
+                            <label className={labelCls}>{t.dashboard.matches.scheduleModal.label}</label>
                             <DateTimePickerInput value={scheduleValue} onChange={setScheduleValue} />
                         </div>
                         <div className="flex justify-end gap-2">
                             <button className={btnOutline} type="button" onClick={() => setScheduleMatch(null)}>
-                                Batal
+                                {t.common.cancel}
                             </button>
                             <button
                                 className={btnOutline}
@@ -335,7 +336,7 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                 onClick={() => handleScheduleSubmit(null)}
                                 disabled={scheduleSubmitting}
                             >
-                                Hapus Jadwal
+                                {t.dashboard.matches.scheduleModal.clear}
                             </button>
                             <button
                                 className={btnPrimary}
@@ -343,7 +344,7 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                                 onClick={() => handleScheduleSubmit(scheduleValue)}
                                 disabled={scheduleSubmitting}
                             >
-                                {scheduleSubmitting ? "Menyimpan..." : "Simpan"}
+                                {scheduleSubmitting ? t.dashboard.matches.scheduleModal.saving : t.dashboard.matches.scheduleModal.save}
                             </button>
                         </div>
                     </div>

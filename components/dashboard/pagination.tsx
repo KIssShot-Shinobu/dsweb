@@ -1,3 +1,7 @@
+"use client";
+
+import { useLocale } from "@/hooks/use-locale";
+
 interface PaginationProps {
     page: number;
     totalPages: number;
@@ -7,6 +11,7 @@ interface PaginationProps {
 }
 
 export function Pagination({ page, totalPages, total, perPage, onPage }: PaginationProps) {
+    const { t } = useLocale();
     if (totalPages <= 1) return null;
 
     const from = (page - 1) * perPage + 1;
@@ -26,10 +31,10 @@ export function Pagination({ page, totalPages, total, perPage, onPage }: Paginat
     return (
         <div className="mt-4 flex items-center justify-between border-t border-base-300 pt-4">
             <span className="text-xs text-base-content/50">
-                Showing {from}-{to} of {total}
+                {t.dashboard.pagination.showing(from, to, total)}
             </span>
             <div className="join">
-                <button className="join-item btn btn-sm btn-ghost" onClick={() => onPage(page - 1)} disabled={page === 1} title="Previous">
+                <button className="join-item btn btn-sm btn-ghost" onClick={() => onPage(page - 1)} disabled={page === 1} title={t.dashboard.pagination.previous}>
                     {"<"}
                 </button>
                 {pages.map((entry, index) =>
@@ -47,7 +52,7 @@ export function Pagination({ page, totalPages, total, perPage, onPage }: Paginat
                         </button>
                     ),
                 )}
-                <button className="join-item btn btn-sm btn-ghost" onClick={() => onPage(page + 1)} disabled={page === totalPages} title="Next">
+                <button className="join-item btn btn-sm btn-ghost" onClick={() => onPage(page + 1)} disabled={page === totalPages} title={t.dashboard.pagination.next}>
                     {">"}
                 </button>
             </div>

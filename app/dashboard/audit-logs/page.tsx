@@ -11,6 +11,8 @@ import {
     DashboardPageShell,
     DashboardPanel,
 } from "@/components/dashboard/page-shell";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDateTime } from "@/lib/i18n/format";
 
 type AuditLog = {
     id: string;
@@ -134,15 +136,6 @@ function useAuditLogs(
     return { logs, total, loading };
 }
 
-const formatDate = (dateString: string) =>
-    new Intl.DateTimeFormat("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(new Date(dateString));
-
 const formatDetails = (detailsStr: string | null) => {
     if (!detailsStr) return "-";
     try {
@@ -176,6 +169,7 @@ const getActionBadgeColor = (action: string) => {
 };
 
 export default function AuditLogsPage() {
+    const { locale } = useLocale();
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState("20");
     const [actionFilter, setActionFilter] = useState("ALL");
@@ -189,6 +183,14 @@ export default function AuditLogsPage() {
     const limitValue = Math.max(1, Number(limit) || 20);
     const { logs, total, loading } = useAuditLogs(page, limitValue, actionFilter, search, appliedDateRange);
     const totalPages = Math.max(1, Math.ceil(total / limitValue));
+    const formatLogDate = (dateString: string) =>
+        formatDateTime(dateString, locale, {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
 
     const summary = useMemo(
         () => ({
@@ -320,7 +322,7 @@ export default function AuditLogsPage() {
                                                 <span className="rounded-full bg-base-100 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50" title={log.userId || "SYSTEM"}>
                                                     {!log.userId || log.userId === "0" ? "SYSTEM" : log.userId.slice(-8)}
                                                 </span>
-                                                <span className="text-xs text-base-content/45">{formatDate(log.createdAt)}</span>
+                                                <span className="text-xs text-base-content/45">{formatLogDate(log.createdAt)}</span>
                                             </div>
                                             <div>
                                                 <div className="text-sm font-semibold text-base-content">{log.user?.username || log.user?.fullName || "System Event"}</div>

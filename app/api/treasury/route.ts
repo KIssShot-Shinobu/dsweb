@@ -5,9 +5,11 @@ import { logAudit } from "@/lib/audit-logger";
 import { createTreasuryEntry } from "@/lib/services/treasury-service";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 import { buildMonthlyBuckets, buildTreasuryWhere } from "@/lib/treasury-query";
+import { getServerLocale } from "@/lib/i18n/server";
 
 export async function GET(request: NextRequest) {
     try {
+        const locale = await getServerLocale();
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get("page") || "1", 10);
         const limit = parseInt(searchParams.get("limit") || "10", 10);
@@ -90,7 +92,7 @@ export async function GET(request: NextRequest) {
 
         const monthlyTotals = includeSummary
             ? (() => {
-                  const buckets = buildMonthlyBuckets(summaryYear);
+                  const buckets = buildMonthlyBuckets(summaryYear, locale);
                   summaryTransactions.forEach((transaction) => {
                       const monthIndex = new Date(transaction.createdAt).getMonth();
                       if (transaction.amount >= 0) {

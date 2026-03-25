@@ -6,6 +6,7 @@ import { useSidebar } from "@/context/SidebarContext";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { useLocale } from "@/hooks/use-locale";
 
 function getInitials(name: string) {
     return (
@@ -21,20 +22,21 @@ function getInitials(name: string) {
 export function Header() {
     const { toggle } = useSidebar();
     const { user } = useCurrentUser();
-    const displayName = user?.username || user?.fullName || "Dashboard User";
+    const { t } = useLocale();
+    const displayName = user?.username || user?.fullName || t.dashboard.header.userFallback;
     const avatarUrl = normalizeAssetUrl(user?.avatarUrl);
 
     return (
         <header className="sticky top-0 z-30 border-b border-base-300 bg-base-100/80 backdrop-blur-xl">
             <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
                 <div className="flex min-w-0 items-center gap-3">
-                    <button onClick={toggle} className="btn btn-ghost btn-circle lg:hidden" aria-label="Open menu">
+                    <button onClick={toggle} className="btn btn-ghost btn-circle lg:hidden" aria-label={t.dashboard.header.openMenu}>
                         <Menu className="h-5 w-5" />
                     </button>
 
                     <label className="input input-bordered hidden w-full max-w-sm items-center gap-2 bg-base-100 sm:flex">
                         <Search className="h-4 w-4 text-base-content/45" />
-                        <input type="text" className="grow" placeholder="Cari halaman dashboard..." />
+                        <input type="text" className="grow" placeholder={t.dashboard.header.searchPlaceholder} />
                     </label>
                 </div>
 
@@ -54,7 +56,7 @@ export function Header() {
                         )}
                         <div className="hidden min-w-0 lg:block">
                             <div className="truncate text-sm font-semibold text-base-content">{displayName}</div>
-                            <div className="truncate text-xs text-base-content/50">{user?.email ?? "login required"}</div>
+                            <div className="truncate text-xs text-base-content/50">{user?.email ?? t.dashboard.header.loginRequired}</div>
                         </div>
                     </div>
                 </div>

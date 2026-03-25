@@ -1,16 +1,19 @@
 "use client";
 
 import { AlertTriangle, Trash2 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 interface ConfirmModalProps {
     open: boolean;
     title?: string;
-    message: string;
+    message?: string;
+    description?: string;
     confirmLabel?: string;
     cancelLabel?: string;
     danger?: boolean;
     onConfirm: () => void;
-    onCancel: () => void;
+    onCancel?: () => void;
+    onClose?: () => void;
 }
 
 function ModalIcon({ danger }: { danger: boolean }) {
@@ -31,14 +34,22 @@ function ModalIcon({ danger }: { danger: boolean }) {
 
 export function ConfirmModal({
     open,
-    title = "Konfirmasi Aksi",
+    title,
     message,
-    confirmLabel = "Lanjutkan",
-    cancelLabel = "Batal",
+    description,
+    confirmLabel,
+    cancelLabel,
     danger = true,
     onConfirm,
     onCancel,
+    onClose,
 }: ConfirmModalProps) {
+    const { t } = useLocale();
+    const resolvedTitle = title ?? t.dashboard.confirm.title;
+    const resolvedMessage = message ?? description ?? "";
+    const resolvedConfirmLabel = confirmLabel ?? t.dashboard.confirm.confirmLabel;
+    const resolvedCancelLabel = cancelLabel ?? t.dashboard.confirm.cancelLabel;
+    const handleCancel = onCancel ?? onClose ?? (() => {});
     if (!open) return null;
 
     return (
@@ -50,24 +61,24 @@ export function ConfirmModal({
                         <ModalIcon danger={danger} />
                         <div className="min-w-0">
                             <div className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${danger ? "text-error" : "text-warning"}`}>
-                                {danger ? "Aksi Sensitif" : "Konfirmasi"}
+                                {danger ? t.dashboard.confirm.sensitiveLabel : t.dashboard.confirm.neutralLabel}
                             </div>
-                            <h3 className="mt-2 text-lg font-black tracking-tight text-base-content">{title}</h3>
-                            <p className="mt-2 text-sm leading-6 text-base-content/60">{message}</p>
+                            <h3 className="mt-2 text-lg font-black tracking-tight text-base-content">{resolvedTitle}</h3>
+                            <p className="mt-2 text-sm leading-6 text-base-content/60">{resolvedMessage}</p>
                         </div>
                     </div>
 
                     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                        <button type="button" onClick={onCancel} className="btn btn-outline rounded-box">
-                            {cancelLabel}
+                        <button type="button" onClick={handleCancel} className="btn btn-outline rounded-box">
+                            {resolvedCancelLabel}
                         </button>
                         <button type="button" onClick={onConfirm} className={`btn rounded-box ${danger ? "btn-error" : "btn-warning"}`}>
-                            {confirmLabel}
+                            {resolvedConfirmLabel}
                         </button>
                     </div>
                 </div>
             </div>
-            <button className="modal-backdrop" onClick={onCancel} aria-label="Close confirmation dialog" />
+            <button className="modal-backdrop" onClick={handleCancel} aria-label={t.dashboard.confirm.closeAria} />
         </div>
     );
 }

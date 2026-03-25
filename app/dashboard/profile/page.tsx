@@ -7,6 +7,8 @@ import { ProfileGameSection } from "@/components/dashboard/profile-game-section"
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { dashboardStackCls } from "@/components/dashboard/form-styles";
 import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
+import { getServerLocale } from "@/lib/i18n/server";
+import { formatDate, formatDateTime } from "@/lib/i18n/format";
 
 type GameProfileView = {
     gameType: string;
@@ -17,6 +19,7 @@ type GameProfileView = {
 };
 
 export default async function ProfilePage() {
+    const locale = await getServerLocale();
     const user = await getCurrentUser();
     if (!user) redirect("/login");
 
@@ -74,7 +77,7 @@ export default async function ProfilePage() {
     const accountName = userWithProfiles?.username || user.username || user.fullName;
     const teamName = activeTeam.team?.name || (user.role === "USER" ? "Public User" : "Belum masuk team");
     const teamJoinedAt = activeTeam.teamJoinedAt
-        ? new Date(activeTeam.teamJoinedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+        ? formatDate(activeTeam.teamJoinedAt, locale, { day: "numeric", month: "long", year: "numeric" })
         : "-";
     const emailVerificationLabel = user.emailVerified ? "Terverifikasi" : "Belum Verifikasi";
     const emailVerificationClass = user.emailVerified
@@ -94,7 +97,7 @@ export default async function ProfilePage() {
     const accountMetaRows = [
         {
             label: "Terakhir Aktif",
-            value: new Date(user.lastActiveAt).toLocaleDateString("id-ID", {
+            value: formatDateTime(user.lastActiveAt, locale, {
                 day: "numeric",
                 month: "short",
                 year: "numeric",
@@ -104,7 +107,7 @@ export default async function ProfilePage() {
         },
         {
             label: "Terdaftar",
-            value: new Date(user.createdAt).toLocaleDateString("id-ID", {
+            value: formatDate(user.createdAt, locale, {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
@@ -220,7 +223,7 @@ export default async function ProfilePage() {
                                             >
                                                 <span className="text-xs font-semibold uppercase tracking-[0.16em] text-base-content/80">{log.action}</span>
                                                 <span className="text-xs text-base-content/45">
-                                                    {new Date(log.createdAt).toLocaleDateString("id-ID", {
+                                                    {formatDateTime(log.createdAt, locale, {
                                                         day: "numeric",
                                                         month: "short",
                                                         year: "numeric",

@@ -8,6 +8,8 @@ import { normalizeAssetUrl } from "@/lib/asset-url";
 import { buildGoogleCalendarUrl } from "@/lib/google-calendar";
 import { MatchChatThread } from "@/components/shared/match-chat-thread";
 import { DateTimePickerInput } from "@/components/ui/date-time-picker";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDateTime } from "@/lib/i18n/format";
 
 type MatchParticipant = {
     id: string;
@@ -93,12 +95,13 @@ function EvidenceUploader({
     onChange: (next: string[]) => void;
     disabled?: boolean;
 }) {
+    const { t } = useLocale();
     const { error } = useToast();
     const [uploading, setUploading] = useState(false);
 
     const handleUpload = async (file: File) => {
         if (value.length >= MAX_EVIDENCE) {
-            error("Maksimal 3 bukti.");
+            error(t.match.evidence.limit(MAX_EVIDENCE));
             return;
         }
         setUploading(true);
@@ -108,11 +111,11 @@ function EvidenceUploader({
             const res = await fetch("/api/upload", { method: "POST", body: formData });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || "Upload gagal.");
+                throw new Error(data.message || t.common.uploadFailed);
             }
             onChange([...value, data.url]);
         } catch (err) {
-            err instanceof Error ? error(err.message) : error("Upload gagal.");
+            err instanceof Error ? error(err.message) : error(t.common.uploadFailed);
         } finally {
             setUploading(false);
         }
@@ -126,9 +129,9 @@ function EvidenceUploader({
         <div className="space-y-2">
             <label className="flex cursor-pointer items-center justify-between gap-3 rounded-box border border-dashed border-base-300 bg-base-200/40 px-4 py-3 transition-all hover:border-primary/40 hover:bg-base-200/70">
                 <span className="text-sm text-base-content/55">
-                    {uploading ? "Mengunggah file..." : "Tambah bukti (PNG/JPG/WEBP)"}
+                    {uploading ? t.match.evidence.uploading : t.match.evidence.add}
                 </span>
-                <span className="btn btn-primary btn-xs rounded-box">Upload</span>
+                <span className="btn btn-primary btn-xs rounded-box">{t.common.upload}</span>
                 <input
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
@@ -146,15 +149,19 @@ function EvidenceUploader({
                     {value.map((url) => (
                         <div key={url} className="rounded-box border border-base-300 bg-base-100/70 p-2">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={normalizeAssetUrl(url) || url} alt="Bukti match" className="h-24 w-full rounded-box object-cover" />
+                            <img
+                                src={normalizeAssetUrl(url) || url}
+                                alt={t.match.evidence.alt}
+                                className="h-24 w-full rounded-box object-cover"
+                            />
                             <button type="button" className="mt-2 text-xs text-error" onClick={() => removeEvidence(url)}>
-                                Hapus
+                                {t.common.delete}
                             </button>
                         </div>
                     ))}
                 </div>
             ) : null}
-            <div className="text-xs text-base-content/50">Maksimal {MAX_EVIDENCE} bukti.</div>
+            <div className="text-xs text-base-content/50">{t.match.evidence.limit(MAX_EVIDENCE)}</div>
         </div>
     );
 }
@@ -174,6 +181,7 @@ export function TournamentMyMatch({
     tournamentTimeZone: string;
     lineupSize?: number | null;
 }) {
+    const { t, locale } = useLocale();
     const router = useRouter();
     const { success, error, warning } = useToast();
     const [scoreA, setScoreA] = useState(match.report?.scoreA ?? 0);
@@ -217,10 +225,10 @@ export function TournamentMyMatch({
             if (res.ok) {
                 setAvailability(data.availabilities || []);
             } else {
-                error(data.message || "Gagal memuat availability.");
+                error(data.message || t.match.availability.errors.loadFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.common.networkError);
         } finally {
             setAvailabilityLoading(false);
         }
@@ -239,10 +247,10 @@ export function TournamentMyMatch({
             if (res.ok) {
                 setLineupData(data.data || null);
             } else {
-                error(data.message || "Gagal memuat lineup.");
+                error(data.message || t.match.lineup.errors.loadFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.common.networkError);
         } finally {
             setLineupLoading(false);
         }
@@ -279,11 +287,11 @@ export function TournamentMyMatch({
         if (availabilityDisabled) return;
         const slots = availabilitySlots.map((slot) => slot.trim()).filter(Boolean);
         if (slots.length === 0) {
-            error("Isi minimal 1 slot ketersediaan.");
+            error(t.match.availability.errors.minSlots);
             return;
         }
         if (slots.length > MAX_AVAILABILITY_SLOTS) {
-            error("Maksimal 3 slot ketersediaan.");
+            error(t.match.availability.errors.maxSlots(MAX_AVAILABILITY_SLOTS));
             return;
         }
         setAvailabilitySubmitting(true);
@@ -295,13 +303,13 @@ export function TournamentMyMatch({
             });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || "Gagal mengirim availability.");
+                throw new Error(data.message || t.match.availability.errors.sendFailed);
             }
-            success(data.message || "Slot jadwal berhasil dikirim.");
+            success(data.message || t.match.availability.success.sent);
             setAvailabilitySlots([""]);
             fetchAvailability();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error("Gagal mengirim availability.");
+            err instanceof Error ? error(err.message) : error(t.match.availability.errors.sendFailed);
         } finally {
             setAvailabilitySubmitting(false);
         }
@@ -317,13 +325,13 @@ export function TournamentMyMatch({
             });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || "Gagal memilih slot.");
+                throw new Error(data.message || t.match.availability.errors.selectFailed);
             }
-            success(data.message || "Slot jadwal dipilih.");
+            success(data.message || t.match.availability.success.selected);
             router.refresh();
             fetchAvailability();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error("Gagal memilih slot.");
+            err instanceof Error ? error(err.message) : error(t.match.availability.errors.selectFailed);
         } finally {
             setSelectingSlot(null);
         }
@@ -336,7 +344,7 @@ export function TournamentMyMatch({
                 return prev.filter((id) => id !== memberId);
             }
             if (prev.length >= lineupSizeValue) {
-                warning(`Lineup maksimal ${lineupSizeValue} pemain.`);
+                warning(t.match.lineup.errors.maxPlayers(lineupSizeValue));
                 return prev;
             }
             return [...prev, memberId];
@@ -346,7 +354,7 @@ export function TournamentMyMatch({
     const handleSubmitLineup = async () => {
         if (!lineupSizeValue) return;
         if (selectedMembers.length !== lineupSizeValue) {
-            warning(`Lineup harus berisi ${lineupSizeValue} pemain.`);
+            warning(t.match.lineup.errors.mustPlayers(lineupSizeValue));
             return;
         }
         setLineupSubmitting(true);
@@ -358,13 +366,13 @@ export function TournamentMyMatch({
             });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || "Gagal menyimpan lineup.");
+                throw new Error(data.message || t.match.lineup.errors.saveFailed);
             }
-            success(data.message || "Lineup tersimpan.");
+            success(data.message || t.match.lineup.success.saved);
             router.refresh();
             fetchLineup();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error("Gagal menyimpan lineup.");
+            err instanceof Error ? error(err.message) : error(t.match.lineup.errors.saveFailed);
         } finally {
             setLineupSubmitting(false);
         }
@@ -376,13 +384,13 @@ export function TournamentMyMatch({
             const res = await fetch(`/api/matches/${match.id}/start`, { method: "POST" });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || "Gagal memulai match.");
+                throw new Error(data.message || t.match.lineup.errors.startFailed);
             }
-            success(data.message || "Match dimulai.");
+            success(data.message || t.match.lineup.success.started);
             router.refresh();
             fetchLineup();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error("Gagal memulai match.");
+            err instanceof Error ? error(err.message) : error(t.match.lineup.errors.startFailed);
         } finally {
             setStartingMatch(false);
         }
@@ -390,7 +398,7 @@ export function TournamentMyMatch({
 
     const handleReport = async () => {
         if (!winnerId) {
-            error("Pilih pemenang terlebih dahulu.");
+            error(t.match.report.errors.winnerRequired);
             return;
         }
         setSubmittingReport(true);
@@ -407,12 +415,12 @@ export function TournamentMyMatch({
             });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || "Gagal mengirim laporan match.");
+                throw new Error(data.message || t.match.report.errors.sendFailed);
             }
-            success(data.message || "Laporan match terkirim.");
+            success(data.message || t.match.report.success.sent);
             router.refresh();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error("Gagal mengirim laporan match.");
+            err instanceof Error ? error(err.message) : error(t.match.report.errors.sendFailed);
         } finally {
             setSubmittingReport(false);
         }
@@ -431,12 +439,12 @@ export function TournamentMyMatch({
             });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || "Gagal mengajukan sengketa.");
+                throw new Error(data.message || t.match.dispute.errors.sendFailed);
             }
-            success(data.message || "Sengketa berhasil diajukan.");
+            success(data.message || t.match.dispute.success.sent);
             router.refresh();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error("Gagal mengajukan sengketa.");
+            err instanceof Error ? error(err.message) : error(t.match.dispute.errors.sendFailed);
         } finally {
             setSubmittingDispute(false);
         }
@@ -456,26 +464,28 @@ export function TournamentMyMatch({
     return (
         <div className="space-y-4">
             <div>
-                <div className="mb-3 text-sm font-bold uppercase tracking-[0.28em] text-primary">Match Anda</div>
+                <div className="mb-3 text-sm font-bold uppercase tracking-[0.28em] text-primary">{t.match.title}</div>
                 <div className="rounded-box border border-base-300 bg-base-200/50 p-4 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="min-w-0 break-words font-semibold text-base-content">
-                            {match.playerA?.name ?? "TBD"} vs {match.playerB?.name ?? "TBD"}
+                            {match.playerA?.name ?? t.match.tbd} vs {match.playerB?.name ?? t.match.tbd}
                         </div>
                         <span className="badge badge-outline">{match.status}</span>
                     </div>
                     <div className="mt-2 text-xs text-base-content/60">
-                        {match.scheduledAtLabel || match.scheduledAt ? `Jadwal: ${match.scheduledAtLabel ?? match.scheduledAt}` : "Jadwal belum ditentukan."}
+                        {match.scheduledAtLabel || match.scheduledAt
+                            ? t.match.scheduleLabel(match.scheduledAtLabel ?? match.scheduledAt ?? "")
+                            : t.match.scheduleTbd}
                     </div>
                     {match.scheduledAt ? (
                         <div className="mt-3 flex flex-wrap gap-2">
                             {googleCalendarUrl ? (
                                 <a className={`${btnPrimary} btn-xs`} href={googleCalendarUrl} target="_blank" rel="noreferrer">
-                                    Add to Google Calendar
+                                    {t.tournamentDetail.addToCalendar}
                                 </a>
                             ) : null}
                             <a className={`${btnOutline} btn-xs`} href={`/api/matches/${match.id}/calendar`} target="_blank" rel="noreferrer">
-                                Download ICS
+                                {t.tournamentDetail.downloadIcs}
                             </a>
                         </div>
                     ) : null}
@@ -485,36 +495,38 @@ export function TournamentMyMatch({
             <div className="rounded-box border border-base-300 bg-base-200/40 p-4 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                        <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/60">Availability</div>
-                        <p className="text-xs text-base-content/55">Usulkan 1-3 slot jadwal, lawan memilih.</p>
+                        <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/60">{t.match.availability.title}</div>
+                        <p className="text-xs text-base-content/55">{t.match.availability.subtitle}</p>
                     </div>
                     <button type="button" className={`${btnOutline} btn-xs`} onClick={fetchAvailability} disabled={availabilityLoading}>
-                        Refresh
+                        {t.common.refresh}
                     </button>
                 </div>
 
                 <div className="mt-3 space-y-3">
                     {availabilityLoading ? (
-                        <div className="text-xs text-base-content/50">Memuat availability...</div>
+                        <div className="text-xs text-base-content/50">{t.match.availability.loading}</div>
                     ) : availability.length === 0 ? (
                         <div className="rounded-box border border-dashed border-base-300 p-3 text-center text-xs text-base-content/50">
-                            Belum ada slot ketersediaan.
+                            {t.match.availability.empty}
                         </div>
                     ) : (
                         availability.map((item) => {
-                            const proposerName = item.proposedBy.username || item.proposedBy.fullName || "User";
+                            const proposerName = item.proposedBy.username || item.proposedBy.fullName || t.common.userFallback;
                             const isOwner = currentUserId && item.proposedBy.id === currentUserId;
                             const canSelect = !availabilityDisabled && !isOwner;
-                            const expiresLabel = new Date(item.expiresAt).toLocaleString("id-ID");
+                            const expiresLabel = formatDateTime(item.expiresAt, locale);
                             return (
                                 <div key={item.id} className="rounded-box border border-base-300 bg-base-100/70 p-3">
                                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/60">
-                                        <span>Usulan dari {proposerName}</span>
-                                        <span>Expired: {expiresLabel}</span>
+                                        <span>{t.match.availability.proposedBy(proposerName)}</span>
+                                        <span>{t.match.availability.expires(expiresLabel)}</span>
                                     </div>
                                     {item.status === "SELECTED" && item.selectedSlot ? (
                                         <div className="mt-2 text-xs font-semibold text-success">
-                                            Slot dipilih: {item.slots.find((slot) => slot.value === item.selectedSlot)?.label ?? item.selectedSlot}
+                                            {t.match.availability.selectedSlot(
+                                                item.slots.find((slot) => slot.value === item.selectedSlot)?.label ?? item.selectedSlot
+                                            )}
                                         </div>
                                     ) : null}
                                     <div className="mt-2 flex flex-wrap gap-2">
@@ -538,7 +550,7 @@ export function TournamentMyMatch({
 
                 {!availabilityDisabled ? (
                     <div className="mt-4 space-y-3">
-                        <div className="text-xs font-semibold text-base-content/70">Kirim slot baru</div>
+                        <div className="text-xs font-semibold text-base-content/70">{t.match.availability.sendTitle}</div>
                         <div className="space-y-2">
                             {availabilitySlots.map((slot, index) => (
                                 <div key={`${index}-${slot}`} className="flex flex-wrap items-center gap-2">
@@ -549,7 +561,7 @@ export function TournamentMyMatch({
                                     />
                                     {availabilitySlots.length > 1 ? (
                                         <button type="button" className={`${btnOutline} btn-xs`} onClick={() => removeAvailabilitySlot(index)}>
-                                            Hapus
+                                            {t.common.delete}
                                         </button>
                                     ) : null}
                                 </div>
@@ -557,7 +569,7 @@ export function TournamentMyMatch({
                         </div>
                         {availabilitySlots.length < MAX_AVAILABILITY_SLOTS ? (
                             <button type="button" className={`${btnOutline} btn-xs`} onClick={addAvailabilitySlot}>
-                                Tambah Slot
+                                {t.match.availability.addSlot}
                             </button>
                         ) : null}
                         <button
@@ -566,11 +578,11 @@ export function TournamentMyMatch({
                             onClick={handleSubmitAvailability}
                             disabled={availabilitySubmitting}
                         >
-                            {availabilitySubmitting ? "Mengirim..." : "Kirim Availability"}
+                            {availabilitySubmitting ? t.match.availability.submitting : t.match.availability.submit}
                         </button>
                     </div>
                 ) : (
-                    <div className="mt-3 text-xs text-base-content/50">Match sudah selesai. Availability ditutup.</div>
+                    <div className="mt-3 text-xs text-base-content/50">{t.match.availability.closed}</div>
                 )}
             </div>
 
@@ -578,16 +590,16 @@ export function TournamentMyMatch({
                 <div className="rounded-box border border-base-300 bg-base-200/40 p-4 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
-                            <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/60">Lineup</div>
-                            <p className="text-xs text-base-content/55">Kapten submit lineup sebelum match dimulai.</p>
+                            <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/60">{t.match.lineup.title}</div>
+                            <p className="text-xs text-base-content/55">{t.match.lineup.subtitle}</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                             <button type="button" className={`${btnOutline} btn-xs`} onClick={fetchLineup} disabled={lineupLoading}>
-                                Refresh
+                                {t.common.refresh}
                             </button>
                             {lineupData?.canStart ? (
                                 <button type="button" className={`${btnPrimary} btn-xs`} onClick={handleStartMatch} disabled={startingMatch}>
-                                    {startingMatch ? "Memulai..." : "Start Match"}
+                                    {startingMatch ? t.match.lineup.starting : t.match.lineup.startMatch}
                                 </button>
                             ) : null}
                         </div>
@@ -595,27 +607,27 @@ export function TournamentMyMatch({
 
                     <div className="mt-3 space-y-3">
                         {lineupLoading ? (
-                            <div className="text-xs text-base-content/50">Memuat lineup...</div>
+                            <div className="text-xs text-base-content/50">{t.match.lineup.loading}</div>
                         ) : !lineupData ? (
                             <div className="rounded-box border border-dashed border-base-300 p-3 text-center text-xs text-base-content/50">
-                                Lineup belum tersedia.
+                                {t.match.lineup.empty}
                             </div>
                         ) : !lineupData.enabled ? (
                             <div className="rounded-box border border-dashed border-base-300 p-3 text-center text-xs text-base-content/50">
-                                Lineup belum diaktifkan untuk turnamen ini.
+                                {t.match.lineup.disabled}
                             </div>
                         ) : (
                             <>
                                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/60">
-                                    <span>Lineup size: {lineupData.lineupSize}</span>
+                                    <span>{t.match.lineup.sizeLabel(lineupData.lineupSize ?? 0)}</span>
                                     <span className={`badge badge-outline ${lineupData.locked ? "badge-warning" : "badge-success"}`}>
-                                        {lineupData.locked ? "Locked" : "Draft"}
+                                        {lineupData.locked ? t.match.lineup.lockedBadge : t.match.lineup.draftBadge}
                                     </span>
                                 </div>
 
                                 {lineupData.lineups.length === 0 ? (
                                     <div className="rounded-box border border-dashed border-base-300 p-3 text-center text-xs text-base-content/50">
-                                        Belum ada lineup yang disubmit.
+                                        {t.match.lineup.noneSubmitted}
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
@@ -624,7 +636,7 @@ export function TournamentMyMatch({
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="text-xs font-semibold text-base-content">{lineup.teamName}</div>
                                                     <div className="text-[11px] text-base-content/45">
-                                                        {new Date(lineup.updatedAt).toLocaleString("id-ID")}
+                                                        {formatDateTime(lineup.updatedAt, locale)}
                                                     </div>
                                                 </div>
                                                 <div className="mt-2 text-xs text-base-content/70">
@@ -632,7 +644,7 @@ export function TournamentMyMatch({
                                                 </div>
                                                 {lineup.submittedBy ? (
                                                     <div className="mt-2 text-[11px] text-base-content/45">
-                                                        Disubmit oleh {lineup.submittedBy.name}
+                                                        {t.match.lineup.submittedBy(lineup.submittedBy.name)}
                                                     </div>
                                                 ) : null}
                                             </div>
@@ -642,21 +654,21 @@ export function TournamentMyMatch({
 
                                 {lineupData.opponentHidden ? (
                                     <div className="rounded-box border border-base-300 bg-base-100/70 p-3 text-xs text-base-content/55">
-                                        Lineup lawan akan muncul setelah match dimulai.
+                                        {t.match.lineup.opponentHidden}
                                     </div>
                                 ) : null}
 
                                 {lineupData.canSubmit ? (
                                     <div className="space-y-3">
                                         <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-base-content/70">
-                                            <span>Pilih lineup</span>
+                                            <span>{t.match.lineup.pickTitle}</span>
                                             <span>
                                                 {selectedMembers.length} / {lineupSizeValue ?? 0}
                                             </span>
                                         </div>
                                         {lineupData.roster.length === 0 ? (
                                             <div className="rounded-box border border-dashed border-base-300 p-3 text-center text-xs text-base-content/50">
-                                                Roster belum tersedia.
+                                                {t.match.lineup.rosterEmpty}
                                             </div>
                                         ) : (
                                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -687,13 +699,13 @@ export function TournamentMyMatch({
                                                 onClick={handleSubmitLineup}
                                                 disabled={lineupSubmitting}
                                             >
-                                                {lineupSubmitting ? "Menyimpan..." : "Simpan Lineup"}
+                                                {lineupSubmitting ? t.match.lineup.saving : t.match.lineup.save}
                                             </button>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="text-xs text-base-content/55">
-                                        {lineupData.locked ? "Lineup terkunci karena match sudah dimulai." : "Hanya captain yang dapat mengatur lineup."}
+                                        {lineupData.locked ? t.match.lineup.lockedHint : t.match.lineup.captainOnly}
                                     </div>
                                 )}
                             </>
@@ -703,19 +715,17 @@ export function TournamentMyMatch({
             ) : null}
 
             <div className="space-y-3">
-                <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">Report Match</div>
-                <div className="text-xs text-base-content/60">
-                    Auto-confirm 24 jam jika lawan tidak merespons laporan hasil.
-                </div>
+                <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">{t.match.report.title}</div>
+                <div className="text-xs text-base-content/60">{t.match.report.subtitle}</div>
                 {!canReport ? (
                     <div className="rounded-box border border-base-300 bg-base-200/40 p-3 text-xs text-base-content/60">
-                        Match sedang dalam sengketa atau sudah selesai.
+                        {t.match.report.disabled}
                     </div>
                 ) : (
                     <>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
-                                <label className={labelCls}>Score Player A</label>
+                                <label className={labelCls}>{t.match.report.scoreA}</label>
                                 <input
                                     type="number"
                                     min={0}
@@ -725,7 +735,7 @@ export function TournamentMyMatch({
                                 />
                             </div>
                             <div>
-                                <label className={labelCls}>Score Player B</label>
+                                <label className={labelCls}>{t.match.report.scoreB}</label>
                                 <input
                                     type="number"
                                     min={0}
@@ -736,13 +746,13 @@ export function TournamentMyMatch({
                             </div>
                         </div>
                         <div>
-                            <label className={labelCls}>Pemenang</label>
+                            <label className={labelCls}>{t.match.report.winnerLabel}</label>
                             <select
                                 className={inputCls}
                                 value={winnerId}
                                 onChange={(event) => setWinnerId(event.target.value)}
                             >
-                                <option value="">Pilih pemenang</option>
+                                <option value="">{t.match.report.selectWinner}</option>
                                 {winnerOptions.map((option) => (
                                     <option key={option.value} value={option.value}>
                                         {option.label}
@@ -751,12 +761,12 @@ export function TournamentMyMatch({
                             </select>
                         </div>
                         <div>
-                            <label className={labelCls}>Bukti Laporan (opsional)</label>
+                            <label className={labelCls}>{t.match.report.proofOptional}</label>
                             <EvidenceUploader value={reportEvidence} onChange={setReportEvidence} />
                         </div>
                         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                             <button className={`${btnPrimary} w-full sm:w-auto`} type="button" onClick={handleReport} disabled={submittingReport}>
-                                {submittingReport ? "Mengirim..." : "Kirim Laporan"}
+                                {submittingReport ? t.match.report.submitting : t.match.report.submit}
                             </button>
                         </div>
                     </>
@@ -766,30 +776,30 @@ export function TournamentMyMatch({
             <div className="divider my-1" />
 
             <div className="space-y-3">
-                <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">Ajukan Sengketa</div>
+                <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">{t.match.dispute.title}</div>
                 {!canDispute ? (
                     <div className="rounded-box border border-base-300 bg-base-200/40 p-3 text-xs text-base-content/60">
-                        {match.hasOpenDispute ? "Sengketa sedang diproses." : "Match sudah selesai."}
+                        {match.hasOpenDispute ? t.match.dispute.processing : t.match.dispute.completed}
                     </div>
                 ) : (
                     <>
                         <div>
-                            <label className={labelCls}>Alasan (opsional)</label>
+                            <label className={labelCls}>{t.match.dispute.reasonOptional}</label>
                             <input
                                 type="text"
                                 className={inputCls}
                                 value={reason}
                                 onChange={(event) => setReason(event.target.value)}
-                                placeholder="Contoh: skor berbeda, bukti terlampir"
+                                placeholder={t.match.dispute.reasonPlaceholder}
                             />
                         </div>
                         <div>
-                            <label className={labelCls}>Bukti Sengketa (opsional)</label>
+                            <label className={labelCls}>{t.match.dispute.proofOptional}</label>
                             <EvidenceUploader value={disputeEvidence} onChange={setDisputeEvidence} />
                         </div>
                         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                             <button className={`${btnOutline} w-full sm:w-auto`} type="button" onClick={handleDispute} disabled={submittingDispute}>
-                                {submittingDispute ? "Mengirim..." : "Ajukan Sengketa"}
+                                {submittingDispute ? t.match.dispute.submitting : t.match.dispute.submit}
                             </button>
                         </div>
                     </>

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
 type Option = {
     value: string;
@@ -21,9 +22,11 @@ export function FormSelect({
     onChange,
     options,
     disabled = false,
-    placeholder = "Pilih opsi",
+    placeholder,
     className = "",
 }: FormSelectProps) {
+    const { t } = useLocale();
+    const resolvedPlaceholder = placeholder ?? t.dashboard.form.selectPlaceholder;
     return (
         <select
             value={value}
@@ -31,7 +34,7 @@ export function FormSelect({
             onChange={(event) => onChange(event.target.value)}
             className={cn("select select-bordered w-full bg-base-100", className)}
         >
-            {!value ? <option value="">{placeholder}</option> : null}
+            {!value ? <option value="">{resolvedPlaceholder}</option> : null}
             {options.map((option) => (
                 <option key={option.value} value={option.value}>
                     {option.label}

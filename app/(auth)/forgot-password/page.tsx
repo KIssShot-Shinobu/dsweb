@@ -10,6 +10,7 @@ import {
     authPrimaryBtnCls,
     authSecondaryBtnCls,
 } from "@/components/auth/auth-shell";
+import { useLocale } from "@/hooks/use-locale";
 
 type ForgotPasswordResponse = {
     success: boolean;
@@ -18,6 +19,7 @@ type ForgotPasswordResponse = {
 };
 
 export default function ForgotPasswordPage() {
+    const { t } = useLocale();
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -43,16 +45,16 @@ export default function ForgotPasswordPage() {
             if (!response.ok || !data.success) {
                 setSuccessMessage(null);
                 setDebugResetUrl(null);
-                setError(data.message || "Permintaan pengaturan ulang kata sandi belum dapat diproses.");
+                setError(data.message || t.auth.forgot.errors.requestFailed);
                 return;
             }
 
-            setSuccessMessage(data.message || "Jika email Anda terdaftar, tautan pengaturan ulang sudah dikirim.");
+            setSuccessMessage(data.message || t.auth.forgot.successMessage);
             setDebugResetUrl(data.debugResetUrl || null);
         } catch {
             setSuccessMessage(null);
             setDebugResetUrl(null);
-            setError("Koneksi sedang bermasalah. Periksa jaringan Anda lalu coba lagi.");
+            setError(t.auth.forgot.errors.network);
         } finally {
             setLoading(false);
         }
@@ -60,14 +62,14 @@ export default function ForgotPasswordPage() {
 
     return (
         <AuthShell
-            eyebrow="Pemulihan Akun"
-            title="Atur ulang kata sandi"
-            description="Masukkan email akun Anda. Jika terdaftar, kami akan mengirimkan tautan reset yang berlaku selama 15 menit."
+            eyebrow={t.auth.forgot.eyebrow}
+            title={t.auth.forgot.title}
+            description={t.auth.forgot.description}
             footer={
                 <>
-                    Sudah ingat kata sandi?{" "}
+                    {t.auth.forgot.footerPrompt}{" "}
                     <Link href="/login" className="link link-hover font-semibold text-primary">
-                        Kembali ke login
+                        {t.auth.forgot.footerAction}
                     </Link>
                 </>
             }
@@ -82,12 +84,12 @@ export default function ForgotPasswordPage() {
                 <div className={`${authAlertCls} alert-success mb-5`}>
                     <div className="font-medium">{successMessage}</div>
                     <p className="mt-2 text-sm">
-                        Periksa inbox, folder spam, atau tab promosi jika email belum terlihat.
+                        {t.auth.forgot.successHint}
                     </p>
                     {debugResetUrl ? (
                         <div className="mt-3 rounded-box border border-success/30 bg-base-100/50 p-3 text-xs">
                             <div className="mb-1 font-semibold uppercase tracking-[0.18em]">
-                                Debug URL (Dev)
+                                {t.auth.forgot.debugLabel}
                             </div>
                             <Link href={debugResetUrl} className="link break-all">
                                 {debugResetUrl}
@@ -100,13 +102,13 @@ export default function ForgotPasswordPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label htmlFor="email" className={authLabelCls}>
-                        Email Akun
+                        {t.auth.forgot.emailLabel}
                     </label>
                     <input
                         id="email"
                         type="email"
                         className={authInputCls}
-                        placeholder="username@email.com"
+                        placeholder={t.auth.forgot.emailPlaceholder}
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         autoComplete="email"
@@ -115,15 +117,15 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 <div className="rounded-box border border-base-300 bg-base-200/50 px-4 py-3 text-sm leading-6 text-base-content/60">
-                    Demi keamanan, kami selalu menampilkan respons yang sama, baik email tersebut terdaftar maupun tidak.
+                    {t.auth.forgot.securityNote}
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
                     <button type="submit" disabled={loading} className={authPrimaryBtnCls}>
-                        {loading ? "Mengirim tautan..." : "Kirim Tautan Reset"}
+                        {loading ? t.auth.forgot.loading : t.auth.forgot.submit}
                     </button>
                     <Link href="/login" className={authSecondaryBtnCls}>
-                        Batal
+                        {t.common.cancel}
                     </Link>
                 </div>
             </form>

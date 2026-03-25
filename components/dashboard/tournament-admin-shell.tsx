@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { LayoutDashboard, ScrollText, Settings, Shield, Trophy, UserCheck, X, Gavel, Users } from "lucide-react";
 import { btnOutline } from "@/components/dashboard/form-styles";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDate } from "@/lib/i18n/format";
 
 type TournamentShellProps = {
     tournamentId: string;
@@ -14,19 +16,20 @@ type TournamentShellProps = {
 };
 
 const NAV_ITEMS = [
-    { label: "Overview", href: "", icon: LayoutDashboard },
-    { label: "Participants", href: "/participants", icon: UserCheck },
-    { label: "Bracket", href: "/bracket", icon: Trophy },
-    { label: "Matches", href: "/matches", icon: ScrollText },
-    { label: "Disputes", href: "/disputes", icon: Gavel, access: "referee" },
-    { label: "Check-In", href: "/check-in", icon: Shield },
-    { label: "Announcements", href: "/announcements", icon: ScrollText },
-    { label: "Referees", href: "/referees", icon: Users, access: "manage" },
-    { label: "Settings", href: "/settings", icon: Settings },
-    { label: "Publish", href: "/publish", icon: Trophy },
+    { key: "overview", href: "", icon: LayoutDashboard },
+    { key: "participants", href: "/participants", icon: UserCheck },
+    { key: "bracket", href: "/bracket", icon: Trophy },
+    { key: "matches", href: "/matches", icon: ScrollText },
+    { key: "disputes", href: "/disputes", icon: Gavel, access: "referee" },
+    { key: "checkIn", href: "/check-in", icon: Shield },
+    { key: "announcements", href: "/announcements", icon: ScrollText },
+    { key: "referees", href: "/referees", icon: Users, access: "manage" },
+    { key: "settings", href: "/settings", icon: Settings },
+    { key: "publish", href: "/publish", icon: Trophy },
 ] as const;
 
 export function TournamentAdminShell({ tournamentId, canManage, canReferee, children }: TournamentShellProps) {
+    const { locale, t } = useLocale();
     const pathname = usePathname();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [tournamentTitle, setTournamentTitle] = useState("");
@@ -39,11 +42,12 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
             return canManage;
         }).map((item) => ({
             ...item,
+            label: t.dashboard.tournamentAdminShell.nav[item.key],
             href: `/dashboard/tournaments/${tournamentId}${item.href}`,
         }));
 
         return links;
-    }, [canManage, canReferee, tournamentId]);
+    }, [canManage, canReferee, t, tournamentId]);
 
     useEffect(() => {
         let active = true;
@@ -55,7 +59,9 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
                 const data = await res.json();
                 if (!active || !res.ok) return;
                 setTournamentTitle(data.tournament?.title ?? "");
-                setTournamentMeta(`${data.tournament?.gameType ?? ""} · ${new Date(data.tournament?.startAt ?? Date.now()).toLocaleDateString("id-ID")}`);
+                setTournamentMeta(
+                    `${data.tournament?.gameType ?? ""} ${t.dashboard.tournamentAdminShell.metaSeparator} ${formatDate(data.tournament?.startAt ?? Date.now(), locale)}`
+                );
             } catch {
                 if (active) {
                     setTournamentTitle("");
@@ -69,7 +75,7 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
             active = false;
             controller.abort();
         };
-    }, [tournamentId]);
+    }, [tournamentId, locale]);
 
     return (
         <div className="drawer lg:drawer-open">
@@ -85,16 +91,16 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                             <label htmlFor="tournament-admin-drawer" className={`${btnOutline} btn-sm lg:hidden`}>
-                                Menu
+                                {t.dashboard.tournamentAdminShell.menu}
                             </label>
                             <div className="space-y-1">
-                                <div className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/70">Tournament Admin</div>
-                                <div className="text-base font-bold text-base-content">{tournamentTitle || "Memuat turnamen..."}</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/70">{t.dashboard.tournamentAdminShell.title}</div>
+                                <div className="text-base font-bold text-base-content">{tournamentTitle || t.dashboard.tournamentAdminShell.loadingTitle}</div>
                                 {tournamentMeta ? <div className="text-xs text-base-content/50">{tournamentMeta}</div> : null}
                             </div>
                         </div>
                         <Link href="/dashboard/tournaments" className={`${btnOutline} btn-sm`}>
-                            Kembali ke daftar
+                            {t.dashboard.tournamentAdminShell.backToList}
                         </Link>
                     </div>
                 </header>
@@ -105,8 +111,8 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
                 <aside className="min-h-full w-72 border-r border-base-300 bg-base-100/95 backdrop-blur lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
                     <div className="flex items-center justify-between border-b border-base-300 px-5 py-4">
                         <div>
-                            <div className="text-xs font-semibold uppercase tracking-[0.28em] text-base-content/45">Panel</div>
-                            <div className="text-base font-black">Kontrol Turnamen</div>
+                            <div className="text-xs font-semibold uppercase tracking-[0.28em] text-base-content/45">{t.dashboard.tournamentAdminShell.panelLabel}</div>
+                            <div className="text-base font-black">{t.dashboard.tournamentAdminShell.panelTitle}</div>
                         </div>
                         <button className="btn btn-ghost btn-sm btn-circle lg:hidden" onClick={() => setDrawerOpen(false)}>
                             <X className="h-4 w-4" />

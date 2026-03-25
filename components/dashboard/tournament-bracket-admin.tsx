@@ -19,6 +19,7 @@ import {
     DEFAULT_PALETTE,
 } from "@/lib/bracket-theme";
 import { BracketMatchCard } from "@/components/bracket/bracket-match-card";
+import { useLocale } from "@/hooks/use-locale";
 
 type BracketParticipant = {
     id?: string;
@@ -72,7 +73,7 @@ type ViewerSize = {
 
 const shouldForwardProp = (prop: string) => !["won", "hovered", "highlighted"].includes(prop);
 
-function mapMatch(match: BracketMatch, roundName: string): MatchType {
+function mapMatch(match: BracketMatch, roundName: string, fallbackName: string): MatchType {
     return {
         id: match.id,
         name: match.name,
@@ -83,7 +84,7 @@ function mapMatch(match: BracketMatch, roundName: string): MatchType {
         state: match.state ?? "SCHEDULED",
         participants: match.participants.map((participant, index) => ({
             id: participant.id ?? `${match.id}-${index}`,
-            name: participant.name ?? "TBD",
+            name: participant.name ?? fallbackName,
             resultText: participant.resultText ?? "",
             isWinner: participant.isWinner ?? false,
             status: participant.id ? "PLAYED" : "NO_PARTY",
@@ -138,6 +139,7 @@ export function TournamentBracketAdmin({
         reason: "",
     });
     const { success, error: toastError } = useToast();
+    const { t } = useLocale();
     const canShuffle = status === "OPEN";
 
     const fetchBracket = () => {
@@ -149,11 +151,11 @@ export function TournamentBracketAdmin({
                 if (payload?.success) {
                     setData(payload.rounds || []);
                 } else {
-                    setError("Gagal memuat bracket.");
+                    setError(t.dashboard.bracket.loadFailed);
                 }
             })
             .catch(() => {
-                setError("Gagal memuat bracket.");
+                setError(t.dashboard.bracket.loadFailed);
             })
             .finally(() => setLoading(false));
     };
@@ -213,7 +215,7 @@ export function TournamentBracketAdmin({
         data.forEach((round) => {
             const safeMatches = (round.matches || []).filter((match): match is BracketMatch => Boolean(match && match.id));
             safeMatches.forEach((match) => index.set(match.id, match));
-            const mapped = safeMatches.map((match) => mapMatch(match, round.name));
+            const mapped = safeMatches.map((match) => mapMatch(match, round.name, t.match.tbd));
             if (round.roundType === "LOWER") {
                 lower.push(...mapped);
             } else {
@@ -240,12 +242,12 @@ export function TournamentBracketAdmin({
             lowerMatches: sanitize(lower),
             matchIndex: index,
         };
-    }, [data]);
+    }, [data, t]);
 
     const openMatchModal = (matchId: string | number) => {
         const match = matchIndex.get(String(matchId));
         if (!match) {
-            toastError("Detail match tidak ditemukan.");
+            toastError(t.dashboard.bracket.matchNotFound);
             return;
         }
 
@@ -263,11 +265,11 @@ export function TournamentBracketAdmin({
     const handleSaveResult = async () => {
         if (!activeMatch) return;
         if (!activeMatch.playerAId || !activeMatch.playerBId) {
-            toastError("Match belum lengkap. Tunggu kedua player terisi.");
+            toastError(t.dashboard.bracket.matchIncomplete);
             return;
         }
         if (!formState.winnerId) {
-            toastError("Pilih pemenang terlebih dulu.");
+            toastError(t.dashboard.bracket.winnerRequired);
             return;
         }
 
@@ -284,15 +286,15 @@ export function TournamentBracketAdmin({
             });
             const payload = await res.json();
             if (!res.ok) {
-                toastError(payload?.message || "Gagal menyimpan hasil.");
+                toastError(payload?.message || t.dashboard.bracket.saveFailed);
                 return;
             }
-            success("Hasil match tersimpan.");
+            success(t.dashboard.bracket.saveSuccess);
             setModalOpen(false);
             fetchBracket();
             onUpdated?.();
         } catch {
-            toastError("Kesalahan jaringan.");
+            toastError(t.dashboard.disputes.errors.network);
         }
     };
 
@@ -302,16 +304,16 @@ export function TournamentBracketAdmin({
             const res = await fetch(`/api/tournaments/${tournamentId}/shuffle`, { method: "POST" });
             const payload = await res.json();
             if (!res.ok) {
-                toastError(payload?.message || "Gagal mengacak bracket.");
+                toastError(payload?.message || t.dashboard.bracket.shuffleFailed);
                 return;
             }
-            success(payload?.message || "Bracket diacak ulang.");
+            success(payload?.message || t.dashboard.bracket.shuffleSuccess);
             fetchBracket();
             fetchSeeds();
             setShowAllSeeds(false);
             onUpdated?.();
         } catch {
-            toastError("Kesalahan jaringan.");
+            toastError(t.dashboard.disputes.errors.network);
         } finally {
             setShuffling(false);
             setShuffleConfirmOpen(false);
@@ -416,7 +418,7 @@ export function TournamentBracketAdmin({
     if (loading) {
         return (
             <div className="rounded-box border border-base-300 bg-base-200/40 p-6 text-sm text-base-content/60">
-                Memuat bracket...
+                {t.dashboard.bracket.loading}
             </div>
         );
     }
@@ -433,7 +435,7 @@ export function TournamentBracketAdmin({
         return (
             <div className="space-y-4">
                 <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 p-6 text-sm text-base-content/60">
-                    <div>Bracket belum dibuat.</div>
+                    <div>{t.dashboard.bracket.emptyTitle}</div>
                     {canShuffle ? (
                         <button
                             type="button"
@@ -441,17 +443,17 @@ export function TournamentBracketAdmin({
                             onClick={() => setShuffleConfirmOpen(true)}
                             disabled={shuffling}
                         >
-                            {shuffling ? "Membuat..." : "Generate Bracket"}
+                            {shuffling ? t.dashboard.bracket.generating : t.dashboard.bracket.generate}
                         </button>
                     ) : (
-                        <div className="mt-3 text-xs text-base-content/50">Generate hanya bisa saat turnamen masih OPEN.</div>
+                        <div className="mt-3 text-xs text-base-content/50">{t.dashboard.bracket.generateHint}</div>
                     )}
                 </div>
                 <ConfirmModal
                     open={shuffleConfirmOpen}
-                    title="Generate bracket?"
-                    description="Bracket akan dibuat ulang dari peserta yang tersedia. Hanya bisa dilakukan saat turnamen masih OPEN."
-                    confirmLabel="Generate"
+                    title={t.dashboard.bracket.generateConfirmTitle}
+                    description={t.dashboard.bracket.generateConfirmMessage}
+                    confirmLabel={t.dashboard.bracket.generate}
                     onConfirm={handleShuffle}
                     onClose={() => setShuffleConfirmOpen(false)}
                 />
@@ -468,22 +470,22 @@ export function TournamentBracketAdmin({
             <div className="space-y-4">
                 {forceCompact ? (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-box border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
-                        <div>Data double elimination belum lengkap. Menampilkan daftar match sementara.</div>
+                        <div>{t.dashboard.bracket.compactWarning}</div>
                         <button
                             type="button"
                             className={`${btnOutline} btn-xs`}
                             onClick={() => setShuffleConfirmOpen(true)}
                             disabled={!canShuffle}
                         >
-                            Rebuild Bracket
+                            {t.dashboard.bracket.rebuildBracket}
                         </button>
                     </div>
                 ) : null}
                 {showCompactBracket ? (
                     <div className="flex flex-wrap items-center justify-between gap-2 rounded-box border border-base-300 bg-base-200/40 p-3 text-xs text-base-content/60">
-                        <div>Mode mobile aktif. Gunakan daftar match atau buka tampilan bracket.</div>
+                        <div>{t.dashboard.bracket.mobileHint}</div>
                         <button className="btn btn-xs btn-outline" onClick={() => setMobileBracketOpen(true)}>
-                            Lihat Bracket
+                            {t.dashboard.bracket.viewBracket}
                         </button>
                     </div>
                 ) : null}
@@ -495,7 +497,7 @@ export function TournamentBracketAdmin({
                             onClick={() => setShuffleConfirmOpen(true)}
                             disabled={shuffling}
                         >
-                            {shuffling ? "Mengacak..." : "Shuffle Bracket"}
+                            {shuffling ? t.dashboard.bracket.shuffling : t.dashboard.bracket.shuffle}
                         </button>
                     </div>
                 ) : null}
@@ -515,7 +517,7 @@ export function TournamentBracketAdmin({
                             <div className="text-xs font-bold uppercase tracking-[0.22em] text-base-content/60">
                                 {round.name}
                             </div>
-                            <span className="badge badge-outline text-[10px]">{round.matches.length} match</span>
+                            <span className="badge badge-outline text-[10px]">{t.dashboard.bracket.matchCount(round.matches.length)}</span>
                         </div>
                         <div className="space-y-3">
                             {round.matches.map((match) => (
@@ -525,11 +527,11 @@ export function TournamentBracketAdmin({
                                     onClick={() => openMatchModal(match.id)}
                                     className="w-full rounded-box border border-base-300 bg-base-100/70 p-3 text-left transition hover:border-primary/40"
                                 >
-                                    <div className="text-[11px] text-base-content/50">{match.name || "Match"}</div>
+                                    <div className="text-[11px] text-base-content/50">{match.name || t.dashboard.bracket.matchLabel}</div>
                                     <div className="mt-2 space-y-1 text-sm">
                                         {match.participants.map((participant, index) => (
                                             <div key={`${match.id}-${index}`} className="flex items-center justify-between text-base-content/70">
-                                                <span className="font-semibold">{participant.name || "TBD"}</span>
+                                                <span className="font-semibold">{participant.name || t.match.tbd}</span>
                                                 <span className="text-xs font-semibold">{participant.resultText || "-"}</span>
                                             </div>
                                         ))}
@@ -551,9 +553,9 @@ export function TournamentBracketAdmin({
                     <div className="modal modal-open">
                         <div className="modal-box max-w-6xl border border-base-300 bg-base-100">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold">Bracket Fullscreen</h3>
+                                <h3 className="text-lg font-bold">{t.dashboard.bracket.fullscreenTitle}</h3>
                                 <button className="btn btn-sm btn-ghost" onClick={() => setMobileBracketOpen(false)}>
-                                    Close
+                                    {t.dashboard.bracket.close}
                                 </button>
                             </div>
                             <div className="mt-4">
@@ -568,9 +570,9 @@ export function TournamentBracketAdmin({
                 ) : null}
                 <ConfirmModal
                     open={shuffleConfirmOpen}
-                    title="Acak ulang bracket?"
-                    description="Urutan peserta akan diacak ulang dan bracket dibuat ulang. Hanya bisa dilakukan saat turnamen masih OPEN."
-                    confirmLabel="Shuffle"
+                    title={t.dashboard.bracket.shuffleConfirmTitle}
+                    description={t.dashboard.bracket.shuffleConfirmMessage}
+                    confirmLabel={t.dashboard.bracket.shuffle}
                     onConfirm={handleShuffle}
                     onClose={() => setShuffleConfirmOpen(false)}
                 />
@@ -584,7 +586,7 @@ export function TournamentBracketAdmin({
     return (
         <div ref={containerRef} className="mx-auto w-full max-w-[1200px] rounded-box border border-base-300 bg-base-200/40 p-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">Bracket Admin</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">{t.dashboard.bracket.adminLabel}</div>
                 <div className="flex flex-wrap items-center gap-2">
                     {canShuffle ? (
                         <button
@@ -593,11 +595,11 @@ export function TournamentBracketAdmin({
                             onClick={() => setShuffleConfirmOpen(true)}
                             disabled={shuffling}
                         >
-                            {shuffling ? "Mengacak..." : "Shuffle Bracket"}
+                            {shuffling ? t.dashboard.bracket.shuffling : t.dashboard.bracket.shuffle}
                         </button>
                     ) : null}
                     <button className="btn btn-sm btn-ghost" onClick={zoomOut}>-</button>
-                    <button className="btn btn-sm btn-ghost" onClick={resetZoom}>Reset</button>
+                    <button className="btn btn-sm btn-ghost" onClick={resetZoom}>{t.dashboard.bracket.zoomReset}</button>
                     <button className="btn btn-sm btn-ghost" onClick={zoomIn}>+</button>
                 </div>
             </div>
@@ -621,9 +623,9 @@ export function TournamentBracketAdmin({
             />
             <ConfirmModal
                 open={shuffleConfirmOpen}
-                title="Acak ulang bracket?"
-                description="Urutan peserta akan diacak ulang dan bracket dibuat ulang. Hanya bisa dilakukan saat turnamen masih OPEN."
-                confirmLabel="Shuffle"
+                title={t.dashboard.bracket.shuffleConfirmTitle}
+                description={t.dashboard.bracket.shuffleConfirmMessage}
+                confirmLabel={t.dashboard.bracket.shuffle}
                 onConfirm={handleShuffle}
                 onClose={() => setShuffleConfirmOpen(false)}
             />
@@ -650,29 +652,30 @@ function SeedOrderPanel({
     onRefresh: () => void;
     compact?: boolean;
 }) {
+    const { t } = useLocale();
     const gridCls = compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
 
     return (
         <div className="mb-4 rounded-box border border-base-300 bg-base-100/60 p-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/45">Seed Order</div>
-                    <p className="mt-1 text-xs text-base-content/50">Urutan seeding yang dipakai untuk bracket.</p>
+                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/45">{t.dashboard.bracket.seedTitle}</div>
+                    <p className="mt-1 text-xs text-base-content/50">{t.dashboard.bracket.seedDescription}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     {unseededCount > 0 ? (
-                        <span className="badge badge-ghost text-[10px]">Unseeded {unseededCount}</span>
+                        <span className="badge badge-ghost text-[10px]">{t.dashboard.bracket.unseeded(unseededCount)}</span>
                     ) : null}
                     <button type="button" className="btn btn-xs btn-ghost" onClick={onRefresh}>
-                        Refresh
+                        {t.dashboard.bracket.refresh}
                     </button>
                 </div>
             </div>
             <div className="mt-3">
                 {loading ? (
-                    <div className="text-xs text-base-content/50">Memuat seed...</div>
+                    <div className="text-xs text-base-content/50">{t.dashboard.bracket.seedsLoading}</div>
                 ) : seeds.length === 0 ? (
-                    <div className="text-xs text-base-content/50">Seed belum tersedia.</div>
+                    <div className="text-xs text-base-content/50">{t.dashboard.bracket.seedsEmpty}</div>
                 ) : (
                     <div className={`grid gap-2 ${gridCls}`}>
                         {seeds.map((entry) => (
@@ -686,7 +689,7 @@ function SeedOrderPanel({
             </div>
             {hasMore ? (
                 <button type="button" onClick={onToggle} className="btn btn-ghost btn-xs mt-3 w-full">
-                    {showAll ? "Sembunyikan" : "Lihat semua seed"}
+                    {showAll ? t.dashboard.bracket.showLess : t.dashboard.bracket.showAll}
                 </button>
             ) : null}
         </div>
@@ -708,6 +711,7 @@ function MatchAdminModal({
     onClose: () => void;
     onSave: () => void;
 }) {
+    const { t } = useLocale();
     const playerA = match?.participants[0];
     const playerB = match?.participants[1];
     const canAutoPickWinner = Boolean(match?.playerAId && match?.playerBId);
@@ -719,23 +723,30 @@ function MatchAdminModal({
     };
 
     return (
-        <Modal open={open} onClose={onClose} title={match ? `${match.name || "Match"} - Admin Result` : "Match Result"} size="md">
+        <Modal
+            open={open}
+            onClose={onClose}
+            title={match ? t.dashboard.bracket.modalTitle(match.name || t.dashboard.bracket.matchLabel) : t.dashboard.bracket.modalFallbackTitle}
+            size="md"
+        >
             <div className="space-y-4">
                 <div className="rounded-box border border-base-300 bg-base-200/40 p-4 text-sm">
                     <div className="flex items-center justify-between">
-                        <span className="font-semibold text-base-content">{playerA?.name || "TBD"}</span>
-                        <span className="text-xs text-base-content/60">Player A</span>
+                        <span className="font-semibold text-base-content">{playerA?.name || t.match.tbd}</span>
+                        <span className="text-xs text-base-content/60">{t.dashboard.bracket.playerA}</span>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
-                        <span className="font-semibold text-base-content">{playerB?.name || "TBD"}</span>
-                        <span className="text-xs text-base-content/60">Player B</span>
+                        <span className="font-semibold text-base-content">{playerB?.name || t.match.tbd}</span>
+                        <span className="text-xs text-base-content/60">{t.dashboard.bracket.playerB}</span>
                     </div>
-                    <div className="mt-3 text-xs text-base-content/50">Status: {match?.status || "-"}</div>
+                    <div className="mt-3 text-xs text-base-content/50">
+                        {t.dashboard.bracket.statusLabel}: {match?.status || "-"}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                        <label className={labelCls}>Score A</label>
+                        <label className={labelCls}>{t.dashboard.bracket.scoreA}</label>
                         <input
                             type="number"
                             className={inputCls}
@@ -753,7 +764,7 @@ function MatchAdminModal({
                         />
                     </div>
                     <div>
-                        <label className={labelCls}>Score B</label>
+                        <label className={labelCls}>{t.dashboard.bracket.scoreB}</label>
                         <input
                             type="number"
                             className={inputCls}
@@ -773,20 +784,20 @@ function MatchAdminModal({
                 </div>
 
                 <div>
-                    <label className={labelCls}>Pemenang</label>
+                    <label className={labelCls}>{t.dashboard.bracket.winner}</label>
                     <select
                         className={inputCls}
                         value={formState.winnerId}
                         onChange={(event) => setFormState((prev) => ({ ...prev, winnerId: event.target.value }))}
                     >
-                        <option value="">Pilih pemenang</option>
-                        {match?.playerAId ? <option value={match.playerAId}>{playerA?.name || "Player A"}</option> : null}
-                        {match?.playerBId ? <option value={match.playerBId}>{playerB?.name || "Player B"}</option> : null}
+                        <option value="">{t.dashboard.bracket.winnerPlaceholder}</option>
+                        {match?.playerAId ? <option value={match.playerAId}>{playerA?.name || t.dashboard.bracket.playerA}</option> : null}
+                        {match?.playerBId ? <option value={match.playerBId}>{playerB?.name || t.dashboard.bracket.playerB}</option> : null}
                     </select>
                 </div>
 
                 <div>
-                    <label className={labelCls}>Catatan (opsional)</label>
+                    <label className={labelCls}>{t.dashboard.bracket.notes}</label>
                     <textarea
                         className={`${inputCls} min-h-[90px] resize-y`}
                         value={formState.reason}
@@ -795,8 +806,8 @@ function MatchAdminModal({
                 </div>
 
                 <div className="flex justify-end gap-3">
-                    <button className="btn btn-ghost" onClick={onClose}>Batal</button>
-                    <button className={btnPrimary} onClick={onSave}>Set Hasil</button>
+                    <button className="btn btn-ghost" onClick={onClose}>{t.dashboard.bracket.cancel}</button>
+                    <button className={btnPrimary} onClick={onSave}>{t.dashboard.bracket.setResult}</button>
                 </div>
             </div>
         </Modal>

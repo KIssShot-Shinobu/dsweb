@@ -7,6 +7,8 @@ import { useToast } from "@/components/dashboard/toast";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { ImageCropModal } from "@/components/ui/image-crop-modal";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDate } from "@/lib/i18n/format";
 
 type TeamRequest = {
     id: string;
@@ -26,18 +28,10 @@ const emptyForm = {
     logoUrl: "",
 };
 
-function formatDate(value: string) {
-    return new Date(value).toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-    });
-}
-
 function getStatusLabel(status: TeamRequest["status"]) {
-    if (status === "APPROVED") return "Disetujui";
-    if (status === "REJECTED") return "Ditolak";
-    return "Menunggu";
+    if (status === "APPROVED") return "APPROVED";
+    if (status === "REJECTED") return "REJECTED";
+    return "PENDING";
 }
 
 function getStatusTone(status: TeamRequest["status"]) {
@@ -47,6 +41,7 @@ function getStatusTone(status: TeamRequest["status"]) {
 }
 
 export function TeamRequestPanel() {
+    const { t, locale } = useLocale();
     const [requests, setRequests] = useState<TeamRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -65,6 +60,8 @@ export function TeamRequestPanel() {
         fileType: "image/jpeg",
     });
     const { success, error: toastError } = useToast();
+    const formatDateLabel = (value: string) =>
+        formatDate(value, locale, { day: "numeric", month: "short", year: "numeric" });
 
     const latestRequest = useMemo(() => requests[0] ?? null, [requests]);
     const hasPending = latestRequest?.status === "PENDING";
@@ -108,10 +105,10 @@ export function TeamRequestPanel() {
             if (res.ok && data?.url) {
                 setForm((current) => ({ ...current, logoUrl: data.url }));
             } else {
-                toastError(data?.message || "Gagal upload logo.");
+                toastError(data?.message || t.teams.request.errors.uploadFailed);
             }
         } catch {
-            toastError("Kesalahan jaringan saat upload logo.");
+            toastError(t.teams.request.errors.uploadNetworkFailed);
         } finally {
             setUploadingLogo(false);
         }
@@ -121,7 +118,7 @@ export function TeamRequestPanel() {
         new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(String(reader.result));
-            reader.onerror = () => reject(new Error("Gagal membaca file."));
+            reader.onerror = () => reject(new Error(t.teams.request.errors.readFileFailed));
             reader.readAsDataURL(file);
         });
 
@@ -138,15 +135,15 @@ export function TeamRequestPanel() {
             const data = await res.json();
 
             if (!res.ok) {
-                toastError(data.error || data.message || "Gagal mengirim request.");
+                toastError(data.error || data.message || t.teams.request.errors.submitFailed);
                 return;
             }
 
-            success("Request team berhasil dikirim. Menunggu persetujuan admin.");
+            success(t.teams.request.success.submitted);
             resetForm();
             await fetchRequests();
         } catch {
-            toastError("Kesalahan jaringan saat mengirim request.");
+            toastError(t.teams.request.errors.submitNetworkFailed);
         } finally {
             setSaving(false);
         }
@@ -157,17 +154,15 @@ export function TeamRequestPanel() {
             <div className="rounded-box border border-base-300 bg-base-200/40 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                        <div className="text-sm font-semibold text-base-content">Belum ada team aktif</div>
-                        <p className="text-xs text-base-content/60">
-                            Ajukan request pembuatan team ke admin, atau cari team publik untuk join.
-                        </p>
+                        <div className="text-sm font-semibold text-base-content">{t.teams.request.emptyTitle}</div>
+                        <p className="text-xs text-base-content/60">{t.teams.request.emptySubtitle}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <button type="button" onClick={() => setModalOpen(true)} className={btnPrimary} disabled={hasPending}>
-                            {hasPending ? "Menunggu Persetujuan" : "Request Team"}
+                            {hasPending ? t.teams.request.requestPending : t.teams.request.requestButton}
                         </button>
                         <Link href="/teams" className={btnOutline}>
-                            Cari Team
+                            {t.teams.request.browseTeams}
                         </Link>
                     </div>
                 </div>
@@ -179,44 +174,46 @@ export function TeamRequestPanel() {
                 <div className="rounded-box border border-base-300 bg-base-100 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="font-semibold text-base-content">{latestRequest.teamName}</div>
-                        <span className={`badge ${getStatusTone(latestRequest.status)}`}>{getStatusLabel(latestRequest.status)}</span>
+                        <span className={`badge ${getStatusTone(latestRequest.status)}`}>
+                            {t.teams.request.status[getStatusLabel(latestRequest.status)]}
+                        </span>
                     </div>
                     <div className="mt-2 text-xs text-base-content/60">
-                        Dikirim {formatDate(latestRequest.createdAt)}
-                        {latestRequest.reviewedAt ? ` · Diproses ${formatDate(latestRequest.reviewedAt)}` : ""}
+                        {t.teams.request.submittedAt(formatDateLabel(latestRequest.createdAt))}
+                        {latestRequest.reviewedAt ? ` · ${t.teams.request.reviewedAt(formatDateLabel(latestRequest.reviewedAt))}` : ""}
                     </div>
                     {latestRequest.rejectionReason ? (
                         <div className="mt-3 rounded-box border border-error/20 bg-error/10 px-3 py-2 text-xs text-error">
-                            Alasan: {latestRequest.rejectionReason}
+                            {t.teams.request.rejectionReason(latestRequest.rejectionReason)}
                         </div>
                     ) : null}
                 </div>
             ) : null}
 
-            <Modal open={modalOpen} onClose={resetForm} title="Request Pembuatan Team">
+            <Modal open={modalOpen} onClose={resetForm} title={t.teams.request.modalTitle}>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <label className="block">
-                        <span className={labelCls}>Nama Team</span>
+                        <span className={labelCls}>{t.teams.request.nameLabel}</span>
                         <input
                             value={form.name}
                             onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
                             className={inputCls}
-                            placeholder="Contoh: Duel Standby Alpha"
+                            placeholder={t.teams.request.namePlaceholder}
                             required
                         />
                     </label>
                     <label className="block">
-                        <span className={labelCls}>Deskripsi (Opsional)</span>
+                        <span className={labelCls}>{t.teams.request.descriptionLabel}</span>
                         <textarea
                             value={form.description}
                             onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                             rows={3}
                             className={`${inputCls} resize-none`}
-                            placeholder="Ringkas fokus dan gaya bermain team."
+                            placeholder={t.teams.request.descriptionPlaceholder}
                         />
                     </label>
                     <div className="space-y-3">
-                        <label className={labelCls}>Upload Logo Team</label>
+                        <label className={labelCls}>{t.teams.request.logoUploadLabel}</label>
                         <input
                             type="file"
                             accept="image/png,image/jpeg,image/jpg,image/webp"
@@ -234,19 +231,19 @@ export function TeamRequestPanel() {
                                         fileType: file.type || "image/jpeg",
                                     });
                                 } catch {
-                                    toastError("Gagal memuat gambar untuk crop.");
+                                    toastError(t.teams.request.errors.loadCropFailed);
                                 }
                                 inputEl.value = "";
                             }}
                             disabled={uploadingLogo}
                         />
-                        {uploadingLogo ? <p className="text-xs text-base-content/45">Mengupload logo...</p> : null}
+                        {uploadingLogo ? <p className="text-xs text-base-content/45">{t.teams.request.logoUploading}</p> : null}
                         {form.logoUrl ? (
                             <div className="flex items-center gap-3 rounded-box border border-base-300 bg-base-200/40 p-3">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={normalizeAssetUrl(form.logoUrl) || ""}
-                                    alt="Preview logo team"
+                                    alt={t.teams.request.logoPreviewAlt}
                                     className="h-16 w-16 rounded-xl object-cover"
                                 />
                                 <button
@@ -254,17 +251,17 @@ export function TeamRequestPanel() {
                                     onClick={() => setForm((current) => ({ ...current, logoUrl: "" }))}
                                     className="text-xs font-medium text-error hover:text-error/80"
                                 >
-                                    Hapus logo
+                                    {t.teams.request.removeLogo}
                                 </button>
                             </div>
                         ) : null}
                     </div>
                     <div className="flex justify-end gap-2">
                         <button type="button" onClick={resetForm} className={btnOutline}>
-                            Batal
+                            {t.common.cancel}
                         </button>
                         <button type="submit" className={btnPrimary} disabled={saving || uploadingLogo}>
-                            {saving ? "Mengirim..." : "Kirim Request"}
+                            {saving ? t.teams.request.submitting : t.teams.request.submit}
                         </button>
                     </div>
                 </form>
@@ -273,7 +270,7 @@ export function TeamRequestPanel() {
             <ImageCropModal
                 open={cropState.open}
                 imageSrc={cropState.imageSrc}
-                title="Crop Logo Team"
+                title={t.teams.request.cropTitle}
                 aspect={1}
                 outputType={cropState.fileType}
                 onCancel={() =>

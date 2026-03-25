@@ -18,6 +18,8 @@ import {
     canTransferCaptain,
 } from "@/lib/permissions/team.permission";
 import { isTeamRosterLocked } from "@/lib/team-roster-lock";
+import { getIntlLocale } from "@/lib/i18n/format";
+import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
 import type {
     TeamCreateInput,
     TeamDeleteInput,
@@ -90,6 +92,7 @@ function sortMembers(members: TeamMembershipView[]) {
         COACH: 3,
         PLAYER: 4,
     };
+    const intlLocale = getIntlLocale(DEFAULT_LOCALE);
 
     return [...members].sort((left, right) => {
         const roleOrder = order[left.role] - order[right.role];
@@ -97,7 +100,7 @@ function sortMembers(members: TeamMembershipView[]) {
             return roleOrder;
         }
 
-        return left.user.fullName.localeCompare(right.user.fullName, "id-ID");
+        return left.user.fullName.localeCompare(right.user.fullName, intlLocale);
     });
 }
 

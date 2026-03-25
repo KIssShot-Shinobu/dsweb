@@ -13,12 +13,14 @@ import {
     authSecondaryBtnCls,
 } from "@/components/auth/auth-shell";
 import { DiscordIcon, GoogleIcon } from "@/components/auth/oauth-icons";
+import { useLocale } from "@/hooks/use-locale";
 
 const errCls = "mt-1 text-xs text-red-400";
 
 export default function RegisterPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { t } = useLocale();
     const redirect = searchParams.get("redirect") || "/dashboard";
     const [form, setForm] = useState({ fullName: "", email: "", password: "", confirmPassword: "" });
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -35,12 +37,12 @@ export default function RegisterPage() {
 
     const validate = () => {
         const nextErrors: Record<string, string> = {};
-        if (!form.fullName || form.fullName.trim().length < 2) nextErrors.fullName = "Nama minimal 2 karakter";
-        if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) nextErrors.email = "Masukkan alamat email yang valid";
-        if (!form.password || form.password.length < 8) nextErrors.password = "Password minimal 8 karakter";
-        if (!/[A-Za-z]/.test(form.password)) nextErrors.password = "Password harus mengandung huruf";
-        if (!/[0-9]/.test(form.password)) nextErrors.password = "Password harus mengandung angka";
-        if (form.password !== form.confirmPassword) nextErrors.confirmPassword = "Konfirmasi password belum cocok";
+        if (!form.fullName || form.fullName.trim().length < 2) nextErrors.fullName = t.auth.register.errors.fullNameMin;
+        if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) nextErrors.email = t.auth.register.errors.emailInvalid;
+        if (!form.password || form.password.length < 8) nextErrors.password = t.auth.register.errors.passwordMin;
+        if (!/[A-Za-z]/.test(form.password)) nextErrors.password = t.auth.register.errors.passwordLetter;
+        if (!/[0-9]/.test(form.password)) nextErrors.password = t.auth.register.errors.passwordNumber;
+        if (form.password !== form.confirmPassword) nextErrors.confirmPassword = t.auth.register.errors.passwordMismatch;
         setErrors(nextErrors);
         return Object.keys(nextErrors).length === 0;
     };
@@ -72,9 +74,9 @@ export default function RegisterPage() {
                 setErrors(nextErrors);
             }
 
-            setServerError(result.message || "Pendaftaran belum berhasil diproses.");
+            setServerError(result.message || t.auth.register.errors.serverFailed);
         } catch {
-            setServerError("Koneksi sedang bermasalah. Silakan coba lagi.");
+            setServerError(t.auth.register.errors.network);
         } finally {
             setSubmitting(false);
         }
@@ -112,7 +114,7 @@ export default function RegisterPage() {
                 callbackUrl: `/oauth-finalize?provider=google&redirect=${encodeURIComponent(redirect)}`,
             });
         } catch {
-            setServerError("Daftar dengan Google belum berhasil. Silakan coba kembali.");
+            setServerError(t.auth.register.errors.googleFailed);
             setGoogleLoading(false);
         }
     };
@@ -126,21 +128,21 @@ export default function RegisterPage() {
                 callbackUrl: `/oauth-finalize?provider=discord&redirect=${encodeURIComponent(redirect)}`,
             });
         } catch {
-            setServerError("Daftar dengan Discord belum berhasil. Silakan coba kembali.");
+            setServerError(t.auth.register.errors.discordFailed);
             setDiscordLoading(false);
         }
     };
 
     return (
         <AuthShell
-            eyebrow="Pendaftaran Akun"
-            title="Buat akun Duel Standby"
-            description="Cukup isi nama, email, dan password. Data lainnya bisa Anda lengkapi nanti di dashboard profile atau settings."
+            eyebrow={t.auth.register.eyebrow}
+            title={t.auth.register.title}
+            description={t.auth.register.description}
             footer={
                 <>
-                    Sudah punya akun?{" "}
+                    {t.auth.register.footerPrompt}{" "}
                     <Link href="/login" className="link link-hover font-semibold text-primary">
-                        Masuk
+                        {t.auth.register.footerAction}
                     </Link>
                 </>
             }
@@ -154,8 +156,8 @@ export default function RegisterPage() {
                         onClick={googleEnabled ? handleGoogleRegister : undefined}
                         disabled={!googleEnabled || submitting || googleLoading || discordLoading}
                         className={`btn btn-outline btn-square tooltip h-14 w-14 ${!googleEnabled ? "opacity-60" : ""}`}
-                        data-tip={googleEnabled ? "Daftar dengan Google" : "Google belum aktif"}
-                        aria-label="Daftar dengan Google"
+                        data-tip={googleEnabled ? t.auth.register.continueGoogle : t.auth.register.googleInactive}
+                        aria-label={t.auth.register.continueGoogle}
                     >
                         {googleLoading ? (
                             <span className="loading loading-spinner loading-xs" />
@@ -169,8 +171,8 @@ export default function RegisterPage() {
                         onClick={discordEnabled ? handleDiscordRegister : undefined}
                         disabled={!discordEnabled || submitting || googleLoading || discordLoading}
                         className={`btn btn-outline btn-square tooltip h-14 w-14 ${!discordEnabled ? "opacity-60" : ""}`}
-                        data-tip={discordEnabled ? "Daftar dengan Discord" : "Discord belum aktif"}
-                        aria-label="Daftar dengan Discord"
+                        data-tip={discordEnabled ? t.auth.register.continueDiscord : t.auth.register.discordInactive}
+                        aria-label={t.auth.register.continueDiscord}
                     >
                         {discordLoading ? (
                             <span className="loading loading-spinner loading-xs" />
@@ -182,51 +184,51 @@ export default function RegisterPage() {
 
                 <div className="flex items-center gap-3 text-xs text-base-content/35">
                     <div className="h-px flex-1 bg-base-300" />
-                    <span>atau daftar dengan email</span>
+                    <span>{t.auth.register.orEmail}</span>
                     <div className="h-px flex-1 bg-base-300" />
                 </div>
             </div>
 
             <div className="space-y-4">
                 <div>
-                    <label className={authLabelCls}>Nama Lengkap *</label>
+                    <label className={authLabelCls}>{t.auth.register.fullNameLabel}</label>
                     <input
                         type="text"
                         className={authInputCls}
-                        placeholder="Contoh: Dimas Putra"
+                        placeholder={t.auth.register.fullNamePlaceholder}
                         value={form.fullName}
                         onChange={(event) => setField("fullName", event.target.value)}
                     />
                     <Err field="fullName" />
                 </div>
                 <div>
-                    <label className={authLabelCls}>Email *</label>
+                    <label className={authLabelCls}>{t.auth.register.emailLabel}</label>
                     <input
                         type="email"
                         className={authInputCls}
-                        placeholder="you@email.com"
+                        placeholder={t.auth.register.emailPlaceholder}
                         value={form.email}
                         onChange={(event) => setField("email", event.target.value)}
                     />
                     <Err field="email" />
                 </div>
                 <div>
-                    <label className={authLabelCls}>Password *</label>
+                    <label className={authLabelCls}>{t.auth.register.passwordLabel}</label>
                     <input
                         type="password"
                         className={authInputCls}
-                        placeholder="Minimal 8 karakter"
+                        placeholder={t.auth.register.passwordPlaceholder}
                         value={form.password}
                         onChange={(event) => setField("password", event.target.value)}
                     />
                     <Err field="password" />
                 </div>
                 <div>
-                    <label className={authLabelCls}>Konfirmasi Password *</label>
+                    <label className={authLabelCls}>{t.auth.register.confirmPasswordLabel}</label>
                     <input
                         type="password"
                         className={authInputCls}
-                        placeholder="Ulangi password"
+                        placeholder={t.auth.register.confirmPasswordPlaceholder}
                         value={form.confirmPassword}
                         onChange={(event) => setField("confirmPassword", event.target.value)}
                     />
@@ -236,10 +238,10 @@ export default function RegisterPage() {
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <Link href="/" className={authSecondaryBtnCls}>
-                    Kembali
+                    {t.auth.register.back}
                 </Link>
                 <button type="button" onClick={handleSubmit} disabled={submitting || googleLoading || discordLoading} className={authPrimaryBtnCls}>
-                    {submitting ? "Mendaftar..." : "Daftar"}
+                    {submitting ? t.auth.register.submitting : t.auth.register.submit}
                 </button>
             </div>
         </AuthShell>

@@ -21,6 +21,8 @@ import {
     DashboardPageShell,
     DashboardPanel,
 } from "@/components/dashboard/page-shell";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDate } from "@/lib/i18n/format";
 
 interface UserTeam {
     id: string;
@@ -79,15 +81,6 @@ const ROLE_COLORS: Record<string, string> = {
 
 const ROLE_OPTIONS = ["USER", "MEMBER", "OFFICER", "ADMIN"];
 const FILTER_ROLE_OPTIONS = ["ALL", "USER", "MEMBER", "OFFICER", "ADMIN", "FOUNDER"];
-const STATUS_FILTER_OPTIONS = [
-    { value: "ALL", label: "Semua Status" },
-    { value: "ACTIVE", label: "Aktif" },
-    { value: "BANNED", label: "Banned" },
-];
-const ROLE_FILTER_OPTIONS = FILTER_ROLE_OPTIONS.map((role) => ({
-    value: role,
-    label: role === "ALL" ? "Semua Role" : role,
-}));
 
 function RoleDropdown({
     userId,
@@ -95,12 +88,18 @@ function RoleDropdown({
     currentStatus,
     onChanged,
     onFeedback,
+    getRoleLabel,
+    labels,
+    messages,
 }: {
     userId: string;
     currentRole: string;
     currentStatus: string;
     onChanged: () => void;
     onFeedback: (feedback: { type: "success" | "error"; message: string }) => void;
+    getRoleLabel: (role: string) => string;
+    labels: { current: string };
+    messages: { updateFailed: string; updateSuccess: (role: string) => string };
 }) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -124,12 +123,12 @@ function RoleDropdown({
         const data = await response.json();
         setLoading(false);
         if (!response.ok) {
-            onFeedback({ type: "error", message: data.message || "Gagal memperbarui role user." });
+            onFeedback({ type: "error", message: data.message || messages.updateFailed });
             return;
         }
         onFeedback({
             type: "success",
-            message: data.message || `Role user berhasil diubah ke ${newRole}.`,
+            message: data.message || messages.updateSuccess(getRoleLabel(newRole)),
         });
         onChanged();
     };
@@ -141,7 +140,7 @@ function RoleDropdown({
                 disabled={loading}
                 className={`flex items-center gap-1 rounded-box border border-current/20 bg-base-100 px-2.5 py-1.5 text-[10px] font-bold uppercase transition-all hover:bg-base-200 disabled:opacity-50 ${ROLE_COLORS[currentRole] || "text-base-content/60"}`}
             >
-                {loading ? "..." : currentRole}
+                {loading ? "..." : getRoleLabel(currentRole)}
                 <svg className={`h-3 w-3 opacity-50 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -161,8 +160,8 @@ function RoleDropdown({
                                         : "text-base-content/60 hover:bg-base-200 hover:text-base-content"
                                 }`}
                             >
-                                {role === currentRole ? <span className="text-[8px]">OK</span> : null}
-                                {role}
+                                {role === currentRole ? <span className="text-[8px]">{labels.current}</span> : null}
+                                {getRoleLabel(role)}
                             </button>
                         ))}
                     </div>
@@ -182,8 +181,19 @@ function UserManagementTableInner({
     emptyTitle,
     emptyDescription,
 }: UserManagementTableProps) {
+    const { t, locale } = useLocale();
     const searchParams = useSearchParams();
     const router = useRouter();
+    const roleLabels = t.dashboard.userManagement.roleLabels;
+    const statusLabels = t.dashboard.userManagement.statusLabels;
+    const getRoleLabel = useCallback(
+        (role: string) => roleLabels[role as keyof typeof roleLabels] ?? role,
+        [roleLabels]
+    );
+    const getStatusLabel = useCallback(
+        (status: string) => statusLabels[status as keyof typeof statusLabels] ?? status,
+        [statusLabels]
+    );
 
     const statusFilter = lockStatus ? defaultStatus : searchParams.get("status") || defaultStatus;
     const roleFilter = lockRole ? defaultRole : searchParams.get("role") || defaultRole;
@@ -201,17 +211,34 @@ function UserManagementTableInner({
     const [reason, setReason] = useState("");
     const [searchInput, setSearchInput] = useState(search);
     const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+    const formatUserDate = (value: string) => formatDate(value, locale);
 
     const perPage = 15;
     const totalPages = Math.max(1, Math.ceil(total / perPage));
 
+    const statusFilterOptions = useMemo(
+        () => [
+            { value: "ALL", label: t.dashboard.userManagement.filters.statusAll },
+            { value: "ACTIVE", label: t.dashboard.userManagement.filters.statusActive },
+            { value: "BANNED", label: t.dashboard.userManagement.filters.statusBanned },
+        ],
+        [t]
+    );
+    const roleFilterOptions = useMemo(
+        () =>
+            FILTER_ROLE_OPTIONS.map((role) => ({
+                value: role,
+                label: role === "ALL" ? t.dashboard.userManagement.filters.roleAll : getRoleLabel(role),
+            })),
+        [getRoleLabel, t]
+    );
     const teamFilterOptions = useMemo(
         () => [
-            { value: "ALL", label: "Semua Team" },
-            { value: "NO_TEAM", label: "Tanpa Team" },
+            { value: "ALL", label: t.dashboard.userManagement.filters.teamAll },
+            { value: "NO_TEAM", label: t.dashboard.userManagement.filters.teamNone },
             ...teams.map((team) => ({ value: team.id, label: team.name })),
         ],
-        [teams]
+        [t, teams]
     );
 
     const paramsString = useMemo(() => {
@@ -301,10 +328,10 @@ function UserManagementTableInner({
         const data = await response.json();
         setActionLoading(null);
         if (!response.ok) {
-            setFeedback({ type: "error", message: data.message || "Gagal memblokir user." });
+            setFeedback({ type: "error", message: data.message || t.dashboard.userManagement.messages.banFailed });
             return;
         }
-        setFeedback({ type: "success", message: data.message || "User berhasil diblokir." });
+        setFeedback({ type: "success", message: data.message || t.dashboard.userManagement.messages.banSuccess });
         setBanModal(null);
         setReason("");
         fetchUsers();
@@ -321,10 +348,10 @@ function UserManagementTableInner({
         const data = await response.json();
         setActionLoading(null);
         if (!response.ok) {
-            setFeedback({ type: "error", message: data.message || "Gagal mengaktifkan kembali user." });
+            setFeedback({ type: "error", message: data.message || t.dashboard.userManagement.messages.unbanFailed });
             return;
         }
-        setFeedback({ type: "success", message: data.message || "User berhasil diaktifkan kembali." });
+        setFeedback({ type: "success", message: data.message || t.dashboard.userManagement.messages.unbanSuccess });
         setUnbanModal(null);
         fetchUsers();
     };
@@ -349,7 +376,7 @@ function UserManagementTableInner({
     return (
         <DashboardPageShell>
             <div className={dashboardStackCls}>
-                <DashboardPageHeader kicker="Guild Directory" title={title} description={description} />
+                <DashboardPageHeader kicker={t.dashboard.userManagement.kicker} title={title} description={description} />
 
                 {feedback ? (
                     <div
@@ -364,22 +391,22 @@ function UserManagementTableInner({
                 ) : null}
 
                 <DashboardPanel
-                    title="Daftar Users"
-                    description={`Menampilkan ${total} akun yang sesuai dengan filter role komunitas, status, dan afiliasi team aktif.`}
+                    title={t.dashboard.userManagement.panel.title}
+                    description={t.dashboard.userManagement.panel.description(total)}
                     action={(
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                             <input
                                 type="text"
                                 value={searchInput}
                                 onChange={(event) => setSearchInput(event.target.value)}
-                                placeholder="Cari nama, email, kota, atau team..."
+                                placeholder={t.dashboard.userManagement.filters.searchPlaceholder}
                                 className={`${searchInputCls} h-9 sm:w-56`}
                             />
                             {!lockStatus ? (
-                                <FormSelect value={statusFilter} onChange={(value) => setParam("status", value)} options={STATUS_FILTER_OPTIONS} className="w-full sm:w-32" />
+                                <FormSelect value={statusFilter} onChange={(value) => setParam("status", value)} options={statusFilterOptions} className="w-full sm:w-32" />
                             ) : null}
                             {!lockRole ? (
-                                <FormSelect value={roleFilter} onChange={(value) => setParam("role", value)} options={ROLE_FILTER_OPTIONS} className="w-full sm:w-32" />
+                                <FormSelect value={roleFilter} onChange={(value) => setParam("role", value)} options={roleFilterOptions} className="w-full sm:w-32" />
                             ) : null}
                             <FormSelect value={teamFilter} onChange={(value) => setParam("teamId", value)} options={teamFilterOptions} className="w-full sm:w-44" />
                             {hasActiveFilters ? (
@@ -388,7 +415,7 @@ function UserManagementTableInner({
                                     onClick={resetFilters}
                                     className={`${btnOutline} btn-sm`}
                                 >
-                                    Reset
+                                    {t.dashboard.userManagement.filters.reset}
                                 </button>
                             ) : null}
                         </div>
@@ -396,21 +423,21 @@ function UserManagementTableInner({
                 >
                     {hasActiveFilters ? (
                         <div className="mb-3 text-xs text-base-content/45">
-                            Menampilkan {total} akun yang sesuai dengan filter aktif.
+                            {t.dashboard.userManagement.filters.activeCount(total)}
                         </div>
                     ) : null}
                     <div className="mb-4 flex flex-wrap gap-2">
                         <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
-                            Visible: {loading ? "..." : users.length}
+                            {t.dashboard.userManagement.metrics.visible}: {loading ? "..." : users.length}
                         </span>
                         <span className="rounded-full border border-success/20 bg-success/10 px-3 py-1 text-[11px] font-semibold text-success">
-                            Active: {loading ? "..." : visibleActiveCount}
+                            {t.dashboard.userManagement.metrics.active}: {loading ? "..." : visibleActiveCount}
                         </span>
                         <span className="rounded-full border border-base-300 bg-base-100 px-3 py-1 text-[11px] font-semibold text-base-content/60">
-                            Members: {loading ? "..." : visibleMemberCount}
+                            {t.dashboard.userManagement.metrics.members}: {loading ? "..." : visibleMemberCount}
                         </span>
                         <span className="rounded-full border border-error/20 bg-error/10 px-3 py-1 text-[11px] font-semibold text-error">
-                            No Team: {loading ? "..." : withoutTeamCount}
+                            {t.dashboard.userManagement.metrics.noTeam}: {loading ? "..." : withoutTeamCount}
                         </span>
                     </div>
                     {loading ? (
@@ -421,10 +448,10 @@ function UserManagementTableInner({
                         </div>
                     ) : users.length === 0 ? (
                         <DashboardEmptyState
-                            title={hasActiveFilters ? "Tidak ada user yang cocok" : emptyTitle}
+                            title={hasActiveFilters ? t.dashboard.userManagement.empty.filteredTitle : emptyTitle}
                             description={
                                 hasActiveFilters
-                                    ? "Coba longgarkan kata kunci pencarian atau ubah filter role, status, dan team."
+                                    ? t.dashboard.userManagement.empty.filteredDescription
                                     : emptyDescription
                             }
                         />
@@ -450,7 +477,7 @@ function UserManagementTableInner({
                                         <div className="min-w-0">
                                             <div className="truncate text-sm font-semibold text-base-content">{user.fullName}</div>
                                             <div className="truncate text-xs text-base-content/45">{user.email}</div>
-                                            <div className="truncate text-[11px] text-base-content/45">{user.city || "Kota belum diisi"}</div>
+                                            <div className="truncate text-[11px] text-base-content/45">{user.city || t.dashboard.userManagement.labels.cityEmpty}</div>
                                         </div>
                                     </div>
 
@@ -464,17 +491,17 @@ function UserManagementTableInner({
                                                         </span>
                                                     ))
                                                 ) : (
-                                                    <span className="text-xs text-base-content/45">Belum ada game profile</span>
+                                                    <span className="text-xs text-base-content/45">{t.dashboard.userManagement.labels.noGameProfile}</span>
                                                 )}
                                             </div>
                                             <div className="text-[11px] text-base-content/45">
-                                                Bergabung {new Date(user.createdAt).toLocaleDateString("id-ID")}
+                                                {t.dashboard.userManagement.labels.joinedAt(formatUserDate(user.createdAt))}
                                             </div>
                                         </div>
 
                                         <div className="flex items-center gap-2">
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${STATUS_COLORS[user.status] || ""}`}>
-                                                {user.status}
+                                                {getStatusLabel(user.status)}
                                             </span>
                                         </div>
 
@@ -484,19 +511,25 @@ function UserManagementTableInner({
                                             currentStatus={user.status}
                                             onChanged={fetchUsers}
                                             onFeedback={setFeedback}
+                                            getRoleLabel={getRoleLabel}
+                                            labels={{ current: t.dashboard.userManagement.roleCurrent }}
+                                            messages={{
+                                                updateFailed: t.dashboard.userManagement.messages.roleUpdateFailed,
+                                                updateSuccess: t.dashboard.userManagement.messages.roleUpdateSuccess,
+                                            }}
                                         />
 
                                         <div className="flex min-w-[132px] items-center justify-between gap-2 rounded-box border border-base-300 bg-base-100 px-3 py-1.5 text-xs font-medium text-base-content/70">
                                             <span className="truncate">
-                                                {user.role === "USER" ? "Public User" : user.team?.name || "Tanpa Team"}
+                                                {user.role === "USER" ? t.dashboard.userManagement.labels.publicUser : user.team?.name || t.dashboard.userManagement.labels.noTeam}
                                             </span>
-                                            <span className="badge badge-ghost badge-xs">Self</span>
+                                            <span className="badge badge-ghost badge-xs">{t.dashboard.userManagement.labels.selfBadge}</span>
                                         </div>
 
                                         <div className="flex flex-wrap items-center justify-start gap-2 xl:justify-end">
                                             {user.team ? (
                                                 <Link href={`/dashboard/teams/${user.team.id}`} className={btnOutline}>
-                                                    Lihat Team
+                                                    {t.dashboard.userManagement.actions.viewTeam}
                                                 </Link>
                                             ) : null}
                                             {user.team ? (
@@ -505,11 +538,11 @@ function UserManagementTableInner({
                                                 </span>
                                             ) : user.role !== "USER" ? (
                                                 <span className="rounded-full border border-base-300 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-base-content/55">
-                                                    No Team
+                                                    {t.dashboard.userManagement.labels.noTeamBadge}
                                                 </span>
                                             ) : (
                                                 <span className="rounded-full border border-base-300 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-base-content/55">
-                                                    Public User
+                                                    {t.dashboard.userManagement.labels.publicUserBadge}
                                                 </span>
                                             )}
 
@@ -518,9 +551,9 @@ function UserManagementTableInner({
                                                     onClick={() => setBanModal({ id: user.id, name: user.fullName })}
                                                     disabled={actionLoading === user.id}
                                                     className={btnDanger}
-                                                    title="Ban user"
+                                                    title={t.dashboard.userManagement.actions.banTitle}
                                                 >
-                                                    Ban
+                                                    {t.dashboard.userManagement.actions.ban}
                                                 </button>
                                             ) : null}
 
@@ -529,9 +562,9 @@ function UserManagementTableInner({
                                                     onClick={() => setUnbanModal({ id: user.id, name: user.fullName, role: user.role })}
                                                     disabled={actionLoading === user.id}
                                                     className={btnOutline}
-                                                    title="Unban user"
+                                                    title={t.dashboard.userManagement.actions.unbanTitle}
                                                 >
-                                                    Unban
+                                                    {t.dashboard.userManagement.actions.unban}
                                                 </button>
                                             ) : null}
                                         </div>
@@ -551,23 +584,23 @@ function UserManagementTableInner({
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setBanModal(null)} />
                     <div className="relative w-full max-w-md rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
-                        <h3 className="text-lg font-bold text-base-content">Ban User</h3>
+                        <h3 className="text-lg font-bold text-base-content">{t.dashboard.userManagement.banModal.title}</h3>
                         <p className="mt-1 text-sm leading-6 text-base-content/60">
-                            Aksi ini akan memblokir <strong className="text-base-content">{banModal.name}</strong> dari akses dashboard dan fitur utama.
+                            {t.dashboard.userManagement.banModal.description(banModal.name)}
                         </p>
                         <textarea
                             value={reason}
                             onChange={(event) => setReason(event.target.value)}
-                            placeholder="Alasan ban (opsional)..."
+                            placeholder={t.dashboard.userManagement.banModal.reasonPlaceholder}
                             rows={4}
                             className={`${inputCls} mt-4 resize-none`}
                         />
                         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
                             <button onClick={() => setBanModal(null)} className={btnOutline}>
-                                Batal
+                                {t.common.cancel}
                             </button>
                             <button onClick={() => handleBan(banModal.id, reason)} className={btnDanger}>
-                                Ban User
+                                {t.dashboard.userManagement.banModal.confirm}
                             </button>
                         </div>
                     </div>
@@ -578,20 +611,20 @@ function UserManagementTableInner({
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setUnbanModal(null)} />
                     <div className="relative w-full max-w-md rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
-                        <h3 className="text-lg font-bold text-base-content">Aktifkan Kembali User</h3>
+                        <h3 className="text-lg font-bold text-base-content">{t.dashboard.userManagement.unbanModal.title}</h3>
                         <p className="mt-1 text-sm leading-6 text-base-content/60">
-                            <strong className="text-base-content">{unbanModal.name}</strong> akan diaktifkan kembali dan bisa mengakses fitur sesuai role yang dimilikinya.
+                            {t.dashboard.userManagement.unbanModal.description(unbanModal.name)}
                         </p>
                         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
                             <button onClick={() => setUnbanModal(null)} className={btnOutline}>
-                                Batal
+                                {t.common.cancel}
                             </button>
                             <button
                                 onClick={() => handleUnban(unbanModal)}
                                 className={btnPrimary}
                                 disabled={actionLoading === unbanModal.id}
                             >
-                                {actionLoading === unbanModal.id ? "Memproses..." : "Aktifkan Kembali"}
+                                {actionLoading === unbanModal.id ? t.dashboard.userManagement.actions.processing : t.dashboard.userManagement.unbanModal.confirm}
                             </button>
                         </div>
                     </div>

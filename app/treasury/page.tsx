@@ -6,6 +6,8 @@ import { Navbar } from "@/components/ui/navbar";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { AnalyticsChart } from "@/components/dashboard/analytics-chart";
 import { TREASURY_CATEGORIES, TREASURY_CATEGORY_LABELS } from "@/lib/treasury-constants";
+import { useLocale } from "@/hooks/use-locale";
+import { formatCurrency, formatDateTime, getIntlLocale } from "@/lib/i18n/format";
 
 type Transaction = {
     id: string;
@@ -28,15 +30,15 @@ type MonthlyTotal = {
 
 type CategoryBreakdown = Record<string, { income: number; expense: number }>;
 
-const filterOptions = [
-    { value: "ALL", label: "Semua" },
-    { value: "MASUK", label: "Pemasukan" },
-    { value: "KELUAR", label: "Pengeluaran" },
-];
-
 const PER_PAGE = 10;
 
 export default function PublicTreasuryPage() {
+    const { locale, t } = useLocale();
+    const filterOptions = [
+        { value: "ALL", label: t.treasury.filterAll },
+        { value: "MASUK", label: t.treasury.filterIncome },
+        { value: "KELUAR", label: t.treasury.filterExpense },
+    ];
     const currentYear = new Date().getFullYear();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [balance, setBalance] = useState(0);
@@ -94,18 +96,15 @@ export default function PublicTreasuryPage() {
                 setTotal(0);
                 setMonthlyTotals([]);
                 setCategoryBreakdown({});
-                setMessage("Kas belum dapat ditampilkan saat ini.");
+                setMessage(t.treasury.errors.loadFailed);
             })
             .finally(() => setLoading(false));
     }, [filter, month, page, year, category]);
 
     const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PER_PAGE)), [total]);
 
-    const formatCurrency = (amount: number) =>
-        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
-
     const formatDate = (dateString: string) =>
-        new Date(dateString).toLocaleDateString("id-ID", {
+        formatDateTime(dateString, locale, {
             day: "numeric",
             month: "short",
             year: "numeric",
@@ -114,18 +113,18 @@ export default function PublicTreasuryPage() {
         });
 
     const monthOptions = [
-        { value: "ALL", label: "Semua Bulan" },
+        { value: "ALL", label: t.treasury.monthAll },
         ...Array.from({ length: 12 }, (_, index) => {
             const value = index + 1;
             return {
                 value: String(value),
-                label: new Date(2000, value - 1).toLocaleString("id-ID", { month: "short" }),
+                label: new Date(2000, value - 1).toLocaleString(getIntlLocale(locale), { month: "short" }),
             };
         }),
     ];
 
     const yearOptions = [
-        { value: "ALL", label: "Semua Tahun" },
+        { value: "ALL", label: t.treasury.yearAll },
         ...[currentYear - 1, currentYear, currentYear + 1].map((value) => ({
             value: String(value),
             label: String(value),
@@ -133,7 +132,7 @@ export default function PublicTreasuryPage() {
     ];
 
     const categoryOptions = [
-        { value: "ALL", label: "Semua Kategori" },
+        { value: "ALL", label: t.treasury.categoryAll },
         ...TREASURY_CATEGORIES.map((value) => ({
             value,
             label: TREASURY_CATEGORY_LABELS[value],
@@ -145,12 +144,12 @@ export default function PublicTreasuryPage() {
             <Navbar />
             <section className="border-b border-base-300 pt-28">
                 <div className="mx-auto max-w-[1400px] px-4 pb-14 sm:px-6 lg:px-8">
-                    <p className="mb-4 text-sm font-bold uppercase tracking-[0.34em] text-primary">Transparansi Treasury</p>
+                    <p className="mb-4 text-sm font-bold uppercase tracking-[0.34em] text-primary">{t.treasury.badge}</p>
                     <h1 className="max-w-3xl text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
-                        Kas komunitas terbuka agar setiap member tahu arus keuangan guild.
+                        {t.treasury.title}
                     </h1>
                     <p className="mt-4 max-w-2xl text-sm leading-7 text-base-content/65 sm:text-base">
-                        Data di sini bersifat read-only. Semua transaksi resmi dikelola oleh admin dari dashboard.
+                        {t.treasury.subtitle}
                     </p>
                 </div>
             </section>
@@ -158,39 +157,39 @@ export default function PublicTreasuryPage() {
             <section className="mx-auto max-w-[1400px] px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
-                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Saldo Bersih</div>
-                        <div className="mt-3 text-2xl font-black text-primary">{loading ? "..." : formatCurrency(balance)}</div>
-                        <div className="text-xs text-base-content/50">Total saldo terkini</div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">{t.treasury.balanceLabel}</div>
+                        <div className="mt-3 text-2xl font-black text-primary">{loading ? "..." : formatCurrency(balance, locale)}</div>
+                        <div className="text-xs text-base-content/50">{t.treasury.balanceHint}</div>
                     </div>
                     <div className="rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
-                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Pemasukan</div>
-                        <div className="mt-3 text-2xl font-black text-success">{loading ? "..." : formatCurrency(income)}</div>
-                        <div className="text-xs text-base-content/50">Arus masuk periode aktif</div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">{t.treasury.incomeLabel}</div>
+                        <div className="mt-3 text-2xl font-black text-success">{loading ? "..." : formatCurrency(income, locale)}</div>
+                        <div className="text-xs text-base-content/50">{t.treasury.incomeHint}</div>
                     </div>
                     <div className="rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
-                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Pengeluaran</div>
-                        <div className="mt-3 text-2xl font-black text-error">{loading ? "..." : formatCurrency(expense)}</div>
-                        <div className="text-xs text-base-content/50">Arus keluar periode aktif</div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">{t.treasury.expenseLabel}</div>
+                        <div className="mt-3 text-2xl font-black text-error">{loading ? "..." : formatCurrency(expense, locale)}</div>
+                        <div className="text-xs text-base-content/50">{t.treasury.expenseHint}</div>
                     </div>
                     <div className="rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
-                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Net Flow</div>
-                        <div className="mt-3 text-2xl font-black text-base-content">{loading ? "..." : formatCurrency(income - expense)}</div>
-                        <div className="text-xs text-base-content/50">Pemasukan minus pengeluaran</div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">{t.treasury.netFlowLabel}</div>
+                        <div className="mt-3 text-2xl font-black text-base-content">{loading ? "..." : formatCurrency(income - expense, locale)}</div>
+                        <div className="text-xs text-base-content/50">{t.treasury.netFlowHint}</div>
                     </div>
                 </div>
 
                 <div className="mt-8 grid gap-4 lg:grid-cols-[2fr_1fr]">
-                    <AnalyticsChart data={monthlyTotals} loading={loading} title="Monthly Treasury" />
+                    <AnalyticsChart data={monthlyTotals} loading={loading} title={t.treasury.monthlyChartTitle} />
                     <div className="rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <div className="text-sm font-semibold text-base-content">Category Breakdown</div>
-                                <div className="text-xs text-base-content/55">Tahun {summaryYear}</div>
+                                <div className="text-sm font-semibold text-base-content">{t.treasury.categoryBreakdownTitle}</div>
+                                <div className="text-xs text-base-content/55">{t.treasury.yearLabel(summaryYear)}</div>
                             </div>
                         </div>
                         <div className="mt-4 space-y-3">
                             {Object.keys(categoryBreakdown).length === 0 ? (
-                                <div className="text-xs text-base-content/50">Belum ada data kategori.</div>
+                                <div className="text-xs text-base-content/50">{t.treasury.noCategoryData}</div>
                             ) : (
                                 Object.entries(categoryBreakdown)
                                     .sort((a, b) => (b[1].income - b[1].expense) - (a[1].income - a[1].expense))
@@ -198,7 +197,7 @@ export default function PublicTreasuryPage() {
                                     <div key={key} className="flex items-center justify-between text-xs">
                                         <span className="text-base-content/70">{TREASURY_CATEGORY_LABELS[key as keyof typeof TREASURY_CATEGORY_LABELS] ?? key}</span>
                                         <span className="font-semibold text-base-content">
-                                            {formatCurrency(value.income - value.expense)}
+                                            {formatCurrency(value.income - value.expense, locale)}
                                         </span>
                                     </div>
                                 ))
@@ -216,7 +215,7 @@ export default function PublicTreasuryPage() {
                         className="btn btn-outline"
                         href={`/api/treasury/export?public=1&month=${month}&year=${year}&type=${filter !== "ALL" ? filter : ""}&category=${category !== "ALL" ? category : ""}`}
                     >
-                        Download CSV
+                        {t.treasury.downloadCsv}
                     </a>
                 </div>
 
@@ -233,13 +232,13 @@ export default function PublicTreasuryPage() {
                         ))
                     ) : transactions.length === 0 ? (
                         <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 p-6 text-xs text-base-content/65 sm:text-sm">
-                            Belum ada transaksi untuk periode ini.
+                            {t.treasury.emptyTransactions}
                         </div>
                     ) : (
                         transactions.map((transaction) => (
                             <div key={transaction.id} className="flex flex-col gap-3 rounded-box border border-base-300 bg-base-100/80 p-4 sm:flex-row sm:items-center">
                                 <div className={`badge badge-lg ${transaction.amount >= 0 ? "badge-success" : "badge-error"} badge-outline`}>
-                                    {transaction.amount >= 0 ? "MASUK" : "KELUAR"}
+                                    {transaction.amount >= 0 ? t.treasury.incomeTag : t.treasury.expenseTag}
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-2">
@@ -249,12 +248,12 @@ export default function PublicTreasuryPage() {
                                         </span>
                                     </div>
                                     <div className="truncate text-[11px] text-base-content/60 sm:text-xs">
-                                        {formatDate(transaction.createdAt)} - {transaction.user?.username || transaction.user?.fullName || "Kas umum"}
+                                        {formatDate(transaction.createdAt)} - {transaction.user?.username || transaction.user?.fullName || t.treasury.commonCash}
                                     </div>
                                 </div>
                                 <div className={`text-sm font-bold ${transaction.amount >= 0 ? "text-success" : "text-error"}`}>
                                     {transaction.amount >= 0 ? "+" : "-"}
-                                    {formatCurrency(Math.abs(transaction.amount))}
+                                    {formatCurrency(Math.abs(transaction.amount), locale)}
                                 </div>
                             </div>
                         ))
@@ -263,7 +262,7 @@ export default function PublicTreasuryPage() {
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-xs text-base-content/60 sm:text-sm">
-                        Menampilkan {transactions.length} dari {total} transaksi.
+                        {t.treasury.showingLabel(transactions.length, total)}
                     </div>
                     <div className="join">
                         <button
@@ -272,7 +271,7 @@ export default function PublicTreasuryPage() {
                             onClick={() => setPage((current) => Math.max(1, current - 1))}
                             disabled={page <= 1}
                         >
-                            Prev
+                            {t.treasury.prev}
                         </button>
                         <button type="button" className="btn btn-ghost btn-sm join-item pointer-events-none">
                             {page} / {totalPages}
@@ -283,7 +282,7 @@ export default function PublicTreasuryPage() {
                             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                             disabled={page >= totalPages}
                         >
-                            Next
+                            {t.treasury.next}
                         </button>
                     </div>
                 </div>

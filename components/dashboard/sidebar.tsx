@@ -19,6 +19,7 @@ import {
 import { useSidebar } from "@/context/SidebarContext";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { clientLogout } from "@/lib/client-auth";
+import { useLocale } from "@/hooks/use-locale";
 
 type MenuSection = {
     section: string;
@@ -48,40 +49,11 @@ const ROLE_LEVEL: Record<string, number> = {
     FOUNDER: 4,
 };
 
-const ALL_MENU: MenuSection[] = [
-    {
-        section: "SAYA",
-        items: [
-            { name: "Profil", href: "/dashboard/profile", icon: "profile" },
-            { name: "Team Saya", href: "/dashboard/team", icon: "teams", minRole: "MEMBER" },
-            { name: "Settings", href: "/dashboard/settings", icon: "settings" },
-            { name: "Bantuan", href: "/dashboard/help", icon: "help" },
-        ],
-    },
-    {
-        section: "GUILD",
-        minRole: "OFFICER",
-        items: [
-            { name: "Users", href: "/dashboard/users", icon: "users", minRole: "OFFICER" },
-            { name: "Teams", href: "/dashboard/teams", icon: "teams", minRole: "OFFICER" },
-            { name: "Tournaments", href: "/dashboard/tournaments", icon: "tournaments", minRole: "ADMIN" },
-            { name: "Treasury", href: "/dashboard/treasury", icon: "treasury", minRole: "ADMIN" },
-        ],
-    },
-    {
-        section: "ADMIN",
-        minRole: "ADMIN",
-        items: [
-            { name: "Dashboard", href: "/dashboard", icon: "dashboard", minRole: "ADMIN" },
-            { name: "Audit Logs", href: "/dashboard/audit-logs", icon: "audit", minRole: "ADMIN" },
-        ],
-    },
-];
-
 export function Sidebar() {
     const pathname = usePathname();
     const { isOpen, close } = useSidebar();
     const { user } = useCurrentUser();
+    const { t } = useLocale();
 
     const userRole = user?.role ?? "USER";
 
@@ -90,7 +62,37 @@ export function Sidebar() {
         return (ROLE_LEVEL[userRole] ?? 0) >= (ROLE_LEVEL[minRole] ?? 99);
     };
 
-    const bestMatch = ALL_MENU.flatMap((section) => section.items)
+    const allMenu: MenuSection[] = [
+        {
+            section: t.dashboard.sidebar.sectionSelf,
+            items: [
+                { name: t.dashboard.sidebar.items.profile, href: "/dashboard/profile", icon: "profile" },
+                { name: t.dashboard.sidebar.items.myTeam, href: "/dashboard/team", icon: "teams", minRole: "MEMBER" },
+                { name: t.dashboard.sidebar.items.settings, href: "/dashboard/settings", icon: "settings" },
+                { name: t.dashboard.sidebar.items.help, href: "/dashboard/help", icon: "help" },
+            ],
+        },
+        {
+            section: t.dashboard.sidebar.sectionGuild,
+            minRole: "OFFICER",
+            items: [
+                { name: t.dashboard.sidebar.items.users, href: "/dashboard/users", icon: "users", minRole: "OFFICER" },
+                { name: t.dashboard.sidebar.items.teams, href: "/dashboard/teams", icon: "teams", minRole: "OFFICER" },
+                { name: t.dashboard.sidebar.items.tournaments, href: "/dashboard/tournaments", icon: "tournaments", minRole: "ADMIN" },
+                { name: t.dashboard.sidebar.items.treasury, href: "/dashboard/treasury", icon: "treasury", minRole: "ADMIN" },
+            ],
+        },
+        {
+            section: t.dashboard.sidebar.sectionAdmin,
+            minRole: "ADMIN",
+            items: [
+                { name: t.dashboard.sidebar.items.dashboard, href: "/dashboard", icon: "dashboard", minRole: "ADMIN" },
+                { name: t.dashboard.sidebar.items.auditLogs, href: "/dashboard/audit-logs", icon: "audit", minRole: "ADMIN" },
+            ],
+        },
+    ];
+
+    const bestMatch = allMenu.flatMap((section) => section.items)
         .filter((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
         .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
@@ -111,8 +113,8 @@ export function Sidebar() {
                         <div className="flex items-center gap-3">
                             <div className="badge badge-primary h-10 w-10 rounded-2xl border-0 text-base font-black text-primary-content">DS</div>
                             <div>
-                                <div className="text-sm font-black tracking-wide">Duel Standby</div>
-                                <div className="text-xs text-base-content/50">Dashboard</div>
+                                <div className="text-sm font-black tracking-wide">{t.dashboard.sidebar.brandTitle}</div>
+                                <div className="text-xs text-base-content/50">{t.dashboard.sidebar.brandSubtitle}</div>
                             </div>
                         </div>
                         <button onClick={close} className="btn btn-ghost btn-sm btn-circle lg:hidden" aria-label="Close">
@@ -121,7 +123,7 @@ export function Sidebar() {
                     </div>
 
                     <nav className="flex-1 overflow-y-auto px-3 py-4">
-                        {ALL_MENU.map((section) => {
+                        {allMenu.map((section) => {
                             if (section.minRole && !canAccess(section.minRole)) return null;
                             const visibleItems = section.items.filter((item) => canAccess(item.minRole));
                             if (visibleItems.length === 0) return null;
@@ -165,13 +167,13 @@ export function Sidebar() {
                                     className="text-error"
                                 >
                                     <LogOut className="h-4 w-4" />
-                                    <span>Logout</span>
+                                    <span>{t.dashboard.sidebar.footer.logout}</span>
                                 </button>
                             </li>
                             <li>
                                 <Link href="/" onClick={close}>
                                     <Home className="h-4 w-4" />
-                                    <span>Back to Home</span>
+                                    <span>{t.dashboard.sidebar.footer.backHome}</span>
                                 </Link>
                             </li>
                         </ul>

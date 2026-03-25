@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { btnOutline, btnPrimary } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
+import { useLocale } from "@/hooks/use-locale";
 
 type TournamentInfo = {
     title: string;
@@ -13,6 +14,7 @@ type TournamentInfo = {
 
 export function TournamentPublishClient({ tournamentId }: { tournamentId: string }) {
     const { success, error } = useToast();
+    const { t } = useLocale();
     const [tournament, setTournament] = useState<TournamentInfo | null>(null);
     const [updating, setUpdating] = useState(false);
 
@@ -28,10 +30,10 @@ export function TournamentPublishClient({ tournamentId }: { tournamentId: string
                 if (res.ok) {
                     setTournament({ title: data.tournament.title, status: data.tournament.status });
                 } else {
-                    error(data.message || "Gagal memuat data.");
+                    error(data.message || t.dashboard.publish.errors.loadFailed);
                 }
             } catch {
-                if (active) error("Kesalahan jaringan.");
+                if (active) error(t.dashboard.publish.errors.network);
             }
         };
 
@@ -53,12 +55,12 @@ export function TournamentPublishClient({ tournamentId }: { tournamentId: string
             const data = await res.json();
             if (res.ok) {
                 setTournament((prev) => (prev ? { ...prev, status } : prev));
-                success("Status turnamen diperbarui.");
+                success(t.dashboard.publish.success.updated);
             } else {
-                error(data.message || "Gagal mengubah status.");
+                error(data.message || t.dashboard.publish.errors.updateFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.publish.errors.network);
         } finally {
             setUpdating(false);
         }
@@ -68,31 +70,31 @@ export function TournamentPublishClient({ tournamentId }: { tournamentId: string
         <DashboardPageShell>
             <div className="space-y-6">
                 <DashboardPageHeader
-                    kicker="Publish"
-                    title="Publikasi Turnamen"
-                    description="Kontrol status publikasi dan akses halaman turnamen."
+                    kicker={t.dashboard.publish.kicker}
+                    title={t.dashboard.publish.title}
+                    description={t.dashboard.publish.description}
                     actions={
                         <Link href={`/tournaments/${tournamentId}`} className={btnOutline}>
-                            Preview Public Page
+                            {t.dashboard.publish.preview}
                         </Link>
                     }
                 />
 
-                <DashboardPanel title="Status Publikasi" description="Gunakan status untuk mengontrol visibilitas.">
+                <DashboardPanel title={t.dashboard.publish.panelTitle} description={t.dashboard.publish.panelDescription}>
                     <div className="space-y-3">
                         <div className="flex flex-wrap gap-2">
                             <button className={btnPrimary} disabled={updating} onClick={() => updateStatus("OPEN")}>
-                                Publish (OPEN)
+                                {t.dashboard.publish.publishOpen}
                             </button>
                             <button className={btnOutline} disabled={updating} onClick={() => updateStatus("ONGOING")}>
-                                Set Live (ONGOING)
+                                {t.dashboard.publish.setLive}
                             </button>
                             <button className={btnOutline} disabled={updating} onClick={() => updateStatus("CANCELLED")}>
-                                Archive (CANCELLED)
+                                {t.dashboard.publish.archive}
                             </button>
                         </div>
                         <div className="text-sm text-base-content/60">
-                            Status saat ini: <span className="font-semibold">{tournament?.status ?? "..."}</span>
+                            {t.dashboard.publish.currentStatus}: <span className="font-semibold">{tournament?.status ?? "..."}</span>
                         </div>
                     </div>
                 </DashboardPanel>

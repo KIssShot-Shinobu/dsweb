@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { DashboardMetricCard, DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { btnOutline, btnPrimary } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDateTime } from "@/lib/i18n/format";
 
 type SummaryResponse = {
     tournament: {
@@ -25,6 +27,7 @@ type SummaryResponse = {
 };
 
 export function TournamentOverviewClient({ tournamentId }: { tournamentId: string }) {
+    const { t, locale } = useLocale();
     const { success, error } = useToast();
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState<SummaryResponse | null>(null);
@@ -42,11 +45,11 @@ export function TournamentOverviewClient({ tournamentId }: { tournamentId: strin
                 if (res.ok) {
                     setSummary(data);
                 } else {
-                    error(data.message || "Gagal memuat ringkasan turnamen.");
+                    error(data.message || t.dashboard.tournaments.overview.errors.loadFailed);
                 }
             } catch {
                 if (active) {
-                    error("Kesalahan jaringan.");
+                    error(t.common.networkError);
                 }
             } finally {
                 if (active) setLoading(false);
@@ -58,19 +61,19 @@ export function TournamentOverviewClient({ tournamentId }: { tournamentId: strin
             active = false;
             controller.abort();
         };
-    }, [tournamentId, error]);
+    }, [tournamentId, error, t]);
 
     const handleStartTournament = async () => {
         try {
             const res = await fetch(`/api/tournaments/${tournamentId}/start`, { method: "POST" });
             const data = await res.json();
             if (res.ok) {
-                success("Bracket berhasil dibuat.");
+                success(t.dashboard.tournaments.overview.success.bracketCreated);
             } else {
-                error(data.message || "Gagal memulai turnamen.");
+                error(data.message || t.dashboard.tournaments.overview.errors.startFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.common.networkError);
         }
     };
 
@@ -78,60 +81,60 @@ export function TournamentOverviewClient({ tournamentId }: { tournamentId: strin
         <DashboardPageShell>
             <div className="space-y-6">
                 <DashboardPageHeader
-                    kicker="Overview"
-                    title={summary?.tournament?.title || "Tournament Control Center"}
-                    description="Pantau status turnamen, progres pertandingan, dan aksi cepat untuk admin."
+                    kicker={t.dashboard.tournaments.overview.kicker}
+                    title={summary?.tournament?.title || t.dashboard.tournaments.overview.titleFallback}
+                    description={t.dashboard.tournaments.overview.description}
                     actions={
                         <>
                             <button className={btnPrimary} onClick={handleStartTournament} disabled={summary?.tournament?.status !== "OPEN"}>
-                                Start Tournament
+                                {t.dashboard.tournaments.overview.startTournament}
                             </button>
                             <Link href={`/dashboard/tournaments/${tournamentId}/check-in`} className={btnOutline}>
-                                Open Check-In
+                                {t.dashboard.tournaments.overview.openCheckIn}
                             </Link>
                             <Link href={`/dashboard/tournaments/${tournamentId}/settings`} className={btnOutline}>
-                                Edit Settings
+                                {t.dashboard.tournaments.overview.editSettings}
                             </Link>
                         </>
                     }
                 />
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <DashboardMetricCard label="Registered Players" value={loading ? "..." : summary?.stats.registeredPlayers ?? 0} />
-                    <DashboardMetricCard label="Checked-in Players" value={loading ? "..." : summary?.stats.checkedInPlayers ?? 0} meta="Check-in belum aktif" />
-                    <DashboardMetricCard label="Matches Played" value={loading ? "..." : summary?.stats.matchesPlayed ?? 0} />
-                    <DashboardMetricCard label="Matches Remaining" value={loading ? "..." : summary?.stats.matchesRemaining ?? 0} />
+                    <DashboardMetricCard label={t.dashboard.tournaments.overview.metrics.registered} value={loading ? "..." : summary?.stats.registeredPlayers ?? 0} />
+                    <DashboardMetricCard label={t.dashboard.tournaments.overview.metrics.checkedIn} value={loading ? "..." : summary?.stats.checkedInPlayers ?? 0} meta={t.dashboard.tournaments.overview.metrics.checkedInMeta} />
+                    <DashboardMetricCard label={t.dashboard.tournaments.overview.metrics.played} value={loading ? "..." : summary?.stats.matchesPlayed ?? 0} />
+                    <DashboardMetricCard label={t.dashboard.tournaments.overview.metrics.remaining} value={loading ? "..." : summary?.stats.matchesRemaining ?? 0} />
                 </div>
 
                 <DashboardPanel
-                    title="Ringkasan Turnamen"
-                    description="Informasi inti turnamen yang sedang berjalan."
+                    title={t.dashboard.tournaments.overview.panelTitle}
+                    description={t.dashboard.tournaments.overview.panelDescription}
                 >
                     {summary ? (
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                             <div className="rounded-box border border-base-300 bg-base-200/40 p-4">
-                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">Game</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">{t.dashboard.tournaments.overview.labels.game}</div>
                                 <div className="mt-2 text-base font-bold text-base-content">{summary.tournament.gameType}</div>
                             </div>
                             <div className="rounded-box border border-base-300 bg-base-200/40 p-4">
-                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">Start Date</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">{t.dashboard.tournaments.overview.labels.startDate}</div>
                                 <div className="mt-2 text-base font-bold text-base-content">
-                                    {new Date(summary.tournament.startAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                                    {formatDateTime(summary.tournament.startAt, locale, { dateStyle: "medium", timeStyle: "short" })}
                                 </div>
                             </div>
                             <div className="rounded-box border border-base-300 bg-base-200/40 p-4">
-                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">Status</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">{t.dashboard.tournaments.overview.labels.status}</div>
                                 <div className="mt-2 text-base font-bold text-base-content">{summary.tournament.status}</div>
                             </div>
                             <div className="rounded-box border border-base-300 bg-base-200/40 p-4">
-                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">Format</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/50">{t.dashboard.tournaments.overview.labels.format}</div>
                                 <div className="mt-2 text-base font-bold text-base-content">
                                     {summary.tournament.structure} · {summary.tournament.format}
                                 </div>
                             </div>
                         </div>
                     ) : (
-                        <div className="text-sm text-base-content/60">Memuat data turnamen...</div>
+                        <div className="text-sm text-base-content/60">{t.dashboard.tournaments.overview.loading}</div>
                     )}
                 </DashboardPanel>
             </div>

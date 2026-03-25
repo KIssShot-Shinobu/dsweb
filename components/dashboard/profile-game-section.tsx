@@ -7,6 +7,7 @@ import { Modal } from "@/components/dashboard/modal";
 import { GameProfileForm } from "@/components/dashboard/game-profile-form";
 import { btnOutline } from "@/components/dashboard/form-styles";
 import { formatGameId } from "@/lib/game-id";
+import { useLocale } from "@/hooks/use-locale";
 
 type ProfileGameData = {
     gameType: "DUEL_LINKS" | "MASTER_DUEL";
@@ -31,6 +32,7 @@ export function ProfileGameSection({
     duelLinksProfile?: ProfileGameData;
     masterDuelProfile?: ProfileGameData;
 }) {
+    const { t } = useLocale();
     const router = useRouter();
     const [activeGameType, setActiveGameType] = useState<"DUEL_LINKS" | "MASTER_DUEL" | null>(null);
 
@@ -38,24 +40,24 @@ export function ProfileGameSection({
         () => [
             {
                 gameType: "DUEL_LINKS",
-                title: "Duel Links",
-                subtitle: "Data akun game",
-                idLabel: "DUELIST ID",
+                title: t.dashboard.profile.gameSection.cards.duelLinks.title,
+                subtitle: t.dashboard.profile.gameSection.cards.duelLinks.subtitle,
+                idLabel: t.dashboard.profile.gameSection.cards.duelLinks.idLabel,
                 badge: "DL",
                 accent: "from-blue-600 to-cyan-500",
                 profile: duelLinksProfile,
             },
             {
                 gameType: "MASTER_DUEL",
-                title: "Master Duel",
-                subtitle: "Data akun game",
-                idLabel: "Duelist ID",
+                title: t.dashboard.profile.gameSection.cards.masterDuel.title,
+                subtitle: t.dashboard.profile.gameSection.cards.masterDuel.subtitle,
+                idLabel: t.dashboard.profile.gameSection.cards.masterDuel.idLabel,
                 badge: "MD",
                 accent: "from-red-600 to-orange-600",
                 profile: masterDuelProfile,
             },
         ],
-        [duelLinksProfile, masterDuelProfile],
+        [duelLinksProfile, masterDuelProfile, t],
     );
 
     const activeCard = cards.find((card) => card.gameType === activeGameType) || null;
@@ -97,7 +99,7 @@ export function ProfileGameSection({
 
                                 <span className={`${btnOutline} btn-sm w-full justify-center gap-2 px-3 py-2 text-xs font-semibold sm:w-auto`}>
                                     {hasProfile ? <Edit3 className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                                    {hasProfile ? "Edit" : "Tambah"}
+                                    {hasProfile ? t.dashboard.profile.gameSection.actions.edit : t.dashboard.profile.gameSection.actions.add}
                                 </span>
                             </div>
 
@@ -106,7 +108,7 @@ export function ProfileGameSection({
                                     <div className="space-y-3">
                                         <div className="flex flex-col gap-1 border-b border-base-300 pb-3 sm:flex-row sm:items-center sm:justify-between">
                                             <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">
-                                                IGN
+                                                {t.dashboard.profile.gameSection.labels.ign}
                                             </span>
                                             <span className="text-sm font-semibold text-base-content">
                                                 {card.profile?.ign}
@@ -123,7 +125,7 @@ export function ProfileGameSection({
                                     </div>
                                 ) : (
                                     <div className="text-sm leading-6 text-base-content/60">
-                                        Belum ada data. Klik untuk menambahkan profile.
+                                        {t.dashboard.profile.gameSection.empty}
                                     </div>
                                 )}
                             </div>
@@ -135,7 +137,11 @@ export function ProfileGameSection({
             <Modal
                 open={Boolean(activeCard)}
                 onClose={closeModal}
-                title={activeCard?.profile ? `Edit ${activeCard.title}` : `Tambah ${activeCard?.title || "Profile Game"}`}
+                title={
+                    activeCard?.profile
+                        ? t.dashboard.profile.gameSection.modalTitleEdit(activeCard.title)
+                        : t.dashboard.profile.gameSection.modalTitleAdd(activeCard?.title || t.dashboard.profile.gameSection.modalFallback)
+                }
                 size="md"
             >
                 {activeCard ? (

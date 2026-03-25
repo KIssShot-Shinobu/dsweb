@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/dashboard/toast";
+import { useLocale } from "@/hooks/use-locale";
 
 export function TournamentRegisterButton({
     tournamentId,
@@ -23,6 +24,7 @@ export function TournamentRegisterButton({
 }) {
     const router = useRouter();
     const { success, error: toastError } = useToast();
+    const { t } = useLocale();
     const [submitting, setSubmitting] = useState(false);
     const [registered, setRegistered] = useState(isRegistered);
     const [localPaymentStatus, setLocalPaymentStatus] = useState<"PENDING" | "VERIFIED" | "REJECTED" | null>(paymentStatus);
@@ -51,10 +53,10 @@ export function TournamentRegisterButton({
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || "Pendaftaran turnamen belum dapat diproses.");
+                throw new Error(result.message || t.tournamentRegister.errors.registerFailed);
             }
 
-            success(result.message || "Pendaftaran Anda berhasil dikonfirmasi.");
+            success(result.message || t.tournamentRegister.successRegistered);
             setRegistered(true);
             if (result?.participant?.paymentStatus) {
                 setLocalPaymentStatus(result.participant.paymentStatus);
@@ -66,7 +68,7 @@ export function TournamentRegisterButton({
             }
             router.refresh();
         } catch (error) {
-            error instanceof Error ? toastError(error.message) : toastError("Pendaftaran turnamen belum dapat diproses.");
+            error instanceof Error ? toastError(error.message) : toastError(t.tournamentRegister.errors.registerFailed);
         } finally {
             setSubmitting(false);
         }
@@ -80,11 +82,11 @@ export function TournamentRegisterButton({
             const res = await fetch("/api/upload", { method: "POST", body: formData });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || "Upload gagal.");
+                throw new Error(data.message || t.tournamentRegister.errors.uploadFailed);
             }
             setPaymentProofUrl(data.url);
         } catch (error) {
-            error instanceof Error ? toastError(error.message) : toastError("Upload gagal.");
+            error instanceof Error ? toastError(error.message) : toastError(t.tournamentRegister.errors.uploadFailed);
         } finally {
             setUploading(false);
         }
@@ -92,7 +94,7 @@ export function TournamentRegisterButton({
 
     const handleSubmitPayment = async () => {
         if (!paymentProofUrl) {
-            toastError("Bukti pembayaran wajib diunggah.");
+            toastError(t.tournamentRegister.errors.proofRequired);
             return;
         }
 
@@ -106,10 +108,10 @@ export function TournamentRegisterButton({
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || "Pendaftaran turnamen belum dapat diproses.");
+                throw new Error(result.message || t.tournamentRegister.errors.registerFailed);
             }
 
-            success(result.message || "Bukti pembayaran dikirim. Menunggu verifikasi.");
+            success(result.message || t.tournamentRegister.successPaymentSent);
             setRegistered(true);
             if (result?.participant?.paymentStatus) {
                 setLocalPaymentStatus(result.participant.paymentStatus);
@@ -122,7 +124,7 @@ export function TournamentRegisterButton({
             setShowPaymentModal(false);
             router.refresh();
         } catch (error) {
-            error instanceof Error ? toastError(error.message) : toastError("Pendaftaran turnamen belum dapat diproses.");
+            error instanceof Error ? toastError(error.message) : toastError(t.tournamentRegister.errors.registerFailed);
         } finally {
             setSubmitting(false);
         }
@@ -143,15 +145,15 @@ export function TournamentRegisterButton({
         <div className="space-y-3">
             {isWaitlisted ? (
                 <div className="badge badge-warning h-auto px-4 py-2 text-xs font-bold uppercase tracking-[0.2em]">
-                    Waitlist
+                    {t.tournamentRegister.waitlistBadge}
                 </div>
             ) : isVerified ? (
                 <div className="badge badge-success h-auto px-4 py-2 text-xs font-bold uppercase tracking-[0.2em]">
-                    Registered
+                    {t.tournamentRegister.registeredBadge}
                 </div>
             ) : isPending ? (
                 <div className="badge badge-warning h-auto px-4 py-2 text-xs font-bold uppercase tracking-[0.2em]">
-                    Menunggu Verifikasi
+                    {t.tournamentRegister.pendingBadge}
                 </div>
             ) : (
                 <button
@@ -167,32 +169,32 @@ export function TournamentRegisterButton({
                     className={`btn w-full rounded-box ${registerDisabled ? "btn-disabled" : "btn-primary"}`}
                 >
                     {submitting
-                        ? "Memproses pendaftaran..."
+                        ? t.tournamentRegister.loading
                         : isFull
-                          ? "Masuk Waitlist"
+                          ? t.tournamentRegister.joinWaitlist
                           : disabled
-                            ? "Pendaftaran belum tersedia"
+                            ? t.tournamentRegister.registrationClosed
                             : isRejected
-                              ? "Upload Ulang Bukti"
-                              : "Daftar Turnamen"}
+                              ? t.tournamentRegister.reuploadProof
+                              : t.tournamentRegister.register}
                 </button>
             )}
             {showPaymentModal ? (
                 <div className="modal modal-open">
                     <div className="modal-box max-w-lg border border-base-300 bg-base-100">
-                        <h3 className="text-lg font-bold">Upload Bukti Pembayaran</h3>
+                        <h3 className="text-lg font-bold">{t.tournamentRegister.uploadTitle}</h3>
                         <p className="mt-2 text-sm text-base-content/60">
-                            Unggah screenshot bukti transfer untuk diverifikasi admin. Format PNG, JPG, atau WEBP.
+                            {t.tournamentRegister.uploadSubtitle}
                         </p>
                         <div className="mt-4 space-y-3">
                             {paymentProofUrl ? (
                                 <div className="rounded-box border border-base-300 bg-base-200/50 p-3">
-                                    <img src={paymentProofUrl} alt="Bukti pembayaran" className="h-32 w-full rounded-box object-cover" />
+                                    <img src={paymentProofUrl} alt={t.tournamentRegister.proofAlt} className="h-32 w-full rounded-box object-cover" />
                                 </div>
                             ) : null}
                             <label className="flex cursor-pointer items-center justify-between gap-3 rounded-box border border-dashed border-base-300 bg-base-200/40 px-4 py-3 transition-all hover:border-primary/40 hover:bg-base-200/70">
-                                <span className="text-sm text-base-content/55">{uploading ? "Mengunggah file..." : "Pilih file bukti pembayaran"}</span>
-                                <span className="btn btn-primary btn-xs rounded-box">Pilih File</span>
+                                <span className="text-sm text-base-content/55">{uploading ? t.tournamentRegister.uploading : t.tournamentRegister.chooseFile}</span>
+                                <span className="btn btn-primary btn-xs rounded-box">{t.tournamentRegister.chooseFileButton}</span>
                                 <input
                                     type="file"
                                     accept="image/png,image/jpeg,image/webp"
@@ -207,10 +209,10 @@ export function TournamentRegisterButton({
                         </div>
                         <div className="mt-6 flex justify-end gap-2">
                             <button type="button" className="btn btn-ghost" onClick={closePaymentModal}>
-                                Batal
+                                {t.common.cancel}
                             </button>
                             <button type="button" className="btn btn-primary" onClick={handleSubmitPayment} disabled={submitting || uploading}>
-                                {submitting ? "Mengirim..." : "Kirim Bukti"}
+                                {submitting ? t.tournamentRegister.sending : t.tournamentRegister.sendProof}
                             </button>
                         </div>
                     </div>

@@ -11,6 +11,7 @@ import {
     authPrimaryBtnCls,
     authSecondaryBtnCls,
 } from "@/components/auth/auth-shell";
+import { useLocale } from "@/hooks/use-locale";
 
 type ResetPasswordResponse = {
     success: boolean;
@@ -21,6 +22,7 @@ function ResetPasswordForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get("token") || "";
+    const { t } = useLocale();
 
     const [form, setForm] = useState({
         password: "",
@@ -35,7 +37,7 @@ function ResetPasswordForm() {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (tokenMissing) {
-            setError("Token reset tidak ditemukan. Gunakan tautan terbaru dari email Anda.");
+            setError(t.auth.reset.errors.tokenMissing);
             return;
         }
 
@@ -59,17 +61,17 @@ function ResetPasswordForm() {
 
             if (!response.ok || !data.success) {
                 setSuccessMessage(null);
-                setError(data.message || "Pengaturan ulang kata sandi belum berhasil diproses.");
+                setError(data.message || t.auth.reset.errors.requestFailed);
                 return;
             }
 
-            setSuccessMessage(data.message || "Kata sandi berhasil diperbarui.");
+            setSuccessMessage(data.message || t.auth.reset.successMessage);
             setTimeout(() => {
                 router.push("/login");
             }, 1200);
         } catch {
             setSuccessMessage(null);
-            setError("Koneksi sedang bermasalah. Periksa jaringan Anda lalu coba lagi.");
+            setError(t.auth.reset.errors.network);
         } finally {
             setLoading(false);
         }
@@ -77,21 +79,21 @@ function ResetPasswordForm() {
 
     return (
         <AuthShell
-            eyebrow="Reset Kata Sandi"
-            title="Buat kata sandi baru"
-            description="Gunakan kata sandi yang kuat agar akun Anda tetap aman. Setelah berhasil, Anda bisa langsung login kembali."
+            eyebrow={t.auth.reset.eyebrow}
+            title={t.auth.reset.title}
+            description={t.auth.reset.description}
             footer={
                 <>
-                    Butuh tautan baru?{" "}
+                    {t.auth.reset.footerPrompt}{" "}
                     <Link href="/forgot-password" className="link link-hover font-semibold text-primary">
-                        Minta reset ulang
+                        {t.auth.reset.footerAction}
                     </Link>
                 </>
             }
         >
             {tokenMissing ? (
                 <div className={`${authAlertCls} alert-warning mb-5`}>
-                    Token reset tidak ditemukan. Buka kembali tautan dari email atau minta tautan reset yang baru.
+                    {t.auth.reset.tokenMissingNotice}
                 </div>
             ) : null}
 
@@ -104,20 +106,20 @@ function ResetPasswordForm() {
             {successMessage ? (
                 <div className={`${authAlertCls} alert-success mb-5`}>
                     <div className="font-medium">{successMessage}</div>
-                    <p className="mt-2 text-sm">Anda akan diarahkan ke halaman login dalam beberapa detik.</p>
+                    <p className="mt-2 text-sm">{t.auth.reset.redirectNotice}</p>
                 </div>
             ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label htmlFor="password" className={authLabelCls}>
-                        Kata Sandi Baru
+                        {t.auth.reset.passwordLabel}
                     </label>
                     <input
                         id="password"
                         type="password"
                         className={authInputCls}
-                        placeholder="Minimal 8 karakter"
+                        placeholder={t.auth.reset.passwordPlaceholder}
                         value={form.password}
                         onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
                         autoComplete="new-password"
@@ -127,13 +129,13 @@ function ResetPasswordForm() {
 
                 <div>
                     <label htmlFor="confirmPassword" className={authLabelCls}>
-                        Konfirmasi Kata Sandi Baru
+                        {t.auth.reset.confirmPasswordLabel}
                     </label>
                     <input
                         id="confirmPassword"
                         type="password"
                         className={authInputCls}
-                        placeholder="Ulangi kata sandi baru"
+                        placeholder={t.auth.reset.confirmPasswordPlaceholder}
                         value={form.confirmPassword}
                         onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
                         autoComplete="new-password"
@@ -142,15 +144,15 @@ function ResetPasswordForm() {
                 </div>
 
                 <div className="rounded-box border border-base-300 bg-base-200/50 px-4 py-3 text-sm leading-6 text-base-content/60">
-                    Kata sandi harus terdiri dari minimal 8 karakter serta mengandung huruf dan angka.
+                    {t.auth.reset.passwordHint}
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
                     <button type="submit" disabled={loading || tokenMissing} className={authPrimaryBtnCls}>
-                        {loading ? "Menyimpan..." : "Simpan Kata Sandi Baru"}
+                        {loading ? t.auth.reset.loading : t.auth.reset.submit}
                     </button>
                     <Link href="/login" className={authSecondaryBtnCls}>
-                        Kembali ke Login
+                        {t.auth.reset.backToLogin}
                     </Link>
                 </div>
             </form>

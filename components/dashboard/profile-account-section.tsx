@@ -9,6 +9,7 @@ import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboa
 import { IndonesiaRegionFields, type RegionFormValue } from "@/components/shared/indonesia-region-fields";
 import { SearchableCombobox, type SearchableOption } from "@/components/shared/searchable-combobox";
 import { getCountryOptions } from "@/lib/country-options";
+import { useLocale } from "@/hooks/use-locale";
 
 type ProfileAccountSectionProps = {
     username: string;
@@ -73,6 +74,7 @@ export function ProfileAccountSection({
     emailVerified,
 }: ProfileAccountSectionProps) {
     const router = useRouter();
+    const { t } = useLocale();
     const { success, error } = useToast();
 
     const initialState = useMemo(() => {
@@ -131,15 +133,15 @@ export function ProfileAccountSection({
 
             if (!response.ok || !data.success) {
                 setErrors((data.errors || {}) as ProfileFormErrors);
-                error(data.message || "Gagal memperbarui profil akun");
+                error(data.message || t.dashboard.profile.account.messages.updateFailed);
                 return;
             }
 
-            success(data.message || "Profil akun berhasil diperbarui");
+            success(data.message || t.dashboard.profile.account.messages.updateSuccess);
             closeModal();
             router.refresh();
         } catch {
-            error("Terjadi kesalahan jaringan");
+            error(t.common.networkError);
         } finally {
             setLoading(false);
         }
@@ -170,30 +172,30 @@ export function ProfileAccountSection({
                 <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-base-content/45">
-                            Data Akun
+                            {t.dashboard.profile.account.sectionTitle}
                         </div>
                         <p className="mt-1 text-sm leading-6 text-base-content/60">
-                            Klik ringkasan ini untuk mengubah username, email, WhatsApp, dan wilayah domisili.
+                            {t.dashboard.profile.account.sectionDescription}
                         </p>
                     </div>
 
                     <span className={`${btnOutline} gap-2 px-3 py-2 text-xs font-semibold opacity-85 transition group-hover:opacity-100`}>
                         <Edit3 className="h-3.5 w-3.5" />
-                        Edit
+                        {t.dashboard.profile.account.actions.edit}
                     </span>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                    <SummaryRow icon={<User2 className="h-4 w-4" />} label="Username" value={`@${username}`} />
-                    <SummaryRow icon={<Mail className="h-4 w-4" />} label="Email" value={email} />
-                    <SummaryRow icon={<Phone className="h-4 w-4" />} label="WhatsApp" value={phoneWhatsapp || "-"} />
+                    <SummaryRow icon={<User2 className="h-4 w-4" />} label={t.dashboard.profile.account.summary.username} value={`@${username}`} />
+                    <SummaryRow icon={<Mail className="h-4 w-4" />} label={t.dashboard.profile.account.summary.email} value={email} />
+                    <SummaryRow icon={<Phone className="h-4 w-4" />} label={t.dashboard.profile.account.summary.whatsapp} value={phoneWhatsapp || t.dashboard.profile.account.summary.empty} />
                     {summaryIsInternational ? (
-                        <SummaryRow icon={<MapPinned className="h-4 w-4" />} label="Negara" value={countryName || "-"} />
+                        <SummaryRow icon={<MapPinned className="h-4 w-4" />} label={t.dashboard.profile.account.summary.country} value={countryName || t.dashboard.profile.account.summary.empty} />
                     ) : (
                         <>
-                            <SummaryRow icon={<MapPinned className="h-4 w-4" />} label="Provinsi" value={provinceName || "-"} />
+                            <SummaryRow icon={<MapPinned className="h-4 w-4" />} label={t.dashboard.profile.account.summary.province} value={provinceName || t.dashboard.profile.account.summary.empty} />
                             <div className="xl:col-span-2">
-                                <SummaryRow icon={<MapPin className="h-4 w-4" />} label="Kabupaten / Kota" value={city || "-"} />
+                                <SummaryRow icon={<MapPin className="h-4 w-4" />} label={t.dashboard.profile.account.summary.city} value={city || t.dashboard.profile.account.summary.empty} />
                             </div>
                         </>
                     )}
@@ -201,54 +203,54 @@ export function ProfileAccountSection({
 
                 {!emailVerified ? (
                     <p className="mt-4 text-xs leading-5 text-warning">
-                        Email belum terverifikasi. Jika email diubah, verifikasi akan direset dan perlu dikirim ulang dari settings.
+                        {t.dashboard.profile.account.unverifiedNotice}
                     </p>
                 ) : null}
             </button>
 
-            <Modal open={open} onClose={closeModal} title="Edit Data Akun" size="md">
+            <Modal open={open} onClose={closeModal} title={t.dashboard.profile.account.modalTitle} size="md">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className={labelCls}>Username</label>
+                        <label className={labelCls}>{t.dashboard.profile.account.fields.username}</label>
                         <input
                             type="text"
                             value={form.username}
                             onChange={(event) => setForm((current) => ({ ...current, username: event.target.value.toLowerCase() }))}
                             className={inputCls}
-                            placeholder="duelstandby.id"
+                            placeholder={t.dashboard.profile.account.placeholders.username}
                             required
                         />
                         <FieldError field="username" />
                     </div>
 
                     <div>
-                        <label className={labelCls}>Email</label>
+                        <label className={labelCls}>{t.dashboard.profile.account.fields.email}</label>
                         <input
                             type="email"
                             value={form.email}
                             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
                             className={inputCls}
-                            placeholder="you@example.com"
+                            placeholder={t.dashboard.profile.account.placeholders.email}
                             required
                         />
                         <FieldError field="email" />
                     </div>
 
                     <div>
-                        <label className={labelCls}>WhatsApp</label>
+                        <label className={labelCls}>{t.dashboard.profile.account.fields.whatsapp}</label>
                         <input
                             type="tel"
                             value={form.phoneWhatsapp}
                             onChange={(event) => setForm((current) => ({ ...current, phoneWhatsapp: event.target.value }))}
                             className={inputCls}
-                            placeholder="+628123456789"
+                            placeholder={t.dashboard.profile.account.placeholders.whatsapp}
                             required
                         />
                         <FieldError field="phoneWhatsapp" />
                     </div>
 
                     <div className="rounded-box border border-base-300 bg-base-200/50 px-4 py-3">
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-base-content/55">Domisili</div>
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-base-content/55">{t.dashboard.profile.account.domicile.title}</div>
                         <div className="mt-3 grid grid-cols-2 gap-3">
                             <button
                                 type="button"
@@ -262,7 +264,7 @@ export function ProfileAccountSection({
                                     }))
                                 }
                             >
-                                Indonesia
+                                {t.dashboard.profile.account.domicile.indonesia}
                             </button>
                             <button
                                 type="button"
@@ -278,17 +280,17 @@ export function ProfileAccountSection({
                                     }))
                                 }
                             >
-                                International
+                                {t.dashboard.profile.account.domicile.international}
                             </button>
                         </div>
                         <p className="mt-3 text-xs text-base-content/55">
-                            Pilih Indonesia untuk wilayah domestik, atau International untuk negara lain.
+                            {t.dashboard.profile.account.domicile.hint}
                         </p>
                     </div>
 
                     {form.domicileType === "INTL" ? (
                         <div>
-                            <label className={labelCls}>Negara</label>
+                            <label className={labelCls}>{t.dashboard.profile.account.country.label}</label>
                             <SearchableCombobox
                                 value={form.countryCode}
                                 onChange={(option) =>
@@ -299,9 +301,9 @@ export function ProfileAccountSection({
                                     }))
                                 }
                                 options={countryOptions}
-                                placeholder="Pilih negara"
-                                searchPlaceholder="Cari negara"
-                                emptyMessage="Negara tidak ditemukan"
+                                placeholder={t.dashboard.profile.account.country.placeholder}
+                                searchPlaceholder={t.dashboard.profile.account.country.searchPlaceholder}
+                                emptyMessage={t.dashboard.profile.account.country.empty}
                                 triggerClassName="bg-base-100"
                                 menuClassName="bg-base-100"
                                 inputClassName="bg-base-100"
@@ -321,15 +323,15 @@ export function ProfileAccountSection({
                     )}
 
                     <div className="rounded-box border border-base-300 bg-base-200/50 px-4 py-3 text-sm leading-6 text-base-content/60">
-                        Jika email diubah, status verifikasi email akan direset. Anda bisa mengirim ulang link verifikasi dari halaman settings.
+                        {t.dashboard.profile.account.emailResetNote}
                     </div>
 
                     <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
                         <button type="button" onClick={closeModal} className={btnOutline}>
-                            Batal
+                            {t.dashboard.profile.account.actions.cancel}
                         </button>
                         <button type="submit" disabled={loading} className={btnPrimary}>
-                            {loading ? "Menyimpan..." : "Simpan Perubahan"}
+                            {loading ? t.dashboard.profile.account.actions.saving : t.dashboard.profile.account.actions.save}
                         </button>
                     </div>
                 </form>

@@ -9,6 +9,7 @@ import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboa
 import { Modal } from "@/components/dashboard/modal";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { useToast } from "@/components/dashboard/toast";
+import { useLocale } from "@/hooks/use-locale";
 
 type StaffUser = {
     id: string;
@@ -52,6 +53,7 @@ function getInitials(name: string) {
 
 export function TournamentRefereesClient({ tournamentId }: { tournamentId: string }) {
     const { success, error } = useToast();
+    const { t } = useLocale();
     const [staff, setStaff] = useState<StaffEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState<string | null>(null);
@@ -76,11 +78,11 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
                 setStaff(data.staff || []);
             } else {
                 setStaff([]);
-                setErrorMessage(data.message || "Gagal memuat staff turnamen.");
+                setErrorMessage(data.message || t.dashboard.referees.errors.loadFailed);
             }
         } catch {
             setStaff([]);
-            setErrorMessage("Gagal memuat staff turnamen.");
+            setErrorMessage(t.dashboard.referees.errors.loadFailed);
         } finally {
             setLoading(false);
         }
@@ -102,13 +104,13 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
             const res = await fetch(`/api/tournaments/${tournamentId}/staff/candidates?${params.toString()}`);
             const data = await res.json();
             if (!res.ok) {
-                setAssignError(data.message || "Gagal memuat user.");
+                setAssignError(data.message || t.dashboard.referees.errors.loadUserFailed);
                 setAssignCandidates([]);
                 return;
             }
             setAssignCandidates(data.data || []);
         } catch {
-            setAssignError("Gagal memuat user.");
+            setAssignError(t.dashboard.referees.errors.loadUserFailed);
             setAssignCandidates([]);
         } finally {
             setAssignLoading(false);
@@ -138,14 +140,14 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
             });
             const data = await res.json();
             if (!res.ok) {
-                setAssignError(data.message || "Gagal menambah referee.");
+                setAssignError(data.message || t.dashboard.referees.errors.addFailed);
                 return;
             }
-            setMessage("Staff turnamen berhasil ditambahkan.");
+            setMessage(t.dashboard.referees.success.added);
             await loadStaff();
             await fetchCandidates(assignSearch);
         } catch {
-            setAssignError("Gagal menambah referee.");
+            setAssignError(t.dashboard.referees.errors.addFailed);
         } finally {
             setAssigningUserId(null);
         }
@@ -159,13 +161,13 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
             const res = await fetch(`/api/tournaments/${tournamentId}/staff/${removeTarget.id}`, { method: "DELETE" });
             const data = await res.json();
             if (!res.ok) {
-                setErrorMessage(data.message || "Gagal menghapus staff.");
+                setErrorMessage(data.message || t.dashboard.referees.errors.removeFailed);
                 return;
             }
-            success("Staff turnamen dihapus.");
+            success(t.dashboard.referees.success.removed);
             await loadStaff();
         } catch {
-            setErrorMessage("Gagal menghapus staff.");
+            setErrorMessage(t.dashboard.referees.errors.removeFailed);
         } finally {
             setRemoveTarget(null);
         }
@@ -184,12 +186,12 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
         <DashboardPageShell>
             <div className="space-y-6">
                 <DashboardPageHeader
-                    kicker="Referee"
-                    title="Tournament Referees"
-                    description="Atur siapa saja yang bertugas menyelesaikan sengketa pertandingan."
+                    kicker={t.dashboard.referees.kicker}
+                    title={t.dashboard.referees.title}
+                    description={t.dashboard.referees.description}
                     actions={
                         <button className={btnPrimary} onClick={() => setAssignOpen(true)}>
-                            Tambah Referee
+                            {t.dashboard.referees.add}
                         </button>
                     }
                 />
@@ -206,7 +208,7 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
                     </div>
                 ) : null}
 
-                <DashboardPanel title="Daftar Referee" description="Referee yang ditugaskan khusus untuk turnamen ini.">
+                <DashboardPanel title={t.dashboard.referees.staffTitle} description={t.dashboard.referees.staffDescription}>
                     {loading ? (
                         <div className="space-y-3">
                             {[1, 2, 3].map((item) => (
@@ -215,8 +217,8 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
                         </div>
                     ) : staff.length === 0 ? (
                         <DashboardEmptyState
-                            title="Belum ada referee"
-                            description="Tambahkan referee agar sengketa match dapat ditangani lebih cepat."
+                            title={t.dashboard.referees.emptyTitle}
+                            description={t.dashboard.referees.emptyDescription}
                         />
                     ) : (
                         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -247,7 +249,7 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
                                         </div>
                                     </div>
                                     <button className={btnOutline} onClick={() => setRemoveTarget(entry)}>
-                                        Hapus
+                                        {t.dashboard.referees.remove}
                                     </button>
                                 </div>
                             ))}
@@ -256,11 +258,11 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
                 </DashboardPanel>
             </div>
 
-            <Modal open={assignOpen} onClose={closeAssignModal} title="Tambah Referee" size="md">
+            <Modal open={assignOpen} onClose={closeAssignModal} title={t.dashboard.referees.modalTitle} size="md">
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
                         <div>
-                            <label className={labelCls}>Cari User</label>
+                            <label className={labelCls}>{t.dashboard.referees.searchLabel}</label>
                             <input
                                 type="text"
                                 value={assignSearch}
@@ -272,12 +274,12 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
                                         fetchCandidates(nextValue);
                                     }, 250);
                                 }}
-                                placeholder="Cari nama atau email..."
+                                placeholder={t.dashboard.referees.searchPlaceholder}
                                 className={inputCls}
                             />
                         </div>
                         <div>
-                            <label className={labelCls}>Role</label>
+                            <label className={labelCls}>{t.dashboard.referees.roleLabel}</label>
                             <FormSelect value={assignRole} onChange={setAssignRole} options={ROLE_OPTIONS} />
                         </div>
                     </div>
@@ -296,7 +298,7 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
                         </div>
                     ) : assignCandidates.length === 0 ? (
                         <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 px-4 py-6 text-center text-sm text-base-content/60">
-                            Tidak ada user aktif yang bisa ditambahkan.
+                            {t.dashboard.referees.emptyCandidates}
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -328,7 +330,7 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
                                         className={btnOutline}
                                         disabled={assigningUserId === candidate.id}
                                     >
-                                        {assigningUserId === candidate.id ? "Menambah..." : "Tambah"}
+                                        {assigningUserId === candidate.id ? t.dashboard.referees.adding : t.dashboard.referees.addAction}
                                     </button>
                                 </div>
                             ))}
@@ -339,9 +341,9 @@ export function TournamentRefereesClient({ tournamentId }: { tournamentId: strin
 
             <ConfirmModal
                 open={Boolean(removeTarget)}
-                title="Hapus Referee"
-                message={`Hapus ${removeTarget?.user.username || removeTarget?.user.fullName || "referee"} dari turnamen ini?`}
-                confirmLabel="Hapus"
+                title={t.dashboard.referees.confirmTitle}
+                message={t.dashboard.referees.confirmMessage(removeTarget?.user.username || removeTarget?.user.fullName || t.dashboard.referees.title)}
+                confirmLabel={t.common.delete}
                 onConfirm={handleRemove}
                 onCancel={() => setRemoveTarget(null)}
             />

@@ -12,17 +12,12 @@ import {
     authPrimaryBtnCls,
 } from "@/components/auth/auth-shell";
 import { DiscordIcon, GoogleIcon } from "@/components/auth/oauth-icons";
-
-const ERROR_MESSAGES: Record<string, string> = {
-    banned: "Akses akun Anda sedang dibatasi. Silakan hubungi tim admin Duel Standby.",
-    oauth_failed: "Masuk dengan Google belum berhasil. Silakan coba kembali.",
-    invalid_credentials: "Username, email, atau kata sandi yang Anda masukkan belum sesuai.",
-    access_denied: "Akun ini belum memiliki izin untuk melanjutkan login.",
-};
+import { useLocale } from "@/hooks/use-locale";
 
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { t } = useLocale();
     const redirect = searchParams.get("redirect") || "/dashboard";
     const errorParam = searchParams.get("error");
 
@@ -32,7 +27,15 @@ function LoginForm() {
     const [discordLoading, setDiscordLoading] = useState(false);
     const [googleEnabled, setGoogleEnabled] = useState(false);
     const [discordEnabled, setDiscordEnabled] = useState(false);
-    const [error, setError] = useState<string | null>(errorParam ? ERROR_MESSAGES[errorParam] ?? "Terjadi kendala saat memproses login Anda." : null);
+    const errorMessages: Record<string, string> = {
+        banned: t.auth.login.errors.banned,
+        oauth_failed: t.auth.login.errors.oauthFailed,
+        invalid_credentials: t.auth.login.errors.invalidCredentials,
+        access_denied: t.auth.login.errors.accessDenied,
+    };
+    const [error, setError] = useState<string | null>(
+        errorParam ? errorMessages[errorParam] ?? t.auth.login.errors.generic : null
+    );
 
     useEffect(() => {
         let active = true;
@@ -69,7 +72,7 @@ function LoginForm() {
             });
 
             if (!result?.ok) {
-                setError(ERROR_MESSAGES[result?.code || ""] ?? "Login belum berhasil. Silakan coba lagi.");
+                setError(errorMessages[result?.code || ""] ?? t.auth.login.errors.retry);
                 return;
             }
 
@@ -81,7 +84,7 @@ function LoginForm() {
             const finalizeData = await finalizeResponse.json();
 
             if (!finalizeResponse.ok || !finalizeData.success) {
-                setError(finalizeData.message || "Sesi akun belum dapat disiapkan.");
+                setError(finalizeData.message || t.auth.login.errors.sessionFailed);
                 await signOut({ redirect: false });
                 return;
             }
@@ -89,7 +92,7 @@ function LoginForm() {
             router.push(finalizeData.redirectTo || redirect);
             router.refresh();
         } catch {
-            setError("Koneksi sedang bermasalah. Periksa jaringan Anda lalu coba lagi.");
+            setError(t.auth.login.errors.network);
         } finally {
             setLoading(false);
         }
@@ -104,7 +107,7 @@ function LoginForm() {
                 callbackUrl: `/oauth-finalize?provider=google&redirect=${encodeURIComponent(redirect)}`,
             });
         } catch {
-            setError("Masuk dengan Google belum berhasil. Silakan coba kembali.");
+            setError(t.auth.login.errors.googleFailed);
             setGoogleLoading(false);
         }
     };
@@ -118,21 +121,21 @@ function LoginForm() {
                 callbackUrl: `/oauth-finalize?provider=discord&redirect=${encodeURIComponent(redirect)}`,
             });
         } catch {
-            setError("Masuk dengan Discord belum berhasil. Silakan coba kembali.");
+            setError(t.auth.login.errors.discordFailed);
             setDiscordLoading(false);
         }
     };
 
     return (
         <AuthShell
-            eyebrow="Akses Akun"
-            title="Masuk ke Duel Standby"
-            description="Akses akun Anda untuk mengikuti turnamen, mengelola profil game, dan tetap terhubung dengan komunitas."
+            eyebrow={t.auth.login.eyebrow}
+            title={t.auth.login.title}
+            description={t.auth.login.description}
             footer={
                 <>
-                    Belum punya akun?{" "}
+                    {t.auth.login.footerPrompt}{" "}
                     <Link href="/register" className="link link-hover font-semibold text-primary">
-                        Buat akun
+                        {t.auth.login.footerAction}
                     </Link>
                 </>
             }
@@ -145,11 +148,11 @@ function LoginForm() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label className={authLabelCls}>Username atau Email</label>
+                    <label className={authLabelCls}>{t.auth.login.identifierLabel}</label>
                     <input
                         type="text"
                         className={authInputCls}
-                        placeholder="username atau email@domain.com"
+                        placeholder={t.auth.login.identifierPlaceholder}
                         value={form.identifier}
                         onChange={(e) => setForm({ ...form, identifier: e.target.value })}
                         required
@@ -159,9 +162,9 @@ function LoginForm() {
 
                 <div>
                     <div className="mb-1.5 flex items-center justify-between gap-3">
-                        <label className={authLabelCls}>Kata Sandi</label>
+                        <label className={authLabelCls}>{t.auth.login.passwordLabel}</label>
                         <Link href="/forgot-password" className="text-[11px] font-medium text-base-content/60 transition-colors hover:text-primary">
-                            Lupa kata sandi?
+                            {t.auth.login.forgotPassword}
                         </Link>
                     </div>
                     <input
@@ -176,7 +179,7 @@ function LoginForm() {
                 </div>
 
                 <button type="submit" disabled={loading || googleLoading || discordLoading} className={authPrimaryBtnCls}>
-                    {loading ? "Memproses masuk..." : "Masuk ke Akun"}
+                    {loading ? t.auth.login.loading : t.auth.login.submit}
                 </button>
             </form>
 
@@ -184,7 +187,7 @@ function LoginForm() {
                 <div className="mt-5 space-y-4">
                     <div className="flex items-center gap-3 text-xs text-base-content/35">
                         <div className="h-px flex-1 bg-base-300" />
-                        <span>atau</span>
+                        <span>{t.auth.login.or}</span>
                         <div className="h-px flex-1 bg-base-300" />
                     </div>
 
@@ -194,8 +197,8 @@ function LoginForm() {
                             onClick={googleEnabled ? handleGoogleLogin : undefined}
                             disabled={!googleEnabled || loading || googleLoading || discordLoading}
                             className={`btn btn-outline btn-square tooltip h-14 w-14 ${!googleEnabled ? "opacity-60" : ""}`}
-                            data-tip={googleEnabled ? "Lanjut dengan Google" : "Google belum aktif"}
-                            aria-label="Lanjut dengan Google"
+                            data-tip={googleEnabled ? t.auth.login.continueGoogle : t.auth.login.googleInactive}
+                            aria-label={t.auth.login.continueGoogle}
                         >
                             {googleLoading ? (
                                 <span className="loading loading-spinner loading-xs" />
@@ -209,8 +212,8 @@ function LoginForm() {
                             onClick={discordEnabled ? handleDiscordLogin : undefined}
                             disabled={!discordEnabled || loading || googleLoading || discordLoading}
                             className={`btn btn-outline btn-square tooltip h-14 w-14 ${!discordEnabled ? "opacity-60" : ""}`}
-                            data-tip={discordEnabled ? "Lanjut dengan Discord" : "Discord belum aktif"}
-                            aria-label="Lanjut dengan Discord"
+                            data-tip={discordEnabled ? t.auth.login.continueDiscord : t.auth.login.discordInactive}
+                            aria-label={t.auth.login.continueDiscord}
                         >
                             {discordLoading ? (
                                 <span className="loading loading-spinner loading-xs" />

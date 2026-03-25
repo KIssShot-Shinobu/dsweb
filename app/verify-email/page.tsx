@@ -9,27 +9,29 @@ import {
     authPrimaryBtnCls,
     authSecondaryBtnCls,
 } from "@/components/auth/auth-shell";
+import { useLocale } from "@/hooks/use-locale";
 
 type VerificationState = "verifying" | "success" | "error";
 
 function VerifyEmailContent() {
     const searchParams = useSearchParams();
     const token = searchParams.get("token");
+    const { t } = useLocale();
 
     const [state, setState] = useState<VerificationState>("verifying");
-    const [message, setMessage] = useState("Kami sedang memverifikasi alamat email Anda...");
+    const [message, setMessage] = useState(t.auth.verify.loadingMessage);
 
     useEffect(() => {
         let cancelled = false;
 
         async function verifyEmail() {
-            if (!token) {
-                if (!cancelled) {
-                    setState("error");
-                    setMessage("Tautan verifikasi tidak valid atau token tidak ditemukan.");
+                if (!token) {
+                    if (!cancelled) {
+                        setState("error");
+                        setMessage(t.auth.verify.errors.invalidLink);
+                    }
+                    return;
                 }
-                return;
-            }
 
             try {
                 const response = await fetch("/api/auth/verify-email", {
@@ -43,16 +45,16 @@ function VerifyEmailContent() {
 
                 if (!response.ok || !data.success) {
                     setState("error");
-                    setMessage(data.message || "Verifikasi email belum berhasil. Silakan minta tautan baru.");
+                    setMessage(data.message || t.auth.verify.errors.verifyFailed);
                     return;
                 }
 
                 setState("success");
-                setMessage(data.message || "Alamat email Anda berhasil diverifikasi.");
+                setMessage(data.message || t.auth.verify.successMessage);
             } catch {
                 if (!cancelled) {
                     setState("error");
-                    setMessage("Terjadi kendala jaringan saat memverifikasi email.");
+                    setMessage(t.auth.verify.errors.network);
                 }
             }
         }
@@ -66,12 +68,12 @@ function VerifyEmailContent() {
 
     return (
         <AuthShell
-            eyebrow="Keamanan Akun"
-            title="Verifikasi Email"
-            description="Konfirmasi alamat email Anda untuk mengamankan akun dan menyelesaikan proses aktivasi akses di Duel Standby."
+            eyebrow={t.auth.verify.eyebrow}
+            title={t.auth.verify.title}
+            description={t.auth.verify.description}
             footer={
                 <Link href="/" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
-                    Kembali ke beranda
+                    {t.auth.verify.backHome}
                 </Link>
             }
         >
@@ -81,13 +83,13 @@ function VerifyEmailContent() {
                         <div className="relative mx-auto h-20 w-20">
                             <div className="absolute inset-0 animate-ping rounded-3xl bg-ds-amber/10" />
                             <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-ds-amber/20 bg-ds-amber/12 text-sm font-black uppercase tracking-[0.22em] text-ds-amber">
-                                Verif
+                                {t.auth.verify.verifyBadge}
                             </div>
                         </div>
-                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">Memverifikasi Email</h3>
+                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">{t.auth.verify.loadingTitle}</h3>
                         <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-white/55">{message}</p>
                         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm leading-6 text-white/45">
-                            Tautan verifikasi hanya dapat digunakan sekali. Mohon tunggu sebentar saat sistem mencocokkan token email Anda.
+                            {t.auth.verify.loadingNote}
                         </div>
                     </>
                 ) : null}
@@ -97,22 +99,22 @@ function VerifyEmailContent() {
                         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-500/15 text-3xl font-black text-emerald-400">
                             OK
                         </div>
-                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">Email berhasil diverifikasi</h3>
+                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">{t.auth.verify.successTitle}</h3>
                         <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-white/55">{message}</p>
                         <div className="mt-6 grid grid-cols-1 gap-3 text-left sm:grid-cols-2">
                             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 px-4 py-3 text-sm leading-6 text-emerald-200/90">
-                                Status email Anda sudah aktif dan siap digunakan untuk login.
+                                {t.auth.verify.successNotePrimary}
                             </div>
                             <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-white/45">
-                                Jika Anda baru menyelesaikan pendaftaran, langkah berikutnya cukup masuk dengan email dan kata sandi yang sudah dibuat.
+                                {t.auth.verify.successNoteSecondary}
                             </div>
                         </div>
                         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                             <Link href="/login" className={authPrimaryBtnCls}>
-                                Masuk Sekarang
+                                {t.auth.verify.loginNow}
                             </Link>
                             <Link href="/" className={authSecondaryBtnCls}>
-                                Kembali ke beranda
+                                {t.auth.verify.backHomeSecondary}
                             </Link>
                         </div>
                     </>
@@ -123,19 +125,19 @@ function VerifyEmailContent() {
                         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-red-500/15 text-3xl font-black text-red-400">
                             !
                         </div>
-                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">Verifikasi belum berhasil</h3>
+                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">{t.auth.verify.errorTitle}</h3>
                         <div className={`${authAlertCls} mx-auto mt-4 max-w-lg border-red-500/20 bg-red-500/10 text-red-400`}>
                             {message}
                         </div>
                         <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm leading-6 text-white/45">
-                            Kemungkinan tautan ini sudah pernah digunakan atau masa berlakunya sudah habis. Jika Anda masih belum bisa login, kirim ulang verifikasi dari akun Anda setelah berhasil masuk.
+                            {t.auth.verify.errorNote}
                         </div>
                         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                             <Link href="/login" className={authPrimaryBtnCls}>
-                                Kembali ke Login
+                                {t.auth.verify.backToLogin}
                             </Link>
                             <Link href="/" className={authSecondaryBtnCls}>
-                                Ke beranda
+                                {t.auth.verify.backHomeSecondary}
                             </Link>
                         </div>
                     </>

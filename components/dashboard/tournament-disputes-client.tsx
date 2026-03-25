@@ -7,6 +7,7 @@ import { DashboardEmptyState, DashboardPageHeader, DashboardPageShell, Dashboard
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
 import { normalizeAssetUrl } from "@/lib/asset-url";
+import { useLocale } from "@/hooks/use-locale";
 
 type MatchParticipant = {
     id: string;
@@ -63,7 +64,7 @@ const PER_PAGE = 20;
 const resolveEvidenceUrl = (url: string) => (url.startsWith("/uploads/") ? normalizeAssetUrl(url) || url : url);
 const isImageEvidence = (url: string) => /\.(png|jpe?g|webp|gif)$/i.test(url) || url.startsWith("/uploads/");
 
-function EvidencePreview({ urls }: { urls: string[] }) {
+function EvidencePreview({ urls, alt }: { urls: string[]; alt: string }) {
     if (urls.length === 0) return null;
     return (
         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -80,7 +81,7 @@ function EvidencePreview({ urls }: { urls: string[] }) {
                     >
                         {isImage ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={resolved} alt="Bukti match" className="h-24 w-full rounded-box object-cover" />
+                            <img src={resolved} alt={alt} className="h-24 w-full rounded-box object-cover" />
                         ) : (
                             <div className="line-clamp-2 break-all text-[11px]">{resolved}</div>
                         )}
@@ -93,6 +94,7 @@ function EvidencePreview({ urls }: { urls: string[] }) {
 
 export function TournamentDisputesClient({ tournamentId }: { tournamentId: string }) {
     const { success, error } = useToast();
+    const { t } = useLocale();
     const [matches, setMatches] = useState<MatchRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -107,8 +109,8 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
 
     const resolveParticipantName = (participant?: MatchParticipant | null) => {
-        if (!participant) return "TBD";
-        return participant.user?.username || participant.user?.fullName || participant.guestName || "TBD";
+        if (!participant) return t.match.tbd;
+        return participant.user?.username || participant.user?.fullName || participant.guestName || t.match.tbd;
     };
 
     const fetchDisputes = useCallback(async () => {
@@ -126,10 +128,10 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
                 setMatches(data.matches || []);
                 setTotal(data.total || 0);
             } else {
-                error("Gagal memuat sengketa match.");
+                error(t.dashboard.disputes.errors.loadFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.disputes.errors.network);
         } finally {
             setLoading(false);
         }
@@ -150,7 +152,7 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
                     : "TBD";
             return {
                 id: report.id,
-                label: `${report.scoreA} - ${report.scoreB} · Winner: ${winnerName}`,
+                label: `${report.scoreA} - ${report.scoreB} · ${t.dashboard.matches.modal.winner}: ${winnerName}`,
                 reporter,
                 scoreA: report.scoreA,
                 scoreB: report.scoreB,
@@ -158,7 +160,7 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
                 evidenceUrls: report.evidenceUrls ?? [],
             };
         });
-    }, [activeMatch]);
+    }, [activeMatch, t]);
 
     const openResolveModal = (match: MatchRow) => {
         setActiveMatch(match);
@@ -170,7 +172,7 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
 
     const handleUploadEvidence = async (file: File) => {
         if (resolutionEvidence.length >= 3) {
-            error("Maksimal 3 bukti.");
+            error(t.dashboard.disputes.maxEvidence(3));
             return;
         }
         setUploadingEvidence(true);
@@ -180,11 +182,11 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
             const res = await fetch("/api/upload", { method: "POST", body: formData });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || "Upload gagal.");
+                throw new Error(data.message || t.dashboard.disputes.errors.uploadFailed);
             }
             setResolutionEvidence((prev) => [...prev, data.url]);
         } catch (err) {
-            err instanceof Error ? error(err.message) : error("Upload gagal.");
+            err instanceof Error ? error(err.message) : error(t.dashboard.disputes.errors.uploadFailed);
         } finally {
             setUploadingEvidence(false);
         }
@@ -198,7 +200,7 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
         if (!activeMatch) return;
         const selected = reportOptions.find((option) => option.id === selectedReportId);
         if (!selected) {
-            error("Pilih laporan yang akan dikonfirmasi.");
+            error(t.dashboard.disputes.errors.selectReport);
             return;
         }
 
@@ -217,14 +219,14 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
             });
             const data = await res.json();
             if (res.ok) {
-                success("Sengketa berhasil diselesaikan.");
+                success(t.dashboard.disputes.success.resolved);
                 setActiveMatch(null);
                 fetchDisputes();
             } else {
-                error(data.message || "Gagal menyelesaikan sengketa.");
+                error(data.message || t.dashboard.disputes.errors.resolveFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.disputes.errors.network);
         } finally {
             setSubmitting(false);
         }
@@ -234,12 +236,12 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
         <DashboardPageShell>
             <div className="space-y-6">
                 <DashboardPageHeader
-                    kicker="Dispute Queue"
-                    title="Sengketa Match"
-                    description="Prioritaskan match yang perlu keputusan cepat dari referee."
+                    kicker={t.dashboard.disputes.kicker}
+                    title={t.dashboard.disputes.title}
+                    description={t.dashboard.disputes.description}
                 />
 
-                <DashboardPanel title="Daftar Sengketa" description="Match dengan laporan berbeda akan muncul di sini.">
+                <DashboardPanel title={t.dashboard.disputes.panelTitle} description={t.dashboard.disputes.panelDescription}>
                     {loading ? (
                         <div className="space-y-3">
                             {[1, 2, 3].map((row) => (
@@ -248,8 +250,8 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
                         </div>
                     ) : matches.length === 0 ? (
                         <DashboardEmptyState
-                            title="Belum ada sengketa"
-                            description="Semua match berjalan normal tanpa dispute."
+                            title={t.dashboard.disputes.emptyTitle}
+                            description={t.dashboard.disputes.emptyDescription}
                         />
                     ) : (
                         <div className="space-y-3">
@@ -258,20 +260,22 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
                                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                                         <div className="space-y-2">
                                             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/45">
-                                                Round {match.round.roundNumber}
+                                                {t.dashboard.disputes.roundLabel(match.round.roundNumber)}
                                             </div>
                                             <div className="text-sm font-semibold text-base-content">
                                                 {resolveParticipantName(match.playerA)} vs {resolveParticipantName(match.playerB)}
                                             </div>
                                             <div className="text-xs text-base-content/55">
-                                                {match.disputes?.[0]?.reason ? `Alasan: ${match.disputes[0].reason}` : "Alasan: Perbedaan laporan skor"}
+                                                {match.disputes?.[0]?.reason
+                                                    ? `${t.dashboard.disputes.reasonLabel}: ${match.disputes[0].reason}`
+                                                    : `${t.dashboard.disputes.reasonLabel}: ${t.dashboard.disputes.reasonFallback}`}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="badge badge-outline text-warning">Needs Decision</span>
+                                            <span className="badge badge-outline text-warning">{t.dashboard.disputes.needsDecision}</span>
                                             <span className="badge badge-outline">{match.status}</span>
                                             <button className={`${btnOutline} btn-sm`} onClick={() => openResolveModal(match)}>
-                                                Resolve
+                                                {t.dashboard.disputes.resolve}
                                             </button>
                                         </div>
                                     </div>
@@ -288,7 +292,7 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
                 </DashboardPanel>
             </div>
 
-            <Modal open={Boolean(activeMatch)} onClose={() => setActiveMatch(null)} title="Resolve Sengketa" size="md">
+            <Modal open={Boolean(activeMatch)} onClose={() => setActiveMatch(null)} title={t.dashboard.disputes.modalTitle} size="md">
                 {activeMatch ? (
                     <div className="space-y-4">
                         <div className="text-sm text-base-content/70">
@@ -297,7 +301,7 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
 
                         {reportOptions.length === 0 ? (
                             <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 px-4 py-6 text-center text-sm text-base-content/60">
-                                Laporan belum tersedia.
+                                {t.dashboard.disputes.noReports}
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -308,8 +312,8 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
                                     >
                                         <div className="min-w-0">
                                             <div className="text-sm font-semibold text-base-content">{option.label}</div>
-                                            <div className="text-xs text-base-content/50">Dilaporkan oleh {option.reporter}</div>
-                                            {option.evidenceUrls?.length ? <EvidencePreview urls={option.evidenceUrls} /> : null}
+                                            <div className="text-xs text-base-content/50">{t.dashboard.disputes.reportedBy(option.reporter)}</div>
+                                            {option.evidenceUrls?.length ? <EvidencePreview urls={option.evidenceUrls} alt={t.dashboard.disputes.evidenceMatchAlt} /> : null}
                                         </div>
                                         <input
                                             type="radio"
@@ -325,19 +329,19 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
 
                         {activeMatch.disputes?.[0]?.evidenceUrls?.length ? (
                             <div>
-                                <label className={labelCls}>Bukti Sengketa</label>
-                                <EvidencePreview urls={activeMatch.disputes[0].evidenceUrls ?? []} />
+                                <label className={labelCls}>{t.dashboard.disputes.evidenceDispute}</label>
+                                <EvidencePreview urls={activeMatch.disputes[0].evidenceUrls ?? []} alt={t.dashboard.disputes.evidenceDispute} />
                             </div>
                         ) : null}
 
                         <div>
-                            <label className={labelCls}>Bukti Resolusi (opsional)</label>
+                            <label className={labelCls}>{t.dashboard.disputes.evidenceResolution}</label>
                             <div className="space-y-2">
                                 <label className="flex cursor-pointer items-center justify-between gap-3 rounded-box border border-dashed border-base-300 bg-base-200/40 px-4 py-3 transition-all hover:border-primary/40 hover:bg-base-200/70">
                                     <span className="text-sm text-base-content/55">
-                                        {uploadingEvidence ? "Mengunggah file..." : "Tambah bukti (PNG/JPG/WEBP)"}
+                                        {uploadingEvidence ? t.match.evidence.uploading : t.dashboard.disputes.addEvidence}
                                     </span>
-                                    <span className="btn btn-primary btn-xs rounded-box">Upload</span>
+                                    <span className="btn btn-primary btn-xs rounded-box">{t.dashboard.disputes.upload}</span>
                                     <input
                                         type="file"
                                         accept="image/png,image/jpeg,image/webp"
@@ -355,35 +359,35 @@ export function TournamentDisputesClient({ tournamentId }: { tournamentId: strin
                                         {resolutionEvidence.map((url) => (
                                             <div key={url} className="rounded-box border border-base-300 bg-base-100/70 p-2">
                                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img src={resolveEvidenceUrl(url)} alt="Bukti resolusi" className="h-24 w-full rounded-box object-cover" />
+                                                <img src={resolveEvidenceUrl(url)} alt={t.dashboard.disputes.evidenceDispute} className="h-24 w-full rounded-box object-cover" />
                                                 <button type="button" className="mt-2 text-xs text-error" onClick={() => removeResolutionEvidence(url)}>
-                                                    Hapus
+                                                    {t.dashboard.disputes.remove}
                                                 </button>
                                             </div>
                                         ))}
                                     </div>
                                 ) : null}
-                                <div className="text-xs text-base-content/50">Maksimal 3 bukti.</div>
+                                <div className="text-xs text-base-content/50">{t.dashboard.disputes.maxEvidence(3)}</div>
                             </div>
                         </div>
 
                         <div>
-                            <label className={labelCls}>Catatan Referee (opsional)</label>
+                            <label className={labelCls}>{t.dashboard.disputes.noteLabel}</label>
                             <input
                                 type="text"
                                 value={reason}
                                 onChange={(event) => setReason(event.target.value)}
-                                placeholder="Contoh: bukti screenshot valid"
+                                placeholder={t.dashboard.disputes.notePlaceholder}
                                 className={inputCls}
                             />
                         </div>
 
                         <div className="flex justify-end gap-2">
                             <button className={btnOutline} type="button" onClick={() => setActiveMatch(null)}>
-                                Batal
+                                {t.dashboard.disputes.buttons.cancel}
                             </button>
                             <button className={btnPrimary} type="button" onClick={handleResolve} disabled={submitting || reportOptions.length === 0}>
-                                {submitting ? "Menyimpan..." : "Selesaikan"}
+                                {submitting ? t.dashboard.disputes.buttons.saving : t.dashboard.disputes.buttons.resolve}
                             </button>
                         </div>
                     </div>

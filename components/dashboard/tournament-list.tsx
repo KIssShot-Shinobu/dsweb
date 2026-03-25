@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { DashboardEmptyState, DashboardPanel } from "@/components/dashboard/page-shell";
+import { useLocale } from "@/hooks/use-locale";
+import { formatCurrency, formatDate } from "@/lib/i18n/format";
 
 interface Tournament {
     id: string;
@@ -34,29 +36,16 @@ export function TournamentList({
     tournaments: Tournament[];
     loading?: boolean;
 }) {
+    const { t, locale } = useLocale();
     const getGameIcon = (gameType: string) => (gameType.toLowerCase().includes("master") ? "MD" : "DL");
-
-    const formatDate = (dateString: string) =>
-        new Date(dateString).toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-        });
-
-    const formatPrize = (amount: number) =>
-        new Intl.NumberFormat("id-ID", {
-            style: "currency",
-            currency: "IDR",
-            minimumFractionDigits: 0,
-        }).format(amount);
 
     return (
         <DashboardPanel
-            title="Tournaments"
-            description="Turnamen terbaru yang sedang dibuka, berjalan, atau baru selesai."
+            title={t.dashboard.tournaments.list.title}
+            description={t.dashboard.tournaments.list.description}
             action={
                 <Link href="/dashboard/tournaments" className="btn btn-outline btn-sm rounded-box">
-                    Manage
+                    {t.dashboard.tournaments.list.manage}
                 </Link>
             }
         >
@@ -74,10 +63,10 @@ export function TournamentList({
                 </div>
             ) : tournaments.length === 0 ? (
                 <DashboardEmptyState
-                    title="Belum ada turnamen"
-                    description="Buat turnamen baru untuk menampilkan jadwal, hadiah, dan peserta di dashboard utama."
+                    title={t.dashboard.tournaments.list.emptyTitle}
+                    description={t.dashboard.tournaments.list.emptyDescription}
                     actionHref="/dashboard/tournaments"
-                    actionLabel="Buat turnamen"
+                    actionLabel={t.dashboard.tournaments.list.createTournament}
                 />
             ) : (
                 <div className="space-y-3">
@@ -89,9 +78,12 @@ export function TournamentList({
                             <div className="min-w-0 flex-1">
                                 <div className="truncate text-sm font-semibold text-base-content">{tournament.title}</div>
                                 <div className="text-xs text-base-content/50">
-                                    {formatDate(tournament.startAt)} - {formatPrize(tournament.prizePool)} - {tournament.maxPlayers
-                                        ? `${tournament._count?.participants || 0} / ${tournament.maxPlayers} peserta`
-                                        : `${tournament._count?.participants || 0} peserta`}
+                                    {formatDate(tournament.startAt, locale)} - {formatCurrency(tournament.prizePool, locale, "IDR")} - {tournament.maxPlayers
+                                        ? t.dashboard.tournaments.list.participantsWithCap(
+                                              tournament._count?.participants || 0,
+                                              tournament.maxPlayers
+                                          )
+                                        : t.dashboard.tournaments.list.participants(tournament._count?.participants || 0)}
                                 </div>
                             </div>
                             <span className={`badge h-auto px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getStatusBadge(tournament.status)}`}>

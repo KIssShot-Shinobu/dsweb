@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { DashboardEmptyState, DashboardPanel } from "@/components/dashboard/page-shell";
+import { useLocale } from "@/hooks/use-locale";
 
 interface ActiveUser {
     id: string;
@@ -34,6 +35,7 @@ export function ActiveUserList({
     users: ActiveUser[];
     loading?: boolean;
 }) {
+    const { t } = useLocale();
     const getInitials = (name: string) =>
         name
             .split(" ")
@@ -44,11 +46,11 @@ export function ActiveUserList({
 
     return (
         <DashboardPanel
-            title="Active Users"
-            description="Snapshot akun aktif terbaru, role komunitas, dan afiliasi team jika sudah ditetapkan."
+            title={t.dashboard.activeUsers.title}
+            description={t.dashboard.activeUsers.description}
             action={
                 <Link href="/dashboard/users?status=ACTIVE" className="btn btn-outline btn-sm rounded-box">
-                    View All
+                    {t.dashboard.activeUsers.viewAll}
                 </Link>
             }
         >
@@ -66,10 +68,10 @@ export function ActiveUserList({
                 </div>
             ) : users.length === 0 ? (
                 <DashboardEmptyState
-                    title="Belum ada active users"
-                    description="Akun aktif akan muncul di sini setelah registrasi dan login mulai berjalan."
+                    title={t.dashboard.activeUsers.emptyTitle}
+                    description={t.dashboard.activeUsers.emptyDescription}
                     actionHref="/dashboard/users"
-                    actionLabel="Buka halaman users"
+                    actionLabel={t.dashboard.activeUsers.emptyAction}
                 />
             ) : (
                 <div className="space-y-3">
@@ -92,10 +94,14 @@ export function ActiveUserList({
                                 <div className="min-w-0 flex-1">
                                     <div className="truncate text-sm font-semibold text-base-content">{user.fullName}</div>
                                     <div className="truncate text-xs text-base-content/55">
-                                        {user.gameProfiles[0]?.ign || user.gameProfiles[0]?.gameId || "Belum ada game profile"}
+                                        {user.gameProfiles[0]?.ign || user.gameProfiles[0]?.gameId || t.dashboard.activeUsers.noGameProfile}
                                     </div>
                                     <div className="truncate text-[11px] text-base-content/45">
-                                        {user.team ? `Team ${user.team.name}` : user.role === "USER" ? "Public user" : "Belum masuk team"}
+                                        {user.team
+                                            ? t.dashboard.activeUsers.teamLabel(user.team.name)
+                                            : user.role === "USER"
+                                              ? t.dashboard.activeUsers.publicUser
+                                              : t.dashboard.activeUsers.noTeam}
                                     </div>
                                 </div>
                                 <span className={`badge h-auto px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getRoleBadge(user.role)}`}>

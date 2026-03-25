@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Bell, ShieldCheck, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { useState } from "react";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDateTime } from "@/lib/i18n/format";
 
 export type NotificationView = {
     id: string;
@@ -13,16 +15,6 @@ export type NotificationView = {
     isRead: boolean;
     createdAt: string;
 };
-
-function formatTime(value: string) {
-    return new Date(value).toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-}
 
 function getInviteId(link?: string | null) {
     if (!link) return null;
@@ -44,6 +36,7 @@ export function NotificationItem({
     onDelete: (id: string) => Promise<void>;
 }) {
     const [loading, setLoading] = useState(false);
+    const { locale, t } = useLocale();
 
     const inviteId = notification.type === "TEAM_INVITE" ? getInviteId(notification.link) : null;
 
@@ -97,13 +90,21 @@ export function NotificationItem({
                     <div className="space-y-1">
                         <div className="text-sm font-semibold text-base-content">{notification.title}</div>
                         <div className="text-xs text-base-content/70">{notification.message}</div>
-                        <div className="text-[10px] text-base-content/45">{formatTime(notification.createdAt)}</div>
+                        <div className="text-[10px] text-base-content/45">
+                            {formatDateTime(notification.createdAt, locale, {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            })}
+                        </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
                     {!notification.isRead ? (
                         <span className="badge badge-primary badge-xs border-primary/30 bg-primary/15 text-primary">
-                            baru
+                            {t.notifications.newBadge}
                         </span>
                     ) : null}
                     <button
@@ -111,8 +112,8 @@ export function NotificationItem({
                         className="btn btn-ghost btn-xs btn-circle opacity-60 transition hover:opacity-100"
                         onClick={() => onDelete(notification.id)}
                         disabled={loading}
-                        aria-label="Hapus notifikasi"
-                        title="Hapus"
+                        aria-label={t.notifications.delete}
+                        title={t.notifications.delete}
                     >
                         <X className="h-3.5 w-3.5" />
                     </button>
@@ -122,21 +123,21 @@ export function NotificationItem({
             <div className="mt-3 flex flex-wrap items-center gap-2">
                 {notification.link ? (
                     <Link href={notification.link} className="btn btn-ghost btn-xs" onClick={handleRead}>
-                        Buka
+                        {t.notifications.open}
                     </Link>
                 ) : null}
                 {!notification.isRead ? (
                     <button type="button" className="btn btn-outline btn-xs" onClick={handleRead} disabled={loading}>
-                        Tandai dibaca
+                        {t.notifications.markRead}
                     </button>
                 ) : null}
                 {notification.type === "TEAM_INVITE" && inviteId ? (
                     <>
                         <button type="button" className="btn btn-primary btn-xs" onClick={() => handleInviteAction("accept")} disabled={loading}>
-                            Terima
+                            {t.notifications.accept}
                         </button>
                         <button type="button" className="btn btn-outline btn-error btn-xs" onClick={() => handleInviteAction("decline")} disabled={loading}>
-                            Tolak
+                            {t.notifications.decline}
                         </button>
                     </>
                 ) : null}

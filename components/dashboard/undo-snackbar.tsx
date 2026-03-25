@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useLocale } from "@/hooks/use-locale";
 
 interface UndoSnackbarProps {
     open: boolean;
@@ -10,6 +11,7 @@ interface UndoSnackbarProps {
 }
 
 export function UndoSnackbar({ open, message, duration = 5000, onUndo }: UndoSnackbarProps) {
+    const { t } = useLocale();
     const barRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -34,10 +36,12 @@ export function UndoSnackbar({ open, message, duration = 5000, onUndo }: UndoSna
                     </div>
                     <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-neutral-content">{message}</p>
-                        <p className="mt-0.5 text-xs text-neutral-content/50">Deleting in 5 seconds...</p>
+                        <p className="mt-0.5 text-xs text-neutral-content/50">
+                            {t.dashboard.undo.deletingCountdown(Math.max(1, Math.ceil(duration / 1000)))}
+                        </p>
                     </div>
                     <button onClick={onUndo} className="btn btn-primary btn-sm rounded-box">
-                        Undo
+                        {t.dashboard.undo.undo}
                     </button>
                 </div>
             </div>

@@ -5,26 +5,28 @@ import { Footer } from "@/components/ui/footer";
 import { Navbar } from "@/components/ui/navbar";
 import { FormSelect } from "@/components/dashboard/form-select";
 import { PublicTournamentCard, type PublicTournamentCardData } from "@/components/public/tournament-card";
+import { useLocale } from "@/hooks/use-locale";
 
 type TournamentResponse = PublicTournamentCardData & {
     _count?: { participants: number };
 };
 
-const statusOptions = [
-    { value: "ALL", label: "Semua Status" },
-    { value: "OPEN", label: "Registrasi Dibuka" },
-    { value: "ONGOING", label: "Sedang Berlangsung" },
-    { value: "COMPLETED", label: "Selesai" },
-    { value: "CANCELLED", label: "Dibatalkan" },
-];
-
-const gameOptions = [
-    { value: "ALL", label: "Semua Game" },
-    { value: "DUEL_LINKS", label: "Duel Links" },
-    { value: "MASTER_DUEL", label: "Master Duel" },
-];
-
 export default function PublicTournamentsPage() {
+    const { t } = useLocale();
+    const statusOptions = [
+        { value: "ALL", label: t.publicTournaments.statusAll },
+        { value: "OPEN", label: t.tournament.status.OPEN },
+        { value: "ONGOING", label: t.tournament.status.ONGOING },
+        { value: "COMPLETED", label: t.tournament.status.COMPLETED },
+        { value: "CANCELLED", label: t.tournament.status.CANCELLED },
+    ];
+
+    const gameOptions = [
+        { value: "ALL", label: t.publicTournaments.gameAll },
+        { value: "DUEL_LINKS", label: t.tournament.gameDuelLinks },
+        { value: "MASTER_DUEL", label: t.tournament.gameMasterDuel },
+    ];
+
     const [tournaments, setTournaments] = useState<PublicTournamentCardData[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState("ALL");
@@ -68,7 +70,7 @@ export default function PublicTournamentsPage() {
             .catch(() => {
                 setTournaments([]);
                 setTotal(0);
-                setMessage("Kami belum dapat memuat daftar turnamen.");
+                setMessage(t.publicTournaments.errors.loadFailed);
             })
             .finally(() => setLoading(false));
     }, [statusFilter, gameFilter, search, page, perPage]);
@@ -80,9 +82,9 @@ export default function PublicTournamentsPage() {
     const totalPages = useMemo(() => Math.max(1, Math.ceil(total / perPage)), [total, perPage]);
 
     const pageOptions = [
-        { value: "6", label: "6 / halaman" },
-        { value: "12", label: "12 / halaman" },
-        { value: "18", label: "18 / halaman" },
+        { value: "6", label: t.publicTournaments.pageSizeLabel(6) },
+        { value: "12", label: t.publicTournaments.pageSizeLabel(12) },
+        { value: "18", label: t.publicTournaments.pageSizeLabel(18) },
     ];
 
     return (
@@ -90,12 +92,12 @@ export default function PublicTournamentsPage() {
             <Navbar />
             <section className="border-b border-base-300 pt-28">
                 <div className="mx-auto max-w-[1400px] px-4 pb-14 sm:px-6 lg:px-8">
-                    <p className="mb-4 text-sm font-bold uppercase tracking-[0.34em] text-primary">Direktori Turnamen</p>
+                    <p className="mb-4 text-sm font-bold uppercase tracking-[0.34em] text-primary">{t.publicTournaments.badge}</p>
                     <h1 className="max-w-3xl text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
-                        Semua turnamen Duel Standby, tersusun rapi dalam satu direktori.
+                        {t.publicTournaments.title}
                     </h1>
                     <p className="mt-4 max-w-2xl text-sm leading-7 text-base-content/65 sm:text-base">
-                        Temukan event yang relevan, bandingkan format serta hadiah, lalu masuk ke halaman detail saat Anda siap mengamankan slot.
+                        {t.publicTournaments.subtitle}
                     </p>
                 </div>
             </section>
@@ -111,7 +113,7 @@ export default function PublicTournamentsPage() {
                             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
                             searchTimeoutRef.current = setTimeout(() => setSearch(nextValue), 250);
                         }}
-                        placeholder="Cari nama turnamen atau kata kunci..."
+                        placeholder={t.publicTournaments.searchPlaceholder}
                         className="input input-bordered w-full bg-base-100"
                     />
                     <FormSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} className="md:min-w-[180px]" />
@@ -135,8 +137,8 @@ export default function PublicTournamentsPage() {
                     <div className="card border border-base-300 bg-base-100 shadow-xl">
                         <div className="card-body items-center px-6 py-20 text-center">
                             <div className="mb-4 text-5xl text-primary">[]</div>
-                            <h2 className="text-xl font-black text-base-content sm:text-2xl">Belum ada turnamen yang cocok dengan pencarian Anda.</h2>
-                            <p className="mt-3 text-sm text-base-content/60 sm:text-base">Ubah filter atau gunakan kata kunci lain untuk menemukan event yang tersedia.</p>
+                            <h2 className="text-xl font-black text-base-content sm:text-2xl">{t.publicTournaments.emptyTitle}</h2>
+                            <p className="mt-3 text-sm text-base-content/60 sm:text-base">{t.publicTournaments.emptySubtitle}</p>
                         </div>
                     </div>
                 ) : (
@@ -148,7 +150,7 @@ export default function PublicTournamentsPage() {
                     </div>
                         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="text-xs text-base-content/60 sm:text-sm">
-                                Menampilkan {tournaments.length} dari {total} turnamen.
+                                {t.publicTournaments.showingLabel(tournaments.length, total)}
                             </div>
                             <div className="join">
                                 <button
@@ -157,7 +159,7 @@ export default function PublicTournamentsPage() {
                                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                                     disabled={page <= 1}
                                 >
-                                    Prev
+                                    {t.publicTournaments.prev}
                                 </button>
                                 <button type="button" className="btn btn-ghost btn-sm join-item pointer-events-none">
                                     {page} / {totalPages}
@@ -168,7 +170,7 @@ export default function PublicTournamentsPage() {
                                     onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                                     disabled={page >= totalPages}
                                 >
-                                    Next
+                                    {t.publicTournaments.next}
                                 </button>
                             </div>
                         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState } from "react";
+import { useLocale } from "@/hooks/use-locale";
 
 export type ToastType = "success" | "error" | "warning" | "info";
 
@@ -29,23 +30,30 @@ const ToastContext = createContext<ToastContextValue>({
 
 export const useToast = () => useContext(ToastContext);
 
-const styles: Record<ToastType, { alert: string; title: string }> = {
-    success: { alert: "alert-success", title: "Success" },
-    error: { alert: "alert-error", title: "Error" },
-    warning: { alert: "alert-warning", title: "Warning" },
-    info: { alert: "alert-info", title: "Info" },
+const styles: Record<ToastType, { alert: string }> = {
+    success: { alert: "alert-success" },
+    error: { alert: "alert-error" },
+    warning: { alert: "alert-warning" },
+    info: { alert: "alert-info" },
 };
 
 function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
+    const { t } = useLocale();
     const s = styles[toast.type];
+    const titles: Record<ToastType, string> = {
+        success: t.dashboard.toast.success,
+        error: t.dashboard.toast.error,
+        warning: t.dashboard.toast.warning,
+        info: t.dashboard.toast.info,
+    };
 
     return (
         <div className={`alert ${s.alert} w-80 max-w-[calc(100vw-2rem)] rounded-box shadow-xl`}>
             <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold">{toast.title ?? s.title}</div>
+                <div className="text-sm font-semibold">{toast.title ?? titles[toast.type]}</div>
                 <div className="mt-0.5 break-words text-xs">{toast.message}</div>
             </div>
-            <button onClick={() => onRemove(toast.id)} className="btn btn-ghost btn-xs btn-circle" aria-label="Dismiss toast">
+            <button onClick={() => onRemove(toast.id)} className="btn btn-ghost btn-xs btn-circle" aria-label={t.dashboard.toast.dismiss}>
                 x
             </button>
         </div>

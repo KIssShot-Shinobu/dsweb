@@ -5,78 +5,2837 @@
     "longitude": 0
   },
   "countries": [
-    { "code": "ID", "name": "Indonesia", "latitude": -2.5, "longitude": 118.0, "aliases": ["Republic of Indonesia"] },
-    { "code": "MY", "name": "Malaysia", "latitude": 4.2105, "longitude": 101.9758 },
-    { "code": "SG", "name": "Singapore", "latitude": 1.3521, "longitude": 103.8198 },
-    { "code": "TH", "name": "Thailand", "latitude": 15.87, "longitude": 100.9925 },
-    { "code": "VN", "name": "Vietnam", "latitude": 14.0583, "longitude": 108.2772 },
-    { "code": "PH", "name": "Philippines", "latitude": 12.8797, "longitude": 121.774 },
-    { "code": "BN", "name": "Brunei", "latitude": 4.5353, "longitude": 114.7277 },
-    { "code": "KH", "name": "Cambodia", "latitude": 12.5657, "longitude": 104.991 },
-    { "code": "LA", "name": "Laos", "latitude": 19.8563, "longitude": 102.4955, "aliases": ["Lao People's Democratic Republic"] },
-    { "code": "MM", "name": "Myanmar", "latitude": 21.9162, "longitude": 95.956, "aliases": ["Burma"] },
-    { "code": "TL", "name": "Timor-Leste", "latitude": -8.8742, "longitude": 125.7275, "aliases": ["East Timor"] },
-
-    { "code": "AU", "name": "Australia", "latitude": -25.2744, "longitude": 133.7751 },
-    { "code": "NZ", "name": "New Zealand", "latitude": -40.9006, "longitude": 174.886 },
-    { "code": "JP", "name": "Japan", "latitude": 36.2048, "longitude": 138.2529 },
-    { "code": "KR", "name": "South Korea", "latitude": 35.9078, "longitude": 127.7669, "aliases": ["Republic of Korea"] },
-    { "code": "CN", "name": "China", "latitude": 35.8617, "longitude": 104.1954 },
-    { "code": "TW", "name": "Taiwan", "latitude": 23.6978, "longitude": 120.9605 },
-    { "code": "HK", "name": "Hong Kong", "latitude": 22.3193, "longitude": 114.1694 },
-    { "code": "IN", "name": "India", "latitude": 20.5937, "longitude": 78.9629 },
-    { "code": "PK", "name": "Pakistan", "latitude": 30.3753, "longitude": 69.3451 },
-    { "code": "BD", "name": "Bangladesh", "latitude": 23.685, "longitude": 90.3563 },
-    { "code": "LK", "name": "Sri Lanka", "latitude": 7.8731, "longitude": 80.7718 },
-    { "code": "NP", "name": "Nepal", "latitude": 28.3949, "longitude": 84.124 },
-
-    { "code": "AE", "name": "United Arab Emirates", "latitude": 23.4241, "longitude": 53.8478, "aliases": ["UAE"] },
-    { "code": "SA", "name": "Saudi Arabia", "latitude": 23.8859, "longitude": 45.0792 },
-    { "code": "QA", "name": "Qatar", "latitude": 25.3548, "longitude": 51.1839 },
-    { "code": "KW", "name": "Kuwait", "latitude": 29.3117, "longitude": 47.4818 },
-    { "code": "OM", "name": "Oman", "latitude": 21.4735, "longitude": 55.9754 },
-    { "code": "EG", "name": "Egypt", "latitude": 26.8206, "longitude": 30.8025 },
-    { "code": "TR", "name": "Turkey", "latitude": 38.9637, "longitude": 35.2433 },
-    { "code": "IL", "name": "Israel", "latitude": 31.0461, "longitude": 34.8516 },
-    { "code": "IR", "name": "Iran", "latitude": 32.4279, "longitude": 53.688 },
-
-    { "code": "GB", "name": "United Kingdom", "latitude": 55.3781, "longitude": -3.436, "aliases": ["UK", "Britain"] },
-    { "code": "IE", "name": "Ireland", "latitude": 53.4129, "longitude": -8.2439 },
-    { "code": "FR", "name": "France", "latitude": 46.2276, "longitude": 2.2137 },
-    { "code": "DE", "name": "Germany", "latitude": 51.1657, "longitude": 10.4515 },
-    { "code": "NL", "name": "Netherlands", "latitude": 52.1326, "longitude": 5.2913 },
-    { "code": "BE", "name": "Belgium", "latitude": 50.5039, "longitude": 4.4699 },
-    { "code": "ES", "name": "Spain", "latitude": 40.4637, "longitude": -3.7492 },
-    { "code": "IT", "name": "Italy", "latitude": 41.8719, "longitude": 12.5674 },
-    { "code": "PT", "name": "Portugal", "latitude": 39.3999, "longitude": -8.2245 },
-    { "code": "SE", "name": "Sweden", "latitude": 60.1282, "longitude": 18.6435 },
-    { "code": "NO", "name": "Norway", "latitude": 60.472, "longitude": 8.4689 },
-    { "code": "FI", "name": "Finland", "latitude": 61.9241, "longitude": 25.7482 },
-    { "code": "DK", "name": "Denmark", "latitude": 56.2639, "longitude": 9.5018 },
-    { "code": "PL", "name": "Poland", "latitude": 51.9194, "longitude": 19.1451 },
-    { "code": "CZ", "name": "Czechia", "latitude": 49.8175, "longitude": 15.473 },
-    { "code": "CH", "name": "Switzerland", "latitude": 46.8182, "longitude": 8.2275 },
-    { "code": "AT", "name": "Austria", "latitude": 47.5162, "longitude": 14.5501 },
-    { "code": "RU", "name": "Russia", "latitude": 61.524, "longitude": 105.3188, "aliases": ["Russian Federation"] },
-    { "code": "UA", "name": "Ukraine", "latitude": 48.3794, "longitude": 31.1656 },
-    { "code": "GR", "name": "Greece", "latitude": 39.0742, "longitude": 21.8243 },
-
-    { "code": "US", "name": "United States", "latitude": 37.0902, "longitude": -95.7129, "aliases": ["USA", "United States of America"] },
-    { "code": "CA", "name": "Canada", "latitude": 56.1304, "longitude": -106.3468 },
-    { "code": "MX", "name": "Mexico", "latitude": 23.6345, "longitude": -102.5528 },
-    { "code": "BR", "name": "Brazil", "latitude": -14.235, "longitude": -51.9253 },
-    { "code": "AR", "name": "Argentina", "latitude": -38.4161, "longitude": -63.6167 },
-    { "code": "CL", "name": "Chile", "latitude": -35.6751, "longitude": -71.543 },
-    { "code": "CO", "name": "Colombia", "latitude": 4.5709, "longitude": -74.2973 },
-    { "code": "PE", "name": "Peru", "latitude": -9.19, "longitude": -75.0152 },
-    { "code": "VE", "name": "Venezuela", "latitude": 6.4238, "longitude": -66.5897 },
-
-    { "code": "ZA", "name": "South Africa", "latitude": -30.5595, "longitude": 22.9375 },
-    { "code": "NG", "name": "Nigeria", "latitude": 9.082, "longitude": 8.6753 },
-    { "code": "KE", "name": "Kenya", "latitude": -0.0236, "longitude": 37.9062 },
-    { "code": "TZ", "name": "Tanzania", "latitude": -6.369, "longitude": 34.8888 },
-    { "code": "ET", "name": "Ethiopia", "latitude": 9.145, "longitude": 40.4897 },
-    { "code": "MA", "name": "Morocco", "latitude": 31.7917, "longitude": -7.0926 },
-    { "code": "GH", "name": "Ghana", "latitude": 7.9465, "longitude": -1.0232 }
+    {
+      "code": "AF",
+      "name": "Afghanistan",
+      "latitude": 33.0,
+      "longitude": 65.0,
+      "aliases": [
+        "AF",
+        "Afġānistān",
+        "Islamic Republic of Afghanistan"
+      ]
+    },
+    {
+      "code": "AL",
+      "name": "Albania",
+      "latitude": 41.0,
+      "longitude": 20.0,
+      "aliases": [
+        "AL",
+        "Republic of Albania",
+        "Shqipnia",
+        "Shqipëri",
+        "Shqipëria"
+      ]
+    },
+    {
+      "code": "DZ",
+      "name": "Algeria",
+      "latitude": 28.0,
+      "longitude": 3.0,
+      "aliases": [
+        "Algérie",
+        "DZ",
+        "Dzayer",
+        "People's Democratic Republic of Algeria"
+      ]
+    },
+    {
+      "code": "AS",
+      "name": "American Samoa",
+      "latitude": -14.33333333,
+      "longitude": -170.0,
+      "aliases": [
+        "AS",
+        "Amelika Sāmoa",
+        "Amerika Sāmoa",
+        "Sāmoa Amelika"
+      ]
+    },
+    {
+      "code": "AD",
+      "name": "Andorra",
+      "latitude": 42.5,
+      "longitude": 1.5,
+      "aliases": [
+        "AD",
+        "Principality of Andorra",
+        "Principat d'Andorra"
+      ]
+    },
+    {
+      "code": "AO",
+      "name": "Angola",
+      "latitude": -12.5,
+      "longitude": 18.5,
+      "aliases": [
+        "AO",
+        "Republic of Angola",
+        "República de Angola",
+        "ʁɛpublika de an'ɡɔla"
+      ]
+    },
+    {
+      "code": "AI",
+      "name": "Anguilla",
+      "latitude": 18.25,
+      "longitude": -63.16666666,
+      "aliases": [
+        "AI"
+      ]
+    },
+    {
+      "code": "AQ",
+      "name": "Antarctica",
+      "latitude": -90.0,
+      "longitude": 0.0,
+      "aliases": [
+        "AQ"
+      ]
+    },
+    {
+      "code": "AG",
+      "name": "Antigua and Barbuda",
+      "latitude": 17.05,
+      "longitude": -61.8,
+      "aliases": [
+        "AG"
+      ]
+    },
+    {
+      "code": "AR",
+      "name": "Argentina",
+      "latitude": -34.0,
+      "longitude": -64.0,
+      "aliases": [
+        "AR",
+        "Argentine Republic",
+        "República Argentina"
+      ]
+    },
+    {
+      "code": "AM",
+      "name": "Armenia",
+      "latitude": 40.0,
+      "longitude": 45.0,
+      "aliases": [
+        "AM",
+        "Hayastan",
+        "Republic of Armenia",
+        "Հայաստանի Հանրապետություն"
+      ]
+    },
+    {
+      "code": "AW",
+      "name": "Aruba",
+      "latitude": 12.5,
+      "longitude": -69.96666666,
+      "aliases": [
+        "AW"
+      ]
+    },
+    {
+      "code": "AU",
+      "name": "Australia",
+      "latitude": -27.0,
+      "longitude": 133.0,
+      "aliases": [
+        "AU",
+        "Commonwealth of Australia"
+      ]
+    },
+    {
+      "code": "AT",
+      "name": "Austria",
+      "latitude": 47.33333333,
+      "longitude": 13.33333333,
+      "aliases": [
+        "AT",
+        "Oesterreich",
+        "Osterreich",
+        "Republic of Austria"
+      ]
+    },
+    {
+      "code": "AZ",
+      "name": "Azerbaijan",
+      "latitude": 40.5,
+      "longitude": 47.5,
+      "aliases": [
+        "AZ",
+        "Azərbaycan Respublikası",
+        "Republic of Azerbaijan"
+      ]
+    },
+    {
+      "code": "BS",
+      "name": "Bahamas",
+      "latitude": 24.25,
+      "longitude": -76.0,
+      "aliases": [
+        "BS",
+        "Commonwealth of the Bahamas"
+      ]
+    },
+    {
+      "code": "BH",
+      "name": "Bahrain",
+      "latitude": 26.0,
+      "longitude": 50.55,
+      "aliases": [
+        "BH",
+        "Kingdom of Bahrain",
+        "Mamlakat al-Baḥrayn"
+      ]
+    },
+    {
+      "code": "BD",
+      "name": "Bangladesh",
+      "latitude": 24.0,
+      "longitude": 90.0,
+      "aliases": [
+        "BD",
+        "Gônôprôjatôntri Bangladesh",
+        "People's Republic of Bangladesh"
+      ]
+    },
+    {
+      "code": "BB",
+      "name": "Barbados",
+      "latitude": 13.16666666,
+      "longitude": -59.53333333,
+      "aliases": [
+        "BB"
+      ]
+    },
+    {
+      "code": "BY",
+      "name": "Belarus",
+      "latitude": 53.0,
+      "longitude": 28.0,
+      "aliases": [
+        "BY",
+        "Bielaruś",
+        "Republic of Belarus",
+        "Белоруссия",
+        "Республика Белоруссия"
+      ]
+    },
+    {
+      "code": "BE",
+      "name": "Belgium",
+      "latitude": 50.83333333,
+      "longitude": 4.0,
+      "aliases": [
+        "BE",
+        "Belgie",
+        "Belgien",
+        "Belgique",
+        "België",
+        "Kingdom of Belgium",
+        "Koninkrijk België",
+        "Königreich Belgien",
+        "Royaume de Belgique"
+      ]
+    },
+    {
+      "code": "BZ",
+      "name": "Belize",
+      "latitude": 17.25,
+      "longitude": -88.75,
+      "aliases": [
+        "BZ"
+      ]
+    },
+    {
+      "code": "BJ",
+      "name": "Benin",
+      "latitude": 9.5,
+      "longitude": 2.25,
+      "aliases": [
+        "BJ",
+        "Republic of Benin",
+        "République du Bénin"
+      ]
+    },
+    {
+      "code": "BM",
+      "name": "Bermuda",
+      "latitude": 32.33333333,
+      "longitude": -64.75,
+      "aliases": [
+        "BM",
+        "Somers Isles",
+        "The Bermudas",
+        "The Islands of Bermuda"
+      ]
+    },
+    {
+      "code": "BT",
+      "name": "Bhutan",
+      "latitude": 27.5,
+      "longitude": 90.5,
+      "aliases": [
+        "BT",
+        "Kingdom of Bhutan"
+      ]
+    },
+    {
+      "code": "BO",
+      "name": "Bolivia",
+      "latitude": -17.0,
+      "longitude": -65.0,
+      "aliases": [
+        "BO",
+        "Bolivia, Plurinational State of",
+        "Buliwya",
+        "Buliwya Mamallaqta",
+        "Estado Plurinacional de Bolivia",
+        "Plurinational State of Bolivia",
+        "Tetã Volívia",
+        "Wuliwya",
+        "Wuliwya Suyu"
+      ]
+    },
+    {
+      "code": "BA",
+      "name": "Bosnia and Herzegovina",
+      "latitude": 44.0,
+      "longitude": 18.0,
+      "aliases": [
+        "BA",
+        "Bosnia-Herzegovina",
+        "Босна и Херцеговина"
+      ]
+    },
+    {
+      "code": "BW",
+      "name": "Botswana",
+      "latitude": -22.0,
+      "longitude": 24.0,
+      "aliases": [
+        "BW",
+        "Lefatshe la Botswana",
+        "Republic of Botswana"
+      ]
+    },
+    {
+      "code": "BV",
+      "name": "Bouvet Island",
+      "latitude": -54.43333333,
+      "longitude": 3.4,
+      "aliases": [
+        "BV",
+        "Bouvet-øya",
+        "Bouvetøya"
+      ]
+    },
+    {
+      "code": "BR",
+      "name": "Brazil",
+      "latitude": -10.0,
+      "longitude": -55.0,
+      "aliases": [
+        "BR",
+        "Brasil",
+        "Federative Republic of Brazil",
+        "República Federativa do Brasil"
+      ]
+    },
+    {
+      "code": "IO",
+      "name": "British Indian Ocean Territory",
+      "latitude": -6.0,
+      "longitude": 71.5,
+      "aliases": [
+        "IO"
+      ]
+    },
+    {
+      "code": "VG",
+      "name": "British Virgin Islands",
+      "latitude": 18.431383,
+      "longitude": -64.62305,
+      "aliases": [
+        "VG",
+        "Virgin Islands",
+        "Virgin Islands, British"
+      ]
+    },
+    {
+      "code": "BN",
+      "name": "Brunei",
+      "latitude": 4.5,
+      "longitude": 114.66666666,
+      "aliases": [
+        "BN",
+        "Brunei Darussalam",
+        "Nation of Brunei",
+        "Nation of Brunei, Abode of Peace",
+        "the Abode of Peace"
+      ]
+    },
+    {
+      "code": "BG",
+      "name": "Bulgaria",
+      "latitude": 43.0,
+      "longitude": 25.0,
+      "aliases": [
+        "BG",
+        "Republic of Bulgaria",
+        "Република България"
+      ]
+    },
+    {
+      "code": "BF",
+      "name": "Burkina Faso",
+      "latitude": 13.0,
+      "longitude": -2.0,
+      "aliases": [
+        "BF"
+      ]
+    },
+    {
+      "code": "BI",
+      "name": "Burundi",
+      "latitude": -3.5,
+      "longitude": 30.0,
+      "aliases": [
+        "BI",
+        "Republic of Burundi",
+        "Republika y'Uburundi",
+        "République du Burundi"
+      ]
+    },
+    {
+      "code": "KH",
+      "name": "Cambodia",
+      "latitude": 13.0,
+      "longitude": 105.0,
+      "aliases": [
+        "KH",
+        "Kingdom of Cambodia"
+      ]
+    },
+    {
+      "code": "CM",
+      "name": "Cameroon",
+      "latitude": 6.0,
+      "longitude": 12.0,
+      "aliases": [
+        "CM",
+        "Republic of Cameroon",
+        "République du Cameroun"
+      ]
+    },
+    {
+      "code": "CA",
+      "name": "Canada",
+      "latitude": 60.0,
+      "longitude": -95.0,
+      "aliases": [
+        "CA"
+      ]
+    },
+    {
+      "code": "CV",
+      "name": "Cape Verde",
+      "latitude": 16.0,
+      "longitude": -24.0,
+      "aliases": [
+        "CV",
+        "Republic of Cabo Verde",
+        "República de Cabo Verde"
+      ]
+    },
+    {
+      "code": "BQ",
+      "name": "Caribbean Netherlands",
+      "latitude": 12.18,
+      "longitude": -68.25,
+      "aliases": [
+        "BES islands",
+        "Bonaire Sint Eustatius and Saba",
+        "Bonaire, Sint Eustatius and Saba"
+      ]
+    },
+    {
+      "code": "KY",
+      "name": "Cayman Islands",
+      "latitude": 19.5,
+      "longitude": -80.5,
+      "aliases": [
+        "KY"
+      ]
+    },
+    {
+      "code": "CF",
+      "name": "Central African Republic",
+      "latitude": 7.0,
+      "longitude": 21.0,
+      "aliases": [
+        "CF",
+        "Central African Republic",
+        "République centrafricaine"
+      ]
+    },
+    {
+      "code": "TD",
+      "name": "Chad",
+      "latitude": 15.0,
+      "longitude": 19.0,
+      "aliases": [
+        "Republic of Chad",
+        "République du Tchad",
+        "TD",
+        "Tchad"
+      ]
+    },
+    {
+      "code": "CL",
+      "name": "Chile",
+      "latitude": -30.0,
+      "longitude": -71.0,
+      "aliases": [
+        "CL",
+        "Republic of Chile",
+        "República de Chile"
+      ]
+    },
+    {
+      "code": "CN",
+      "name": "China",
+      "latitude": 35.0,
+      "longitude": 105.0,
+      "aliases": [
+        "CN",
+        "People's Republic of China",
+        "Zhongguo",
+        "Zhonghua",
+        "Zhōngguó",
+        "Zhōnghuá Rénmín Gònghéguó",
+        "中华人民共和国"
+      ]
+    },
+    {
+      "code": "CX",
+      "name": "Christmas Island",
+      "latitude": -10.5,
+      "longitude": 105.66666666,
+      "aliases": [
+        "CX",
+        "Territory of Christmas Island"
+      ]
+    },
+    {
+      "code": "CC",
+      "name": "Cocos (Keeling) Islands",
+      "latitude": -12.5,
+      "longitude": 96.83333333,
+      "aliases": [
+        "CC",
+        "Cocos Islands",
+        "Keeling Islands",
+        "Territory of the Cocos (Keeling) Islands"
+      ]
+    },
+    {
+      "code": "CO",
+      "name": "Colombia",
+      "latitude": 4.0,
+      "longitude": -72.0,
+      "aliases": [
+        "CO",
+        "Republic of Colombia",
+        "República de Colombia"
+      ]
+    },
+    {
+      "code": "KM",
+      "name": "Comoros",
+      "latitude": -12.16666666,
+      "longitude": 44.25,
+      "aliases": [
+        "KM",
+        "Udzima wa Komori",
+        "Union des Comores",
+        "Union of the Comoros",
+        "al-Ittiḥād al-Qumurī"
+      ]
+    },
+    {
+      "code": "CG",
+      "name": "Congo",
+      "latitude": -1.0,
+      "longitude": 15.0,
+      "aliases": [
+        "CG",
+        "Congo",
+        "Congo-Brazzaville",
+        "Republic of the Congo"
+      ]
+    },
+    {
+      "code": "CK",
+      "name": "Cook Islands",
+      "latitude": -21.23333333,
+      "longitude": -159.76666666,
+      "aliases": [
+        "CK",
+        "Kūki 'Āirani"
+      ]
+    },
+    {
+      "code": "CR",
+      "name": "Costa Rica",
+      "latitude": 10.0,
+      "longitude": -84.0,
+      "aliases": [
+        "CR",
+        "Republic of Costa Rica",
+        "República de Costa Rica"
+      ]
+    },
+    {
+      "code": "HR",
+      "name": "Croatia",
+      "latitude": 45.16666666,
+      "longitude": 15.5,
+      "aliases": [
+        "HR",
+        "Hrvatska",
+        "Republic of Croatia",
+        "Republika Hrvatska"
+      ]
+    },
+    {
+      "code": "CU",
+      "name": "Cuba",
+      "latitude": 21.5,
+      "longitude": -80.0,
+      "aliases": [
+        "CU",
+        "Republic of Cuba",
+        "República de Cuba"
+      ]
+    },
+    {
+      "code": "CW",
+      "name": "Curaçao",
+      "latitude": 12.116667,
+      "longitude": -68.933333,
+      "aliases": [
+        "CW",
+        "Country of Curaçao",
+        "Curacao",
+        "Kòrsou",
+        "Land Curaçao",
+        "Pais Kòrsou"
+      ]
+    },
+    {
+      "code": "CY",
+      "name": "Cyprus",
+      "latitude": 35.0,
+      "longitude": 33.0,
+      "aliases": [
+        "CY",
+        "Kýpros",
+        "Kıbrıs",
+        "Kıbrıs Cumhuriyeti",
+        "Republic of Cyprus",
+        "Κυπριακή Δημοκρατία"
+      ]
+    },
+    {
+      "code": "CZ",
+      "name": "Czechia",
+      "latitude": 49.75,
+      "longitude": 15.5,
+      "aliases": [
+        "CZ",
+        "Czech Republic",
+        "Česko",
+        "Česká republika"
+      ]
+    },
+    {
+      "code": "DK",
+      "name": "Denmark",
+      "latitude": 56.0,
+      "longitude": 10.0,
+      "aliases": [
+        "DK",
+        "Danmark",
+        "Kingdom of Denmark",
+        "Kongeriget Danmark"
+      ]
+    },
+    {
+      "code": "DJ",
+      "name": "Djibouti",
+      "latitude": 11.5,
+      "longitude": 43.0,
+      "aliases": [
+        "DJ",
+        "Gabuuti",
+        "Gabuutih Ummuuno",
+        "Jabuuti",
+        "Jamhuuriyadda Jabuuti",
+        "Republic of Djibouti",
+        "République de Djibouti"
+      ]
+    },
+    {
+      "code": "DM",
+      "name": "Dominica",
+      "latitude": 15.41666666,
+      "longitude": -61.33333333,
+      "aliases": [
+        "Commonwealth of Dominica",
+        "DM",
+        "Dominique",
+        "Wai‘tu kubuli"
+      ]
+    },
+    {
+      "code": "DO",
+      "name": "Dominican Republic",
+      "latitude": 19.0,
+      "longitude": -70.66666666,
+      "aliases": [
+        "DO"
+      ]
+    },
+    {
+      "code": "CD",
+      "name": "DR Congo",
+      "latitude": 0.0,
+      "longitude": 25.0,
+      "aliases": [
+        "CD",
+        "Congo, the Democratic Republic of the",
+        "Congo-Kinshasa",
+        "DR Congo",
+        "DRC",
+        "Democratic Republic of Congo",
+        "Democratic Republic of the Congo"
+      ]
+    },
+    {
+      "code": "EC",
+      "name": "Ecuador",
+      "latitude": -2.0,
+      "longitude": -77.5,
+      "aliases": [
+        "EC",
+        "Republic of Ecuador",
+        "República del Ecuador"
+      ]
+    },
+    {
+      "code": "EG",
+      "name": "Egypt",
+      "latitude": 27.0,
+      "longitude": 30.0,
+      "aliases": [
+        "Arab Republic of Egypt",
+        "EG"
+      ]
+    },
+    {
+      "code": "SV",
+      "name": "El Salvador",
+      "latitude": 13.83333333,
+      "longitude": -88.91666666,
+      "aliases": [
+        "Republic of El Salvador",
+        "República de El Salvador",
+        "SV"
+      ]
+    },
+    {
+      "code": "GQ",
+      "name": "Equatorial Guinea",
+      "latitude": 2.0,
+      "longitude": 10.0,
+      "aliases": [
+        "GQ",
+        "Republic of Equatorial Guinea",
+        "República da Guiné Equatorial",
+        "República de Guinea Ecuatorial",
+        "République de Guinée équatoriale"
+      ]
+    },
+    {
+      "code": "ER",
+      "name": "Eritrea",
+      "latitude": 15.0,
+      "longitude": 39.0,
+      "aliases": [
+        "Dawlat Iritriyá",
+        "ER",
+        "Iritriyā",
+        "State of Eritrea",
+        "ʾErtrā",
+        "ሃገረ ኤርትራ"
+      ]
+    },
+    {
+      "code": "EE",
+      "name": "Estonia",
+      "latitude": 59.0,
+      "longitude": 26.0,
+      "aliases": [
+        "EE",
+        "Eesti",
+        "Eesti Vabariik",
+        "Republic of Estonia"
+      ]
+    },
+    {
+      "code": "SZ",
+      "name": "Eswatini",
+      "latitude": -26.5,
+      "longitude": 31.5,
+      "aliases": [
+        "Kingdom of Eswatini",
+        "Ngwane",
+        "SZ",
+        "Swatini",
+        "Swaziland",
+        "Umbuso weSwatini",
+        "weSwatini"
+      ]
+    },
+    {
+      "code": "ET",
+      "name": "Ethiopia",
+      "latitude": 8.0,
+      "longitude": 38.0,
+      "aliases": [
+        "ET",
+        "Federal Democratic Republic of Ethiopia",
+        "ʾĪtyōṗṗyā",
+        "የኢትዮጵያ ፌዴራላዊ ዲሞክራሲያዊ ሪፐብሊክ"
+      ]
+    },
+    {
+      "code": "FK",
+      "name": "Falkland Islands",
+      "latitude": -51.75,
+      "longitude": -59.0,
+      "aliases": [
+        "FK",
+        "Falkland Islands (Malvinas)",
+        "Islas Malvinas"
+      ]
+    },
+    {
+      "code": "FO",
+      "name": "Faroe Islands",
+      "latitude": 62.0,
+      "longitude": -7.0,
+      "aliases": [
+        "FO",
+        "Faeroe Islands",
+        "Færøerne",
+        "Føroyar"
+      ]
+    },
+    {
+      "code": "FJ",
+      "name": "Fiji",
+      "latitude": -18.0,
+      "longitude": 175.0,
+      "aliases": [
+        "FJ",
+        "Fijī Gaṇarājya",
+        "Matanitu ko Viti",
+        "Republic of Fiji",
+        "Viti"
+      ]
+    },
+    {
+      "code": "FI",
+      "name": "Finland",
+      "latitude": 64.0,
+      "longitude": 26.0,
+      "aliases": [
+        "FI",
+        "Republic of Finland",
+        "Republiken Finland",
+        "Suomen tasavalta",
+        "Suomi"
+      ]
+    },
+    {
+      "code": "FR",
+      "name": "France",
+      "latitude": 46.0,
+      "longitude": 2.0,
+      "aliases": [
+        "FR",
+        "French Republic",
+        "République française"
+      ]
+    },
+    {
+      "code": "GF",
+      "name": "French Guiana",
+      "latitude": 4.0,
+      "longitude": -53.0,
+      "aliases": [
+        "GF",
+        "Guiana",
+        "Guyane"
+      ]
+    },
+    {
+      "code": "PF",
+      "name": "French Polynesia",
+      "latitude": -15.0,
+      "longitude": -140.0,
+      "aliases": [
+        "French Polynesia",
+        "PF",
+        "Polynésie française",
+        "Pōrīnetia Farāni"
+      ]
+    },
+    {
+      "code": "TF",
+      "name": "French Southern and Antarctic Lands",
+      "latitude": -49.25,
+      "longitude": 69.167,
+      "aliases": [
+        "French Southern Territories",
+        "TF",
+        "Territory of the French Southern and Antarctic Lands"
+      ]
+    },
+    {
+      "code": "GA",
+      "name": "Gabon",
+      "latitude": -1.0,
+      "longitude": 11.75,
+      "aliases": [
+        "GA",
+        "Gabonese Republic",
+        "République Gabonaise"
+      ]
+    },
+    {
+      "code": "GM",
+      "name": "Gambia",
+      "latitude": 13.46666666,
+      "longitude": -16.56666666,
+      "aliases": [
+        "GM",
+        "Republic of the Gambia"
+      ]
+    },
+    {
+      "code": "GE",
+      "name": "Georgia",
+      "latitude": 42.0,
+      "longitude": 43.5,
+      "aliases": [
+        "GE",
+        "Sakartvelo"
+      ]
+    },
+    {
+      "code": "DE",
+      "name": "Germany",
+      "latitude": 51.0,
+      "longitude": 9.0,
+      "aliases": [
+        "Bundesrepublik Deutschland",
+        "DE",
+        "Federal Republic of Germany"
+      ]
+    },
+    {
+      "code": "GH",
+      "name": "Ghana",
+      "latitude": 8.0,
+      "longitude": -2.0,
+      "aliases": [
+        "GH",
+        "Republic of Ghana"
+      ]
+    },
+    {
+      "code": "GI",
+      "name": "Gibraltar",
+      "latitude": 36.13333333,
+      "longitude": -5.35,
+      "aliases": [
+        "GI"
+      ]
+    },
+    {
+      "code": "GR",
+      "name": "Greece",
+      "latitude": 39.0,
+      "longitude": 22.0,
+      "aliases": [
+        "Elláda",
+        "GR",
+        "Hellenic Republic",
+        "Ελληνική Δημοκρατία"
+      ]
+    },
+    {
+      "code": "GL",
+      "name": "Greenland",
+      "latitude": 72.0,
+      "longitude": -40.0,
+      "aliases": [
+        "GL",
+        "Grønland"
+      ]
+    },
+    {
+      "code": "GD",
+      "name": "Grenada",
+      "latitude": 12.11666666,
+      "longitude": -61.66666666,
+      "aliases": [
+        "GD"
+      ]
+    },
+    {
+      "code": "GP",
+      "name": "Guadeloupe",
+      "latitude": 16.25,
+      "longitude": -61.583333,
+      "aliases": [
+        "GP",
+        "Gwadloup"
+      ]
+    },
+    {
+      "code": "GU",
+      "name": "Guam",
+      "latitude": 13.46666666,
+      "longitude": 144.78333333,
+      "aliases": [
+        "GU",
+        "Guåhån"
+      ]
+    },
+    {
+      "code": "GT",
+      "name": "Guatemala",
+      "latitude": 15.5,
+      "longitude": -90.25,
+      "aliases": [
+        "GT",
+        "Republic of Guatemala"
+      ]
+    },
+    {
+      "code": "GG",
+      "name": "Guernsey",
+      "latitude": 49.46666666,
+      "longitude": -2.58333333,
+      "aliases": [
+        "Bailiwick of Guernsey",
+        "Bailliage de Guernesey",
+        "GG"
+      ]
+    },
+    {
+      "code": "GN",
+      "name": "Guinea",
+      "latitude": 11.0,
+      "longitude": -10.0,
+      "aliases": [
+        "GN",
+        "Republic of Guinea",
+        "République de Guinée"
+      ]
+    },
+    {
+      "code": "GW",
+      "name": "Guinea-Bissau",
+      "latitude": 12.0,
+      "longitude": -15.0,
+      "aliases": [
+        "GW",
+        "Republic of Guinea-Bissau",
+        "República da Guiné-Bissau"
+      ]
+    },
+    {
+      "code": "GY",
+      "name": "Guyana",
+      "latitude": 5.0,
+      "longitude": -59.0,
+      "aliases": [
+        "Co-operative Republic of Guyana",
+        "GY"
+      ]
+    },
+    {
+      "code": "HT",
+      "name": "Haiti",
+      "latitude": 19.0,
+      "longitude": -72.41666666,
+      "aliases": [
+        "HT",
+        "Repiblik Ayiti",
+        "Republic of Haiti",
+        "République d'Haïti"
+      ]
+    },
+    {
+      "code": "HM",
+      "name": "Heard Island and McDonald Islands",
+      "latitude": -53.1,
+      "longitude": 72.51666666,
+      "aliases": [
+        "HM",
+        "Heard Island and McDonald Islands"
+      ]
+    },
+    {
+      "code": "HN",
+      "name": "Honduras",
+      "latitude": 15.0,
+      "longitude": -86.5,
+      "aliases": [
+        "HN",
+        "Republic of Honduras",
+        "República de Honduras"
+      ]
+    },
+    {
+      "code": "HK",
+      "name": "Hong Kong",
+      "latitude": 22.267,
+      "longitude": 114.188,
+      "aliases": [
+        "HK",
+        "Hong Kong Special Administrative Region of the People's Republic of China"
+      ]
+    },
+    {
+      "code": "HU",
+      "name": "Hungary",
+      "latitude": 47.0,
+      "longitude": 20.0,
+      "aliases": [
+        "HU"
+      ]
+    },
+    {
+      "code": "IS",
+      "name": "Iceland",
+      "latitude": 65.0,
+      "longitude": -18.0,
+      "aliases": [
+        "IS",
+        "Island",
+        "Lýðveldið Ísland",
+        "Republic of Iceland"
+      ]
+    },
+    {
+      "code": "IN",
+      "name": "India",
+      "latitude": 20.0,
+      "longitude": 77.0,
+      "aliases": [
+        "Bharat Ganrajya",
+        "Bhārat",
+        "IN",
+        "Republic of India",
+        "இந்தியா"
+      ]
+    },
+    {
+      "code": "ID",
+      "name": "Indonesia",
+      "latitude": -5.0,
+      "longitude": 120.0,
+      "aliases": [
+        "ID",
+        "Republic of Indonesia",
+        "Republik Indonesia"
+      ]
+    },
+    {
+      "code": "IR",
+      "name": "Iran",
+      "latitude": 32.0,
+      "longitude": 53.0,
+      "aliases": [
+        "IR",
+        "Iran, Islamic Republic of",
+        "Islamic Republic of Iran",
+        "Jomhuri-ye Eslāmi-ye Irān"
+      ]
+    },
+    {
+      "code": "IQ",
+      "name": "Iraq",
+      "latitude": 33.0,
+      "longitude": 44.0,
+      "aliases": [
+        "IQ",
+        "Jumhūriyyat al-‘Irāq",
+        "Republic of Iraq"
+      ]
+    },
+    {
+      "code": "IE",
+      "name": "Ireland",
+      "latitude": 53.0,
+      "longitude": -8.0,
+      "aliases": [
+        "IE",
+        "Poblacht na hÉireann",
+        "Republic of Ireland",
+        "Éire"
+      ]
+    },
+    {
+      "code": "IM",
+      "name": "Isle of Man",
+      "latitude": 54.25,
+      "longitude": -4.5,
+      "aliases": [
+        "Ellan Vannin",
+        "IM",
+        "Mann",
+        "Mannin"
+      ]
+    },
+    {
+      "code": "IL",
+      "name": "Israel",
+      "latitude": 31.47,
+      "longitude": 35.13,
+      "aliases": [
+        "IL",
+        "Medīnat Yisrā'el",
+        "State of Israel"
+      ]
+    },
+    {
+      "code": "IT",
+      "name": "Italy",
+      "latitude": 42.83333333,
+      "longitude": 12.83333333,
+      "aliases": [
+        "IT",
+        "Italian Republic",
+        "Repubblica italiana"
+      ]
+    },
+    {
+      "code": "CI",
+      "name": "Ivory Coast",
+      "latitude": 8.0,
+      "longitude": -5.0,
+      "aliases": [
+        "CI",
+        "Cote d'Ivoire",
+        "Côte d'Ivoire",
+        "Ivory Coast",
+        "Republic of Côte d'Ivoire",
+        "République de Côte d'Ivoire"
+      ]
+    },
+    {
+      "code": "JM",
+      "name": "Jamaica",
+      "latitude": 18.25,
+      "longitude": -77.5,
+      "aliases": [
+        "JM"
+      ]
+    },
+    {
+      "code": "JP",
+      "name": "Japan",
+      "latitude": 36.0,
+      "longitude": 138.0,
+      "aliases": [
+        "JP",
+        "Nihon",
+        "Nippon"
+      ]
+    },
+    {
+      "code": "JE",
+      "name": "Jersey",
+      "latitude": 49.25,
+      "longitude": -2.16666666,
+      "aliases": [
+        "Bailiwick of Jersey",
+        "Bailliage de Jersey",
+        "Bailliage dé Jèrri",
+        "JE"
+      ]
+    },
+    {
+      "code": "JO",
+      "name": "Jordan",
+      "latitude": 31.0,
+      "longitude": 36.0,
+      "aliases": [
+        "Hashemite Kingdom of Jordan",
+        "JO",
+        "al-Mamlakah al-Urdunīyah al-Hāshimīyah"
+      ]
+    },
+    {
+      "code": "KZ",
+      "name": "Kazakhstan",
+      "latitude": 48.0,
+      "longitude": 68.0,
+      "aliases": [
+        "KZ",
+        "Qazaqstan",
+        "Qazaqstan Respublïkası",
+        "Republic of Kazakhstan",
+        "Respublika Kazakhstan",
+        "Казахстан",
+        "Республика Казахстан",
+        "Қазақстан Республикасы"
+      ]
+    },
+    {
+      "code": "KE",
+      "name": "Kenya",
+      "latitude": 1.0,
+      "longitude": 38.0,
+      "aliases": [
+        "Jamhuri ya Kenya",
+        "KE",
+        "Republic of Kenya"
+      ]
+    },
+    {
+      "code": "KI",
+      "name": "Kiribati",
+      "latitude": 1.41666666,
+      "longitude": 173.0,
+      "aliases": [
+        "Independent and Sovereign Republic of Kiribati",
+        "KI",
+        "Republic of Kiribati",
+        "Ribaberiki Kiribati"
+      ]
+    },
+    {
+      "code": "XK",
+      "name": "Kosovo",
+      "latitude": 42.666667,
+      "longitude": 21.166667,
+      "aliases": [
+        "Republic of Kosovo",
+        "XK",
+        "Република Косово"
+      ]
+    },
+    {
+      "code": "KW",
+      "name": "Kuwait",
+      "latitude": 29.5,
+      "longitude": 45.75,
+      "aliases": [
+        "Dawlat al-Kuwait",
+        "KW",
+        "State of Kuwait"
+      ]
+    },
+    {
+      "code": "KG",
+      "name": "Kyrgyzstan",
+      "latitude": 41.0,
+      "longitude": 75.0,
+      "aliases": [
+        "KG",
+        "Kyrgyz Republic",
+        "Kyrgyz Respublikasy",
+        "Киргизия",
+        "Кыргыз Республикасы"
+      ]
+    },
+    {
+      "code": "LA",
+      "name": "Laos",
+      "latitude": 18.0,
+      "longitude": 105.0,
+      "aliases": [
+        "LA",
+        "Lao",
+        "Lao People's Democratic Republic",
+        "Sathalanalat Paxathipatai Paxaxon Lao"
+      ]
+    },
+    {
+      "code": "LV",
+      "name": "Latvia",
+      "latitude": 57.0,
+      "longitude": 25.0,
+      "aliases": [
+        "LV",
+        "Latvijas Republika",
+        "Republic of Latvia"
+      ]
+    },
+    {
+      "code": "LB",
+      "name": "Lebanon",
+      "latitude": 33.83333333,
+      "longitude": 35.83333333,
+      "aliases": [
+        "Al-Jumhūrīyah Al-Libnānīyah",
+        "LB",
+        "Lebanese Republic"
+      ]
+    },
+    {
+      "code": "LS",
+      "name": "Lesotho",
+      "latitude": -29.5,
+      "longitude": 28.5,
+      "aliases": [
+        "Kingdom of Lesotho",
+        "LS",
+        "Muso oa Lesotho"
+      ]
+    },
+    {
+      "code": "LR",
+      "name": "Liberia",
+      "latitude": 6.5,
+      "longitude": -9.5,
+      "aliases": [
+        "LR",
+        "Republic of Liberia"
+      ]
+    },
+    {
+      "code": "LY",
+      "name": "Libya",
+      "latitude": 25.0,
+      "longitude": 17.0,
+      "aliases": [
+        "Dawlat Libya",
+        "LY",
+        "State of Libya"
+      ]
+    },
+    {
+      "code": "LI",
+      "name": "Liechtenstein",
+      "latitude": 47.26666666,
+      "longitude": 9.53333333,
+      "aliases": [
+        "Fürstentum Liechtenstein",
+        "LI",
+        "Principality of Liechtenstein"
+      ]
+    },
+    {
+      "code": "LT",
+      "name": "Lithuania",
+      "latitude": 56.0,
+      "longitude": 24.0,
+      "aliases": [
+        "LT",
+        "Lietuvos Respublika",
+        "Republic of Lithuania"
+      ]
+    },
+    {
+      "code": "LU",
+      "name": "Luxembourg",
+      "latitude": 49.75,
+      "longitude": 6.16666666,
+      "aliases": [
+        "Grand Duchy of Luxembourg",
+        "Grand-Duché de Luxembourg",
+        "Groussherzogtum Lëtzebuerg",
+        "Großherzogtum Luxemburg",
+        "LU"
+      ]
+    },
+    {
+      "code": "MO",
+      "name": "Macau",
+      "latitude": 22.16666666,
+      "longitude": 113.55,
+      "aliases": [
+        "MO",
+        "Macao",
+        "Macao Special Administrative Region of the People's Republic of China",
+        "Região Administrativa Especial de Macau da República Popular da China",
+        "中華人民共和國澳門特別行政區",
+        "澳门"
+      ]
+    },
+    {
+      "code": "MG",
+      "name": "Madagascar",
+      "latitude": -20.0,
+      "longitude": 47.0,
+      "aliases": [
+        "MG",
+        "Repoblikan'i Madagasikara",
+        "Republic of Madagascar",
+        "République de Madagascar"
+      ]
+    },
+    {
+      "code": "MW",
+      "name": "Malawi",
+      "latitude": -13.5,
+      "longitude": 34.0,
+      "aliases": [
+        "MW",
+        "Republic of Malawi"
+      ]
+    },
+    {
+      "code": "MY",
+      "name": "Malaysia",
+      "latitude": 2.5,
+      "longitude": 112.5,
+      "aliases": [
+        "MY"
+      ]
+    },
+    {
+      "code": "MV",
+      "name": "Maldives",
+      "latitude": 3.25,
+      "longitude": 73.0,
+      "aliases": [
+        "Dhivehi Raajjeyge Jumhooriyya",
+        "MV",
+        "Maldive Islands",
+        "Republic of the Maldives"
+      ]
+    },
+    {
+      "code": "ML",
+      "name": "Mali",
+      "latitude": 17.0,
+      "longitude": -4.0,
+      "aliases": [
+        "ML",
+        "Republic of Mali",
+        "République du Mali"
+      ]
+    },
+    {
+      "code": "MT",
+      "name": "Malta",
+      "latitude": 35.83333333,
+      "longitude": 14.58333333,
+      "aliases": [
+        "MT",
+        "Repubblika ta' Malta",
+        "Republic of Malta"
+      ]
+    },
+    {
+      "code": "MH",
+      "name": "Marshall Islands",
+      "latitude": 9.0,
+      "longitude": 168.0,
+      "aliases": [
+        "Aolepān Aorōkin M̧ajeļ",
+        "MH",
+        "Republic of the Marshall Islands"
+      ]
+    },
+    {
+      "code": "MQ",
+      "name": "Martinique",
+      "latitude": 14.666667,
+      "longitude": -61.0,
+      "aliases": [
+        "MQ"
+      ]
+    },
+    {
+      "code": "MR",
+      "name": "Mauritania",
+      "latitude": 20.0,
+      "longitude": -12.0,
+      "aliases": [
+        "Islamic Republic of Mauritania",
+        "MR",
+        "al-Jumhūriyyah al-ʾIslāmiyyah al-Mūrītāniyyah"
+      ]
+    },
+    {
+      "code": "MU",
+      "name": "Mauritius",
+      "latitude": -20.28333333,
+      "longitude": 57.55,
+      "aliases": [
+        "MU",
+        "Republic of Mauritius",
+        "République de Maurice"
+      ]
+    },
+    {
+      "code": "YT",
+      "name": "Mayotte",
+      "latitude": -12.83333333,
+      "longitude": 45.16666666,
+      "aliases": [
+        "Department of Mayotte",
+        "Département de Mayotte",
+        "YT"
+      ]
+    },
+    {
+      "code": "MX",
+      "name": "Mexico",
+      "latitude": 23.0,
+      "longitude": -102.0,
+      "aliases": [
+        "Estados Unidos Mexicanos",
+        "MX",
+        "Mexicanos",
+        "United Mexican States"
+      ]
+    },
+    {
+      "code": "FM",
+      "name": "Micronesia",
+      "latitude": 6.91666666,
+      "longitude": 158.25,
+      "aliases": [
+        "FM",
+        "Federated States of Micronesia",
+        "Micronesia, Federated States of"
+      ]
+    },
+    {
+      "code": "MD",
+      "name": "Moldova",
+      "latitude": 47.0,
+      "longitude": 29.0,
+      "aliases": [
+        "MD",
+        "Moldova, Republic of",
+        "Republic of Moldova",
+        "Republica Moldova"
+      ]
+    },
+    {
+      "code": "MC",
+      "name": "Monaco",
+      "latitude": 43.73333333,
+      "longitude": 7.4,
+      "aliases": [
+        "MC",
+        "Principality of Monaco",
+        "Principauté de Monaco"
+      ]
+    },
+    {
+      "code": "MN",
+      "name": "Mongolia",
+      "latitude": 46.0,
+      "longitude": 105.0,
+      "aliases": [
+        "MN"
+      ]
+    },
+    {
+      "code": "ME",
+      "name": "Montenegro",
+      "latitude": 42.5,
+      "longitude": 19.3,
+      "aliases": [
+        "Crna Gora",
+        "ME"
+      ]
+    },
+    {
+      "code": "MS",
+      "name": "Montserrat",
+      "latitude": 16.75,
+      "longitude": -62.2,
+      "aliases": [
+        "MS"
+      ]
+    },
+    {
+      "code": "MA",
+      "name": "Morocco",
+      "latitude": 32.0,
+      "longitude": -5.0,
+      "aliases": [
+        "Al-Mamlakah al-Maġribiyah",
+        "Kingdom of Morocco",
+        "MA"
+      ]
+    },
+    {
+      "code": "MZ",
+      "name": "Mozambique",
+      "latitude": -18.25,
+      "longitude": 35.0,
+      "aliases": [
+        "MZ",
+        "Republic of Mozambique",
+        "República de Moçambique"
+      ]
+    },
+    {
+      "code": "MM",
+      "name": "Myanmar",
+      "latitude": 22.0,
+      "longitude": 98.0,
+      "aliases": [
+        "Burma",
+        "MM",
+        "Pyidaunzu Thanmăda Myăma Nainngandaw",
+        "Republic of the Union of Myanmar"
+      ]
+    },
+    {
+      "code": "NA",
+      "name": "Namibia",
+      "latitude": -22.0,
+      "longitude": 17.0,
+      "aliases": [
+        "NA",
+        "Namibië",
+        "Republic of Namibia"
+      ]
+    },
+    {
+      "code": "NR",
+      "name": "Nauru",
+      "latitude": -0.53333333,
+      "longitude": 166.91666666,
+      "aliases": [
+        "NR",
+        "Naoero",
+        "Pleasant Island",
+        "Republic of Nauru",
+        "Ripublik Naoero"
+      ]
+    },
+    {
+      "code": "NP",
+      "name": "Nepal",
+      "latitude": 28.0,
+      "longitude": 84.0,
+      "aliases": [
+        "Federal Democratic Republic of Nepal",
+        "Loktāntrik Ganatantra Nepāl",
+        "NP"
+      ]
+    },
+    {
+      "code": "NL",
+      "name": "Netherlands",
+      "latitude": 52.5,
+      "longitude": 5.75,
+      "aliases": [
+        "Holland",
+        "Kingdom of the Netherlands",
+        "NL",
+        "Nederland",
+        "The Netherlands"
+      ]
+    },
+    {
+      "code": "NC",
+      "name": "New Caledonia",
+      "latitude": -21.5,
+      "longitude": 165.5,
+      "aliases": [
+        "NC"
+      ]
+    },
+    {
+      "code": "NZ",
+      "name": "New Zealand",
+      "latitude": -41.0,
+      "longitude": 174.0,
+      "aliases": [
+        "Aotearoa",
+        "NZ"
+      ]
+    },
+    {
+      "code": "NI",
+      "name": "Nicaragua",
+      "latitude": 13.0,
+      "longitude": -85.0,
+      "aliases": [
+        "NI",
+        "Republic of Nicaragua",
+        "República de Nicaragua"
+      ]
+    },
+    {
+      "code": "NE",
+      "name": "Niger",
+      "latitude": 16.0,
+      "longitude": 8.0,
+      "aliases": [
+        "NE",
+        "Nijar",
+        "Republic of Niger"
+      ]
+    },
+    {
+      "code": "NG",
+      "name": "Nigeria",
+      "latitude": 10.0,
+      "longitude": 8.0,
+      "aliases": [
+        "Federal Republic of Nigeria",
+        "NG",
+        "Naíjíríà",
+        "Nijeriya"
+      ]
+    },
+    {
+      "code": "NU",
+      "name": "Niue",
+      "latitude": -19.03333333,
+      "longitude": -169.86666666,
+      "aliases": [
+        "NU"
+      ]
+    },
+    {
+      "code": "NF",
+      "name": "Norfolk Island",
+      "latitude": -29.03333333,
+      "longitude": 167.95,
+      "aliases": [
+        "NF",
+        "Teratri of Norf'k Ailen",
+        "Territory of Norfolk Island"
+      ]
+    },
+    {
+      "code": "KP",
+      "name": "North Korea",
+      "latitude": 40.0,
+      "longitude": 127.0,
+      "aliases": [
+        "Chosŏn Minjujuŭi Inmin Konghwaguk",
+        "DPRK",
+        "Democratic People's Republic of Korea",
+        "KP",
+        "Korea, Democratic People's Republic of",
+        "북조선",
+        "북한",
+        "조선민주주의인민공화국"
+      ]
+    },
+    {
+      "code": "MK",
+      "name": "North Macedonia",
+      "latitude": 41.83333333,
+      "longitude": 22.0,
+      "aliases": [
+        "MK",
+        "Macedonia",
+        "Macedonia, The Former Yugoslav Republic of",
+        "Republic of North Macedonia",
+        "The former Yugoslav Republic of Macedonia",
+        "Република Северна Македонија"
+      ]
+    },
+    {
+      "code": "MP",
+      "name": "Northern Mariana Islands",
+      "latitude": 15.2,
+      "longitude": 145.75,
+      "aliases": [
+        "Commonwealth of the Northern Mariana Islands",
+        "MP",
+        "Sankattan Siha Na Islas Mariånas"
+      ]
+    },
+    {
+      "code": "NO",
+      "name": "Norway",
+      "latitude": 62.0,
+      "longitude": 10.0,
+      "aliases": [
+        "Kingdom of Norway",
+        "Kongeriket Noreg",
+        "Kongeriket Norge",
+        "NO",
+        "Noreg",
+        "Norge"
+      ]
+    },
+    {
+      "code": "OM",
+      "name": "Oman",
+      "latitude": 21.0,
+      "longitude": 57.0,
+      "aliases": [
+        "OM",
+        "Salṭanat ʻUmān",
+        "Sultanate of Oman"
+      ]
+    },
+    {
+      "code": "PK",
+      "name": "Pakistan",
+      "latitude": 30.0,
+      "longitude": 70.0,
+      "aliases": [
+        "Islamic Republic of Pakistan",
+        "Islāmī Jumhūriya'eh Pākistān",
+        "PK",
+        "Pākistān"
+      ]
+    },
+    {
+      "code": "PW",
+      "name": "Palau",
+      "latitude": 7.5,
+      "longitude": 134.5,
+      "aliases": [
+        "Beluu er a Belau",
+        "PW",
+        "Republic of Palau"
+      ]
+    },
+    {
+      "code": "PS",
+      "name": "Palestine",
+      "latitude": 31.9,
+      "longitude": 35.2,
+      "aliases": [
+        "Dawlat Filasṭin",
+        "PS",
+        "Palestine, State of",
+        "State of Palestine"
+      ]
+    },
+    {
+      "code": "PA",
+      "name": "Panama",
+      "latitude": 9.0,
+      "longitude": -80.0,
+      "aliases": [
+        "PA",
+        "Republic of Panama",
+        "República de Panamá"
+      ]
+    },
+    {
+      "code": "PG",
+      "name": "Papua New Guinea",
+      "latitude": -6.0,
+      "longitude": 147.0,
+      "aliases": [
+        "Independen Stet bilong Papua Niugini",
+        "Independent State of Papua New Guinea",
+        "PG"
+      ]
+    },
+    {
+      "code": "PY",
+      "name": "Paraguay",
+      "latitude": -23.0,
+      "longitude": -58.0,
+      "aliases": [
+        "PY",
+        "Republic of Paraguay",
+        "República del Paraguay",
+        "Tetã Paraguái"
+      ]
+    },
+    {
+      "code": "PE",
+      "name": "Peru",
+      "latitude": -10.0,
+      "longitude": -76.0,
+      "aliases": [
+        "PE",
+        "Republic of Peru",
+        "República del Perú"
+      ]
+    },
+    {
+      "code": "PH",
+      "name": "Philippines",
+      "latitude": 13.0,
+      "longitude": 122.0,
+      "aliases": [
+        "PH",
+        "Republic of the Philippines",
+        "Repúblika ng Pilipinas"
+      ]
+    },
+    {
+      "code": "PN",
+      "name": "Pitcairn Islands",
+      "latitude": -25.06666666,
+      "longitude": -130.1,
+      "aliases": [
+        "PN",
+        "Pitcairn",
+        "Pitcairn Group of Islands",
+        "Pitcairn Henderson Ducie and Oeno Islands"
+      ]
+    },
+    {
+      "code": "PL",
+      "name": "Poland",
+      "latitude": 52.0,
+      "longitude": 20.0,
+      "aliases": [
+        "PL",
+        "Republic of Poland",
+        "Rzeczpospolita Polska"
+      ]
+    },
+    {
+      "code": "PT",
+      "name": "Portugal",
+      "latitude": 39.5,
+      "longitude": -8.0,
+      "aliases": [
+        "PT",
+        "Portuguesa",
+        "Portuguese Republic",
+        "República Portuguesa"
+      ]
+    },
+    {
+      "code": "PR",
+      "name": "Puerto Rico",
+      "latitude": 18.25,
+      "longitude": -66.5,
+      "aliases": [
+        "Commonwealth of Puerto Rico",
+        "Estado Libre Asociado de Puerto Rico",
+        "PR"
+      ]
+    },
+    {
+      "code": "QA",
+      "name": "Qatar",
+      "latitude": 25.5,
+      "longitude": 51.25,
+      "aliases": [
+        "Dawlat Qaṭar",
+        "QA",
+        "State of Qatar"
+      ]
+    },
+    {
+      "code": "RO",
+      "name": "Romania",
+      "latitude": 46.0,
+      "longitude": 25.0,
+      "aliases": [
+        "RO",
+        "România",
+        "Roumania",
+        "Rumania"
+      ]
+    },
+    {
+      "code": "RU",
+      "name": "Russia",
+      "latitude": 60.0,
+      "longitude": 100.0,
+      "aliases": [
+        "RU",
+        "Russian Federation",
+        "Российская Федерация"
+      ]
+    },
+    {
+      "code": "RW",
+      "name": "Rwanda",
+      "latitude": -2.0,
+      "longitude": 30.0,
+      "aliases": [
+        "RW",
+        "Republic of Rwanda",
+        "Repubulika y'u Rwanda",
+        "République du Rwanda"
+      ]
+    },
+    {
+      "code": "RE",
+      "name": "Réunion",
+      "latitude": -21.15,
+      "longitude": 55.5,
+      "aliases": [
+        "RE",
+        "Reunion",
+        "Réunion Island"
+      ]
+    },
+    {
+      "code": "BL",
+      "name": "Saint Barthélemy",
+      "latitude": 18.5,
+      "longitude": -63.41666666,
+      "aliases": [
+        "BL",
+        "Collectivity of Saint Barthélemy",
+        "Collectivité de Saint-Barthélemy",
+        "St. Barthelemy"
+      ]
+    },
+    {
+      "code": "SH",
+      "name": "Saint Helena, Ascension and Tristan da Cunha",
+      "latitude": -15.95,
+      "longitude": -5.72,
+      "aliases": [
+        "Saint Helena",
+        "St. Helena, Ascension and Tristan da Cunha"
+      ]
+    },
+    {
+      "code": "KN",
+      "name": "Saint Kitts and Nevis",
+      "latitude": 17.33333333,
+      "longitude": -62.75,
+      "aliases": [
+        "Federation of Saint Christopher and Nevis",
+        "KN"
+      ]
+    },
+    {
+      "code": "LC",
+      "name": "Saint Lucia",
+      "latitude": 13.88333333,
+      "longitude": -60.96666666,
+      "aliases": [
+        "LC"
+      ]
+    },
+    {
+      "code": "MF",
+      "name": "Saint Martin",
+      "latitude": 18.08333333,
+      "longitude": -63.95,
+      "aliases": [
+        "Collectivity of Saint Martin",
+        "Collectivité de Saint-Martin",
+        "MF",
+        "Saint Martin (French part)"
+      ]
+    },
+    {
+      "code": "PM",
+      "name": "Saint Pierre and Miquelon",
+      "latitude": 46.83333333,
+      "longitude": -56.33333333,
+      "aliases": [
+        "Collectivité territoriale de Saint-Pierre-et-Miquelon",
+        "PM"
+      ]
+    },
+    {
+      "code": "VC",
+      "name": "Saint Vincent and the Grenadines",
+      "latitude": 13.25,
+      "longitude": -61.2,
+      "aliases": [
+        "VC"
+      ]
+    },
+    {
+      "code": "WS",
+      "name": "Samoa",
+      "latitude": -13.58333333,
+      "longitude": -172.33333333,
+      "aliases": [
+        "Independent State of Samoa",
+        "Malo Saʻoloto Tutoʻatasi o Sāmoa",
+        "WS"
+      ]
+    },
+    {
+      "code": "SM",
+      "name": "San Marino",
+      "latitude": 43.76666666,
+      "longitude": 12.41666666,
+      "aliases": [
+        "Most Serene Republic of San Marino",
+        "Repubblica di San Marino",
+        "Republic of San Marino",
+        "SM"
+      ]
+    },
+    {
+      "code": "SA",
+      "name": "Saudi Arabia",
+      "latitude": 25.0,
+      "longitude": 45.0,
+      "aliases": [
+        "Al-Mamlakah al-‘Arabiyyah as-Su‘ūdiyyah",
+        "Kingdom of Saudi Arabia",
+        "SA",
+        "Saudi"
+      ]
+    },
+    {
+      "code": "SN",
+      "name": "Senegal",
+      "latitude": 14.0,
+      "longitude": -14.0,
+      "aliases": [
+        "Republic of Senegal",
+        "République du Sénégal",
+        "SN"
+      ]
+    },
+    {
+      "code": "RS",
+      "name": "Serbia",
+      "latitude": 44.0,
+      "longitude": 21.0,
+      "aliases": [
+        "RS",
+        "Republic of Serbia",
+        "Republika Srbija",
+        "Srbija",
+        "Република Србија",
+        "Србија"
+      ]
+    },
+    {
+      "code": "SC",
+      "name": "Seychelles",
+      "latitude": -4.58333333,
+      "longitude": 55.66666666,
+      "aliases": [
+        "Repiblik Sesel",
+        "Republic of Seychelles",
+        "République des Seychelles",
+        "SC"
+      ]
+    },
+    {
+      "code": "SL",
+      "name": "Sierra Leone",
+      "latitude": 8.5,
+      "longitude": -11.5,
+      "aliases": [
+        "Republic of Sierra Leone",
+        "SL"
+      ]
+    },
+    {
+      "code": "SG",
+      "name": "Singapore",
+      "latitude": 1.36666666,
+      "longitude": 103.8,
+      "aliases": [
+        "Republic of Singapore",
+        "Republik Singapura",
+        "SG",
+        "Singapura",
+        "新加坡共和国"
+      ]
+    },
+    {
+      "code": "SX",
+      "name": "Sint Maarten",
+      "latitude": 18.033333,
+      "longitude": -63.05,
+      "aliases": [
+        "SX",
+        "Sint Maarten (Dutch part)"
+      ]
+    },
+    {
+      "code": "SK",
+      "name": "Slovakia",
+      "latitude": 48.66666666,
+      "longitude": 19.5,
+      "aliases": [
+        "SK",
+        "Slovak Republic",
+        "Slovenská republika"
+      ]
+    },
+    {
+      "code": "SI",
+      "name": "Slovenia",
+      "latitude": 46.11666666,
+      "longitude": 14.81666666,
+      "aliases": [
+        "Republic of Slovenia",
+        "Republika Slovenija",
+        "SI"
+      ]
+    },
+    {
+      "code": "SB",
+      "name": "Solomon Islands",
+      "latitude": -8.0,
+      "longitude": 159.0,
+      "aliases": [
+        "SB"
+      ]
+    },
+    {
+      "code": "SO",
+      "name": "Somalia",
+      "latitude": 10.0,
+      "longitude": 49.0,
+      "aliases": [
+        "Federal Republic of Somalia",
+        "Jamhuuriyadda Federaalka Soomaaliya",
+        "Jumhūriyyat aṣ-Ṣūmāl al-Fiderāliyya",
+        "SO",
+        "aṣ-Ṣūmāl"
+      ]
+    },
+    {
+      "code": "ZA",
+      "name": "South Africa",
+      "latitude": -29.0,
+      "longitude": 24.0,
+      "aliases": [
+        "RSA",
+        "Republic of South Africa",
+        "Suid-Afrika",
+        "ZA"
+      ]
+    },
+    {
+      "code": "GS",
+      "name": "South Georgia",
+      "latitude": -54.5,
+      "longitude": -37.0,
+      "aliases": [
+        "GS",
+        "South Georgia and the South Sandwich Islands"
+      ]
+    },
+    {
+      "code": "KR",
+      "name": "South Korea",
+      "latitude": 37.0,
+      "longitude": 127.5,
+      "aliases": [
+        "KR",
+        "Korea, Republic of",
+        "Republic of Korea",
+        "남조선",
+        "남한"
+      ]
+    },
+    {
+      "code": "SS",
+      "name": "South Sudan",
+      "latitude": 7.0,
+      "longitude": 30.0,
+      "aliases": [
+        "Republic of South Sudan",
+        "SS"
+      ]
+    },
+    {
+      "code": "ES",
+      "name": "Spain",
+      "latitude": 40.0,
+      "longitude": -4.0,
+      "aliases": [
+        "ES",
+        "Kingdom of Spain",
+        "Reino de España"
+      ]
+    },
+    {
+      "code": "LK",
+      "name": "Sri Lanka",
+      "latitude": 7.0,
+      "longitude": 81.0,
+      "aliases": [
+        "Democratic Socialist Republic of Sri Lanka",
+        "LK",
+        "ilaṅkai"
+      ]
+    },
+    {
+      "code": "SD",
+      "name": "Sudan",
+      "latitude": 15.0,
+      "longitude": 30.0,
+      "aliases": [
+        "Jumhūrīyat as-Sūdān",
+        "Republic of the Sudan",
+        "SD"
+      ]
+    },
+    {
+      "code": "SR",
+      "name": "Suriname",
+      "latitude": 4.0,
+      "longitude": -56.0,
+      "aliases": [
+        "Republic of Suriname",
+        "Republiek Suriname",
+        "SR",
+        "Sarnam",
+        "Sranangron"
+      ]
+    },
+    {
+      "code": "SJ",
+      "name": "Svalbard and Jan Mayen",
+      "latitude": 78.0,
+      "longitude": 20.0,
+      "aliases": [
+        "SJ",
+        "Svalbard and Jan Mayen Islands",
+        "Svalbard og Jan Mayen"
+      ]
+    },
+    {
+      "code": "SE",
+      "name": "Sweden",
+      "latitude": 62.0,
+      "longitude": 15.0,
+      "aliases": [
+        "Kingdom of Sweden",
+        "Konungariket Sverige",
+        "SE"
+      ]
+    },
+    {
+      "code": "CH",
+      "name": "Switzerland",
+      "latitude": 47.0,
+      "longitude": 8.0,
+      "aliases": [
+        "CH",
+        "Schweiz",
+        "Suisse",
+        "Svizra",
+        "Svizzera",
+        "Swiss Confederation"
+      ]
+    },
+    {
+      "code": "SY",
+      "name": "Syria",
+      "latitude": 35.0,
+      "longitude": 38.0,
+      "aliases": [
+        "Al-Jumhūrīyah Al-ʻArabīyah As-Sūrīyah",
+        "SY",
+        "Syrian Arab Republic"
+      ]
+    },
+    {
+      "code": "ST",
+      "name": "São Tomé and Príncipe",
+      "latitude": 1.0,
+      "longitude": 7.0,
+      "aliases": [
+        "Democratic Republic of São Tomé and Príncipe",
+        "República Democrática de São Tomé e Príncipe",
+        "ST",
+        "Sao Tome and Principe"
+      ]
+    },
+    {
+      "code": "TW",
+      "name": "Taiwan",
+      "latitude": 23.5,
+      "longitude": 121.0,
+      "aliases": [
+        "Chinese Taipei",
+        "Republic of China",
+        "Republic of China (Taiwan)",
+        "TW",
+        "Táiwān",
+        "Zhōnghuá Mínguó",
+        "中華民國"
+      ]
+    },
+    {
+      "code": "TJ",
+      "name": "Tajikistan",
+      "latitude": 39.0,
+      "longitude": 71.0,
+      "aliases": [
+        "Republic of Tajikistan",
+        "TJ",
+        "Toçikiston",
+        "Çumhuriyi Toçikiston",
+        "Ҷумҳурии Тоҷикистон"
+      ]
+    },
+    {
+      "code": "TZ",
+      "name": "Tanzania",
+      "latitude": -6.0,
+      "longitude": 35.0,
+      "aliases": [
+        "Jamhuri ya Muungano wa Tanzania",
+        "TZ",
+        "Tanzania, United Republic of",
+        "United Republic of Tanzania"
+      ]
+    },
+    {
+      "code": "TH",
+      "name": "Thailand",
+      "latitude": 15.0,
+      "longitude": 100.0,
+      "aliases": [
+        "Kingdom of Thailand",
+        "Prathet",
+        "Ratcha Anachak Thai",
+        "TH",
+        "Thai",
+        "ราชอาณาจักรไทย"
+      ]
+    },
+    {
+      "code": "TL",
+      "name": "Timor-Leste",
+      "latitude": -8.83333333,
+      "longitude": 125.91666666,
+      "aliases": [
+        "Democratic Republic of Timor-Leste",
+        "East Timor",
+        "República Democrática de Timor-Leste",
+        "Repúblika Demokrátika Timór-Leste",
+        "TL",
+        "Timor",
+        "Timor Lorosae",
+        "Timór Lorosa'e"
+      ]
+    },
+    {
+      "code": "TG",
+      "name": "Togo",
+      "latitude": 8.0,
+      "longitude": 1.16666666,
+      "aliases": [
+        "République Togolaise",
+        "TG",
+        "Togolese",
+        "Togolese Republic"
+      ]
+    },
+    {
+      "code": "TK",
+      "name": "Tokelau",
+      "latitude": -9.0,
+      "longitude": -172.0,
+      "aliases": [
+        "TK"
+      ]
+    },
+    {
+      "code": "TO",
+      "name": "Tonga",
+      "latitude": -20.0,
+      "longitude": -175.0,
+      "aliases": [
+        "Kingdom of Tonga",
+        "TO"
+      ]
+    },
+    {
+      "code": "TT",
+      "name": "Trinidad and Tobago",
+      "latitude": 11.0,
+      "longitude": -61.0,
+      "aliases": [
+        "Republic of Trinidad and Tobago",
+        "TT"
+      ]
+    },
+    {
+      "code": "TN",
+      "name": "Tunisia",
+      "latitude": 34.0,
+      "longitude": 9.0,
+      "aliases": [
+        "Republic of Tunisia",
+        "TN",
+        "Tunisian Republic",
+        "al-Jumhūriyyah at-Tūnisiyyah"
+      ]
+    },
+    {
+      "code": "TM",
+      "name": "Turkmenistan",
+      "latitude": 40.0,
+      "longitude": 60.0,
+      "aliases": [
+        "TM"
+      ]
+    },
+    {
+      "code": "TC",
+      "name": "Turks and Caicos Islands",
+      "latitude": 21.75,
+      "longitude": -71.58333333,
+      "aliases": [
+        "TC"
+      ]
+    },
+    {
+      "code": "TV",
+      "name": "Tuvalu",
+      "latitude": -8.0,
+      "longitude": 178.0,
+      "aliases": [
+        "TV"
+      ]
+    },
+    {
+      "code": "TR",
+      "name": "Türkiye",
+      "latitude": 39.0,
+      "longitude": 35.0,
+      "aliases": [
+        "Republic of Turkey",
+        "Republic of Türkiye",
+        "TR",
+        "Turkiye",
+        "Türkiye Cumhuriyeti"
+      ]
+    },
+    {
+      "code": "UG",
+      "name": "Uganda",
+      "latitude": 1.0,
+      "longitude": 32.0,
+      "aliases": [
+        "Jamhuri ya Uganda",
+        "Republic of Uganda",
+        "UG"
+      ]
+    },
+    {
+      "code": "UA",
+      "name": "Ukraine",
+      "latitude": 49.0,
+      "longitude": 32.0,
+      "aliases": [
+        "UA",
+        "Ukrayina"
+      ]
+    },
+    {
+      "code": "AE",
+      "name": "United Arab Emirates",
+      "latitude": 24.0,
+      "longitude": 54.0,
+      "aliases": [
+        "AE",
+        "Emirates",
+        "UAE"
+      ]
+    },
+    {
+      "code": "GB",
+      "name": "United Kingdom",
+      "latitude": 54.0,
+      "longitude": -2.0,
+      "aliases": [
+        "GB",
+        "Great Britain",
+        "UK",
+        "United Kingdom of Great Britain and Northern Ireland"
+      ]
+    },
+    {
+      "code": "US",
+      "name": "United States",
+      "latitude": 38.0,
+      "longitude": -97.0,
+      "aliases": [
+        "US",
+        "USA",
+        "United States of America"
+      ]
+    },
+    {
+      "code": "UM",
+      "name": "United States Minor Outlying Islands",
+      "latitude": 19.3,
+      "longitude": 166.633333,
+      "aliases": [
+        "UM"
+      ]
+    },
+    {
+      "code": "VI",
+      "name": "United States Virgin Islands",
+      "latitude": 18.35,
+      "longitude": -64.933333,
+      "aliases": [
+        "VI",
+        "Virgin Islands of the United States",
+        "Virgin Islands, U.S."
+      ]
+    },
+    {
+      "code": "UY",
+      "name": "Uruguay",
+      "latitude": -33.0,
+      "longitude": -56.0,
+      "aliases": [
+        "Oriental Republic of Uruguay",
+        "República Oriental del Uruguay",
+        "UY"
+      ]
+    },
+    {
+      "code": "UZ",
+      "name": "Uzbekistan",
+      "latitude": 41.0,
+      "longitude": 64.0,
+      "aliases": [
+        "O‘zbekiston Respublikasi",
+        "Republic of Uzbekistan",
+        "UZ",
+        "Ўзбекистон Республикаси"
+      ]
+    },
+    {
+      "code": "VU",
+      "name": "Vanuatu",
+      "latitude": -16.0,
+      "longitude": 167.0,
+      "aliases": [
+        "Republic of Vanuatu",
+        "Ripablik blong Vanuatu",
+        "République de Vanuatu",
+        "VU"
+      ]
+    },
+    {
+      "code": "VA",
+      "name": "Vatican City",
+      "latitude": 41.9,
+      "longitude": 12.45,
+      "aliases": [
+        "Holy See (Vatican City State)",
+        "Stato della Città del Vaticano",
+        "VA",
+        "Vatican",
+        "Vatican City State"
+      ]
+    },
+    {
+      "code": "VE",
+      "name": "Venezuela",
+      "latitude": 8.0,
+      "longitude": -66.0,
+      "aliases": [
+        "Bolivarian Republic of Venezuela",
+        "República Bolivariana de Venezuela",
+        "VE",
+        "Venezuela, Bolivarian Republic of"
+      ]
+    },
+    {
+      "code": "VN",
+      "name": "Vietnam",
+      "latitude": 16.16666666,
+      "longitude": 107.83333333,
+      "aliases": [
+        "Cộng hòa Xã hội chủ nghĩa Việt Nam",
+        "Socialist Republic of Vietnam",
+        "VN",
+        "Viet Nam"
+      ]
+    },
+    {
+      "code": "WF",
+      "name": "Wallis and Futuna",
+      "latitude": -13.3,
+      "longitude": -176.2,
+      "aliases": [
+        "Territoire des îles Wallis et Futuna",
+        "Territory of the Wallis and Futuna Islands",
+        "WF"
+      ]
+    },
+    {
+      "code": "EH",
+      "name": "Western Sahara",
+      "latitude": 24.5,
+      "longitude": -13.0,
+      "aliases": [
+        "EH",
+        "Sahrawi Arab Democratic Republic",
+        "Taneẓroft Tutrimt"
+      ]
+    },
+    {
+      "code": "YE",
+      "name": "Yemen",
+      "latitude": 15.0,
+      "longitude": 48.0,
+      "aliases": [
+        "Republic of Yemen",
+        "YE",
+        "Yemeni Republic",
+        "al-Jumhūriyyah al-Yamaniyyah"
+      ]
+    },
+    {
+      "code": "ZM",
+      "name": "Zambia",
+      "latitude": -15.0,
+      "longitude": 30.0,
+      "aliases": [
+        "Republic of Zambia",
+        "ZM"
+      ]
+    },
+    {
+      "code": "ZW",
+      "name": "Zimbabwe",
+      "latitude": -20.0,
+      "longitude": 30.0,
+      "aliases": [
+        "Republic of Zimbabwe",
+        "ZW"
+      ]
+    },
+    {
+      "code": "AX",
+      "name": "Åland Islands",
+      "latitude": 60.116667,
+      "longitude": 19.9,
+      "aliases": [
+        "AX",
+        "Aaland",
+        "Ahvenanmaa",
+        "Aland"
+      ]
+    }
   ]
 }

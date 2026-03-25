@@ -8,37 +8,9 @@ import { useToast } from "@/components/dashboard/toast";
 import { DateTimePickerInput } from "@/components/ui/date-time-picker";
 import { DEFAULT_TIMEZONE, getTimeZoneOptions } from "@/lib/timezones";
 import { formatLocalDateTimeInTimeZone } from "@/lib/datetime";
+import { useLocale } from "@/hooks/use-locale";
+import { getIntlLocale } from "@/lib/i18n/format";
 
-const GAME_OPTIONS = [
-    { value: "DUEL_LINKS", label: "Duel Links" },
-    { value: "MASTER_DUEL", label: "Master Duel" },
-];
-
-const FORMAT_OPTIONS = [
-    { value: "BO1", label: "Best of 1" },
-    { value: "BO3", label: "Best of 3" },
-    { value: "BO5", label: "Best of 5" },
-];
-
-const STRUCTURE_OPTIONS = [
-    { value: "SINGLE_ELIM", label: "Single Elimination" },
-    { value: "DOUBLE_ELIM", label: "Double Elimination (Soon)" },
-    { value: "SWISS", label: "Swiss (Soon)" },
-];
-
-const STATUS_OPTIONS = [
-    { value: "OPEN", label: "OPEN" },
-    { value: "ONGOING", label: "ONGOING" },
-    { value: "COMPLETED", label: "COMPLETED" },
-    { value: "CANCELLED", label: "CANCELLED" },
-];
-
-const FORFEIT_MODE_OPTIONS = [
-    { value: "CHECKIN_ONLY", label: "Check-in only" },
-    { value: "SCHEDULE_NO_SHOW", label: "No-show schedule" },
-];
-
-const formatIdrInput = (value: number) => new Intl.NumberFormat("id-ID").format(value);
 const parseIdrInput = (value: string) => {
     const numeric = Number(value.replace(/[^0-9]/g, ""));
     return Number.isNaN(numeric) ? 0 : numeric;
@@ -67,6 +39,7 @@ type TournamentForm = {
 };
 
 export function TournamentSettingsClient({ tournamentId }: { tournamentId: string }) {
+    const { t, locale } = useLocale();
     const { success, error } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -92,6 +65,36 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
         isTeamTournament: false,
         lineupSize: "",
     });
+    const formatIdrInput = (value: number) => new Intl.NumberFormat(getIntlLocale(locale)).format(value);
+    const selectOptions = useMemo(() => {
+        const options = t.dashboard.tournamentOptions;
+        return {
+            gameType: [
+                { value: "DUEL_LINKS", label: options.gameType.duelLinks },
+                { value: "MASTER_DUEL", label: options.gameType.masterDuel },
+            ],
+            format: [
+                { value: "BO1", label: options.format.bo1 },
+                { value: "BO3", label: options.format.bo3 },
+                { value: "BO5", label: options.format.bo5 },
+            ],
+            structure: [
+                { value: "SINGLE_ELIM", label: options.structure.singleElim },
+                { value: "DOUBLE_ELIM", label: options.structure.doubleElim },
+                { value: "SWISS", label: options.structure.swiss },
+            ],
+            status: [
+                { value: "OPEN", label: options.status.open },
+                { value: "ONGOING", label: options.status.ongoing },
+                { value: "COMPLETED", label: options.status.completed },
+                { value: "CANCELLED", label: options.status.cancelled },
+            ],
+            forfeitMode: [
+                { value: "CHECKIN_ONLY", label: options.forfeitMode.checkinOnly },
+                { value: "SCHEDULE_NO_SHOW", label: options.forfeitMode.scheduleNoShow },
+            ],
+        };
+    }, [t]);
 
     useEffect(() => {
         let active = true;
@@ -128,10 +131,10 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                         lineupSize: tournament.lineupSize ? String(tournament.lineupSize) : "",
                     });
                 } else {
-                    error(data.message || "Gagal memuat turnamen.");
+                    error(data.message || t.dashboard.tournamentSettings.errors.loadFailed);
                 }
             } catch {
-                if (active) error("Kesalahan jaringan.");
+                if (active) error(t.common.networkError);
             } finally {
                 if (active) setLoading(false);
             }
@@ -142,7 +145,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
             active = false;
             controller.abort();
         };
-    }, [tournamentId, error]);
+    }, [t, tournamentId, error]);
 
     const handleSubmit = async () => {
         setSaving(true);
@@ -173,12 +176,12 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
             });
             const data = await res.json();
             if (res.ok) {
-                success("Pengaturan turnamen diperbarui.");
+                success(t.dashboard.tournamentSettings.success.saved);
             } else {
-                error(data.message || "Gagal menyimpan pengaturan.");
+                error(data.message || t.dashboard.tournamentSettings.errors.saveFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.common.networkError);
         } finally {
             setSaving(false);
         }
@@ -191,24 +194,27 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
         <DashboardPageShell>
             <div className="space-y-6">
                 <DashboardPageHeader
-                    kicker="Settings"
-                    title="Pengaturan Turnamen"
-                    description="Ubah detail inti, format pertandingan, dan status turnamen."
+                    kicker={t.dashboard.tournamentSettings.kicker}
+                    title={t.dashboard.tournamentSettings.title}
+                    description={t.dashboard.tournamentSettings.description}
                     actions={
                         <button className={btnPrimary} onClick={handleSubmit} disabled={saving || loading}>
-                            {saving ? "Menyimpan..." : "Simpan Perubahan"}
+                            {saving ? t.dashboard.tournamentSettings.actions.saving : t.dashboard.tournamentSettings.actions.save}
                         </button>
                     }
                 />
 
-                <DashboardPanel title="Detail Turnamen" description="Informasi utama yang tampil di halaman publik.">
+                <DashboardPanel
+                    title={t.dashboard.tournamentSettings.panels.detailsTitle}
+                    description={t.dashboard.tournamentSettings.panels.detailsDescription}
+                >
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                         <div>
-                            <label className={labelCls}>Tournament Name</label>
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.tournamentName}</label>
                             <input className={inputCls} value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} />
                         </div>
                         <div>
-                            <label className={labelCls}>Start Time</label>
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.startTime}</label>
                             <DateTimePickerInput
                                 value={form.startAt}
                                 onChange={(value) => setForm((prev) => ({ ...prev, startAt: value }))}
@@ -216,12 +222,12 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                             />
                         </div>
                         <div>
-                            <label className={labelCls}>Timezone</label>
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.timezone}</label>
                             <FormSelect value={form.timezone} onChange={(value) => setForm((prev) => ({ ...prev, timezone: value }))} options={timeZoneOptions} />
-                            <p className="mt-1 text-xs text-base-content/55">Jadwal dan kalender mengikuti timezone ini.</p>
+                            <p className="mt-1 text-xs text-base-content/55">{t.dashboard.tournamentSettings.hints.timezone}</p>
                         </div>
                         <div>
-                            <label className={labelCls}>Registration Open</label>
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.registrationOpen}</label>
                             <DateTimePickerInput
                                 value={form.registrationOpen}
                                 onChange={(value) => setForm((prev) => ({ ...prev, registrationOpen: value }))}
@@ -229,7 +235,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                             />
                         </div>
                         <div>
-                            <label className={labelCls}>Registration Close</label>
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.registrationClose}</label>
                             <DateTimePickerInput
                                 value={form.registrationClose}
                                 onChange={(value) => setForm((prev) => ({ ...prev, registrationClose: value }))}
@@ -237,32 +243,35 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                             />
                         </div>
                         <div className="lg:col-span-2">
-                            <label className={labelCls}>Description</label>
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.description}</label>
                             <textarea className={`${inputCls} min-h-[140px] resize-y`} value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} />
                         </div>
                     </div>
                 </DashboardPanel>
 
-                <DashboardPanel title="Format & Status" description="Atur format pertandingan dan status saat ini.">
+                <DashboardPanel
+                    title={t.dashboard.tournamentSettings.panels.formatTitle}
+                    description={t.dashboard.tournamentSettings.panels.formatDescription}
+                >
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                         <div>
-                            <label className={labelCls}>Game</label>
-                            <FormSelect value={form.gameType} onChange={(value) => setForm((prev) => ({ ...prev, gameType: value }))} options={GAME_OPTIONS} />
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.game}</label>
+                            <FormSelect value={form.gameType} onChange={(value) => setForm((prev) => ({ ...prev, gameType: value }))} options={selectOptions.gameType} />
                         </div>
                         <div>
-                            <label className={labelCls}>Match Format</label>
-                            <FormSelect value={form.format} onChange={(value) => setForm((prev) => ({ ...prev, format: value }))} options={FORMAT_OPTIONS} />
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.matchFormat}</label>
+                            <FormSelect value={form.format} onChange={(value) => setForm((prev) => ({ ...prev, format: value }))} options={selectOptions.format} />
                         </div>
                         <div>
-                            <label className={labelCls}>Structure</label>
-                            <FormSelect value={form.structure} onChange={(value) => setForm((prev) => ({ ...prev, structure: value }))} options={STRUCTURE_OPTIONS} />
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.structure}</label>
+                            <FormSelect value={form.structure} onChange={(value) => setForm((prev) => ({ ...prev, structure: value }))} options={selectOptions.structure} />
                         </div>
                         <div>
-                            <label className={labelCls}>Status</label>
-                            <FormSelect value={form.status} onChange={(value) => setForm((prev) => ({ ...prev, status: value }))} options={STATUS_OPTIONS} />
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.status}</label>
+                            <FormSelect value={form.status} onChange={(value) => setForm((prev) => ({ ...prev, status: value }))} options={selectOptions.status} />
                         </div>
                         <label className="flex items-center justify-between rounded-box border border-base-300 bg-base-200/40 px-3 py-3 text-sm font-semibold text-base-content">
-                            Check-in Required
+                            {t.dashboard.tournamentSettings.fields.checkinRequired}
                             <input
                                 type="checkbox"
                                 className="toggle toggle-primary"
@@ -277,7 +286,9 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                             />
                         </label>
                         <div>
-                            <label className={labelCls}>{form.isTeamTournament ? "Max Teams" : "Max Players"}</label>
+                            <label className={labelCls}>
+                                {form.isTeamTournament ? t.dashboard.tournamentSettings.fields.maxTeams : t.dashboard.tournamentSettings.fields.maxPlayers}
+                            </label>
                             <input
                                 type="number"
                                 min={2}
@@ -285,15 +296,15 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                                 className={inputCls}
                                 value={form.maxPlayers}
                                 onChange={(event) => setForm((prev) => ({ ...prev, maxPlayers: event.target.value }))}
-                                placeholder="Contoh: 32"
+                                placeholder={t.dashboard.tournamentSettings.placeholders.maxPlayers}
                             />
                             <p className="mt-2 text-xs text-base-content/45">
-                                Bracket akan menyesuaikan ke ukuran power-of-two terdekat.
+                                {t.dashboard.tournamentSettings.hints.bracketSize}
                             </p>
                         </div>
                         {form.isTeamTournament ? (
                             <div>
-                                <label className={labelCls}>Lineup Size (opsional)</label>
+                                <label className={labelCls}>{t.dashboard.tournamentSettings.fields.lineupSizeOptional}</label>
                                 <input
                                     type="number"
                                     min={1}
@@ -301,42 +312,45 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                                     className={inputCls}
                                     value={form.lineupSize}
                                     onChange={(event) => setForm((prev) => ({ ...prev, lineupSize: event.target.value }))}
-                                    placeholder="Contoh: 3"
+                                    placeholder={t.dashboard.tournamentSettings.placeholders.lineupSize}
                                 />
                                 <p className="mt-2 text-xs text-base-content/45">
-                                    Captain akan submit lineup sebelum match dimulai.
+                                    {t.dashboard.tournamentSettings.hints.lineup}
                                 </p>
                             </div>
                         ) : null}
                         <div>
-                            <label className={labelCls}>Entry Fee (Rp)</label>
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.entryFee}</label>
                             <input
                                 type="text"
                                 inputMode="numeric"
                                 className={inputCls}
                                 value={form.entryFee ? formatIdrInput(form.entryFee) : ""}
                                 onChange={(event) => setForm((prev) => ({ ...prev, entryFee: parseIdrInput(event.target.value) }))}
-                                placeholder="0"
+                                placeholder={t.dashboard.tournamentSettings.placeholders.entryFee}
                             />
                         </div>
                         <div>
-                            <label className={labelCls}>Prize Pool (Rp)</label>
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.prizePool}</label>
                             <input
                                 type="text"
                                 inputMode="numeric"
                                 className={inputCls}
                                 value={form.prizePool ? formatIdrInput(form.prizePool) : ""}
                                 onChange={(event) => setForm((prev) => ({ ...prev, prizePool: parseIdrInput(event.target.value) }))}
-                                placeholder="0"
+                                placeholder={t.dashboard.tournamentSettings.placeholders.prizePool}
                             />
                         </div>
                     </div>
                 </DashboardPanel>
 
-                <DashboardPanel title="Auto Forfeit" description="Atur forfeit otomatis berdasarkan jadwal dan check-in.">
+                <DashboardPanel
+                    title={t.dashboard.tournamentSettings.panels.forfeitTitle}
+                    description={t.dashboard.tournamentSettings.panels.forfeitDescription}
+                >
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                         <label className="flex items-center justify-between rounded-box border border-base-300 bg-base-200/40 px-3 py-3 text-sm font-semibold text-base-content">
-                            Auto Forfeit
+                            {t.dashboard.tournamentSettings.fields.autoForfeit}
                             <input
                                 type="checkbox"
                                 className="toggle toggle-primary"
@@ -346,7 +360,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                             />
                         </label>
                         <div>
-                            <label className={labelCls}>Grace Minutes</label>
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.graceMinutes}</label>
                             <input
                                 type="number"
                                 min={1}
@@ -357,17 +371,17 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
                             />
                         </div>
                         <div>
-                            <label className={labelCls}>Mode</label>
+                            <label className={labelCls}>{t.dashboard.tournamentSettings.fields.mode}</label>
                             <FormSelect
                                 value={form.forfeitMode}
                                 onChange={(value) => setForm((prev) => ({ ...prev, forfeitMode: value }))}
-                                options={FORFEIT_MODE_OPTIONS}
+                                options={selectOptions.forfeitMode}
                                 disabled={!forfeitActive}
                             />
                         </div>
                         {!forfeitAvailable ? (
                             <p className="text-xs text-base-content/55 lg:col-span-3">
-                                Aktifkan check-in untuk menggunakan auto-forfeit.
+                                {t.dashboard.tournamentSettings.hints.forfeitUnavailable}
                             </p>
                         ) : null}
                     </div>
@@ -375,7 +389,7 @@ export function TournamentSettingsClient({ tournamentId }: { tournamentId: strin
 
                 <div className="flex justify-end">
                     <button className={btnOutline} type="button" onClick={() => window.history.back()}>
-                        Kembali
+                        {t.dashboard.tournamentSettings.buttons.back}
                     </button>
                 </div>
             </div>

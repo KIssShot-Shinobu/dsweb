@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useToast } from "@/components/dashboard/toast";
 import { btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { formatGameId } from "@/lib/game-id";
+import { useLocale } from "@/hooks/use-locale";
 
 interface GameProfile {
     gameType: string;
@@ -24,13 +25,14 @@ export function GameProfileForm({
     onSaved,
     embedded = false,
 }: GameProfileFormProps) {
+    const { t } = useLocale();
     const [ign, setIgn] = useState(initialData?.ign || "");
     const [gameId, setGameId] = useState(formatGameId(initialData?.gameId || ""));
     const [loading, setLoading] = useState(false);
     const { success, error } = useToast();
 
-    const title = gameType === "DUEL_LINKS" ? "Yu-Gi-Oh! Duel Links" : "Yu-Gi-Oh! Master Duel";
-    const idLabel = gameType === "DUEL_LINKS" ? "DUELIST ID" : "Duelist ID";
+    const title = gameType === "DUEL_LINKS" ? t.dashboard.profile.gameForm.titles.duelLinks : t.dashboard.profile.gameForm.titles.masterDuel;
+    const idLabel = gameType === "DUEL_LINKS" ? t.dashboard.profile.gameForm.idLabelDuelLinks : t.dashboard.profile.gameForm.idLabelMasterDuel;
     const isMasterDuel = gameType === "MASTER_DUEL";
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -46,13 +48,13 @@ export function GameProfileForm({
 
             const data = await res.json();
             if (res.ok) {
-                success(`${title} Profil berhasil diperbarui`);
+                success(t.dashboard.profile.gameForm.success.profileUpdated(title));
                 onSaved?.();
             } else {
-                error(data.message || "Gagal memperbarui profil");
+                error(data.message || t.dashboard.profile.gameForm.errors.updateFailed);
             }
         } catch {
-            error("Terjadi kesalahan jaringan");
+            error(t.common.networkError);
         } finally {
             setLoading(false);
         }
@@ -70,33 +72,29 @@ export function GameProfileForm({
                 </div>
                 <div>
                     <h3 className="text-sm font-bold uppercase tracking-wider text-base-content">{title}</h3>
-                    <p className="text-xs text-base-content/45">Atur profil game Anda untuk turnamen dan identitas akun.</p>
+                    <p className="text-xs text-base-content/45">{t.dashboard.profile.gameForm.subtitle}</p>
                 </div>
             </div>
 
             <div className="space-y-4">
                 <div>
-                    <label className={labelCls}>
-                        In-Game Name (IGN)
-                    </label>
+                    <label className={labelCls}>{t.dashboard.profile.gameForm.ignLabel}</label>
                     <input
                         type="text"
                         value={ign}
                         onChange={(e) => setIgn(e.target.value)}
-                        placeholder="[DS] Player"
+                        placeholder={t.dashboard.profile.gameForm.ignPlaceholder}
                         className={inputCls}
                         required
                     />
                 </div>
                 <div>
-                    <label className={labelCls}>
-                        {idLabel}
-                    </label>
+                    <label className={labelCls}>{idLabel}</label>
                     <input
                         type="text"
                         value={gameId}
                         inputMode="numeric"
-                        placeholder="123-456-789"
+                        placeholder={t.dashboard.profile.gameForm.gameIdPlaceholder}
                         className={inputCls}
                         onChange={(e) => setGameId(formatGameId(e.target.value))}
                         required
@@ -107,7 +105,7 @@ export function GameProfileForm({
                     disabled={loading || (!ign && !gameId)}
                     className={`${btnPrimary} mt-2 w-full`}
                 >
-                    {loading ? "Menyimpan..." : initialData ? "Simpan Perubahan" : "Simpan Profil Game"}
+                    {loading ? t.dashboard.profile.gameForm.actions.saving : initialData ? t.dashboard.profile.gameForm.actions.saveChanges : t.dashboard.profile.gameForm.actions.saveProfile}
                 </button>
             </div>
         </form>

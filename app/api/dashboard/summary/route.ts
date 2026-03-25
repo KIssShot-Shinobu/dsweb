@@ -2,9 +2,13 @@
 import { getCurrentUser, hasRole } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { activeTeamMembershipSelect, getActiveTeamSnapshot } from "@/lib/team-membership";
+import { getServerLocale } from "@/lib/i18n/server";
+import { getIntlLocale } from "@/lib/i18n/format";
+import type { Locale } from "@/lib/i18n/locales";
 
-function buildWeeklyChart(transactions: { amount: number; createdAt: Date }[]) {
+function buildWeeklyChart(transactions: { amount: number; createdAt: Date }[], locale: Locale) {
     const days = [];
+    const intlLocale = getIntlLocale(locale);
 
     for (let i = 6; i >= 0; i -= 1) {
         const date = new Date();
@@ -19,7 +23,7 @@ function buildWeeklyChart(transactions: { amount: number; createdAt: Date }[]) {
         );
 
         days.push({
-            label: date.toLocaleDateString("id-ID", { weekday: "short" }).slice(0, 2),
+            label: date.toLocaleDateString(intlLocale, { weekday: "short" }).slice(0, 2),
             income: dayTransactions
                 .filter((transaction) => transaction.amount > 0)
                 .reduce((sum, transaction) => sum + transaction.amount, 0),
@@ -47,6 +51,7 @@ export async function GET() {
         if (!currentUser || !hasRole(currentUser.role, "ADMIN")) {
             return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
         }
+        const locale = await getServerLocale();
 
         const weeklyStart = new Date();
         weeklyStart.setHours(0, 0, 0, 0);
@@ -196,7 +201,7 @@ export async function GET() {
                 treasury: {
                     balance: treasuryAggregate._sum.amount || 0,
                     recentTransactions: recentTreasury,
-                    weeklyChart: buildWeeklyChart(weeklyTransactions),
+                    weeklyChart: buildWeeklyChart(weeklyTransactions, locale),
                 },
             },
         });

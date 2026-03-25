@@ -9,6 +9,7 @@ import {
     authPrimaryBtnCls,
     authSecondaryBtnCls,
 } from "@/components/auth/auth-shell";
+import { useLocale } from "@/hooks/use-locale";
 
 type FinalizeState = "loading" | "error";
 
@@ -27,6 +28,7 @@ function getSafeRedirect(input: string | null) {
 function OAuthFinalizeContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { t } = useLocale();
     const redirect = useMemo(
         () => getSafeRedirect(searchParams.get("redirect")),
         [searchParams],
@@ -38,7 +40,7 @@ function OAuthFinalizeContent() {
             : "google";
 
     const [state, setState] = useState<FinalizeState>("loading");
-    const [message, setMessage] = useState("Kami sedang menyiapkan sesi akun Anda...");
+    const [message, setMessage] = useState(t.auth.oauth.loadingMessage);
 
     useEffect(() => {
         let cancelled = false;
@@ -58,7 +60,7 @@ function OAuthFinalizeContent() {
 
                 if (!response.ok || !data?.success) {
                     setState("error");
-                    setMessage(data?.message || "Sesi login tidak valid. Silakan ulangi proses masuk.");
+                    setMessage(data?.message || t.auth.oauth.errors.invalidSession);
                     return;
                 }
 
@@ -70,7 +72,7 @@ function OAuthFinalizeContent() {
                 }
 
                 setState("error");
-                setMessage("Terjadi kendala jaringan saat menyelesaikan login.");
+                setMessage(t.auth.oauth.errors.network);
             }
         }
 
@@ -83,12 +85,12 @@ function OAuthFinalizeContent() {
 
     return (
         <AuthShell
-            eyebrow="Sinkronisasi Akses"
-            title="Menyiapkan sesi akun"
-            description="Kami sedang menautkan sesi login Anda ke sistem internal Duel Standby agar role, tim, dan izin dashboard langsung sinkron."
+            eyebrow={t.auth.oauth.eyebrow}
+            title={t.auth.oauth.title}
+            description={t.auth.oauth.description}
             footer={
                 <Link href="/" className="font-semibold text-ds-amber transition-colors hover:text-ds-gold">
-                    Kembali ke beranda
+                    {t.auth.oauth.backHome}
                 </Link>
             }
         >
@@ -98,10 +100,10 @@ function OAuthFinalizeContent() {
                         <div className="relative mx-auto h-20 w-20">
                             <div className="absolute inset-0 animate-ping rounded-3xl bg-ds-amber/10" />
                             <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-ds-amber/20 bg-ds-amber/12 text-sm font-black uppercase tracking-[0.22em] text-ds-amber">
-                                Sink
+                                {t.auth.oauth.syncBadge}
                             </div>
                         </div>
-                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">Menyinkronkan akses</h3>
+                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">{t.auth.oauth.syncTitle}</h3>
                         <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-white/55">{message}</p>
                     </>
                 ) : null}
@@ -111,16 +113,16 @@ function OAuthFinalizeContent() {
                         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-red-500/15 text-3xl font-black text-red-400">
                             !
                         </div>
-                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">Login belum selesai</h3>
+                        <h3 className="mt-5 text-2xl font-black tracking-tight text-white">{t.auth.oauth.errorTitle}</h3>
                         <div className={`${authAlertCls} mx-auto mt-4 max-w-lg border-red-500/20 bg-red-500/10 text-red-400`}>
                             {message}
                         </div>
                         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                             <Link href="/login" className={authPrimaryBtnCls}>
-                                Kembali ke Login
+                                {t.auth.oauth.backToLogin}
                             </Link>
                             <Link href="/" className={authSecondaryBtnCls}>
-                                Ke beranda
+                                {t.auth.oauth.backHomeSecondary}
                             </Link>
                         </div>
                     </>

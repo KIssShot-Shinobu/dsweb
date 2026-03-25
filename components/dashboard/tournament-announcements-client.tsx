@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { DashboardEmptyState, DashboardPageHeader, DashboardPageShell, DashboardPanel } from "@/components/dashboard/page-shell";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
 import { useToast } from "@/components/dashboard/toast";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDateTime } from "@/lib/i18n/format";
 
 type Announcement = {
     id: string;
@@ -17,6 +19,7 @@ type Announcement = {
 };
 
 export function TournamentAnnouncementsClient({ tournamentId }: { tournamentId: string }) {
+    const { locale, t } = useLocale();
     const { success, error } = useToast();
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
@@ -32,10 +35,10 @@ export function TournamentAnnouncementsClient({ tournamentId }: { tournamentId: 
             if (res.ok) {
                 setAnnouncements(data.announcements || []);
             } else {
-                error(data.message || "Gagal memuat pengumuman.");
+                error(data.message || t.dashboard.announcements.errors.loadFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.announcements.errors.network);
         } finally {
             setLoading(false);
         }
@@ -54,16 +57,16 @@ export function TournamentAnnouncementsClient({ tournamentId }: { tournamentId: 
             });
             const data = await res.json();
             if (res.ok) {
-                success("Pengumuman diposting.");
+                success(t.dashboard.announcements.success.created);
                 setTitle("");
                 setContent("");
                 setPinned(false);
                 loadAnnouncements();
             } else {
-                error(data.message || "Gagal membuat pengumuman.");
+                error(data.message || t.dashboard.announcements.errors.createFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.announcements.errors.network);
         }
     };
 
@@ -76,13 +79,13 @@ export function TournamentAnnouncementsClient({ tournamentId }: { tournamentId: 
             });
             const data = await res.json();
             if (res.ok) {
-                success(announcement.pinned ? "Pengumuman di-unpin." : "Pengumuman dipin.");
+                success(announcement.pinned ? t.dashboard.announcements.success.unpinned : t.dashboard.announcements.success.pinned);
                 loadAnnouncements();
             } else {
-                error(data.message || "Gagal memperbarui pengumuman.");
+                error(data.message || t.dashboard.announcements.errors.updateFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.announcements.errors.network);
         }
     };
 
@@ -93,13 +96,13 @@ export function TournamentAnnouncementsClient({ tournamentId }: { tournamentId: 
             });
             const data = await res.json();
             if (res.ok) {
-                success("Pengumuman dihapus.");
+                success(t.dashboard.announcements.success.deleted);
                 loadAnnouncements();
             } else {
-                error(data.message || "Gagal menghapus pengumuman.");
+                error(data.message || t.dashboard.announcements.errors.deleteFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.announcements.errors.network);
         }
     };
 
@@ -107,42 +110,42 @@ export function TournamentAnnouncementsClient({ tournamentId }: { tournamentId: 
         <DashboardPageShell>
             <div className="space-y-6">
                 <DashboardPageHeader
-                    kicker="Announcements"
-                    title="Pengumuman Turnamen"
-                    description="Kirim update penting kepada peserta secara cepat."
+                    kicker={t.dashboard.announcements.kicker}
+                    title={t.dashboard.announcements.title}
+                    description={t.dashboard.announcements.description}
                     actions={
                         <button className={btnPrimary} onClick={handleSubmit} disabled={!title.trim() || !content.trim()}>
-                            Publish Announcement
+                            {t.dashboard.announcements.publish}
                         </button>
                     }
                 />
 
-                <DashboardPanel title="Buat Pengumuman" description="Markdown diperbolehkan. Fitur penyimpanan sedang disiapkan.">
+                <DashboardPanel title={t.dashboard.announcements.formTitle} description={t.dashboard.announcements.formDescription}>
                     <div className="space-y-3">
-                        <label className={labelCls}>Pesan</label>
+                        <label className={labelCls}>{t.dashboard.announcements.messageLabel}</label>
                         <input
                             className={inputCls}
                             value={title}
                             onChange={(event) => setTitle(event.target.value)}
-                            placeholder="Judul pengumuman"
+                            placeholder={t.dashboard.announcements.titlePlaceholder}
                         />
                         <textarea
                             className={`${inputCls} min-h-[160px] resize-y`}
                             value={content}
                             onChange={(event) => setContent(event.target.value)}
-                            placeholder="Contoh: Round 2 dimulai pukul 19.00 WIB."
+                            placeholder={t.dashboard.announcements.contentPlaceholder}
                         />
                         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/55">
                             <label className="flex items-center gap-2">
                                 <input type="checkbox" className="toggle toggle-xs toggle-primary" checked={pinned} onChange={(event) => setPinned(event.target.checked)} />
-                                Pin pengumuman
+                                {t.dashboard.announcements.pinLabel}
                             </label>
-                            <span>Gunakan Markdown untuk format teks.</span>
+                            <span>{t.dashboard.announcements.markdownHint}</span>
                         </div>
                     </div>
                 </DashboardPanel>
 
-                <DashboardPanel title="Riwayat Pengumuman" description="Semua pengumuman akan tampil di sini.">
+                <DashboardPanel title={t.dashboard.announcements.historyTitle} description={t.dashboard.announcements.historyDescription}>
                     {loading ? (
                         <div className="space-y-3">
                             {[1, 2].map((item) => (
@@ -150,7 +153,7 @@ export function TournamentAnnouncementsClient({ tournamentId }: { tournamentId: 
                             ))}
                         </div>
                     ) : announcements.length === 0 ? (
-                        <DashboardEmptyState title="Belum ada pengumuman" description="Gunakan form di atas untuk membuat pengumuman pertama." />
+                        <DashboardEmptyState title={t.dashboard.announcements.emptyTitle} description={t.dashboard.announcements.emptyDescription} />
                     ) : (
                         <div className="space-y-3">
                             {announcements.map((announcement) => (
@@ -159,18 +162,18 @@ export function TournamentAnnouncementsClient({ tournamentId }: { tournamentId: 
                                         <div>
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <h4 className="text-sm font-bold text-base-content">{announcement.title}</h4>
-                                                {announcement.pinned ? <span className="badge badge-primary badge-xs">Pinned</span> : null}
+                                                {announcement.pinned ? <span className="badge badge-primary badge-xs">{t.dashboard.announcements.pinnedBadge}</span> : null}
                                             </div>
                                             <p className="mt-1 text-xs text-base-content/55">
-                                                {announcement.createdBy?.fullName ?? "Admin"} · {new Date(announcement.createdAt).toLocaleString("id-ID")}
+                                                {(announcement.createdBy?.fullName ?? t.dashboard.announcements.adminFallback)} · {formatDateTime(announcement.createdAt, locale)}
                                             </p>
                                         </div>
                                         <div className="flex gap-2">
                                             <button className={`${btnOutline} btn-xs`} onClick={() => togglePin(announcement)}>
-                                                {announcement.pinned ? "Unpin" : "Pin"}
+                                                {announcement.pinned ? t.dashboard.announcements.unpin : t.dashboard.announcements.pin}
                                             </button>
                                             <button className="btn btn-error btn-outline btn-xs" onClick={() => removeAnnouncement(announcement.id)}>
-                                                Hapus
+                                                {t.dashboard.announcements.remove}
                                             </button>
                                         </div>
                                     </div>

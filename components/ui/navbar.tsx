@@ -10,15 +10,7 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { clientLogout } from "@/lib/client-auth";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-
-const navLinks = [
-    { name: "Beranda", href: "/" },
-    { name: "Tentang", href: "/#about" },
-    { name: "Turnamen", href: "/tournaments" },
-    { name: "Team", href: "/teams" },
-    { name: "Treasury", href: "/treasury" },
-    { name: "Komunitas", href: "/#socials" },
-];
+import { useLocale } from "@/hooks/use-locale";
 
 type MeUser = {
     username: string;
@@ -35,6 +27,7 @@ export function Navbar() {
     const [checkingAuth, setCheckingAuth] = useState(true);
     const menuRef = useRef<HTMLDivElement | null>(null);
     const { theme, toggleTheme } = useTheme();
+    const { locale, setLocale, t } = useLocale();
     const hydrated = useHydrated();
 
     useEffect(() => {
@@ -106,16 +99,36 @@ export function Navbar() {
     const isAdmin = me ? ["ADMIN", "FOUNDER"].includes(me.role) : false;
     const avatarUrl = normalizeAssetUrl(me?.avatarUrl);
     const isDark = hydrated ? theme === "dark" : true;
+    const navLinks = [
+        { name: t.nav.home, href: "/" },
+        { name: t.nav.about, href: "/#about" },
+        { name: t.nav.tournaments, href: "/tournaments" },
+        { name: t.nav.teams, href: "/teams" },
+        { name: t.nav.treasury, href: "/treasury" },
+        { name: t.nav.community, href: "/#socials" },
+    ];
 
     const themeButton = (
         <button
             type="button"
             onClick={toggleTheme}
             className="btn btn-ghost btn-circle border border-base-300 bg-base-100/80"
-            aria-label={isDark ? "Ganti ke mode terang" : "Ganti ke mode gelap"}
-            title={isDark ? "Mode terang" : "Mode gelap"}
+            aria-label={isDark ? t.nav.themeLight : t.nav.themeDark}
+            title={isDark ? t.nav.themeLight : t.nav.themeDark}
         >
             {isDark ? <SunMedium className="h-5 w-5" /> : <MoonStar className="h-5 w-5" />}
+        </button>
+    );
+
+    const languageButton = (
+        <button
+            type="button"
+            onClick={() => setLocale(locale === "id" ? "en" : "id")}
+            className="btn btn-ghost rounded-box border border-base-300 bg-base-100/80 text-xs font-bold uppercase tracking-[0.2em]"
+            aria-label={t.nav.language}
+            title={t.nav.language}
+        >
+            {locale.toUpperCase()}
         </button>
     );
 
@@ -144,11 +157,12 @@ export function Navbar() {
                             </li>
                         ))}
                     </ul>
+                    {languageButton}
                     {themeButton}
                     {me ? <NotificationBell isLoggedIn /> : null}
                     {me ? (
                         <div className="dropdown dropdown-end" ref={menuRef}>
-                            <button onClick={() => setMenuOpen((current) => !current)} className="btn btn-ghost btn-circle avatar" aria-label="Buka menu profil">
+                            <button onClick={() => setMenuOpen((current) => !current)} className="btn btn-ghost btn-circle avatar" aria-label={t.nav.profileMenu}>
                                 <div className="w-10 rounded-full border border-base-300 bg-base-200">
                                     {avatarUrl ? (
                                         <Image
@@ -176,19 +190,19 @@ export function Navbar() {
                                     >
                                         <li>
                                             <Link href={isAdmin ? "/dashboard" : "/dashboard/profile"} onClick={() => setMenuOpen(false)}>
-                                                {isAdmin ? "Dashboard" : "Profil Saya"}
+                                                {isAdmin ? t.nav.dashboard : t.nav.myProfile}
                                             </Link>
                                         </li>
                                         {!me.emailVerified ? (
                                             <li>
                                                 <Link href="/dashboard/settings" onClick={() => setMenuOpen(false)} className="text-warning">
-                                                    Verifikasi email
+                                                    {t.nav.verifyEmail}
                                                 </Link>
                                             </li>
                                         ) : null}
                                         <li>
                                             <button onClick={handleLogout} className="text-error">
-                                                Keluar
+                                                {t.nav.logout}
                                             </button>
                                         </li>
                                     </motion.div>
@@ -203,17 +217,17 @@ export function Navbar() {
                     ) : (
                         <>
                             <Link href="/login" className="btn btn-outline rounded-box">
-                                Masuk
+                                {t.nav.login}
                             </Link>
                             <Link href="/register" className="btn btn-primary rounded-box">
-                                Daftar
+                                {t.nav.register}
                             </Link>
                         </>
                     )}
                 </div>
 
                 <div className="md:hidden">
-                    <button onClick={() => setIsOpen((current) => !current)} className="btn btn-ghost btn-circle">
+                    <button onClick={() => setIsOpen((current) => !current)} className="btn btn-ghost btn-circle" aria-label={isOpen ? t.nav.closeMenu : t.nav.openMenu}>
                         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                     </button>
                 </div>
@@ -233,22 +247,26 @@ export function Navbar() {
                                     {link.name}
                                 </Link>
                             ))}
+                            <button onClick={() => setLocale(locale === "id" ? "en" : "id")} className="btn btn-outline w-full justify-between rounded-box">
+                                <span>{t.nav.language}</span>
+                                <span className="text-xs font-bold uppercase tracking-[0.2em]">{locale.toUpperCase()}</span>
+                            </button>
                             <button onClick={toggleTheme} className="btn btn-outline w-full justify-between rounded-box">
-                                <span>{theme === "dark" ? "Mode terang" : "Mode gelap"}</span>
+                                <span>{theme === "dark" ? t.nav.themeLight : t.nav.themeDark}</span>
                                 {isDark ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
                             </button>
                             {me ? (
                                 <div className="grid grid-cols-1 gap-2 pt-1">
                                     <Link href={isAdmin ? "/dashboard" : "/dashboard/profile"} onClick={() => setIsOpen(false)} className="btn btn-ghost justify-start rounded-box">
-                                        {isAdmin ? "Dashboard" : "Profil Saya"}
+                                        {isAdmin ? t.nav.dashboard : t.nav.myProfile}
                                     </Link>
                                     {!me.emailVerified ? (
                                         <Link href="/dashboard/settings" onClick={() => setIsOpen(false)} className="btn btn-warning btn-outline rounded-box">
-                                            Verifikasi email
+                                            {t.nav.verifyEmail}
                                         </Link>
                                     ) : null}
                                     <button onClick={handleLogout} className="btn btn-error btn-outline rounded-box">
-                                        Keluar
+                                        {t.nav.logout}
                                     </button>
                                 </div>
                             ) : showAuthSkeleton ? (
@@ -259,10 +277,10 @@ export function Navbar() {
                             ) : (
                                 <div className="grid grid-cols-1 gap-2 pt-1">
                                     <Link href="/login" onClick={() => setIsOpen(false)} className="btn btn-outline rounded-box">
-                                        Masuk
+                                        {t.nav.login}
                                     </Link>
                                     <Link href="/register" onClick={() => setIsOpen(false)} className="btn btn-primary rounded-box">
-                                        Daftar
+                                        {t.nav.register}
                                     </Link>
                                 </div>
                             )}

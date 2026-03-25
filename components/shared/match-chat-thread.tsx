@@ -5,6 +5,8 @@ import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboa
 import { useToast } from "@/components/dashboard/toast";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { ConfirmModal } from "@/components/dashboard/confirm-modal";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDateTime } from "@/lib/i18n/format";
 
 type ChatSender = {
     id: string;
@@ -34,17 +36,6 @@ const EDIT_WINDOW_MS = 3 * 60 * 1000;
 const normalizeAttachments = (value?: unknown) =>
     Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 
-const formatTimestamp = (value: string) => {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return new Intl.DateTimeFormat("id-ID", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(date);
-};
-
 function AttachmentUploader({
     value,
     onChange,
@@ -54,12 +45,13 @@ function AttachmentUploader({
     onChange: (next: string[]) => void;
     disabled?: boolean;
 }) {
+    const { t } = useLocale();
     const { error } = useToast();
     const [uploading, setUploading] = useState(false);
 
     const handleUpload = async (file: File) => {
         if (value.length >= MAX_ATTACHMENTS) {
-            error("Maksimal 3 lampiran.");
+            error(t.match.chat.attachmentLimit(MAX_ATTACHMENTS));
             return;
         }
         setUploading(true);
@@ -69,11 +61,11 @@ function AttachmentUploader({
             const res = await fetch("/api/upload", { method: "POST", body: formData });
             const data = await res.json();
             if (!res.ok || !data?.url) {
-                throw new Error(data?.message || "Upload gagal.");
+                throw new Error(data?.message || t.common.uploadFailed);
             }
             onChange([...value, data.url]);
         } catch (err) {
-            err instanceof Error ? error(err.message) : error("Upload gagal.");
+            err instanceof Error ? error(err.message) : error(t.common.uploadFailed);
         } finally {
             setUploading(false);
         }
@@ -86,8 +78,10 @@ function AttachmentUploader({
     return (
         <div className="space-y-2">
             <label className="flex cursor-pointer items-center justify-between gap-3 rounded-box border border-dashed border-base-300 bg-base-200/40 px-4 py-3 transition-all hover:border-primary/40 hover:bg-base-200/70">
-                <span className="text-sm text-base-content/55">{uploading ? "Mengunggah file..." : "Tambah lampiran"}</span>
-                <span className="btn btn-primary btn-xs rounded-box">Upload</span>
+                <span className="text-sm text-base-content/55">
+                    {uploading ? t.match.chat.attachmentUploading : t.match.chat.attachmentAdd}
+                </span>
+                <span className="btn btn-primary btn-xs rounded-box">{t.common.upload}</span>
                 <input
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
@@ -105,15 +99,19 @@ function AttachmentUploader({
                     {value.map((url) => (
                         <div key={url} className="rounded-box border border-base-300 bg-base-100/70 p-2">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={normalizeAssetUrl(url) || url} alt="Lampiran chat" className="h-24 w-full rounded-box object-cover" />
+                            <img
+                                src={normalizeAssetUrl(url) || url}
+                                alt={t.match.chat.attachmentAlt}
+                                className="h-24 w-full rounded-box object-cover"
+                            />
                             <button type="button" className="mt-2 text-xs text-error" onClick={() => removeAttachment(url)}>
-                                Hapus
+                                {t.common.delete}
                             </button>
                         </div>
                     ))}
                 </div>
             ) : null}
-            <div className="text-xs text-base-content/50">Maksimal {MAX_ATTACHMENTS} lampiran.</div>
+            <div className="text-xs text-base-content/50">{t.match.chat.attachmentLimit(MAX_ATTACHMENTS)}</div>
         </div>
     );
 }
@@ -129,6 +127,7 @@ export function MatchChatThread({
     readOnly?: boolean;
     className?: string;
 }) {
+    const { t, locale } = useLocale();
     const { success, error } = useToast();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(true);
@@ -147,14 +146,14 @@ export function MatchChatThread({
             if (res.ok) {
                 setMessages(data.messages || []);
             } else {
-                error(data?.message || "Gagal memuat pesan.");
+                error(data?.message || t.match.chat.errors.loadFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.common.networkError);
         } finally {
             setLoading(false);
         }
-    }, [matchId, error]);
+    }, [matchId, error, t]);
 
     useEffect(() => {
         fetchMessages();
@@ -163,7 +162,7 @@ export function MatchChatThread({
     const handleSend = async () => {
         if (readOnly) return;
         if (!content.trim()) {
-            error("Pesan tidak boleh kosong.");
+            error(t.match.chat.errors.empty);
             return;
         }
         setSending(true);
@@ -182,10 +181,10 @@ export function MatchChatThread({
                 setContent("");
                 setAttachments([]);
             } else {
-                error(data?.message || "Gagal mengirim pesan.");
+                error(data?.message || t.match.chat.errors.sendFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.common.networkError);
         } finally {
             setSending(false);
         }
@@ -203,7 +202,7 @@ export function MatchChatThread({
 
     const handleSaveEdit = async (messageId: string) => {
         if (!editingContent.trim()) {
-            error("Pesan tidak boleh kosong.");
+            error(t.match.chat.errors.empty);
             return;
         }
         try {
@@ -217,10 +216,10 @@ export function MatchChatThread({
                 setMessages((prev) => prev.map((item) => (item.id === messageId ? data.message : item)));
                 cancelEdit();
             } else {
-                error(data?.message || "Gagal mengubah pesan.");
+                error(data?.message || t.match.chat.errors.updateFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.common.networkError);
         }
     };
 
@@ -230,12 +229,12 @@ export function MatchChatThread({
             const data = await res.json();
             if (res.ok) {
                 setMessages((prev) => prev.filter((item) => item.id !== messageId));
-                success("Pesan dihapus.");
+                success(t.match.chat.success.deleted);
             } else {
-                error(data?.message || "Gagal menghapus pesan.");
+                error(data?.message || t.match.chat.errors.deleteFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.common.networkError);
         }
     };
 
@@ -256,9 +255,15 @@ export function MatchChatThread({
         () =>
             messages.map((message) => {
                 const attachmentsList = normalizeAttachments(message.attachmentUrls);
-                const senderName = message.sender.username || message.sender.fullName || "User";
+                const senderName = message.sender.username || message.sender.fullName || t.common.userFallback;
                 const isOwner = currentUserId && message.sender.id === currentUserId;
                 const canEdit = Boolean(isOwner && !readOnly && isWithinEditWindow(message.createdAt));
+                const timestamp = formatDateTime(message.createdAt, locale, {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                });
 
                 return (
                     <div key={message.id} className="rounded-box border border-base-300 bg-base-100/60 p-3">
@@ -268,8 +273,8 @@ export function MatchChatThread({
                                 {message.sender.role ? <span className="badge badge-ghost badge-xs">{message.sender.role}</span> : null}
                             </div>
                             <div className="text-xs text-base-content/50">
-                                {formatTimestamp(message.createdAt)}
-                                {message.editedAt ? " - edited" : ""}
+                                {timestamp}
+                                {message.editedAt ? t.match.chat.editedSuffix : ""}
                             </div>
                         </div>
                         {editingId === message.id ? (
@@ -281,10 +286,10 @@ export function MatchChatThread({
                                 />
                                 <div className="flex flex-wrap gap-2">
                                     <button type="button" className={`btn ${btnPrimary}`} onClick={() => handleSaveEdit(message.id)}>
-                                        Simpan
+                                        {t.common.save}
                                     </button>
                                     <button type="button" className={`btn ${btnOutline}`} onClick={cancelEdit}>
-                                        Batal
+                                        {t.common.cancel}
                                     </button>
                                 </div>
                             </div>
@@ -296,7 +301,11 @@ export function MatchChatThread({
                                 {attachmentsList.map((url) => (
                                     <a key={url} href={normalizeAssetUrl(url) || url} target="_blank" rel="noreferrer" className="block">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={normalizeAssetUrl(url) || url} alt="Lampiran chat" className="h-24 w-full rounded-box object-cover" />
+                                        <img
+                                            src={normalizeAssetUrl(url) || url}
+                                            alt={t.match.chat.attachmentAlt}
+                                            className="h-24 w-full rounded-box object-cover"
+                                        />
                                     </a>
                                 ))}
                             </div>
@@ -304,67 +313,67 @@ export function MatchChatThread({
                         {canEdit ? (
                             <div className="mt-3 flex flex-wrap gap-2 text-xs">
                                 <button type="button" className="text-primary" onClick={() => beginEdit(message)}>
-                                    Edit
+                                    {t.common.edit}
                                 </button>
                                 <button type="button" className="text-error" onClick={() => setDeleteTarget(message)}>
-                                    Hapus
+                                    {t.common.delete}
                                 </button>
                             </div>
                         ) : null}
                     </div>
                 );
             }),
-        [messages, currentUserId, readOnly, editingId, editingContent, now]
+        [messages, currentUserId, readOnly, editingId, editingContent, now, locale, t]
     );
 
     return (
         <div className={className}>
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                    <div className="text-sm font-semibold">Match Chat</div>
-                    <p className="text-xs text-base-content/50">Thread singkat untuk koordinasi jadwal & hasil.</p>
+                    <div className="text-sm font-semibold">{t.match.chat.title}</div>
+                    <p className="text-xs text-base-content/50">{t.match.chat.subtitle}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    {readOnly ? <span className="badge badge-ghost">Read-only</span> : null}
+                    {readOnly ? <span className="badge badge-ghost">{t.match.chat.readOnly}</span> : null}
                     <button type="button" className={`btn ${btnOutline}`} onClick={fetchMessages} disabled={loading}>
-                        Refresh
+                        {t.common.refresh}
                     </button>
                 </div>
             </div>
 
             <div className="mt-3 space-y-3">
                 {loading ? (
-                    <div className="text-xs text-base-content/50">Memuat pesan...</div>
+                    <div className="text-xs text-base-content/50">{t.match.chat.loading}</div>
                 ) : messageItems.length > 0 ? (
                     <div className="space-y-3">{messageItems}</div>
                 ) : (
                     <div className="rounded-box border border-dashed border-base-300 p-4 text-center text-xs text-base-content/50">
-                        Belum ada pesan.
+                        {t.match.chat.empty}
                     </div>
                 )}
             </div>
 
             <div className="mt-4 space-y-3">
-                <label className={labelCls}>Kirim Pesan</label>
+                <label className={labelCls}>{t.match.chat.sendLabel}</label>
                 <textarea
                     className={`${inputCls} min-h-[120px]`}
                     value={content}
                     onChange={(event) => setContent(event.target.value)}
                     disabled={readOnly || sending}
-                    placeholder={readOnly ? "Chat read-only (match sudah selesai)." : "Tulis pesan singkat untuk lawan/referee..."}
+                    placeholder={readOnly ? t.match.chat.placeholderReadOnly : t.match.chat.placeholder}
                 />
                 <AttachmentUploader value={attachments} onChange={setAttachments} disabled={readOnly || sending} />
                 <button type="button" className={`btn ${btnPrimary} w-full sm:w-auto`} onClick={handleSend} disabled={readOnly || sending}>
-                    {sending ? "Mengirim..." : "Kirim Pesan"}
+                    {sending ? t.match.chat.sending : t.match.chat.sendButton}
                 </button>
             </div>
 
             <ConfirmModal
                 open={Boolean(deleteTarget)}
-                title="Hapus pesan?"
-                message="Pesan dan lampiran yang terkait akan dihapus permanen."
-                confirmLabel="Hapus"
-                cancelLabel="Batal"
+                title={t.match.chat.confirmDeleteTitle}
+                message={t.match.chat.confirmDeleteMessage}
+                confirmLabel={t.common.delete}
+                cancelLabel={t.common.cancel}
                 danger
                 onCancel={() => setDeleteTarget(null)}
                 onConfirm={confirmDelete}

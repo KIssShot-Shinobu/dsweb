@@ -7,10 +7,12 @@ import { DashboardPageHeader, DashboardPageShell } from "@/components/dashboard/
 import { btnOutline } from "@/components/dashboard/form-styles";
 import { TournamentForm, buildTournamentPayload, getDefaultTournamentForm, type TournamentFormState } from "@/components/dashboard/tournament-form";
 import { useToast } from "@/components/dashboard/toast";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function TournamentCreateClient() {
     const router = useRouter();
     const { success, error } = useToast();
+    const { t } = useLocale();
     const [formData, setFormData] = useState<TournamentFormState>(() => getDefaultTournamentForm());
     const [uploadingImage, setUploadingImage] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -28,12 +30,12 @@ export default function TournamentCreateClient() {
             const data = await res.json();
 
             if (res.ok && data?.url) {
-                success("Gambar berhasil diupload.");
+                success(t.dashboard.tournamentCreate.success.upload);
                 return data.url as string;
             }
-            error(data?.message || "Gagal upload gambar.");
+            error(data?.message || t.dashboard.tournamentCreate.errors.uploadFailed);
         } catch {
-            error("Kesalahan jaringan saat upload.");
+            error(t.dashboard.tournamentCreate.errors.uploadNetwork);
         } finally {
             setUploadingImage(false);
         }
@@ -51,13 +53,13 @@ export default function TournamentCreateClient() {
             });
             const data = await res.json();
             if (res.ok) {
-                success("Turnamen berhasil dibuat.");
+                success(t.dashboard.tournamentCreate.success.created);
                 router.push(`/dashboard/tournaments/${data?.tournament?.id ?? ""}`);
             } else {
-                error(data.message || "Gagal membuat turnamen.");
+                error(data.message || t.dashboard.tournamentCreate.errors.createFailed);
             }
         } catch {
-            error("Kesalahan jaringan.");
+            error(t.dashboard.tournamentCreate.errors.network);
         } finally {
             setSubmitting(false);
         }
@@ -67,12 +69,12 @@ export default function TournamentCreateClient() {
         <DashboardPageShell>
             <div className="space-y-6">
                 <DashboardPageHeader
-                    kicker="Event Builder"
-                    title="Buat Turnamen Baru"
-                    description="Lengkapi detail turnamen sebelum dipublikasikan."
+                    kicker={t.dashboard.tournamentCreate.kicker}
+                    title={t.dashboard.tournamentCreate.title}
+                    description={t.dashboard.tournamentCreate.description}
                     actions={
                         <Link href="/dashboard/tournaments" className={btnOutline}>
-                            Kembali ke daftar
+                            {t.dashboard.tournamentCreate.backToList}
                         </Link>
                     }
                 />
@@ -83,7 +85,7 @@ export default function TournamentCreateClient() {
                     submitting={submitting}
                     onUploadImage={handleUploadImage}
                     onSubmit={handleCreate}
-                    submitLabel="Buat Turnamen"
+                    submitLabel={t.dashboard.tournamentCreate.submit}
                 />
             </div>
         </DashboardPageShell>

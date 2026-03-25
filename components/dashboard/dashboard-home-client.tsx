@@ -11,6 +11,8 @@ import { OperationsOverview } from "@/components/dashboard/operations-overview";
 import { DashboardPageHeader, DashboardPageShell } from "@/components/dashboard/page-shell";
 import { btnOutline, btnPrimary, dashboardStackCls } from "@/components/dashboard/form-styles";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useLocale } from "@/hooks/use-locale";
+import { formatCurrency } from "@/lib/i18n/format";
 
 const ADMIN_ROLES = ["ADMIN", "FOUNDER"];
 
@@ -94,6 +96,7 @@ const EMPTY_SUMMARY: DashboardSummary = {
 export default function DashboardPage() {
     const router = useRouter();
     const { user, loading: userLoading } = useCurrentUser();
+    const { locale, t } = useLocale();
     const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY);
     const [loading, setLoading] = useState(true);
 
@@ -129,11 +132,7 @@ export default function DashboardPage() {
         };
     }, [user]);
 
-    const formatCurrency = (amount: number) => {
-        if (amount >= 1000000) return `Rp ${(amount / 1000000).toFixed(1)}M`;
-        if (amount >= 1000) return `Rp ${(amount / 1000).toFixed(0)}K`;
-        return `Rp ${amount}`;
-    };
+    const formatCurrencyValue = (amount: number) => formatCurrency(amount, locale, "IDR");
 
     if (userLoading || !user || !ADMIN_ROLES.includes(user.role)) {
         return (
@@ -147,27 +146,27 @@ export default function DashboardPage() {
         <DashboardPageShell>
             <div className={dashboardStackCls}>
                 <DashboardPageHeader
-                    kicker="Operations Center"
-                    title="Dashboard"
-                    description="Kelola akun publik, member Duel Standby, roster team, tournament, treasury, dan aktivitas sistem dari satu workspace yang lebih ringkas dan konsisten."
+                    kicker={t.dashboard.home.kicker}
+                    title={t.dashboard.home.title}
+                    description={t.dashboard.home.description}
                     actions={(
                         <>
                             <a href="/dashboard/tournaments" className={btnPrimary}>
-                                + New Tournament
+                                {t.dashboard.home.actions.newTournament}
                             </a>
                             <a href="/dashboard/users" className={btnOutline}>
-                                Manage Users
+                                {t.dashboard.home.actions.manageUsers}
                             </a>
                         </>
                     )}
                 />
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                    <StatCard label="Active Users" value={loading ? "..." : summary.stats.totalActiveUsers} icon="U" change="Akun aktif siap ikut flow publik" primary />
-                    <StatCard label="Open Tournaments" value={loading ? "..." : summary.stats.openTournaments} icon="O" change="Registrasi dibuka" />
-                    <StatCard label="Active Tournaments" value={loading ? "..." : summary.stats.activeTournaments} icon="A" change="Sedang berjalan" />
-                    <StatCard label="Completed" value={loading ? "..." : summary.stats.completedTournaments} icon="C" change="Turnamen selesai" />
-                    <StatCard label="Treasury Balance" value={loading ? "..." : formatCurrency(summary.stats.treasuryBalance)} icon="Rp" change="Saldo kas guild" />
+                    <StatCard label={t.dashboard.home.stats.activeUsers} value={loading ? "..." : summary.stats.totalActiveUsers} icon="U" change={t.dashboard.home.stats.activeUsersMeta} primary />
+                    <StatCard label={t.dashboard.home.stats.openTournaments} value={loading ? "..." : summary.stats.openTournaments} icon="O" change={t.dashboard.home.stats.openTournamentsMeta} />
+                    <StatCard label={t.dashboard.home.stats.activeTournaments} value={loading ? "..." : summary.stats.activeTournaments} icon="A" change={t.dashboard.home.stats.activeTournamentsMeta} />
+                    <StatCard label={t.dashboard.home.stats.completed} value={loading ? "..." : summary.stats.completedTournaments} icon="C" change={t.dashboard.home.stats.completedMeta} />
+                    <StatCard label={t.dashboard.home.stats.treasuryBalance} value={loading ? "..." : formatCurrencyValue(summary.stats.treasuryBalance)} icon="Rp" change={t.dashboard.home.stats.treasuryBalanceMeta} />
                 </div>
 
                 <OperationsOverview stats={summary.userStats} loading={loading} />

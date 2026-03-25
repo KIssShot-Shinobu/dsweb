@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { BookOpen, ShieldCheck, Trophy, Users } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 interface AboutProps {
     activeUserCount: number;
@@ -9,11 +10,12 @@ interface AboutProps {
 }
 
 export function About({ activeUserCount, tournamentCount }: AboutProps) {
+    const { t } = useLocale();
     const cards = [
-        { title: "Komunitas Aktif", icon: Users, description: `${activeUserCount} duelist aktif berdiskusi strategi, berbagi replay, dan menjaga ritme komunitas setiap hari.`, tone: "text-primary bg-primary/10" },
-        { title: "Turnamen Terkelola", icon: Trophy, description: `${tournamentCount} turnamen dan event komunitas dengan alur pendaftaran, jadwal, dan informasi yang jelas.`, tone: "text-warning bg-warning/10" },
-        { title: "Insight Meta", icon: BookOpen, description: "Referensi deck, pembacaan meta, dan diskusi matchup yang relevan dengan scene kompetitif.", tone: "text-accent bg-accent/10" },
-        { title: "Main Sebagai Tim", icon: ShieldCheck, description: "Bangun chemistry bersama guild atau tim untuk duel yang lebih solid, terarah, dan kompetitif.", tone: "text-secondary bg-secondary/10" },
+        { title: t.home.aboutCards.activeTitle, icon: Users, description: t.home.aboutCards.activeBody(activeUserCount), tone: "text-primary bg-primary/10" },
+        { title: t.home.aboutCards.tournamentTitle, icon: Trophy, description: t.home.aboutCards.tournamentBody(tournamentCount), tone: "text-warning bg-warning/10" },
+        { title: t.home.aboutCards.metaTitle, icon: BookOpen, description: t.home.aboutCards.metaBody, tone: "text-accent bg-accent/10" },
+        { title: t.home.aboutCards.teamTitle, icon: ShieldCheck, description: t.home.aboutCards.teamBody, tone: "text-secondary bg-secondary/10" },
     ];
 
     return (
@@ -27,20 +29,20 @@ export function About({ activeUserCount, tournamentCount }: AboutProps) {
                     className="mb-12 flex items-center justify-center sm:mb-16"
                 >
                     <div className="stats stats-vertical w-full max-w-md border border-base-300 bg-base-100 shadow-lg sm:stats-horizontal">
-                        <div className="stat text-center">
-                            <div className="stat-value text-primary">{activeUserCount}</div>
-                            <div className="stat-title">Duelist Aktif</div>
+                            <div className="stat text-center">
+                                <div className="stat-value text-primary">{activeUserCount}</div>
+                            <div className="stat-title">{t.home.aboutStatsMembers}</div>
+                            </div>
+                            <div className="stat text-center">
+                                <div className="stat-value text-primary">{tournamentCount}</div>
+                            <div className="stat-title">{t.home.aboutStatsTournaments}</div>
+                            </div>
                         </div>
-                        <div className="stat text-center">
-                            <div className="stat-value text-primary">{tournamentCount}</div>
-                            <div className="stat-title">Turnamen</div>
-                        </div>
-                    </div>
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45 }} className="mb-12 text-center sm:mb-16">
-                    <h2 className="mb-4 bg-gradient-to-r from-primary via-warning to-base-content bg-clip-text text-2xl font-bold text-transparent sm:text-3xl md:text-5xl">Tempat duelists berkembang bersama</h2>
-                    <p className="mx-auto max-w-2xl text-sm leading-relaxed text-base-content/70 sm:text-base lg:text-lg">Duel Standby menghadirkan pengalaman komunitas yang lebih profesional: turnamen tertata, komunikasi yang aktif, dan ruang belajar yang membantu setiap pemain naik level.</p>
+                    <h2 className="mb-4 bg-gradient-to-r from-primary via-warning to-base-content bg-clip-text text-2xl font-bold text-transparent sm:text-3xl md:text-5xl">{t.home.aboutTitle}</h2>
+                    <p className="mx-auto max-w-2xl text-sm leading-relaxed text-base-content/70 sm:text-base lg:text-lg">{t.home.aboutSubtitle}</p>
                 </motion.div>
 
                 <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">

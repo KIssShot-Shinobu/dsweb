@@ -23,6 +23,8 @@ import {
     DashboardPanel,
 } from "@/components/dashboard/page-shell";
 import { FormSelect } from "@/components/dashboard/form-select";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDate } from "@/lib/i18n/format";
 
 interface TeamRow {
     id: string;
@@ -71,6 +73,7 @@ const emptyForm = {
 };
 
 export default function TeamsPage() {
+    const { locale } = useLocale();
     const { user } = useCurrentUser();
     const [teams, setTeams] = useState<TeamRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -374,7 +377,7 @@ export default function TeamsPage() {
                                                     Oleh {request.requester.fullName} (@{request.requester.username}) - {request.requester.email}
                                                 </div>
                                                 <div className="mt-2 text-[11px] text-base-content/45">
-                                                    Dikirim {new Date(request.createdAt).toLocaleDateString("id-ID")}
+                                                    Dikirim {formatDate(request.createdAt, locale)}
                                                 </div>
                                             </div>
 
@@ -525,10 +528,10 @@ export default function TeamsPage() {
                                             <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-base-content/50">
                                                 <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1">Roster {team.memberCount}</span>
                                                 <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1">
-                                                    Dibuat {new Date(team.createdAt).toLocaleDateString("id-ID")}
+                                                    Dibuat {formatDate(team.createdAt, locale)}
                                                 </span>
                                                 <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1">
-                                                    Update {new Date(team.updatedAt).toLocaleDateString("id-ID")}
+                                                    Update {formatDate(team.updatedAt, locale)}
                                                 </span>
                                             </div>
                                         </div>
