@@ -2,6 +2,7 @@
 
 import type { MatchComponentProps, ParticipantType } from "react-tournament-brackets";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
 const getPartyName = (party: ParticipantType, fallback: string) => party?.name || fallback;
 
@@ -28,6 +29,7 @@ export function BracketMatchCard({
     teamNameFallback,
     resultFallback,
 }: MatchComponentProps) {
+    const { t } = useLocale();
     const hasMatchAction = Boolean(match?.href) || typeof onMatchClick === "function";
 
     const handleMatchClick = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
@@ -106,7 +108,7 @@ export function BracketMatchCard({
                             )}
                             onClick={handleMatchClick}
                         >
-                            Match Details
+                            {t.match.detailsLink}
                         </a>
                     ) : null}
                 </div>

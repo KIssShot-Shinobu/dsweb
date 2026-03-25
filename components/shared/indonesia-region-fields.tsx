@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { SearchableCombobox, type SearchableOption } from "@/components/shared/searchable-combobox";
+import { useLocale } from "@/hooks/use-locale";
 
 export type RegionFormValue = {
     provinceCode: string;
@@ -33,6 +34,7 @@ function getFieldErrorMessage(input?: string | string[]) {
 }
 
 export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth" }: IndonesiaRegionFieldsProps) {
+    const { t } = useLocale();
     const [provinces, setProvinces] = useState<SearchableOption[]>([]);
     const [regencies, setRegencies] = useState<SearchableOption[]>([]);
     const [loadingProvinces, setLoadingProvinces] = useState(true);
@@ -45,7 +47,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
             .then(async (response) => {
                 const data = (await response.json()) as RegionApiResponse<{ provinces: Array<{ code: string; name: string }> }>;
                 if (!response.ok || !data.success) {
-                    throw new Error(data.message || "Gagal memuat daftar provinsi");
+                    throw new Error(data.message || t.profile.account.region.loadProvinceFailed);
                 }
                 if (!isMounted) return;
                 setProvinces(data.provinces.map((item) => ({ value: item.code, label: item.name })));
@@ -75,7 +77,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
             .then(async (response) => {
                 const data = (await response.json()) as RegionApiResponse<{ regencies: Array<{ code: string; name: string }> }>;
                 if (!response.ok || !data.success) {
-                    throw new Error(data.message || "Gagal memuat daftar kabupaten atau kota");
+                    throw new Error(data.message || t.profile.account.region.loadCityFailed);
                 }
                 if (!isMounted) return;
                 setRegencies(data.regencies.map((item) => ({ value: item.code, label: item.name })));
@@ -116,7 +118,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
     return (
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-4">
             <div>
-                <label className={labelClass}>Provinsi *</label>
+                <label className={labelClass}>{t.profile.account.region.provinceLabel} *</label>
                 <SearchableCombobox
                     value={value.provinceCode}
                     onChange={(option) =>
@@ -128,9 +130,9 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
                         })
                     }
                     options={provinces}
-                    placeholder={loadingProvinces ? "Memuat daftar provinsi..." : "Pilih provinsi"}
-                    searchPlaceholder="Cari provinsi"
-                    emptyMessage="Provinsi tidak ditemukan"
+                    placeholder={loadingProvinces ? t.profile.account.region.provinceLoading : t.profile.account.region.provincePlaceholder}
+                    searchPlaceholder={t.profile.account.region.provinceSearchPlaceholder}
+                    emptyMessage={t.profile.account.region.provinceEmpty}
                     disabled={loadingProvinces}
                     triggerClassName={triggerClass}
                     menuClassName={menuClass}
@@ -141,7 +143,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
             </div>
 
             <div>
-                <label className={labelClass}>Kabupaten / Kota *</label>
+                <label className={labelClass}>{t.profile.account.region.cityLabel} *</label>
                 <SearchableCombobox
                     value={value.cityCode}
                     onChange={(option) =>
@@ -153,9 +155,9 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
                         })
                     }
                     options={availableRegencies}
-                    placeholder={value.provinceCode ? "Pilih kabupaten atau kota" : "Pilih provinsi terlebih dahulu"}
-                    searchPlaceholder="Cari kabupaten atau kota"
-                    emptyMessage="Kabupaten atau kota tidak ditemukan"
+                    placeholder={value.provinceCode ? t.profile.account.region.cityPlaceholder : t.profile.account.region.cityPlaceholderDisabled}
+                    searchPlaceholder={t.profile.account.region.citySearchPlaceholder}
+                    emptyMessage={t.profile.account.region.cityEmpty}
                     disabled={!value.provinceCode}
                     triggerClassName={triggerClass}
                     menuClassName={menuClass}

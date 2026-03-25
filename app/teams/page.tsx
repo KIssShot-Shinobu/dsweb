@@ -5,10 +5,14 @@ import { getCurrentUser } from "@/lib/auth";
 import { createTeamService } from "@/lib/services/team.service";
 import { TeamDirectoryClient } from "@/components/teams/team-directory-client";
 import { prisma } from "@/lib/prisma";
+import { getServerLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 const teamService = createTeamService();
 
 export default async function TeamsPage() {
+    const locale = await getServerLocale();
+    const t = getDictionary(locale);
     const user = await getCurrentUser();
 
     const [teams, activeMembership] = await Promise.all([
@@ -33,11 +37,10 @@ export default async function TeamsPage() {
             <section className="border-b border-base-300 pt-28">
                 <div className="mx-auto max-w-[1400px] px-4 pb-14 sm:px-6 lg:px-8">
                     <h1 className="text-3xl font-black tracking-tight text-base-content sm:text-4xl md:text-5xl">
-                        Cari team aktif dan ajukan bergabung.
+                        {t.teams.public.directory.title}
                     </h1>
                     <p className="mt-4 max-w-3xl text-sm text-base-content/75 sm:text-base">
-                        Semua pengelolaan roster dilakukan di dashboard. Di sini fokus untuk melihat profil team dan mengajukan
-                        request join.
+                        {t.teams.public.directory.subtitle}
                     </p>
                 </div>
             </section>

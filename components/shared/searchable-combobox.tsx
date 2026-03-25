@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
 export type SearchableOption = {
     value: string;
@@ -30,19 +31,22 @@ export function SearchableCombobox({
     onChange,
     options,
     placeholder,
-    searchPlaceholder = "Cari opsi...",
-    emptyMessage = "Tidak ada hasil yang cocok",
+    searchPlaceholder,
+    emptyMessage,
     disabled = false,
     triggerClassName = "",
     menuClassName = "",
     inputClassName = "",
     optionClassName = "",
 }: SearchableComboboxProps) {
+    const { t } = useLocale();
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
     const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
     const rootRef = useRef<HTMLDivElement | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
+    const resolvedSearchPlaceholder = searchPlaceholder ?? t.common.searchPlaceholder;
+    const resolvedEmptyMessage = emptyMessage ?? t.common.emptySearch;
 
     const selected = useMemo(() => options.find((option) => option.value === value) || null, [options, value]);
     const filteredOptions = useMemo(() => {
@@ -109,7 +113,7 @@ export function SearchableCombobox({
                                   type="text"
                                   value={search}
                                   onChange={(event) => setSearch(event.target.value)}
-                                  placeholder={searchPlaceholder}
+                                  placeholder={resolvedSearchPlaceholder}
                                   className={cn("input input-bordered w-full bg-base-100 pl-9", inputClassName)}
                                   autoFocus
                               />
@@ -118,7 +122,7 @@ export function SearchableCombobox({
 
                       <div className="max-h-72 overflow-auto py-2">
                           {filteredOptions.length === 0 ? (
-                              <div className="px-4 py-3 text-sm text-base-content/55">{emptyMessage}</div>
+                              <div className="px-4 py-3 text-sm text-base-content/55">{resolvedEmptyMessage}</div>
                           ) : (
                               filteredOptions.map((option) => {
                                   const isSelected = option.value === value;

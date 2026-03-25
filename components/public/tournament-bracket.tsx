@@ -15,6 +15,7 @@ import {
     DEFAULT_PALETTE,
 } from "@/lib/bracket-theme";
 import { BracketMatchCard } from "@/components/bracket/bracket-match-card";
+import { useLocale } from "@/hooks/use-locale";
 
 type BracketParticipant = {
     id?: string;
@@ -54,7 +55,7 @@ type ViewerSize = {
 
 const shouldForwardProp = (prop: string) => !["won", "hovered", "highlighted"].includes(prop);
 
-function mapMatch(match: BracketMatch, roundName: string): MatchType {
+function mapMatch(match: BracketMatch, roundName: string, tbdLabel: string): MatchType {
     return {
         id: match.id,
         name: match.name,
@@ -65,7 +66,7 @@ function mapMatch(match: BracketMatch, roundName: string): MatchType {
         state: match.state ?? "SCHEDULED",
         participants: match.participants.map((participant, index) => ({
             id: participant.id ?? `${match.id}-${index}`,
-            name: participant.name ?? "TBD",
+            name: participant.name ?? tbdLabel,
             resultText: participant.resultText ?? "",
             isWinner: participant.isWinner ?? false,
             status: participant.id ? "PLAYED" : "NO_PARTY",
@@ -80,6 +81,7 @@ export function TournamentBracket({
     tournamentId: string;
     structure: "SINGLE_ELIM" | "DOUBLE_ELIM" | "SWISS";
 }) {
+    const { t } = useLocale();
     const [data, setData] = useState<BracketRound[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -105,12 +107,12 @@ export function TournamentBracket({
                 if (payload?.success) {
                     setData(payload.rounds || []);
                 } else {
-                    setError("Gagal memuat bracket.");
+                    setError(t.bracket.error);
                 }
             })
             .catch(() => {
                 if (!active) return;
-                setError("Gagal memuat bracket.");
+                setError(t.bracket.error);
             })
             .finally(() => {
                 if (!active) return;
@@ -119,7 +121,7 @@ export function TournamentBracket({
         return () => {
             active = false;
         };
-    }, [tournamentId]);
+    }, [tournamentId, t]);
 
     useEffect(() => {
         const updateSize = () => {
@@ -145,7 +147,7 @@ export function TournamentBracket({
         const lower: MatchType[] = [];
 
         data.forEach((round) => {
-            const mapped = round.matches.map((match) => mapMatch(match, round.name));
+            const mapped = round.matches.map((match) => mapMatch(match, round.name, t.match.tbd));
             if (round.roundType === "LOWER") {
                 lower.push(...mapped);
             } else {
@@ -245,7 +247,7 @@ export function TournamentBracket({
     if (loading) {
         return (
             <div className="rounded-box border border-base-300 bg-base-200/40 p-6 text-sm text-base-content/60">
-                Memuat bracket...
+                {t.bracket.loading}
             </div>
         );
     }
@@ -261,7 +263,7 @@ export function TournamentBracket({
     if (data.length === 0) {
         return (
             <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 p-6 text-sm text-base-content/60">
-                Bracket belum dibuat.
+                {t.bracket.empty}
             </div>
         );
     }
@@ -271,24 +273,24 @@ export function TournamentBracket({
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {data.map((round) => (
                     <div key={round.id} className="rounded-box border border-base-300 bg-base-200/40 p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <div className="text-xs font-bold uppercase tracking-[0.22em] text-base-content/60">
-                                {round.name}
+                            <div className="mb-3 flex items-center justify-between">
+                                <div className="text-xs font-bold uppercase tracking-[0.22em] text-base-content/60">
+                                    {round.name}
+                                </div>
+                                <span className="badge badge-outline text-[10px]">{t.bracket.matchesLabel(round.matches.length)}</span>
                             </div>
-                            <span className="badge badge-outline text-[10px]">{round.matches.length} match</span>
-                        </div>
-                        <div className="space-y-3">
-                            {round.matches.map((match) => (
-                                <div key={match.id} className="rounded-box border border-base-300 bg-base-100/70 p-3">
-                                    <div className="text-[11px] text-base-content/50">{match.name || "Match"}</div>
-                                    <div className="mt-2 space-y-1 text-sm">
-                                        {match.participants.map((participant, index) => (
-                                            <div key={`${match.id}-${index}`} className="flex items-center justify-between text-base-content/70">
-                                                <span className="font-semibold">{participant.name || "TBD"}</span>
-                                                <span className="text-xs font-semibold">{participant.resultText || "-"}</span>
-                                            </div>
-                                        ))}
-                                    </div>
+                            <div className="space-y-3">
+                                {round.matches.map((match) => (
+                                    <div key={match.id} className="rounded-box border border-base-300 bg-base-100/70 p-3">
+                                        <div className="text-[11px] text-base-content/50">{match.name || t.bracket.matchLabel}</div>
+                                        <div className="mt-2 space-y-1 text-sm">
+                                            {match.participants.map((participant, index) => (
+                                                <div key={`${match.id}-${index}`} className="flex items-center justify-between text-base-content/70">
+                                                    <span className="font-semibold">{participant.name || t.match.tbd}</span>
+                                                    <span className="text-xs font-semibold">{participant.resultText || "-"}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                 </div>
                             ))}
                         </div>
@@ -302,9 +304,9 @@ export function TournamentBracket({
         return (
             <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-box border border-base-300 bg-base-200/40 p-3 text-xs text-base-content/60">
-                    <div>Mode mobile aktif. Gunakan daftar match atau buka tampilan bracket.</div>
+                    <div>{t.bracket.mobileNotice}</div>
                     <button className="btn btn-xs btn-outline" onClick={() => setIsFullscreen(true)}>
-                        Lihat Bracket
+                        {t.bracket.viewBracket}
                     </button>
                 </div>
                 {data.map((round) => (
@@ -313,16 +315,16 @@ export function TournamentBracket({
                             <div className="text-xs font-bold uppercase tracking-[0.22em] text-base-content/60">
                                 {round.name}
                             </div>
-                            <span className="badge badge-outline text-[10px]">{round.matches.length} match</span>
+                            <span className="badge badge-outline text-[10px]">{t.bracket.matchesLabel(round.matches.length)}</span>
                         </div>
                         <div className="space-y-3">
                             {round.matches.map((match) => (
                                 <div key={match.id} className="rounded-box border border-base-300 bg-base-100/70 p-3">
-                                    <div className="text-[11px] text-base-content/50">{match.name || "Match"}</div>
+                                    <div className="text-[11px] text-base-content/50">{match.name || t.bracket.matchLabel}</div>
                                     <div className="mt-2 space-y-1 text-sm">
                                         {match.participants.map((participant, index) => (
                                             <div key={`${match.id}-${index}`} className="flex items-center justify-between text-base-content/70">
-                                                <span className="font-semibold">{participant.name || "TBD"}</span>
+                                                <span className="font-semibold">{participant.name || t.match.tbd}</span>
                                                 <span className="text-xs font-semibold">{participant.resultText || "-"}</span>
                                             </div>
                                         ))}
@@ -337,8 +339,8 @@ export function TournamentBracket({
                     <div className="modal modal-open">
                         <div className="modal-box max-w-6xl border border-base-300 bg-base-100">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold">Bracket Fullscreen</h3>
-                                <button className="btn btn-sm btn-ghost" onClick={() => setIsFullscreen(false)}>Close</button>
+                                <h3 className="text-lg font-bold">{t.bracket.fullscreenTitle}</h3>
+                                <button className="btn btn-sm btn-ghost" onClick={() => setIsFullscreen(false)}>{t.common.close}</button>
                             </div>
                             <div className="mt-4">
                                 {renderBracket({
@@ -357,12 +359,12 @@ export function TournamentBracket({
     return (
         <div ref={containerRef} className="mx-auto w-full max-w-[1200px] overflow-hidden rounded-box border border-base-300 bg-base-100 shadow-lg">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-base-300 bg-base-200/60 px-4 py-3">
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/60">Bracket View</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-base-content/60">{t.bracket.headerTitle}</div>
                 <div className="flex flex-wrap items-center gap-2">
                     <button className="btn btn-sm btn-ghost" onClick={zoomOut}>-</button>
-                    <button className="btn btn-sm btn-ghost" onClick={resetZoom}>Reset</button>
+                    <button className="btn btn-sm btn-ghost" onClick={resetZoom}>{t.bracket.reset}</button>
                     <button className="btn btn-sm btn-ghost" onClick={zoomIn}>+</button>
-                    <button className="btn btn-sm btn-outline" onClick={() => setIsFullscreen(true)}>Fullscreen</button>
+                    <button className="btn btn-sm btn-outline" onClick={() => setIsFullscreen(true)}>{t.bracket.fullscreen}</button>
                 </div>
             </div>
             <div className="bg-base-100/70 p-4">
@@ -375,8 +377,8 @@ export function TournamentBracket({
                 <div className="modal modal-open">
                     <div className="modal-box max-w-6xl border border-base-300 bg-base-100">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold">Bracket Fullscreen</h3>
-                            <button className="btn btn-sm btn-ghost" onClick={() => setIsFullscreen(false)}>Close</button>
+                            <h3 className="text-lg font-bold">{t.bracket.fullscreenTitle}</h3>
+                            <button className="btn btn-sm btn-ghost" onClick={() => setIsFullscreen(false)}>{t.common.close}</button>
                         </div>
                         <div className="mt-4">
                             {renderBracket({

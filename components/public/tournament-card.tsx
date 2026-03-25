@@ -90,7 +90,7 @@ export function PublicTournamentCard({ tournament, compact = false }: Tournament
                         <div className="text-xs font-semibold text-base-content sm:text-sm">{formatSchedule(tournament.startAt, locale, compact)}</div>
                     </div>
                     <div className="rounded-box border border-base-300 bg-base-200/60 p-4">
-                        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-base-content/50">Prize Pool</div>
+                        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-base-content/50">{t.tournament.prizePoolLabel}</div>
                         <div className="text-xs font-semibold text-primary sm:text-sm">{formatCurrency(tournament.prizePool, locale)}</div>
                     </div>
                 </div>

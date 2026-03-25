@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useToast } from "@/components/dashboard/toast";
+import { useLocale } from "@/hooks/use-locale";
 
 export function TeamDetailActions({
     teamId,
@@ -19,6 +20,7 @@ export function TeamDetailActions({
     hasPendingJoin: boolean;
 }) {
     const router = useRouter();
+    const { t } = useLocale();
     const [isPending, startTransition] = useTransition();
     const { success, error: toastError, info } = useToast();
 
@@ -31,12 +33,12 @@ export function TeamDetailActions({
         const data = await response.json();
 
         if (!response.ok) {
-            toastError(data.error || data.message || "Aksi gagal diproses");
+            toastError(data.error || data.message || t.teams.public.actions.actionFailed);
             return false;
         }
 
         if (!successRedirect) {
-            success("Aksi berhasil diproses.");
+            success(t.teams.public.actions.actionSuccess);
         }
         startTransition(() => {
             if (successRedirect) {
@@ -53,7 +55,7 @@ export function TeamDetailActions({
         <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
                 <Link href="/teams" className="btn btn-outline btn-sm">
-                    Kembali ke Teams
+                    {t.teams.public.actions.backToTeams}
                 </Link>
                 {pendingInviteId ? (
                     <>
@@ -63,7 +65,7 @@ export function TeamDetailActions({
                             onClick={() => runAction("/api/team/invite/accept", { inviteId: pendingInviteId })}
                             disabled={isPending || hasActiveTeam}
                         >
-                            Terima Invite
+                            {t.teams.public.actions.acceptInvite}
                         </button>
                         <button
                             type="button"
@@ -71,14 +73,14 @@ export function TeamDetailActions({
                             onClick={() => runAction("/api/team/invite/decline", { inviteId: pendingInviteId })}
                             disabled={isPending}
                         >
-                            Tolak Invite
+                            {t.teams.public.actions.declineInvite}
                         </button>
                     </>
                 ) : null}
                 {!isMember && !pendingInviteId && !hasActiveTeam ? (
                     hasPendingJoin ? (
                         <button type="button" className="btn btn-outline btn-sm" disabled>
-                            Menunggu Persetujuan
+                            {t.teams.public.actions.pendingApproval}
                         </button>
                     ) : (
                         <button
@@ -87,12 +89,12 @@ export function TeamDetailActions({
                             onClick={async () => {
                                 const ok = await runAction("/api/team/request-join", { teamId });
                                 if (ok) {
-                                    info("Request join dikirim. Menunggu persetujuan admin team.");
+                                    info(t.teams.public.actions.joinPendingInfo);
                                 }
                             }}
                             disabled={isPending}
                         >
-                            Request Join
+                            {t.teams.public.actions.requestJoin}
                         </button>
                     )
                 ) : null}

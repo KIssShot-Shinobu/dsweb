@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { getCroppedBlob } from "@/lib/image-crop";
+import { useLocale } from "@/hooks/use-locale";
 
 type ImageCropModalProps = {
     open: boolean;
@@ -17,12 +18,13 @@ type ImageCropModalProps = {
 export function ImageCropModal({
     open,
     imageSrc,
-    title = "Sesuaikan Gambar",
+    title,
     aspect = 1,
     outputType = "image/jpeg",
     onCancel,
     onComplete,
 }: ImageCropModalProps) {
+    const { t } = useLocale();
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [croppedArea, setCroppedArea] = useState<Area | null>(null);
@@ -34,6 +36,7 @@ export function ImageCropModal({
 
     const canRender = open && Boolean(imageSrc);
     const backdropCls = useMemo(() => (open ? "modal modal-open" : "modal"), [open]);
+    const resolvedTitle = title ?? t.common.cropImageTitle;
 
     const handleSave = async () => {
         if (!imageSrc || !croppedArea) return;
@@ -52,9 +55,9 @@ export function ImageCropModal({
         <div className={backdropCls}>
             <div className="modal-box max-w-3xl border border-base-300 bg-base-100">
                 <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-lg font-bold">{title}</h3>
+                    <h3 className="text-lg font-bold">{resolvedTitle}</h3>
                     <button type="button" className="btn btn-sm btn-ghost" onClick={onCancel} disabled={saving}>
-                        Close
+                        {t.common.close}
                     </button>
                 </div>
                 <div className="relative h-[360px] w-full overflow-hidden rounded-box border border-base-300 bg-base-200/40">
@@ -70,7 +73,7 @@ export function ImageCropModal({
                 </div>
                 <div className="mt-4 space-y-3">
                     <div className="flex items-center justify-between gap-4 text-sm">
-                        <span className="font-semibold text-base-content/70">Zoom</span>
+                        <span className="font-semibold text-base-content/70">{t.common.zoom}</span>
                         <input
                             type="range"
                             min={1}
@@ -83,10 +86,10 @@ export function ImageCropModal({
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
                         <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={saving}>
-                            Batal
+                            {t.common.cancel}
                         </button>
                         <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                            {saving ? "Menyimpan..." : "Gunakan Gambar"}
+                            {saving ? t.common.saving : t.common.useImage}
                         </button>
                     </div>
                 </div>
@@ -95,4 +98,3 @@ export function ImageCropModal({
         </div>
     );
 }
-
