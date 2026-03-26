@@ -78,7 +78,7 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
     }, [tournamentId, locale]);
 
     return (
-        <div className="drawer lg:drawer-open">
+        <div className="drawer 2xl:drawer-open">
             <input
                 id="tournament-admin-drawer"
                 type="checkbox"
@@ -86,11 +86,11 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
                 checked={drawerOpen}
                 onChange={(event) => setDrawerOpen(event.target.checked)}
             />
-            <div className="drawer-content flex min-h-screen flex-col bg-base-200/40">
+            <div className="drawer-content flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-base-200/40">
                 <header className="sticky top-0 z-40 border-b border-base-300 bg-base-100/95 px-4 py-4 shadow-sm backdrop-blur sm:px-5 lg:px-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                            <label htmlFor="tournament-admin-drawer" className={`${btnOutline} btn-sm lg:hidden`}>
+                            <label htmlFor="tournament-admin-drawer" className={`${btnOutline} btn-sm 2xl:hidden`}>
                                 {t.dashboard.tournamentAdminShell.menu}
                             </label>
                             <div className="space-y-1">
@@ -104,17 +104,17 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
                         </Link>
                     </div>
                 </header>
-                <main className="flex-1 p-4 sm:p-5 lg:p-6">{children}</main>
+                <main className="flex-1 min-w-0 overflow-x-hidden p-4 sm:p-5 lg:p-6">{children}</main>
             </div>
             <div className="drawer-side z-50">
-                <label htmlFor="tournament-admin-drawer" aria-label={t.common.close} className="drawer-overlay bg-black/40 lg:hidden" />
-                <aside className="min-h-full w-72 border-r border-base-300 bg-base-100/95 backdrop-blur lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
+                <label htmlFor="tournament-admin-drawer" aria-label={t.common.close} className="drawer-overlay bg-black/40 2xl:hidden" />
+                <aside className="min-h-full w-64 border-r border-base-300 bg-base-100/95 backdrop-blur 2xl:sticky 2xl:top-0 2xl:h-screen 2xl:overflow-y-auto">
                     <div className="flex items-center justify-between border-b border-base-300 px-5 py-4">
                         <div>
                             <div className="text-xs font-semibold uppercase tracking-[0.28em] text-base-content/45">{t.dashboard.tournamentAdminShell.panelLabel}</div>
                             <div className="text-base font-black">{t.dashboard.tournamentAdminShell.panelTitle}</div>
                         </div>
-                        <button className="btn btn-ghost btn-sm btn-circle lg:hidden" onClick={() => setDrawerOpen(false)}>
+                        <button className="btn btn-ghost btn-sm btn-circle 2xl:hidden" onClick={() => setDrawerOpen(false)}>
                             <X className="h-4 w-4" />
                         </button>
                     </div>

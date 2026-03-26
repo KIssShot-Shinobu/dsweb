@@ -216,7 +216,7 @@ export function TournamentMatchesClient({ tournamentId }: { tournamentId: string
                             description={t.dashboard.matches.emptyDescription}
                         />
                     ) : (
-                        <div className="overflow-x-auto">
+                        <div className="min-w-0 overflow-x-auto">
                             <table className="table">
                                 <thead>
                                     <tr>

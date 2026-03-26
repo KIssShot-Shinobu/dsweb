@@ -493,7 +493,7 @@ export function TournamentParticipantsClient({
                             description={t.dashboard.participants.emptyDescription}
                         />
                     ) : (
-                        <div className="overflow-x-auto">
+                        <div className="min-w-0 overflow-x-auto">
                             <table className="table">
                                 <thead>
                                     <tr>
