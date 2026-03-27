@@ -119,7 +119,7 @@ export function Sidebar() {
                         onClick={toggleCollapsed}
                         aria-label={isCollapsed ? t.dashboard.header.expandSidebar : t.dashboard.header.collapseSidebar}
                         title={isCollapsed ? t.dashboard.header.expandSidebar : t.dashboard.header.collapseSidebar}
-                        className="btn btn-circle btn-sm absolute right-2 top-1/2 z-10 hidden -translate-y-1/2 border border-primary/40 bg-primary/90 text-primary-content shadow-xl transition hover:bg-primary lg:flex"
+                        className="btn btn-circle btn-sm absolute -right-3 top-1/2 z-10 hidden -translate-y-1/2 border border-primary/40 bg-primary/90 text-primary-content shadow-xl transition hover:bg-primary lg:flex"
                     >
                         {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                     </button>
