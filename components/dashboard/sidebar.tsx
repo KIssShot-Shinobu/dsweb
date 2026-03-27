@@ -16,8 +16,8 @@ import {
     UserCheck,
     Wallet,
     X,
-    PanelLeftClose,
-    PanelLeftOpen,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -121,7 +121,7 @@ export function Sidebar() {
                         title={isCollapsed ? t.dashboard.header.expandSidebar : t.dashboard.header.collapseSidebar}
                         className="btn btn-circle btn-sm absolute -right-4 top-1/2 hidden -translate-y-1/2 border border-base-300 bg-base-100 text-base-content shadow-lg lg:flex"
                     >
-                        {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+                        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                     </button>
                     <div className="flex h-16 items-center justify-between border-b border-base-300 px-5">
                         <div className={`flex items-center gap-3 ${isCollapsed ? "lg:justify-center lg:w-full" : ""}`}>
@@ -152,6 +152,8 @@ export function Sidebar() {
                                             const isActive = item.href === bestMatch || (item.href === "/dashboard" && pathname === "/dashboard");
                                             const ItemIcon = ICONS[item.icon];
 
+                                            const tooltipCls = isCollapsed ? "lg:tooltip lg:tooltip-right" : "";
+
                                             return (
                                                 <li key={item.href}>
                                                     <Link
@@ -159,7 +161,8 @@ export function Sidebar() {
                                                         onClick={close}
                                                         title={item.name}
                                                         aria-label={item.name}
-                                                        className={`${isActive ? "active !bg-primary !text-primary-content" : ""} ${isCollapsed ? "lg:justify-center" : ""}`}
+                                                        data-tip={item.name}
+                                                        className={`${tooltipCls} ${isActive ? "active !bg-primary !text-primary-content" : ""} ${isCollapsed ? "lg:justify-center" : ""}`}
                                                     >
                                                         <ItemIcon className="h-4 w-4" />
                                                         <span className={isCollapsed ? "lg:hidden" : ""}>{item.name}</span>
@@ -182,7 +185,8 @@ export function Sidebar() {
                                     }}
                                     title={t.dashboard.sidebar.footer.logout}
                                     aria-label={t.dashboard.sidebar.footer.logout}
-                                    className={`text-error ${isCollapsed ? "lg:justify-center" : ""}`}
+                                    data-tip={t.dashboard.sidebar.footer.logout}
+                                    className={`${isCollapsed ? "lg:tooltip lg:tooltip-right lg:justify-center" : ""} text-error`}
                                 >
                                     <LogOut className="h-4 w-4" />
                                     <span className={isCollapsed ? "lg:hidden" : ""}>{t.dashboard.sidebar.footer.logout}</span>
@@ -194,7 +198,8 @@ export function Sidebar() {
                                     onClick={close}
                                     title={t.dashboard.sidebar.footer.backHome}
                                     aria-label={t.dashboard.sidebar.footer.backHome}
-                                    className={isCollapsed ? "lg:justify-center" : ""}
+                                    data-tip={t.dashboard.sidebar.footer.backHome}
+                                    className={isCollapsed ? "lg:tooltip lg:tooltip-right lg:justify-center" : ""}
                                 >
                                     <Home className="h-4 w-4" />
                                     <span className={isCollapsed ? "lg:hidden" : ""}>{t.dashboard.sidebar.footer.backHome}</span>
