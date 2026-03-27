@@ -16,6 +16,8 @@ import {
     UserCheck,
     Wallet,
     X,
+    PanelLeftClose,
+    PanelLeftOpen,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -53,7 +55,7 @@ const ROLE_LEVEL: Record<string, number> = {
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { isOpen, isCollapsed, close } = useSidebar();
+    const { isOpen, isCollapsed, close, toggleCollapsed } = useSidebar();
     const { user } = useCurrentUser();
     const { t } = useLocale();
 
@@ -111,7 +113,16 @@ export function Sidebar() {
             <aside
                 className={`min-h-full w-80 bg-base-100 text-base-content shadow-2xl transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:shadow-none ${isCollapsed ? "lg:w-20" : "lg:w-72"} ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
             >
-                <div className="flex h-full flex-col border-r border-base-300 bg-base-100/95 backdrop-blur-xl lg:overflow-y-auto">
+                <div className="relative flex h-full flex-col border-r border-base-300 bg-base-100/95 backdrop-blur-xl lg:overflow-y-auto">
+                    <button
+                        type="button"
+                        onClick={toggleCollapsed}
+                        aria-label={isCollapsed ? t.dashboard.header.expandSidebar : t.dashboard.header.collapseSidebar}
+                        title={isCollapsed ? t.dashboard.header.expandSidebar : t.dashboard.header.collapseSidebar}
+                        className="btn btn-circle btn-sm absolute -right-4 top-1/2 hidden -translate-y-1/2 border border-base-300 bg-base-100 text-base-content shadow-lg lg:flex"
+                    >
+                        {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+                    </button>
                     <div className="flex h-16 items-center justify-between border-b border-base-300 px-5">
                         <div className={`flex items-center gap-3 ${isCollapsed ? "lg:justify-center lg:w-full" : ""}`}>
                             <div className="badge badge-primary h-10 w-10 rounded-2xl border-0 text-base font-black text-primary-content">DS</div>

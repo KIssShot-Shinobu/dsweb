@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { useSidebar } from "@/context/SidebarContext";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -20,7 +20,7 @@ function getInitials(name: string) {
 }
 
 export function Header() {
-    const { toggle, isCollapsed, toggleCollapsed } = useSidebar();
+    const { toggle } = useSidebar();
     const { user } = useCurrentUser();
     const { t } = useLocale();
     const displayName = user?.username || user?.fullName || t.dashboard.header.userFallback;
@@ -32,14 +32,6 @@ export function Header() {
                 <div className="flex min-w-0 items-center gap-3">
                     <button onClick={toggle} className="btn btn-ghost btn-circle lg:hidden" aria-label={t.dashboard.header.openMenu}>
                         <Menu className="h-5 w-5" />
-                    </button>
-                    <button
-                        onClick={toggleCollapsed}
-                        className="btn btn-ghost btn-circle hidden lg:inline-flex"
-                        aria-label={isCollapsed ? t.dashboard.header.expandSidebar : t.dashboard.header.collapseSidebar}
-                        title={isCollapsed ? t.dashboard.header.expandSidebar : t.dashboard.header.collapseSidebar}
-                    >
-                        {isCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
                     </button>
 
                     <label className="input input-bordered hidden w-full max-w-sm items-center gap-2 bg-base-100 sm:flex">
