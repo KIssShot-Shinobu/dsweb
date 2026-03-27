@@ -1061,6 +1061,8 @@ const id = {
         },
         header: {
             openMenu: "Buka menu",
+            collapseSidebar: "Sembunyikan sidebar",
+            expandSidebar: "Tampilkan sidebar",
             searchPlaceholder: "Cari halaman dashboard...",
             userFallback: "User Dashboard",
             loginRequired: "login diperlukan",
@@ -3713,6 +3715,8 @@ const en: typeof id = {
         },
         header: {
             openMenu: "Open menu",
+            collapseSidebar: "Collapse sidebar",
+            expandSidebar: "Expand sidebar",
             searchPlaceholder: "Search dashboard pages...",
             userFallback: "Dashboard User",
             loginRequired: "login required",
