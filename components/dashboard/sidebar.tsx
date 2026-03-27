@@ -119,7 +119,7 @@ export function Sidebar() {
                         onClick={toggleCollapsed}
                         aria-label={isCollapsed ? t.dashboard.header.expandSidebar : t.dashboard.header.collapseSidebar}
                         title={isCollapsed ? t.dashboard.header.expandSidebar : t.dashboard.header.collapseSidebar}
-                        className="btn btn-circle btn-sm absolute -right-4 top-1/2 hidden -translate-y-1/2 border border-base-300 bg-base-100 text-base-content shadow-lg lg:flex"
+                        className="btn btn-circle btn-sm absolute right-2 top-1/2 z-10 hidden -translate-y-1/2 border border-base-300 bg-base-100 text-base-content shadow-lg lg:flex"
                     >
                         {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                     </button>
@@ -152,7 +152,7 @@ export function Sidebar() {
                                             const isActive = item.href === bestMatch || (item.href === "/dashboard" && pathname === "/dashboard");
                                             const ItemIcon = ICONS[item.icon];
 
-                                            const tooltipCls = isCollapsed ? "lg:tooltip lg:tooltip-right" : "";
+                                            const tooltipCls = isCollapsed ? "tooltip tooltip-right" : "";
 
                                             return (
                                                 <li key={item.href}>
@@ -161,7 +161,7 @@ export function Sidebar() {
                                                         onClick={close}
                                                         title={item.name}
                                                         aria-label={item.name}
-                                                        data-tip={item.name}
+                                                        data-tip={isCollapsed ? item.name : undefined}
                                                         className={`${tooltipCls} ${isActive ? "active !bg-primary !text-primary-content" : ""} ${isCollapsed ? "lg:justify-center" : ""}`}
                                                     >
                                                         <ItemIcon className="h-4 w-4" />
@@ -185,8 +185,8 @@ export function Sidebar() {
                                     }}
                                     title={t.dashboard.sidebar.footer.logout}
                                     aria-label={t.dashboard.sidebar.footer.logout}
-                                    data-tip={t.dashboard.sidebar.footer.logout}
-                                    className={`${isCollapsed ? "lg:tooltip lg:tooltip-right lg:justify-center" : ""} text-error`}
+                                    data-tip={isCollapsed ? t.dashboard.sidebar.footer.logout : undefined}
+                                    className={`${isCollapsed ? "tooltip tooltip-right lg:justify-center" : ""} text-error`}
                                 >
                                     <LogOut className="h-4 w-4" />
                                     <span className={isCollapsed ? "lg:hidden" : ""}>{t.dashboard.sidebar.footer.logout}</span>
@@ -198,8 +198,8 @@ export function Sidebar() {
                                     onClick={close}
                                     title={t.dashboard.sidebar.footer.backHome}
                                     aria-label={t.dashboard.sidebar.footer.backHome}
-                                    data-tip={t.dashboard.sidebar.footer.backHome}
-                                    className={isCollapsed ? "lg:tooltip lg:tooltip-right lg:justify-center" : ""}
+                                    data-tip={isCollapsed ? t.dashboard.sidebar.footer.backHome : undefined}
+                                    className={isCollapsed ? "tooltip tooltip-right lg:justify-center" : ""}
                                 >
                                     <Home className="h-4 w-4" />
                                     <span className={isCollapsed ? "lg:hidden" : ""}>{t.dashboard.sidebar.footer.backHome}</span>
