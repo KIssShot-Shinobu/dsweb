@@ -120,8 +120,13 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
                     </div>
                     <nav className="px-3 py-4">
                         <ul className="menu gap-2 rounded-box bg-base-200/40 p-2.5">
-                            {navLinks.map((item) => {
-                                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                            {(() => {
+                                const bestMatch = navLinks
+                                    .filter((link) => pathname === link.href || pathname.startsWith(link.href + "/"))
+                                    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
+                                return navLinks.map((item) => {
+                                    const isActive = item.href === bestMatch;
                                 const Icon = item.icon;
                                 return (
                                     <li key={item.href}>
@@ -131,7 +136,8 @@ export function TournamentAdminShell({ tournamentId, canManage, canReferee, chil
                                         </Link>
                                     </li>
                                 );
-                            })}
+                                });
+                            })()}
                         </ul>
                     </nav>
                 </aside>
