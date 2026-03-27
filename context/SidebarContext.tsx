@@ -26,8 +26,17 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (typeof window === "undefined") return;
         const stored = window.localStorage.getItem(storageKey);
-        if (stored === "1") setIsCollapsed(true);
-        if (stored === "0") setIsCollapsed(false);
+        if (stored === "1") {
+            setIsCollapsed(true);
+            return;
+        }
+        if (stored === "0") {
+            setIsCollapsed(false);
+            return;
+        }
+        const shouldCollapse = window.innerWidth < 1280;
+        setIsCollapsed(shouldCollapse);
+        window.localStorage.setItem(storageKey, shouldCollapse ? "1" : "0");
     }, []);
 
     const setCollapsed = (value: boolean) => {
