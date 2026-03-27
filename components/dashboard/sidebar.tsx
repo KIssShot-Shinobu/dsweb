@@ -113,7 +113,7 @@ export function Sidebar() {
             <aside
                 className={`min-h-full w-80 bg-base-100 text-base-content shadow-2xl transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:shadow-none ${isCollapsed ? "lg:w-20" : "lg:w-72"} ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
             >
-                <div className="relative flex h-full flex-col border-r border-base-300 bg-base-100/95 backdrop-blur-xl lg:overflow-y-auto">
+                <div className="relative flex h-full flex-col border-r border-base-300 bg-base-100/95 backdrop-blur-xl lg:overflow-y-auto lg:overflow-x-visible">
                     <button
                         type="button"
                         onClick={toggleCollapsed}
@@ -136,7 +136,7 @@ export function Sidebar() {
                         </button>
                     </div>
 
-                    <nav className={`flex-1 overflow-y-auto px-3 py-4 ${isCollapsed ? "lg:px-2" : ""}`}>
+                    <nav className={`flex-1 overflow-y-auto overflow-x-visible px-3 py-4 ${isCollapsed ? "lg:px-2" : ""}`}>
                         {allMenu.map((section) => {
                             if (section.minRole && !canAccess(section.minRole)) return null;
                             const visibleItems = section.items.filter((item) => canAccess(item.minRole));
@@ -147,12 +147,10 @@ export function Sidebar() {
                                     <div className={`mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.28em] text-base-content/45 ${isCollapsed ? "lg:hidden" : ""}`}>
                                         {section.section}
                                     </div>
-                                    <ul className={`menu gap-2 rounded-box bg-base-200/40 p-2.5 ${isCollapsed ? "lg:p-2" : ""}`}>
+                                    <ul className={`menu gap-2 rounded-box bg-base-200/40 p-2.5 overflow-visible ${isCollapsed ? "lg:p-2" : ""}`}>
                                         {visibleItems.map((item) => {
                                             const isActive = item.href === bestMatch || (item.href === "/dashboard" && pathname === "/dashboard");
                                             const ItemIcon = ICONS[item.icon];
-
-                                            const tooltipCls = isCollapsed ? "tooltip tooltip-right" : "";
 
                                             return (
                                                 <li key={item.href}>
@@ -161,8 +159,7 @@ export function Sidebar() {
                                                         onClick={close}
                                                         title={item.name}
                                                         aria-label={item.name}
-                                                        data-tip={isCollapsed ? item.name : undefined}
-                                                        className={`${tooltipCls} ${isActive ? "active !bg-primary !text-primary-content" : ""} ${isCollapsed ? "lg:justify-center" : ""}`}
+                                                        className={`${isActive ? "active !bg-primary !text-primary-content" : ""} ${isCollapsed ? "lg:justify-center" : ""}`}
                                                     >
                                                         <ItemIcon className="h-4 w-4" />
                                                         <span className={isCollapsed ? "lg:hidden" : ""}>{item.name}</span>
@@ -177,7 +174,7 @@ export function Sidebar() {
                     </nav>
 
                     <div className="border-t border-base-300 px-3 py-4">
-                        <ul className={`menu gap-2 rounded-box bg-base-200/40 p-2.5 ${isCollapsed ? "lg:p-2" : ""}`}>
+                        <ul className={`menu gap-2 rounded-box bg-base-200/40 p-2.5 overflow-visible ${isCollapsed ? "lg:p-2" : ""}`}>
                             <li>
                                 <button
                                     onClick={async () => {
@@ -185,8 +182,7 @@ export function Sidebar() {
                                     }}
                                     title={t.dashboard.sidebar.footer.logout}
                                     aria-label={t.dashboard.sidebar.footer.logout}
-                                    data-tip={isCollapsed ? t.dashboard.sidebar.footer.logout : undefined}
-                                    className={`${isCollapsed ? "tooltip tooltip-right lg:justify-center" : ""} text-error`}
+                                    className={`${isCollapsed ? "lg:justify-center" : ""} text-error`}
                                 >
                                     <LogOut className="h-4 w-4" />
                                     <span className={isCollapsed ? "lg:hidden" : ""}>{t.dashboard.sidebar.footer.logout}</span>
@@ -198,8 +194,7 @@ export function Sidebar() {
                                     onClick={close}
                                     title={t.dashboard.sidebar.footer.backHome}
                                     aria-label={t.dashboard.sidebar.footer.backHome}
-                                    data-tip={isCollapsed ? t.dashboard.sidebar.footer.backHome : undefined}
-                                    className={isCollapsed ? "tooltip tooltip-right lg:justify-center" : ""}
+                                    className={isCollapsed ? "lg:justify-center" : ""}
                                 >
                                     <Home className="h-4 w-4" />
                                     <span className={isCollapsed ? "lg:hidden" : ""}>{t.dashboard.sidebar.footer.backHome}</span>
