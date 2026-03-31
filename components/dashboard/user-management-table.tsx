@@ -498,7 +498,7 @@ function UserManagementTableInner({
                                             </span>
                                         </div>
 
-                                        <div className="flex items-center md:justify-start">
+                                        <div className="flex items-center md:justify-end">
                                             <RoleDropdown
                                                 userId={user.id}
                                                 currentRole={user.role}
@@ -514,7 +514,7 @@ function UserManagementTableInner({
                                             />
                                         </div>
 
-                                        <div className="flex flex-wrap items-center justify-start gap-2 md:justify-start">
+                                        <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
                                             {user.team ? (
                                                 <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-500">
                                                     {user.team.name}
