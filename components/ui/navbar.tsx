@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, MoonStar, SunMedium, Swords, X } from "lucide-react";
+import { Menu, MoonStar, SunMedium, X } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { normalizeAssetUrl } from "@/lib/asset-url";
@@ -139,13 +139,18 @@ export function Navbar() {
         <nav className="navbar fixed left-0 right-0 top-0 z-50 border-b border-base-300 bg-base-100/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
             <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <Link href="/" className="flex items-center gap-2">
-                        <div className="badge badge-primary h-11 w-11 rounded-2xl border-0 text-center shadow-lg">
-                            <Swords className="h-5 w-5" />
+                    <Link href="/" className="flex items-center gap-2" aria-label="Duel Standby">
+                        <div className="badge badge-primary h-11 w-11 rounded-2xl border-0 p-0 text-center shadow-lg">
+                            <Image
+                                src="/logods.jpg"
+                                alt="Duel Standby"
+                                width={44}
+                                height={44}
+                                priority
+                                className="h-full w-full rounded-2xl object-cover"
+                            />
                         </div>
-                        <span className="bg-gradient-to-r from-primary to-warning bg-clip-text text-lg font-black text-transparent sm:text-xl">
-                            Duel Standby
-                        </span>
+                        <span className="sr-only">Duel Standby</span>
                     </Link>
                 </div>
 

@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Swords } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { SOCIAL_LINKS } from "@/lib/social-links";
 import { useLocale } from "@/hooks/use-locale";
 
@@ -23,8 +24,15 @@ export function Hero() {
                         {t.home.heroBadge}
                     </motion.div>
 
-                    <motion.div variants={{ hidden: { opacity: 0, y: 18, scale: 0.92 }, show: { opacity: 1, y: 0, scale: 1 } }} transition={{ duration: 0.5 }} className="badge badge-primary mb-5 h-16 w-16 rounded-[24px] border-0 shadow-xl sm:mb-6 sm:h-20 sm:w-20 sm:rounded-[28px]">
-                        <Swords className="h-8 w-8 sm:h-10 sm:w-10" />
+                    <motion.div variants={{ hidden: { opacity: 0, y: 18, scale: 0.92 }, show: { opacity: 1, y: 0, scale: 1 } }} transition={{ duration: 0.5 }} className="badge badge-primary mb-5 h-16 w-16 rounded-[24px] border-0 p-0 shadow-xl sm:mb-6 sm:h-20 sm:w-20 sm:rounded-[28px]">
+                        <Image
+                            src="/logods.jpg"
+                            alt="Duel Standby"
+                            width={80}
+                            height={80}
+                            priority
+                            className="h-full w-full rounded-[24px] object-cover sm:rounded-[28px]"
+                        />
                     </motion.div>
 
                     <motion.h1 variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} transition={{ duration: 0.55 }} className="mb-5 text-3xl font-extrabold tracking-tight sm:mb-6 sm:text-5xl md:text-7xl">

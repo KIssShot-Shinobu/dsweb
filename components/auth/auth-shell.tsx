@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 export function AuthShell({
@@ -18,8 +19,14 @@ export function AuthShell({
             <section className="card border border-base-300/70 bg-base-100/92 shadow-2xl backdrop-blur-xl">
                 <div className="card-body p-4 sm:p-6">
                     <div className="mb-5 text-center sm:mb-6">
-                        <div className="badge badge-primary mx-auto h-11 w-11 rounded-2xl border-0 text-base font-black text-primary-content shadow-lg sm:h-12 sm:w-12 sm:text-lg">
-                            DS
+                        <div className="badge badge-primary mx-auto h-11 w-11 rounded-2xl border-0 p-0 shadow-lg sm:h-12 sm:w-12">
+                            <Image
+                                src="/logods.jpg"
+                                alt="Duel Standby"
+                                width={48}
+                                height={48}
+                                className="h-full w-full rounded-2xl object-cover"
+                            />
                         </div>
                         <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.24em] text-base-content/45 sm:text-[11px]">{eyebrow}</div>
                         <h1 className="mt-2 text-2xl font-black tracking-tight text-base-content sm:text-[2rem]">{title}</h1>

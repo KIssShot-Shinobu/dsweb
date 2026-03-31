@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -125,7 +126,15 @@ export function Sidebar() {
                     </button>
                     <div className="flex h-16 items-center justify-between border-b border-base-300 px-5">
                         <div className={`flex items-center gap-3 ${isCollapsed ? "lg:justify-center lg:w-full" : ""}`}>
-                            <div className="badge badge-primary h-10 w-10 rounded-2xl border-0 text-base font-black text-primary-content">DS</div>
+                            <div className="badge badge-primary h-10 w-10 rounded-2xl border-0 p-0">
+                                <Image
+                                    src="/logods.jpg"
+                                    alt="Duel Standby"
+                                    width={40}
+                                    height={40}
+                                    className="h-full w-full rounded-2xl object-cover"
+                                />
+                            </div>
                             <div className={isCollapsed ? "lg:hidden" : ""}>
                                 <div className="text-sm font-black tracking-wide">{t.dashboard.sidebar.brandTitle}</div>
                                 <div className="text-xs text-base-content/50">{t.dashboard.sidebar.brandSubtitle}</div>

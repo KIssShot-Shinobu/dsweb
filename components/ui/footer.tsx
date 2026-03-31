@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { Instagram, Mail, Swords, Youtube } from "lucide-react";
+import { Instagram, Mail, Youtube } from "lucide-react";
 import { SOCIAL_LINKS } from "@/lib/social-links";
 import { useLocale } from "@/hooks/use-locale";
 
@@ -41,10 +42,16 @@ export function Footer() {
                 <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-5 lg:gap-12">
                     <div className="lg:col-span-2">
                         <div className="mb-4 flex items-center gap-2">
-                            <div className="badge badge-primary h-11 w-11 rounded-2xl border-0">
-                                <Swords className="h-5 w-5" />
+                            <div className="badge badge-primary h-11 w-11 rounded-2xl border-0 p-0">
+                                <Image
+                                    src="/logods.jpg"
+                                    alt="Duel Standby"
+                                    width={44}
+                                    height={44}
+                                    className="h-full w-full rounded-2xl object-cover"
+                                />
                             </div>
-                            <span className="text-2xl font-black text-base-content">Duel Standby</span>
+                            <span className="sr-only">Duel Standby</span>
                         </div>
                         <p className="mb-6 max-w-sm leading-relaxed text-base-content/65">
                             {t.footer.tagline}
