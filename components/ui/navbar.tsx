@@ -150,7 +150,9 @@ export function Navbar() {
                                 className="h-full w-full rounded-2xl object-cover"
                             />
                         </div>
-                        <span className="sr-only">Duel Standby</span>
+                        <span className="bg-gradient-to-r from-primary to-warning bg-clip-text text-lg font-black text-transparent sm:text-xl">
+                            Duel Standby
+                        </span>
                     </Link>
                 </div>
 

@@ -51,7 +51,7 @@ export function Footer() {
                                     className="h-full w-full rounded-2xl object-cover"
                                 />
                             </div>
-                            <span className="sr-only">Duel Standby</span>
+                            <span className="text-2xl font-black text-base-content">Duel Standby</span>
                         </div>
                         <p className="mb-6 max-w-sm leading-relaxed text-base-content/65">
                             {t.footer.tagline}
