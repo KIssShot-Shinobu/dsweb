@@ -491,28 +491,30 @@ function UserManagementTableInner({
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-1 flex-wrap items-center gap-2 xl:grid xl:grid-cols-[120px_140px_200px_40px] xl:items-center">
-                                        <div className="flex items-center gap-2">
+                                    <div className="flex flex-1 flex-wrap items-center gap-2 md:grid md:grid-cols-[120px_140px_220px_40px] md:items-center md:gap-3">
+                                        <div className="flex items-center gap-2 md:justify-start">
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${STATUS_COLORS[user.status] || ""}`}>
                                                 {getStatusLabel(user.status)}
                                             </span>
                                         </div>
 
-                                        <RoleDropdown
-                                            userId={user.id}
-                                            currentRole={user.role}
-                                            currentStatus={user.status}
-                                            onChanged={fetchUsers}
-                                            onFeedback={setFeedback}
-                                            getRoleLabel={getRoleLabel}
-                                            labels={{ current: t.dashboard.userManagement.roleCurrent }}
-                                            messages={{
-                                                updateFailed: t.dashboard.userManagement.messages.roleUpdateFailed,
-                                                updateSuccess: t.dashboard.userManagement.messages.roleUpdateSuccess,
-                                            }}
-                                        />
+                                        <div className="flex items-center md:justify-start">
+                                            <RoleDropdown
+                                                userId={user.id}
+                                                currentRole={user.role}
+                                                currentStatus={user.status}
+                                                onChanged={fetchUsers}
+                                                onFeedback={setFeedback}
+                                                getRoleLabel={getRoleLabel}
+                                                labels={{ current: t.dashboard.userManagement.roleCurrent }}
+                                                messages={{
+                                                    updateFailed: t.dashboard.userManagement.messages.roleUpdateFailed,
+                                                    updateSuccess: t.dashboard.userManagement.messages.roleUpdateSuccess,
+                                                }}
+                                            />
+                                        </div>
 
-                                        <div className="flex flex-wrap items-center justify-start gap-2">
+                                        <div className="flex flex-wrap items-center justify-start gap-2 md:justify-start">
                                             {user.team ? (
                                                 <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-500">
                                                     {user.team.name}
@@ -520,7 +522,7 @@ function UserManagementTableInner({
                                             ) : null}
                                         </div>
 
-                                        <div className="flex justify-end">
+                                        <div className="flex justify-start md:justify-end">
                                             <div className={`dropdown dropdown-end ${openMenuId === user.id ? "dropdown-open" : ""}`}>
                                                 <button
                                                     type="button"
