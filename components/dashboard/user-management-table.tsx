@@ -135,9 +135,12 @@ function RoleDropdown({
     };
 
     return (
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0" onClick={(event) => event.stopPropagation()}>
             <button
-                onClick={() => setOpen((value) => !value)}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    setOpen((value) => !value);
+                }}
                 disabled={loading}
                 className={`flex items-center gap-1 rounded-box border border-current/20 bg-base-100 px-2.5 py-1.5 text-[10px] font-bold uppercase transition-all hover:bg-base-200 disabled:opacity-50 ${ROLE_COLORS[currentRole] || "text-base-content/60"}`}
             >
@@ -461,7 +464,11 @@ function UserManagementTableInner({
                     ) : (
                         <div className="space-y-2">
                             {users.map((user) => (
-                                <div key={user.id} className="flex flex-col gap-2 rounded-box border border-base-300 bg-base-200/40 p-2 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100 sm:p-3 xl:flex-row xl:items-center">
+                                <div
+                                    key={user.id}
+                                    onClick={() => setDetailModal(user)}
+                                    className="flex cursor-pointer flex-col gap-2 rounded-box border border-base-300 bg-base-200/40 p-2 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100 sm:p-3 xl:flex-row xl:items-center"
+                                >
                                     <div className="flex items-center gap-3 xl:w-[260px] xl:flex-shrink-0">
                                         {normalizeAssetUrl(user.avatarUrl) ? (
                                             <Image
@@ -491,14 +498,14 @@ function UserManagementTableInner({
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-1 flex-wrap items-center gap-2 md:grid md:grid-cols-[120px_140px_200px_40px] md:items-center md:gap-3 md:justify-end">
-                                        <div className="flex items-center gap-2 md:justify-start">
+                                    <div className="flex flex-1 flex-wrap items-center gap-2 md:ml-auto md:flex-nowrap md:items-center md:justify-end md:gap-2">
+                                        <div className="flex items-center gap-2">
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${STATUS_COLORS[user.status] || ""}`}>
                                                 {getStatusLabel(user.status)}
                                             </span>
                                         </div>
 
-                                        <div className="flex items-center md:justify-end md:justify-self-end">
+                                        <div className="flex items-center">
                                             <RoleDropdown
                                                 userId={user.id}
                                                 currentRole={user.role}
@@ -514,32 +521,37 @@ function UserManagementTableInner({
                                             />
                                         </div>
 
-                                        <div className="flex flex-wrap items-center justify-end gap-2 md:justify-end md:justify-self-end">
-                                            {user.team ? (
-                                                <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-500">
-                                                    {user.team.name}
-                                                </span>
-                                            ) : null}
-                                        </div>
-
-                                        <div className="flex justify-start md:justify-end md:justify-self-end pr-2">
+                                        <div className="flex justify-start md:justify-end pr-2">
                                             <div className={`dropdown dropdown-end ${openMenuId === user.id ? "dropdown-open" : ""}`}>
                                                 <button
                                                     type="button"
                                                     className="btn btn-ghost btn-circle btn-sm"
                                                     aria-label={t.dashboard.userManagement.actions.menu}
-                                                    onClick={() => setOpenMenuId((current) => (current === user.id ? null : user.id))}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        setOpenMenuId((current) => (current === user.id ? null : user.id));
+                                                    }}
                                                 >
                                                     <MoreVertical className="h-4 w-4" />
                                                 </button>
                                                 {openMenuId === user.id ? (
                                                     <>
-                                                        <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
-                                                        <ul className="menu dropdown-content z-[60] mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl">
+                                                        <div
+                                                            className="fixed inset-0 z-40"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                setOpenMenuId(null);
+                                                            }}
+                                                        />
+                                                        <ul
+                                                            className="menu dropdown-content z-[60] mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl"
+                                                            onClick={(event) => event.stopPropagation()}
+                                                        >
                                                             <li>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => {
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation();
                                                                         setDetailModal(user);
                                                                         setOpenMenuId(null);
                                                                     }}
@@ -549,7 +561,13 @@ function UserManagementTableInner({
                                                             </li>
                                                             {user.team ? (
                                                                 <li>
-                                                                    <Link href={`/dashboard/teams/${user.team.id}`} onClick={() => setOpenMenuId(null)}>
+                                                                    <Link
+                                                                        href={`/dashboard/teams/${user.team.id}`}
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
+                                                                            setOpenMenuId(null);
+                                                                        }}
+                                                                    >
                                                                         {t.dashboard.userManagement.actions.viewTeam}
                                                                     </Link>
                                                                 </li>
@@ -558,7 +576,8 @@ function UserManagementTableInner({
                                                                 <li>
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => {
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
                                                                             setBanModal({ id: user.id, name: user.fullName });
                                                                             setOpenMenuId(null);
                                                                         }}
@@ -574,7 +593,8 @@ function UserManagementTableInner({
                                                                 <li>
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => {
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
                                                                             setUnbanModal({ id: user.id, name: user.fullName, role: user.role });
                                                                             setOpenMenuId(null);
                                                                         }}
