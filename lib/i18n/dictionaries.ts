@@ -1130,6 +1130,7 @@ const id = {
                 freeEntry: "FREE",
             },
             actions: {
+                menu: "Menu",
                 startBracket: "Start Bracket",
                 adminDashboard: "Admin Dashboard",
                 viewDetail: "Lihat Detail",
@@ -3795,6 +3796,7 @@ const en: typeof id = {
                 freeEntry: "FREE",
             },
             actions: {
+                menu: "Menu",
                 startBracket: "Start Bracket",
                 adminDashboard: "Admin Dashboard",
                 viewDetail: "View Detail",

@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { MoreVertical } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pagination } from "@/components/dashboard/pagination";
 import { useToast } from "@/components/dashboard/toast";
 import { ConfirmModal } from "@/components/dashboard/confirm-modal";
 import { UndoSnackbar } from "@/components/dashboard/undo-snackbar";
 import { FormSelect } from "@/components/dashboard/form-select";
-import { RowActions } from "@/components/dashboard/row-actions";
-import { btnOutline, btnPrimary, dashboardStackCls, searchInputCls } from "@/components/dashboard/form-styles";
+import { btnPrimary, dashboardStackCls, searchInputCls } from "@/components/dashboard/form-styles";
 import {
     DashboardEmptyState,
     DashboardMetricCard,
@@ -19,7 +19,7 @@ import {
 } from "@/components/dashboard/page-shell";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { useLocale } from "@/hooks/use-locale";
-import { formatCurrency, formatDateTime } from "@/lib/i18n/format";
+import { formatDateTime } from "@/lib/i18n/format";
 import { useGames } from "@/hooks/use-games";
 
 interface Tournament {
@@ -80,6 +80,7 @@ export default function AdminTournamentsPage() {
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [summary, setSummary] = useState(EMPTY_SUMMARY);
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const { success, error } = useToast();
     const [confirmState, setConfirmState] = useState<{ open: boolean; id: string; title: string }>({ open: false, id: "", title: "" });
     const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string; item: Tournament } | null>(null);
@@ -199,8 +200,6 @@ export default function AdminTournamentsPage() {
         fetchTournaments();
     };
 
-    const formatCurrencyValue = (amount: number) => formatCurrency(amount, locale, "IDR");
-
     const formatDate = (dateString: string) =>
         formatDateTime(dateString, locale, {
             day: "numeric",
@@ -291,7 +290,11 @@ export default function AdminTournamentsPage() {
                                             : "border-error/20 bg-error/10 text-error";
 
                                     return (
-                                        <div key={tournament.id} className="flex flex-col gap-3 rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100 lg:flex-row lg:items-center">
+                                        <div
+                                            key={tournament.id}
+                                            onClick={() => router.push(`/dashboard/tournaments/${tournament.id}`)}
+                                            className="flex cursor-pointer flex-col gap-3 rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100 lg:flex-row lg:items-center"
+                                        >
                                             <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-base-100 text-xs font-bold text-base-content/45">
                                                 {tournament.image ? (
                                                     // eslint-disable-next-line @next/next/no-img-element
@@ -304,47 +307,102 @@ export default function AdminTournamentsPage() {
                                                 <div className="mt-1 truncate text-xs text-base-content/45">
                                                     {(tournament.gameName || tournament.gameType)} - {tournament.format} - {formatDate(tournament.startAt)}
                                                 </div>
-                                                <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">
-                                                        {t.dashboard.tournamentsAdmin.labels.prize} {formatCurrencyValue(tournament.prizePool)}
-                                                    </span>
-                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">
-                                                        {t.dashboard.tournamentsAdmin.labels.entry} {tournament.entryFee === 0 ? t.dashboard.tournamentsAdmin.labels.freeEntry : formatCurrencyValue(tournament.entryFee)}
-                                                    </span>
-                                                    <span className="rounded-full border border-base-300 bg-base-100 px-2.5 py-1 text-base-content/55">
-                                                        {t.dashboard.tournamentsAdmin.labels.participants(
-                                                            tournament._count?.participants || 0,
-                                                            tournament.maxPlayers
-                                                        )}
-                                                    </span>
-                                                </div>
                                             </div>
 
                                             <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                                                 <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${statusTone}`}>
                                                     {tournament.status}
                                                 </span>
-                                                <RowActions
-                                                    onEdit={() => router.push(`/dashboard/tournaments/${tournament.id}/settings`)}
-                                                    onDelete={() => handleDeleteClick(tournament.id, tournament.title)}
-                                                    extra={
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <button
-                                                                onClick={() => handleStartBracket(tournament)}
-                                                                disabled={tournament.status !== "OPEN" || (tournament._count?.participants ?? 0) < 2}
-                                                                className={`${btnPrimary} btn-sm disabled:opacity-40`}
+                                                <div className={`dropdown dropdown-end ${openMenuId === tournament.id ? "dropdown-open" : ""}`}>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-ghost btn-circle btn-sm"
+                                                        aria-label={t.dashboard.tournamentsAdmin.actions.menu}
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            setOpenMenuId((current) => (current === tournament.id ? null : tournament.id));
+                                                        }}
+                                                    >
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </button>
+                                                    {openMenuId === tournament.id ? (
+                                                        <>
+                                                            <div
+                                                                className="fixed inset-0 z-40"
+                                                                onClick={(event) => {
+                                                                    event.stopPropagation();
+                                                                    setOpenMenuId(null);
+                                                                }}
+                                                            />
+                                                            <ul
+                                                                className="menu dropdown-content z-[60] mt-2 w-56 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl"
+                                                                onClick={(event) => event.stopPropagation()}
                                                             >
-                                                                {t.dashboard.tournamentsAdmin.actions.startBracket}
-                                                            </button>
-                                                            <Link href={`/dashboard/tournaments/${tournament.id}`} className={`${btnOutline} btn-sm`}>
-                                                                {t.dashboard.tournamentsAdmin.actions.adminDashboard}
-                                                            </Link>
-                                                            <Link href={`/tournaments/${tournament.id}`} className={`${btnOutline} btn-sm`}>
-                                                                {t.dashboard.tournamentsAdmin.actions.viewDetail}
-                                                            </Link>
-                                                        </div>
-                                                    }
-                                                />
+                                                                <li>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
+                                                                            router.push(`/dashboard/tournaments/${tournament.id}`);
+                                                                            setOpenMenuId(null);
+                                                                        }}
+                                                                    >
+                                                                        {t.dashboard.tournamentsAdmin.actions.adminDashboard}
+                                                                    </button>
+                                                                </li>
+                                                                <li>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
+                                                                            router.push(`/dashboard/tournaments/${tournament.id}/settings`);
+                                                                            setOpenMenuId(null);
+                                                                        }}
+                                                                    >
+                                                                        {t.common.edit}
+                                                                    </button>
+                                                                </li>
+                                                                <li>
+                                                                    <Link
+                                                                        href={`/tournaments/${tournament.id}`}
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
+                                                                            setOpenMenuId(null);
+                                                                        }}
+                                                                    >
+                                                                        {t.dashboard.tournamentsAdmin.actions.viewDetail}
+                                                                    </Link>
+                                                                </li>
+                                                                <li>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
+                                                                            handleStartBracket(tournament);
+                                                                            setOpenMenuId(null);
+                                                                        }}
+                                                                        disabled={tournament.status !== "OPEN" || (tournament._count?.participants ?? 0) < 2}
+                                                                    >
+                                                                        {t.dashboard.tournamentsAdmin.actions.startBracket}
+                                                                    </button>
+                                                                </li>
+                                                                <li>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
+                                                                            handleDeleteClick(tournament.id, tournament.title);
+                                                                            setOpenMenuId(null);
+                                                                        }}
+                                                                        className="text-error"
+                                                                    >
+                                                                        {t.common.delete}
+                                                                    </button>
+                                                                </li>
+                                                            </ul>
+                                                        </>
+                                                    ) : null}
+                                                </div>
                                             </div>
                                         </div>
                                     );
