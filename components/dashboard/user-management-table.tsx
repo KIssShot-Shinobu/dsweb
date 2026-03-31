@@ -210,6 +210,7 @@ function UserManagementTableInner({
     const [banModal, setBanModal] = useState<{ id: string; name: string } | null>(null);
     const [unbanModal, setUnbanModal] = useState<{ id: string; name: string; role: string } | null>(null);
     const [detailModal, setDetailModal] = useState<UserRow | null>(null);
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [reason, setReason] = useState("");
     const [searchInput, setSearchInput] = useState(search);
     const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -460,7 +461,7 @@ function UserManagementTableInner({
                     ) : (
                         <div className="space-y-3">
                             {users.map((user) => (
-                                <div key={user.id} className="flex flex-col gap-3 rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100 xl:flex-row xl:items-center">
+                                <div key={user.id} className="flex flex-col gap-2 rounded-box border border-base-300 bg-base-200/40 p-3 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100 xl:flex-row xl:items-center">
                                     <div className="flex items-center gap-3 xl:w-[260px] xl:flex-shrink-0">
                                         {normalizeAssetUrl(user.avatarUrl) ? (
                                             <Image
@@ -481,7 +482,7 @@ function UserManagementTableInner({
                                         </div>
                                     </div>
 
-                                    <div className="grid flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.2fr)_150px_150px_200px] xl:items-center">
+                                    <div className="grid flex-1 grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1.2fr)_150px_150px_200px] xl:items-center">
                                         {user.gameProfiles.length > 0 ? (
                                             <div className="flex flex-wrap gap-1.5">
                                                 {user.gameProfiles.map((profile) => (
@@ -521,50 +522,72 @@ function UserManagementTableInner({
                                                 </span>
                                             ) : null}
 
-                                            <div className="dropdown dropdown-end">
-                                                <button type="button" className="btn btn-ghost btn-circle btn-sm" aria-label={t.dashboard.userManagement.actions.menu}>
+                                            <div className={`dropdown dropdown-end ${openMenuId === user.id ? "dropdown-open" : ""}`}>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-ghost btn-circle btn-sm"
+                                                    aria-label={t.dashboard.userManagement.actions.menu}
+                                                    onClick={() => setOpenMenuId((current) => (current === user.id ? null : user.id))}
+                                                >
                                                     <MoreVertical className="h-4 w-4" />
                                                 </button>
-                                                <ul className="menu dropdown-content z-[60] mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl">
-                                                    <li>
-                                                        <button type="button" onClick={() => setDetailModal(user)}>
-                                                            {t.dashboard.userManagement.actions.viewDetails}
-                                                        </button>
-                                                    </li>
-                                                    {user.team ? (
-                                                        <li>
-                                                            <Link href={`/dashboard/teams/${user.team.id}`}>
-                                                                {t.dashboard.userManagement.actions.viewTeam}
-                                                            </Link>
-                                                        </li>
-                                                    ) : null}
-                                                    {user.status === "ACTIVE" && user.role !== "FOUNDER" ? (
-                                                        <li>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setBanModal({ id: user.id, name: user.fullName })}
-                                                                disabled={actionLoading === user.id}
-                                                                title={t.dashboard.userManagement.actions.banTitle}
-                                                                className="text-error"
-                                                            >
-                                                                {t.dashboard.userManagement.actions.ban}
-                                                            </button>
-                                                        </li>
-                                                    ) : null}
-                                                    {user.status === "BANNED" ? (
-                                                        <li>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setUnbanModal({ id: user.id, name: user.fullName, role: user.role })}
-                                                                disabled={actionLoading === user.id}
-                                                                title={t.dashboard.userManagement.actions.unbanTitle}
-                                                                className="text-success"
-                                                            >
-                                                                {t.dashboard.userManagement.actions.unban}
-                                                            </button>
-                                                        </li>
-                                                    ) : null}
-                                                </ul>
+                                                {openMenuId === user.id ? (
+                                                    <>
+                                                        <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
+                                                        <ul className="menu dropdown-content z-[60] mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl">
+                                                            <li>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setDetailModal(user);
+                                                                        setOpenMenuId(null);
+                                                                    }}
+                                                                >
+                                                                    {t.dashboard.userManagement.actions.viewDetails}
+                                                                </button>
+                                                            </li>
+                                                            {user.team ? (
+                                                                <li>
+                                                                    <Link href={`/dashboard/teams/${user.team.id}`} onClick={() => setOpenMenuId(null)}>
+                                                                        {t.dashboard.userManagement.actions.viewTeam}
+                                                                    </Link>
+                                                                </li>
+                                                            ) : null}
+                                                            {user.status === "ACTIVE" && user.role !== "FOUNDER" ? (
+                                                                <li>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setBanModal({ id: user.id, name: user.fullName });
+                                                                            setOpenMenuId(null);
+                                                                        }}
+                                                                        disabled={actionLoading === user.id}
+                                                                        title={t.dashboard.userManagement.actions.banTitle}
+                                                                        className="text-error"
+                                                                    >
+                                                                        {t.dashboard.userManagement.actions.ban}
+                                                                    </button>
+                                                                </li>
+                                                            ) : null}
+                                                            {user.status === "BANNED" ? (
+                                                                <li>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setUnbanModal({ id: user.id, name: user.fullName, role: user.role });
+                                                                            setOpenMenuId(null);
+                                                                        }}
+                                                                        disabled={actionLoading === user.id}
+                                                                        title={t.dashboard.userManagement.actions.unbanTitle}
+                                                                        className="text-success"
+                                                                    >
+                                                                        {t.dashboard.userManagement.actions.unban}
+                                                                    </button>
+                                                                </li>
+                                                            ) : null}
+                                                        </ul>
+                                                    </>
+                                                ) : null}
                                             </div>
                                         </div>
                                     </div>
