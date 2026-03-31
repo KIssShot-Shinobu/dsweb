@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { MoreVertical } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { normalizeAssetUrl } from "@/lib/asset-url";
@@ -208,6 +209,7 @@ function UserManagementTableInner({
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [banModal, setBanModal] = useState<{ id: string; name: string } | null>(null);
     const [unbanModal, setUnbanModal] = useState<{ id: string; name: string; role: string } | null>(null);
+    const [detailModal, setDetailModal] = useState<UserRow | null>(null);
     const [reason, setReason] = useState("");
     const [searchInput, setSearchInput] = useState(search);
     const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -476,28 +478,21 @@ function UserManagementTableInner({
                                         )}
                                         <div className="min-w-0">
                                             <div className="truncate text-sm font-semibold text-base-content">{user.fullName}</div>
-                                            <div className="truncate text-xs text-base-content/45">{user.email}</div>
-                                            <div className="truncate text-[11px] text-base-content/45">{user.city || t.dashboard.userManagement.labels.cityEmpty}</div>
                                         </div>
                                     </div>
 
-                                    <div className="grid flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.2fr)_150px_150px_150px_180px] xl:items-center">
-                                        <div className="space-y-2">
+                                    <div className="grid flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.2fr)_150px_150px_200px] xl:items-center">
+                                        {user.gameProfiles.length > 0 ? (
                                             <div className="flex flex-wrap gap-1.5">
-                                                {user.gameProfiles.length > 0 ? (
-                                                    user.gameProfiles.map((profile) => (
-                                                        <span key={`${user.id}-${profile.gameType}`} className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
-                                                            {profile.ign}
-                                                        </span>
-                                                    ))
-                                                ) : (
-                                                    <span className="text-xs text-base-content/45">{t.dashboard.userManagement.labels.noGameProfile}</span>
-                                                )}
+                                                {user.gameProfiles.map((profile) => (
+                                                    <span key={`${user.id}-${profile.gameType}`} className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+                                                        {profile.ign}
+                                                    </span>
+                                                ))}
                                             </div>
-                                            <div className="text-[11px] text-base-content/45">
-                                                {t.dashboard.userManagement.labels.joinedAt(formatUserDate(user.createdAt))}
-                                            </div>
-                                        </div>
+                                        ) : (
+                                            <div />
+                                        )}
 
                                         <div className="flex items-center gap-2">
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${STATUS_COLORS[user.status] || ""}`}>
@@ -519,54 +514,58 @@ function UserManagementTableInner({
                                             }}
                                         />
 
-                                        <div className="flex min-w-[132px] items-center justify-between gap-2 rounded-box border border-base-300 bg-base-100 px-3 py-1.5 text-xs font-medium text-base-content/70">
-                                            <span className="truncate">
-                                                {user.role === "USER" ? t.dashboard.userManagement.labels.publicUser : user.team?.name || t.dashboard.userManagement.labels.noTeam}
-                                            </span>
-                                            <span className="badge badge-ghost badge-xs">{t.dashboard.userManagement.labels.selfBadge}</span>
-                                        </div>
-
                                         <div className="flex flex-wrap items-center justify-start gap-2 xl:justify-end">
-                                            {user.team ? (
-                                                <Link href={`/dashboard/teams/${user.team.id}`} className={btnOutline}>
-                                                    {t.dashboard.userManagement.actions.viewTeam}
-                                                </Link>
-                                            ) : null}
                                             {user.team ? (
                                                 <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-500">
                                                     {user.team.name}
                                                 </span>
-                                            ) : user.role !== "USER" ? (
-                                                <span className="rounded-full border border-base-300 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-base-content/55">
-                                                    {t.dashboard.userManagement.labels.noTeamBadge}
-                                                </span>
-                                            ) : (
-                                                <span className="rounded-full border border-base-300 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-base-content/55">
-                                                    {t.dashboard.userManagement.labels.publicUserBadge}
-                                                </span>
-                                            )}
-
-                                            {user.status === "ACTIVE" && user.role !== "FOUNDER" ? (
-                                                <button
-                                                    onClick={() => setBanModal({ id: user.id, name: user.fullName })}
-                                                    disabled={actionLoading === user.id}
-                                                    className={btnDanger}
-                                                    title={t.dashboard.userManagement.actions.banTitle}
-                                                >
-                                                    {t.dashboard.userManagement.actions.ban}
-                                                </button>
                                             ) : null}
 
-                                            {user.status === "BANNED" ? (
-                                                <button
-                                                    onClick={() => setUnbanModal({ id: user.id, name: user.fullName, role: user.role })}
-                                                    disabled={actionLoading === user.id}
-                                                    className={btnOutline}
-                                                    title={t.dashboard.userManagement.actions.unbanTitle}
-                                                >
-                                                    {t.dashboard.userManagement.actions.unban}
+                                            <div className="dropdown dropdown-end">
+                                                <button type="button" className="btn btn-ghost btn-circle btn-sm" aria-label={t.dashboard.userManagement.actions.menu}>
+                                                    <MoreVertical className="h-4 w-4" />
                                                 </button>
-                                            ) : null}
+                                                <ul className="menu dropdown-content z-[60] mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl">
+                                                    <li>
+                                                        <button type="button" onClick={() => setDetailModal(user)}>
+                                                            {t.dashboard.userManagement.actions.viewDetails}
+                                                        </button>
+                                                    </li>
+                                                    {user.team ? (
+                                                        <li>
+                                                            <Link href={`/dashboard/teams/${user.team.id}`}>
+                                                                {t.dashboard.userManagement.actions.viewTeam}
+                                                            </Link>
+                                                        </li>
+                                                    ) : null}
+                                                    {user.status === "ACTIVE" && user.role !== "FOUNDER" ? (
+                                                        <li>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setBanModal({ id: user.id, name: user.fullName })}
+                                                                disabled={actionLoading === user.id}
+                                                                title={t.dashboard.userManagement.actions.banTitle}
+                                                                className="text-error"
+                                                            >
+                                                                {t.dashboard.userManagement.actions.ban}
+                                                            </button>
+                                                        </li>
+                                                    ) : null}
+                                                    {user.status === "BANNED" ? (
+                                                        <li>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setUnbanModal({ id: user.id, name: user.fullName, role: user.role })}
+                                                                disabled={actionLoading === user.id}
+                                                                title={t.dashboard.userManagement.actions.unbanTitle}
+                                                                className="text-success"
+                                                            >
+                                                                {t.dashboard.userManagement.actions.unban}
+                                                            </button>
+                                                        </li>
+                                                    ) : null}
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -625,6 +624,67 @@ function UserManagementTableInner({
                                 disabled={actionLoading === unbanModal.id}
                             >
                                 {actionLoading === unbanModal.id ? t.dashboard.userManagement.actions.processing : t.dashboard.userManagement.unbanModal.confirm}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
+            {detailModal ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDetailModal(null)} />
+                    <div className="relative w-full max-w-lg rounded-box border border-base-300 bg-base-100 p-6 shadow-2xl">
+                        <div className="mb-4">
+                            <h3 className="text-lg font-bold text-base-content">{t.dashboard.userManagement.details.title}</h3>
+                            <p className="mt-1 text-sm text-base-content/60">{detailModal.fullName}</p>
+                        </div>
+                        <div className="space-y-4 text-sm text-base-content/70">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-base-content/45">
+                                    {t.dashboard.userManagement.details.email}
+                                </span>
+                                <span className="text-base-content">{detailModal.email}</span>
+                            </div>
+                            {detailModal.city ? (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-base-content/45">
+                                        {t.dashboard.userManagement.details.city}
+                                    </span>
+                                    <span className="text-base-content">{detailModal.city}</span>
+                                </div>
+                            ) : null}
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-base-content/45">
+                                    {t.dashboard.userManagement.details.joinedAt}
+                                </span>
+                                <span className="text-base-content">{formatUserDate(detailModal.createdAt)}</span>
+                            </div>
+                            {detailModal.gameProfiles.length > 0 ? (
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-base-content/45">
+                                        {t.dashboard.userManagement.details.gameProfiles}
+                                    </span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {detailModal.gameProfiles.map((profile) => (
+                                            <span key={`${detailModal.id}-${profile.gameType}`} className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+                                                {profile.ign}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                            {detailModal.team ? (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-base-content/45">
+                                        {t.dashboard.userManagement.details.team}
+                                    </span>
+                                    <span className="text-base-content">{detailModal.team.name}</span>
+                                </div>
+                            ) : null}
+                        </div>
+                        <div className="mt-6 flex justify-end">
+                            <button onClick={() => setDetailModal(null)} className={btnOutline}>
+                                {t.common.close}
                             </button>
                         </div>
                     </div>
