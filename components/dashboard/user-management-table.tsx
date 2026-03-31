@@ -491,14 +491,14 @@ function UserManagementTableInner({
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-1 flex-wrap items-center gap-2 md:grid md:grid-cols-[120px_140px_200px_40px] md:items-center md:gap-3">
+                                    <div className="flex flex-1 flex-wrap items-center gap-2 md:grid md:grid-cols-[120px_140px_200px_40px] md:items-center md:gap-3 md:justify-end">
                                         <div className="flex items-center gap-2 md:justify-start">
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${STATUS_COLORS[user.status] || ""}`}>
                                                 {getStatusLabel(user.status)}
                                             </span>
                                         </div>
 
-                                        <div className="flex items-center md:justify-end">
+                                        <div className="flex items-center md:justify-end md:justify-self-end">
                                             <RoleDropdown
                                                 userId={user.id}
                                                 currentRole={user.role}
@@ -514,7 +514,7 @@ function UserManagementTableInner({
                                             />
                                         </div>
 
-                                        <div className="flex flex-wrap items-center justify-end gap-2 md:justify-end">
+                                        <div className="flex flex-wrap items-center justify-end gap-2 md:justify-end md:justify-self-end">
                                             {user.team ? (
                                                 <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-500">
                                                     {user.team.name}
@@ -522,7 +522,7 @@ function UserManagementTableInner({
                                             ) : null}
                                         </div>
 
-                                        <div className="flex justify-start md:justify-end pr-2">
+                                        <div className="flex justify-start md:justify-end md:justify-self-end pr-2">
                                             <div className={`dropdown dropdown-end ${openMenuId === user.id ? "dropdown-open" : ""}`}>
                                                 <button
                                                     type="button"
