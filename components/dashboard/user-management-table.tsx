@@ -459,21 +459,21 @@ function UserManagementTableInner({
                             }
                         />
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             {users.map((user) => (
-                                <div key={user.id} className="flex flex-col gap-2 rounded-box border border-base-300 bg-base-200/40 p-3 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100 xl:flex-row xl:items-center">
+                                <div key={user.id} className="flex flex-col gap-2 rounded-box border border-base-300 bg-base-200/40 p-2 shadow-sm transition-all hover:border-primary/20 hover:bg-base-100 sm:p-3 xl:flex-row xl:items-center">
                                     <div className="flex items-center gap-3 xl:w-[260px] xl:flex-shrink-0">
                                         {normalizeAssetUrl(user.avatarUrl) ? (
                                             <Image
                                                 unoptimized
                                                 src={normalizeAssetUrl(user.avatarUrl) || undefined}
                                                 alt={user.fullName}
-                                                width={44}
-                                                height={44}
-                                                className="h-11 w-11 flex-shrink-0 rounded-2xl border border-base-300 object-cover"
+                                                width={40}
+                                                height={40}
+                                                className="h-10 w-10 flex-shrink-0 rounded-2xl border border-base-300 object-cover"
                                             />
                                         ) : (
-                                            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-sm font-bold text-primary">
+                                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-sm font-bold text-primary">
                                                 {getInitials(user.fullName)}
                                             </div>
                                         )}
@@ -482,7 +482,7 @@ function UserManagementTableInner({
                                         </div>
                                     </div>
 
-                                    <div className="grid flex-1 grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1.2fr)_150px_150px_200px] xl:items-center">
+                                    <div className="grid flex-1 grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_140px_140px_180px] xl:items-center">
                                         {user.gameProfiles.length > 0 ? (
                                             <div className="flex flex-wrap gap-1.5">
                                                 {user.gameProfiles.map((profile) => (
@@ -492,7 +492,7 @@ function UserManagementTableInner({
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div />
+                                            <div className="hidden xl:block" />
                                         )}
 
                                         <div className="flex items-center gap-2">
