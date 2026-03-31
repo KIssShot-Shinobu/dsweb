@@ -499,12 +499,6 @@ function UserManagementTableInner({
                                     </div>
 
                                     <div className="flex flex-1 flex-wrap items-center gap-2 md:ml-auto md:flex-nowrap md:items-center md:justify-end md:gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${STATUS_COLORS[user.status] || ""}`}>
-                                                {getStatusLabel(user.status)}
-                                            </span>
-                                        </div>
-
                                         <div className="flex items-center">
                                             <RoleDropdown
                                                 userId={user.id}
