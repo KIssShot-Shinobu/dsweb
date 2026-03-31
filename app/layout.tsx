@@ -8,13 +8,39 @@ import { MantineThemeProvider } from "@/components/providers/mantine-provider";
 import { LocaleProvider } from "@/components/providers/locale-provider";
 import { getServerLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getAppUrl } from "@/lib/runtime-config";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
   const t = getDictionary(locale);
+  const appUrl = getAppUrl();
+  const ogLocale = locale === "id" ? "id_ID" : "en_US";
   return {
     title: t.meta.title,
     description: t.meta.description,
+    metadataBase: new URL(appUrl),
+    openGraph: {
+      type: "website",
+      url: appUrl,
+      title: t.meta.title,
+      description: t.meta.description,
+      siteName: "Duel Standby",
+      locale: ogLocale,
+      images: [
+        {
+          url: "/logods.jpg",
+          width: 1200,
+          height: 630,
+          alt: "Duel Standby",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t.meta.title,
+      description: t.meta.description,
+      images: ["/logods.jpg"],
+    },
     manifest: "/favicon/site.webmanifest",
     icons: {
       icon: [
