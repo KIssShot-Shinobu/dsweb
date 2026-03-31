@@ -479,22 +479,19 @@ function UserManagementTableInner({
                                         )}
                                         <div className="min-w-0">
                                             <div className="truncate text-sm font-semibold text-base-content">{user.fullName}</div>
+                                            {user.gameProfiles.length > 0 ? (
+                                                <div className="mt-1 flex flex-wrap gap-1.5">
+                                                    {user.gameProfiles.map((profile) => (
+                                                        <span key={`${user.id}-${profile.gameType}`} className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+                                                            {profile.ign}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : null}
                                         </div>
                                     </div>
 
-                                    <div className="grid flex-1 grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_140px_140px_180px] xl:items-center">
-                                        {user.gameProfiles.length > 0 ? (
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {user.gameProfiles.map((profile) => (
-                                                    <span key={`${user.id}-${profile.gameType}`} className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
-                                                        {profile.ign}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="hidden xl:block" />
-                                        )}
-
+                                    <div className="flex flex-1 flex-wrap items-center gap-2 xl:grid xl:grid-cols-[120px_140px_200px_40px] xl:items-center">
                                         <div className="flex items-center gap-2">
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${STATUS_COLORS[user.status] || ""}`}>
                                                 {getStatusLabel(user.status)}
@@ -515,13 +512,15 @@ function UserManagementTableInner({
                                             }}
                                         />
 
-                                        <div className="flex flex-wrap items-center justify-start gap-2 xl:justify-end">
+                                        <div className="flex flex-wrap items-center justify-start gap-2">
                                             {user.team ? (
                                                 <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-500">
                                                     {user.team.name}
                                                 </span>
                                             ) : null}
+                                        </div>
 
+                                        <div className="flex justify-end">
                                             <div className={`dropdown dropdown-end ${openMenuId === user.id ? "dropdown-open" : ""}`}>
                                                 <button
                                                     type="button"
