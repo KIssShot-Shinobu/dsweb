@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Navbar } from "@/components/ui/navbar";
 import { Hero } from "@/components/sections/hero";
 import { About } from "@/components/sections/about";
@@ -10,6 +11,12 @@ import { resolveTournamentImage } from "@/lib/tournament-image";
 import { MemberDistributionMap } from "@/components/maps/member-distribution-map";
 import { getServerLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default async function Home() {
   const locale = await getServerLocale();

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { TeamView } from "@/components/teams/types";
 import { Footer } from "@/components/ui/footer";
 import { Navbar } from "@/components/ui/navbar";
@@ -7,6 +8,13 @@ import { TeamDirectoryClient } from "@/components/teams/team-directory-client";
 import { prisma } from "@/lib/prisma";
 import { getServerLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+
+export const metadata: Metadata = {
+    alternates: {
+        canonical: "/teams",
+    },
+};
+
 
 const teamService = createTeamService();
 

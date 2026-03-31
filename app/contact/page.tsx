@@ -1,7 +1,14 @@
-﻿import { Footer } from "@/components/ui/footer";
+import type { Metadata } from "next";
+import { Footer } from "@/components/ui/footer";
 import { Navbar } from "@/components/ui/navbar";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getServerLocale } from "@/lib/i18n/server";
+
+export const metadata: Metadata = {
+    alternates: {
+        canonical: "/contact",
+    },
+};
 
 export default async function ContactPage() {
     const locale = await getServerLocale();
@@ -53,3 +60,5 @@ export default async function ContactPage() {
         </main>
     );
 }
+
+

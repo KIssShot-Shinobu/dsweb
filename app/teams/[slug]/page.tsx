@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TeamAvatar } from "@/components/teams/team-avatar";
@@ -22,6 +23,15 @@ const ROLE_BADGES: Record<string, string> = {
 
 function getRoleBadgeClass(role: string) {
     return ROLE_BADGES[role] ?? "badge-ghost";
+}
+
+
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+    return {
+        alternates: {
+            canonical: `/teams/${encodeURIComponent(params.slug)}`,
+        },
+    };
 }
 
 function RoleBlock({

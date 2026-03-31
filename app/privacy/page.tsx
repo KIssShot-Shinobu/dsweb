@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import { Footer } from "@/components/ui/footer";
 import { Navbar } from "@/components/ui/navbar";
 import { getServerLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+
+export const metadata: Metadata = {
+    alternates: {
+        canonical: "/privacy",
+    },
+};
+
 
 export default async function PrivacyPage() {
     const locale = await getServerLocale();
@@ -90,3 +98,4 @@ export default async function PrivacyPage() {
         </main>
     );
 }
+

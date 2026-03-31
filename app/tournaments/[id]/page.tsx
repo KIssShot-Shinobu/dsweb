@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -18,6 +19,15 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getServerLocale } from "@/lib/i18n/server";
 import { formatCurrency } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/locales";
+
+
+export async function generateMetadata({ params }: { params: { id: string } }) {
+    return {
+        alternates: {
+            canonical: `/tournaments/${encodeURIComponent(params.id)}`,
+        },
+    };
+}
 
 function formatDate(value: Date, timeZone: string, locale: Locale) {
     return formatDisplayDateTimeInTimeZone(value, timeZone, locale);
