@@ -44,6 +44,9 @@ export default async function TeamsPage() {
             <Navbar />
             <section className="border-b border-base-300 pt-28">
                 <div className="mx-auto max-w-[1400px] px-4 pb-14 sm:px-6 lg:px-8">
+                    <p className="mb-4 text-xs font-bold uppercase tracking-[0.32em] text-primary sm:text-sm">
+                        {t.teams.public.directory.label}
+                    </p>
                     <h1 className="text-3xl font-black tracking-tight text-base-content sm:text-4xl md:text-5xl">
                         {t.teams.public.directory.title}
                     </h1>

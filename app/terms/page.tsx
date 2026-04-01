@@ -18,7 +18,7 @@ export default async function TermsPage() {
         <main className="min-h-screen bg-transparent text-base-content">
             <Navbar />
             <section className="border-b border-base-300 pt-28">
-                <div className="mx-auto max-w-[1200px] px-4 pb-12 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-[1200px] px-4 pb-14 sm:px-6 lg:px-8">
                     <p className="mb-4 text-xs font-bold uppercase tracking-[0.32em] text-primary sm:text-sm">{t.legal.terms.badge}</p>
                     <h1 className="text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">{t.legal.terms.title}</h1>
                     <p className="mt-4 max-w-3xl text-sm leading-7 text-base-content/70 sm:text-base">{t.legal.terms.subtitle}</p>
