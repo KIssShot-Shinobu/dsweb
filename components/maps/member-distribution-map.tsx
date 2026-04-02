@@ -212,13 +212,13 @@ export function MemberDistributionMap() {
     }
 
     return (
-        <div className="relative h-full w-full">
+        <div className="relative isolate z-0 h-full w-full">
             {loading && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-box bg-base-200/70 text-sm text-base-content/70">
                     {t.map.loading}
                 </div>
             )}
-            <div ref={mapContainerRef} className="h-full w-full rounded-box" />
+            <div ref={mapContainerRef} className="h-full w-full rounded-box overflow-hidden" />
             <style jsx global>{`
                 .ds-marker-dot {
                     width: 12px;
@@ -254,6 +254,20 @@ export function MemberDistributionMap() {
                     margin: 0 6px 6px 0;
                     border-radius: 999px;
                     background: rgba(10, 12, 16, 0.65);
+                }
+
+                .leaflet-container {
+                    z-index: 0;
+                }
+
+                .leaflet-pane,
+                .leaflet-top,
+                .leaflet-bottom {
+                    z-index: 1;
+                }
+
+                .leaflet-control {
+                    z-index: 2;
                 }
 
                 @keyframes pulse {
