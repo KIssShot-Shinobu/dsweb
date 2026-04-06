@@ -132,6 +132,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                     scoreB: first.scoreB,
                     winnerId: first.winnerId,
                     source: "PLAYER",
+                }, {
+                    actorUserId: currentUser.id,
                 });
                 await logAudit({
                     userId: currentUser.id,

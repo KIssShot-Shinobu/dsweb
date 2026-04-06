@@ -87,6 +87,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             winnerId: parsed.data.winnerId,
             source: "ADMIN",
             confirmedById: currentUser.id,
+        }, {
+            actorUserId: currentUser.id,
         });
 
         const hasEvidence = Object.prototype.hasOwnProperty.call(parsed.data, "evidenceUrls");

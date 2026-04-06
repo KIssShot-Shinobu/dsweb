@@ -103,9 +103,9 @@ export function Navbar() {
         { name: t.nav.home, href: "/" },
         { name: t.nav.about, href: "/#about" },
         { name: t.nav.tournaments, href: "/tournaments" },
+        { name: t.nav.leaderboard, href: "/leaderboard" },
         { name: t.nav.teams, href: "/teams" },
         { name: t.nav.treasury, href: "/treasury" },
-        { name: t.nav.community, href: "/#socials" },
     ];
 
     const themeButton = (

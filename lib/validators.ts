@@ -128,6 +128,15 @@ export const notificationQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(50).optional(),
 });
 
+export const leaderboardListQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    seasonId: z.string().cuid("Season ID tidak valid").optional(),
+});
+
+export const leaderboardUserParamsSchema = z.object({
+    userId: z.string().cuid("User ID tidak valid"),
+});
+
 export const tournamentParticipantsQuerySchema = z.object({
     search: z.string().trim().max(191).optional(),
     page: z.coerce.number().int().min(1).optional(),
@@ -301,6 +310,8 @@ export type TeamDeleteInput = z.infer<typeof teamDeleteSchema>;
 export type TournamentStaffAssignInput = z.infer<typeof tournamentStaffAssignSchema>;
 export type NotificationQueryInput = z.infer<typeof notificationQuerySchema>;
 export type NotificationReadInput = z.infer<typeof notificationReadSchema>;
+export type LeaderboardListQueryInput = z.infer<typeof leaderboardListQuerySchema>;
+export type LeaderboardUserParamsInput = z.infer<typeof leaderboardUserParamsSchema>;
 export type TournamentParticipantAddInput = z.infer<typeof tournamentParticipantAddSchema>;
 export type TournamentParticipantBulkInput = z.infer<typeof tournamentParticipantBulkSchema>;
 
@@ -432,11 +443,32 @@ export const adminGameUpdateSchema = z
         { message: "Tidak ada perubahan" }
     );
 
+export const adminSeasonResetSchema = z
+    .object({
+        name: z.string().trim().min(3, "Nama season minimal 3 karakter").max(191, "Nama season terlalu panjang"),
+        startAt: z.string().trim(),
+        endAt: z.string().trim(),
+    })
+    .superRefine((data, ctx) => {
+        const start = Date.parse(data.startAt);
+        const end = Date.parse(data.endAt);
+        if (Number.isNaN(start)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Tanggal start tidak valid", path: ["startAt"] });
+        }
+        if (Number.isNaN(end)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Tanggal end tidak valid", path: ["endAt"] });
+        }
+        if (!Number.isNaN(start) && !Number.isNaN(end) && end <= start) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Tanggal end harus setelah start", path: ["endAt"] });
+        }
+    });
+
 export const profileAvatarSchema = z.object({
     avatarUrl: z.union([z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload lokal"), z.null()]),
 });
 
 export type ProfileAvatarInput = z.infer<typeof profileAvatarSchema>;
+export type AdminSeasonResetInput = z.infer<typeof adminSeasonResetSchema>;
 
 const countryCodeSchema = z
     .string()

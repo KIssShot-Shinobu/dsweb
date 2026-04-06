@@ -15,7 +15,7 @@ test("resolveMatchResult purges chat attachments after completion", async () => 
             update: async () => ({ id: "match_1" }),
             findUnique: async () => ({
                 id: "match_1",
-                winnerId: null,
+                winnerId: "participant_1",
                 playerAId: null,
                 playerBId: null,
                 nextMatchId: null,
@@ -24,10 +24,21 @@ test("resolveMatchResult purges chat attachments after completion", async () => 
                 loserNextMatchSide: null,
                 tournamentId: "tournament_1",
                 round: { type: "MAIN", roundNumber: 1 },
+                playerA: { userId: null, teamId: null },
+                playerB: { userId: null, teamId: null },
+                tournament: { seasonId: null, isTeamTournament: false, mode: "INDIVIDUAL" },
             }),
         },
         matchResult: {
-            upsert: async () => ({ id: "match_1" }),
+            upsert: async () => ({ id: "match_1", leaderboardAppliedAt: null }),
+            update: async () => ({ id: "match_1", leaderboardAppliedAt: new Date() }),
+            count: async () => 0,
+        },
+        season: {
+            findFirst: async () => null,
+        },
+        matchLineup: {
+            findMany: async () => [],
         },
         matchMessage: {
             findMany: async () => [

@@ -184,6 +184,7 @@ model Team {
   joinRequests          TeamJoinRequest[]
   tournamentParticipants TournamentParticipant[]
   matchLineups          MatchLineup[]
+  leaderboardEntries    TeamLeaderboardEntry[]
 }
 
 model Tournament {
@@ -193,6 +194,8 @@ model Tournament {
   format      TournamentFormat    @default(BO3)
   gameId      String
   game        Game                @relation(fields: [gameId], references: [id], onDelete: Restrict)
+  seasonId    String?
+  season      Season?             @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   status      TournamentStatus    @default(OPEN)
   structure   TournamentStructure @default(SINGLE_ELIM)
   mode        TournamentMode      @default(INDIVIDUAL)
@@ -228,8 +231,26 @@ model Tournament {
 
   @@index([createdById])
   @@index([gameId])
+  @@index([seasonId])
   @@index([status, startAt])
   @@index([structure, startAt])
+}
+
+model Season {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(191)
+  startAt   DateTime
+  endAt     DateTime
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tournaments            Tournament[]
+  leaderboardEntries     LeaderboardEntry[]
+  teamLeaderboardEntries TeamLeaderboardEntry[]
+
+  @@index([isActive])
+  @@index([startAt, endAt])
 }
 
 model TournamentParticipant {
@@ -374,6 +395,7 @@ model User {
   passwordResetToken           PasswordResetToken?
   badges                       UserBadge[]
   reputationLogs               ReputationLog[]
+  leaderboardEntries           LeaderboardEntry[]
   treasuryEntries              Treasury[]
   claimedUploads               PendingUpload[]
 
@@ -760,9 +782,50 @@ model MatchResult {
   confirmedById String?
   confirmedBy   User?                 @relation("MatchResultConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
   source        MatchResultSource     @default(PLAYER)
+  leaderboardAppliedAt DateTime?
   createdAt     DateTime              @default(now())
 
   @@index([winnerId])
+}
+
+model LeaderboardEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seasonId      String?
+  season        Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  eloRating     Float    @default(1500)
+  placementMatchesPlayed Int @default(0)
+  rankTier      String   @default("Gold") @db.VarChar(20)
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  matchesPlayed Int      @default(0)
+  lastMatchAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([eloRating])
+  @@index([seasonId, eloRating])
+  @@unique([userId, seasonId])
+}
+
+model TeamLeaderboardEntry {
+  id            String   @id @default(cuid())
+  teamId        String
+  team          Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seasonId      String?
+  season        Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  eloRating     Float    @default(1500)
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  matchesPlayed Int      @default(0)
+  lastMatchAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([eloRating])
+  @@index([seasonId, eloRating])
+  @@unique([teamId, seasonId])
 }
 
 model MatchDispute {

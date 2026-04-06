@@ -145,6 +145,8 @@ export async function POST(request: Request) {
                 scoreB,
                 winnerId,
                 source: "SYSTEM",
+            }, {
+                actorUserId: null,
             });
 
             const winner = playerAActive ? match.playerA : match.playerB;

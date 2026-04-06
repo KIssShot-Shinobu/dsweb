@@ -19,6 +19,7 @@ import {
     X,
     ChevronLeft,
     ChevronRight,
+    Medal,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -42,6 +43,7 @@ const ICONS = {
     teams: Shield,
     audit: ScrollText,
     games: Gamepad2,
+    leaderboard: Medal,
     logout: LogOut,
     home: Home,
 } as const;
@@ -94,6 +96,7 @@ export function Sidebar() {
                 { name: t.dashboard.sidebar.items.dashboard, href: "/dashboard", icon: "dashboard", minRole: "ADMIN" },
                 { name: t.dashboard.sidebar.items.auditLogs, href: "/dashboard/audit-logs", icon: "audit", minRole: "ADMIN" },
                 { name: t.dashboard.sidebar.items.games, href: "/dashboard/games", icon: "games", minRole: "ADMIN" },
+                { name: t.dashboard.sidebar.items.leaderboard, href: "/dashboard/leaderboard", icon: "leaderboard", minRole: "ADMIN" },
             ],
         },
     ];

@@ -40,6 +40,7 @@ const id = {
         home: "Beranda",
         about: "Tentang",
         tournaments: "Turnamen",
+        leaderboard: "Leaderboard",
         teams: "Team",
         treasury: "Treasury",
         community: "Komunitas",
@@ -1085,6 +1086,7 @@ const id = {
                 dashboard: "Dashboard",
                 auditLogs: "Audit Logs",
                 games: "Game",
+                leaderboard: "Leaderboard",
             },
             footer: {
                 logout: "Logout",
@@ -1151,6 +1153,57 @@ const id = {
             },
             success: {
                 started: "Turnamen dimulai.",
+            },
+        },
+        leaderboardAdmin: {
+            kicker: "Leaderboard",
+            title: "Season Leaderboard",
+            description: "Mulai season baru dan seed ulang ranking menggunakan soft reset.",
+            panelTitle: "Reset Season",
+            panelDescription: "Aksi ini akan mengarsipkan season aktif dan membuat season baru.",
+            activeSeasonTitle: "Season Aktif",
+            activeSeasonNone: "Belum ada season aktif.",
+            activeSeasonDate: (start: string, end: string) => `${start} sampai ${end}`,
+            lastResetTitle: "Hasil Reset Terakhir",
+            lastResetMeta: (players: number, teams: number) => `Seed pemain: ${players} - Seed team: ${teams}`,
+            fields: {
+                name: "Nama Season",
+                startAt: "Tanggal Mulai",
+                endAt: "Tanggal Selesai",
+            },
+            placeholders: {
+                name: "Contoh: Season 2026",
+            },
+            hints: {
+                timezone: "Tanggal mengikuti zona waktu perangkat Anda.",
+            },
+            presets: {
+                title: "Preset Durasi",
+                days: (days: number) => `+${days} hari`,
+                customLabel: "Durasi custom (hari)",
+                customPlaceholder: "Hari",
+                applyCustom: "Terapkan",
+                preview: (date: string) => `Perkiraan selesai: ${date}`,
+            },
+            actions: {
+                reset: "Mulai Season Baru",
+                resetting: "Memproses...",
+                fillDefaults: "Isi Otomatis",
+            },
+            confirm: {
+                title: "Mulai season baru?",
+                message: "Leaderboard season aktif akan diarsipkan dan rating di-soft reset.",
+            },
+            success: {
+                reset: "Season baru berhasil dibuat.",
+                seeded: (players: number, teams: number) => `Seeded: ${players} pemain, ${teams} team.`,
+            },
+            errors: {
+                loadFailed: "Gagal memuat data season.",
+                resetFailed: "Gagal memulai season baru.",
+            },
+            defaults: {
+                name: (year: number) => `Season ${year}`,
             },
         },
         matches: {
@@ -2315,6 +2368,30 @@ const id = {
         prev: "Sebelumnya",
         next: "Berikutnya",
     },
+    leaderboard: {
+        badge: "Leaderboard",
+        title: "Peringkat pemain dan team yang paling konsisten di Duel Standby.",
+        subtitle: "Pantau ELO global maupun seasonal untuk melihat siapa yang sedang mendominasi.",
+        seasonAll: "Global (All Time)",
+        seasonActive: "Aktif",
+        tabs: {
+            players: "Players",
+            teams: "Teams",
+        },
+        columns: {
+            rank: "Rank",
+            player: "Pemain",
+            team: "Team",
+            elo: "ELO",
+            record: "W/L",
+            winRate: "Win Rate",
+        },
+        emptyTitle: "Belum ada data leaderboard.",
+        emptySubtitle: "Selesaikan match untuk mulai membentuk peringkat kompetitif.",
+        errors: {
+            loadFailed: "Leaderboard belum dapat dimuat.",
+        },
+    },
     treasury: {
         badge: "Transparansi Treasury",
         title: "Kas komunitas terbuka agar setiap member tahu arus keuangan guild.",
@@ -2702,6 +2779,7 @@ const en: typeof id = {
         home: "Home",
         about: "About",
         tournaments: "Tournaments",
+        leaderboard: "Leaderboard",
         teams: "Teams",
         treasury: "Treasury",
         community: "Community",
@@ -3750,6 +3828,7 @@ const en: typeof id = {
                 dashboard: "Dashboard",
                 auditLogs: "Audit Logs",
                 games: "Games",
+                leaderboard: "Leaderboard",
             },
             footer: {
                 logout: "Sign out",
@@ -3817,6 +3896,57 @@ const en: typeof id = {
             },
             success: {
                 started: "Tournament started.",
+            },
+        },
+        leaderboardAdmin: {
+            kicker: "Leaderboard",
+            title: "Leaderboard Seasons",
+            description: "Start a new season and seed rankings with a soft reset.",
+            panelTitle: "Season Reset",
+            panelDescription: "This action archives the active season and creates a new one.",
+            activeSeasonTitle: "Active Season",
+            activeSeasonNone: "No active season yet.",
+            activeSeasonDate: (start: string, end: string) => `${start} to ${end}`,
+            lastResetTitle: "Latest Reset Summary",
+            lastResetMeta: (players: number, teams: number) => `Players seeded: ${players} - Teams seeded: ${teams}`,
+            fields: {
+                name: "Season Name",
+                startAt: "Start Date",
+                endAt: "End Date",
+            },
+            placeholders: {
+                name: "Example: Season 2026",
+            },
+            hints: {
+                timezone: "Dates follow your local device timezone.",
+            },
+            presets: {
+                title: "Duration Presets",
+                days: (days: number) => `+${days} days`,
+                customLabel: "Custom duration (days)",
+                customPlaceholder: "Days",
+                applyCustom: "Apply",
+                preview: (date: string) => `Estimated end: ${date}`,
+            },
+            actions: {
+                reset: "Start New Season",
+                resetting: "Processing...",
+                fillDefaults: "Fill Defaults",
+            },
+            confirm: {
+                title: "Start a new season?",
+                message: "The active leaderboard season will be archived and ratings will be soft reset.",
+            },
+            success: {
+                reset: "New season created successfully.",
+                seeded: (players: number, teams: number) => `Seeded: ${players} players, ${teams} teams.`,
+            },
+            errors: {
+                loadFailed: "Failed to load seasons.",
+                resetFailed: "Failed to start a new season.",
+            },
+            defaults: {
+                name: (year: number) => `Season ${year}`,
             },
         },
         matches: {
@@ -4881,6 +5011,31 @@ const en: typeof id = {
         showingLabel: (current: number, total: number) => `Showing ${current} of ${total} tournaments.`,
         prev: "Previous",
         next: "Next",
+    },
+    leaderboard: {
+        ...id.leaderboard,
+        badge: "Leaderboard",
+        title: "Track the most consistent players and teams across Duel Standby.",
+        subtitle: "Watch global and seasonal ELO rankings to see who is on top.",
+        seasonAll: "Global (All Time)",
+        seasonActive: "Active",
+        tabs: {
+            players: "Players",
+            teams: "Teams",
+        },
+        columns: {
+            rank: "Rank",
+            player: "Player",
+            team: "Team",
+            elo: "ELO",
+            record: "W/L",
+            winRate: "Win Rate",
+        },
+        emptyTitle: "No leaderboard data yet.",
+        emptySubtitle: "Complete matches to start shaping the competitive rankings.",
+        errors: {
+            loadFailed: "Leaderboard is unavailable right now.",
+        },
     },
     treasury: {
         ...id.treasury,

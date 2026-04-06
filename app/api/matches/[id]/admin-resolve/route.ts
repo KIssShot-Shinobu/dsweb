@@ -58,6 +58,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             winnerId: parsed.data.winnerId,
             source: "ADMIN",
             confirmedById: currentUser.id,
+        }, {
+            actorUserId: currentUser.id,
         });
 
         await prisma.matchDispute.updateMany({

@@ -1,6 +1,9 @@
 import { Prisma, type PrismaClient, MatchPlayerSide, MatchStatus, MatchResultSource, TournamentStructure, RoundType, TournamentFormat } from "@prisma/client";
 import { getRequiredWinsForFormat } from "@/lib/services/match-scoring";
 import { deleteUploadFileByUrl } from "@/lib/upload-files";
+import { applyLeaderboardForMatch } from "@/lib/services/leaderboard.service";
+import { logAudit } from "@/lib/audit-logger";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 
 type BracketParticipant = {
     participantId: string;
@@ -979,6 +982,7 @@ const normalizeAttachmentUrls = (value: unknown) =>
 
 type ResolveMatchOptions = {
     deleteUploadFileByUrl?: (url?: string | null) => void | Promise<void>;
+    actorUserId?: string | null;
 };
 
 async function purgeMatchMessageAttachments(
@@ -1010,6 +1014,7 @@ export async function resolveMatchResult(
     result: { scoreA: number; scoreB: number; winnerId: string; source: MatchResultSource; confirmedById?: string | null },
     options: ResolveMatchOptions = {},
 ) {
+    let leaderboardApplied = false;
     await prisma.$transaction(async (tx) => {
         await tx.match.update({
             where: { id: matchId },
@@ -1022,7 +1027,7 @@ export async function resolveMatchResult(
             },
         });
 
-        await tx.matchResult.upsert({
+        const matchResult = await tx.matchResult.upsert({
             where: { matchId },
             create: {
                 matchId,
@@ -1039,7 +1044,16 @@ export async function resolveMatchResult(
                 source: result.source,
                 confirmedById: result.confirmedById ?? null,
             },
+            select: {
+                matchId: true,
+                leaderboardAppliedAt: true,
+            },
         });
+
+        if (!matchResult.leaderboardAppliedAt) {
+            const applyResult = await applyLeaderboardForMatch(tx as PrismaClient, matchId);
+            leaderboardApplied = applyResult.applied;
+        }
 
         await advanceWinnerAndLoser(tx as PrismaClient, matchId);
 
@@ -1055,6 +1069,16 @@ export async function resolveMatchResult(
             await maybeAdvanceSwissRound(tx as PrismaClient, match.tournamentId, match.round.roundNumber);
         }
     });
+
+    if (leaderboardApplied && options.actorUserId) {
+        await logAudit({
+            userId: options.actorUserId,
+            action: AUDIT_ACTIONS.LEADERBOARD_UPDATED,
+            targetId: matchId,
+            targetType: "Match",
+            details: { matchId },
+        });
+    }
 
     try {
         await purgeMatchMessageAttachments(prisma, matchId, options.deleteUploadFileByUrl);

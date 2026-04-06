@@ -9,6 +9,8 @@ const DEFAULT_EMSIFA_API_BASE_URL = "https://www.emsifa.com/api-wilayah-indonesi
 const DEFAULT_RATE_LIMIT_ENABLED = true;
 const DEFAULT_RATE_LIMIT_TOURNAMENT_REGISTER = { max: 5, windowSeconds: 600 };
 const DEFAULT_RATE_LIMIT_MATCH_REPORT = { max: 10, windowSeconds: 300 };
+const DEFAULT_LEADERBOARD_K_FACTOR = 32;
+const DEFAULT_LEADERBOARD_DEFAULT_ELO = 1500;
 
 export function getAppUrl() {
     const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -91,6 +93,14 @@ export function getRateLimitMatchReport() {
         parsePositiveInt(process.env.RATE_LIMIT_MATCH_REPORT_WINDOW_SECONDS) ?? DEFAULT_RATE_LIMIT_MATCH_REPORT.windowSeconds;
 
     return { max, windowSeconds };
+}
+
+export function getLeaderboardKFactor() {
+    return parsePositiveInt(process.env.LEADERBOARD_K_FACTOR) ?? DEFAULT_LEADERBOARD_K_FACTOR;
+}
+
+export function getLeaderboardDefaultElo() {
+    return parsePositiveInt(process.env.LEADERBOARD_DEFAULT_ELO) ?? DEFAULT_LEADERBOARD_DEFAULT_ELO;
 }
 
 export function getCronSecret() {

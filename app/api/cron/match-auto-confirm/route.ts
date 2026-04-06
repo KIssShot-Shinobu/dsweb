@@ -58,6 +58,8 @@ export async function POST(request: Request) {
                 scoreB: report.scoreB,
                 winnerId: report.winnerId,
                 source: "SYSTEM",
+            }, {
+                actorUserId: null,
             });
 
             await logAudit({

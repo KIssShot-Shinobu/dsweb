@@ -84,6 +84,8 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
             winnerId: report.winnerId,
             source: isReferee ? "ADMIN" : "PLAYER",
             confirmedById: currentUser.id,
+        }, {
+            actorUserId: currentUser.id,
         });
 
         if (isReferee) {
