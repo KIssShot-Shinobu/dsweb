@@ -185,6 +185,7 @@ model Team {
   tournamentParticipants TournamentParticipant[]
   matchLineups          MatchLineup[]
   leaderboardEntries    TeamLeaderboardEntry[]
+  leaderboardHistory    LeaderboardHistory[]
 }
 
 model Tournament {
@@ -248,6 +249,7 @@ model Season {
   tournaments            Tournament[]
   leaderboardEntries     LeaderboardEntry[]
   teamLeaderboardEntries TeamLeaderboardEntry[]
+  leaderboardHistory     LeaderboardHistory[]
 
   @@index([isActive])
   @@index([startAt, endAt])
@@ -396,6 +398,7 @@ model User {
   badges                       UserBadge[]
   reputationLogs               ReputationLog[]
   leaderboardEntries           LeaderboardEntry[]
+  leaderboardHistory           LeaderboardHistory[]
   treasuryEntries              Treasury[]
   claimedUploads               PendingUpload[]
 
@@ -589,6 +592,9 @@ model Game {
 
   tournaments Tournament[]
   accounts    PlayerGameAccount[]
+  leaderboardEntries     LeaderboardEntry[]
+  teamLeaderboardEntries TeamLeaderboardEntry[]
+  leaderboardHistory     LeaderboardHistory[]
 }
 
 model PlayerGameAccount {
@@ -728,6 +734,7 @@ model Match {
   messages MatchMessage[]
   availabilities MatchAvailability[]
   lineups MatchLineup[]
+  leaderboardHistory LeaderboardHistory[]
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -792,6 +799,8 @@ model LeaderboardEntry {
   id            String   @id @default(cuid())
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId        String?
+  game          Game?    @relation(fields: [gameId], references: [id], onDelete: SetNull)
   seasonId      String?
   season        Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   eloRating     Float    @default(1500)
@@ -805,14 +814,17 @@ model LeaderboardEntry {
   updatedAt     DateTime @updatedAt
 
   @@index([eloRating])
+  @@index([gameId, seasonId, eloRating])
   @@index([seasonId, eloRating])
-  @@unique([userId, seasonId])
+  @@unique([userId, seasonId, gameId])
 }
 
 model TeamLeaderboardEntry {
   id            String   @id @default(cuid())
   teamId        String
   team          Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  gameId        String?
+  game          Game?    @relation(fields: [gameId], references: [id], onDelete: SetNull)
   seasonId      String?
   season        Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   eloRating     Float    @default(1500)
@@ -824,8 +836,33 @@ model TeamLeaderboardEntry {
   updatedAt     DateTime @updatedAt
 
   @@index([eloRating])
+  @@index([gameId, seasonId, eloRating])
   @@index([seasonId, eloRating])
-  @@unique([teamId, seasonId])
+  @@unique([teamId, seasonId, gameId])
+}
+
+model LeaderboardHistory {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamId    String?
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  gameId    String?
+  game      Game?    @relation(fields: [gameId], references: [id], onDelete: SetNull)
+  matchId   String?
+  match     Match?   @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  seasonId  String?
+  season    Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  eloBefore Float
+  eloAfter  Float
+  delta     Float
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([teamId, createdAt])
+  @@index([gameId, createdAt])
+  @@index([seasonId, createdAt])
+  @@index([matchId])
 }
 
 model MatchDispute {

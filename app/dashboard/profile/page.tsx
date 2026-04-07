@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { Trophy } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { ProfileAccountSection } from "@/components/dashboard/profile-account-section";
 import { ProfileAvatarForm } from "@/components/dashboard/profile-avatar-form";
@@ -24,7 +25,7 @@ export default async function ProfilePage() {
     const user = await getCurrentUser();
     if (!user) redirect("/login");
 
-    const [userWithProfiles, tournamentsJoined, reputation, recentAuditLogs] = await Promise.all([
+    const [userWithProfiles, tournamentsJoined, reputation, recentAuditLogs, leaderboardRankRows] = await Promise.all([
         prisma.user.findUnique({
             where: { id: user.id },
             select: {
@@ -49,6 +50,16 @@ export default async function ProfilePage() {
             orderBy: { createdAt: "desc" },
             take: 3,
         }),
+        prisma.$queryRaw<{ rank: bigint | number }[]>`
+            SELECT ranked.rank
+            FROM (
+                SELECT le.userId,
+                       ROW_NUMBER() OVER (ORDER BY le.eloRating DESC, le.updatedAt ASC, le.id ASC) AS rank
+                FROM LeaderboardEntry le
+                WHERE le.seasonId IS NULL
+            ) ranked
+            WHERE ranked.userId = ${user.id}
+        `,
     ]);
 
     const gameProfiles: GameProfileView[] = (userWithProfiles?.playerGameAccounts || []).map((account) => ({
@@ -85,6 +96,15 @@ export default async function ProfilePage() {
     const totalProfiles = gameProfiles.length || 0;
     const verifiedProfiles = gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).length || 0;
     const reputationPoints = reputation._sum.points || 0;
+    const leaderboardRankValue = leaderboardRankRows?.[0]?.rank;
+    const leaderboardRank = typeof leaderboardRankValue === "bigint" ? Number(leaderboardRankValue) : leaderboardRankValue ?? null;
+    const leaderboardRankSafe = leaderboardRank ?? 0;
+    const showLeaderboardBadge = leaderboardRank !== null && leaderboardRank <= 3;
+    const leaderboardBadgeClass = (rank: number) => {
+        if (rank === 1) return "border-warning/30 bg-warning/15 text-warning";
+        if (rank === 2) return "border-info/30 bg-info/10 text-info";
+        return "border-amber-700/30 bg-amber-700/10 text-amber-700";
+    };
 
     const stats = [
         { label: profile.stats.tournaments, value: tournamentsJoined, color: "text-primary" },
@@ -144,6 +164,12 @@ export default async function ProfilePage() {
                                         <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${emailVerificationClass}`}>
                                             {emailVerificationLabel}
                                         </span>
+                                        {showLeaderboardBadge ? (
+                                            <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${leaderboardBadgeClass(leaderboardRankSafe)}`}>
+                                                <Trophy className="h-3.5 w-3.5" />
+                                                {profile.leaderboardBadge(leaderboardRankSafe)}
+                                            </span>
+                                        ) : null}
                                     </div>
                                 </div>
                             </div>

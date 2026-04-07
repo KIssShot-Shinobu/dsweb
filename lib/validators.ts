@@ -130,11 +130,21 @@ export const notificationQuerySchema = z.object({
 
 export const leaderboardListQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+    search: z.string().trim().max(191).optional(),
+    tier: z.enum(["Bronze", "Silver", "Gold", "Platinum", "Diamond"] as const).optional(),
+    minWinRate: z.coerce.number().min(0).max(1).optional(),
     seasonId: z.string().cuid("Season ID tidak valid").optional(),
+    gameId: z.string().cuid("Game ID tidak valid").optional(),
+    searchBy: z.enum(["ign", "user"] as const).optional(),
 });
 
 export const leaderboardUserParamsSchema = z.object({
     userId: z.string().cuid("User ID tidak valid"),
+});
+
+export const leaderboardTeamParamsSchema = z.object({
+    teamId: z.string().cuid("Team ID tidak valid"),
 });
 
 export const tournamentParticipantsQuerySchema = z.object({
@@ -312,6 +322,7 @@ export type NotificationQueryInput = z.infer<typeof notificationQuerySchema>;
 export type NotificationReadInput = z.infer<typeof notificationReadSchema>;
 export type LeaderboardListQueryInput = z.infer<typeof leaderboardListQuerySchema>;
 export type LeaderboardUserParamsInput = z.infer<typeof leaderboardUserParamsSchema>;
+export type LeaderboardTeamParamsInput = z.infer<typeof leaderboardTeamParamsSchema>;
 export type TournamentParticipantAddInput = z.infer<typeof tournamentParticipantAddSchema>;
 export type TournamentParticipantBulkInput = z.infer<typeof tournamentParticipantBulkSchema>;
 

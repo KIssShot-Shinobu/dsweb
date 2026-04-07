@@ -227,6 +227,11 @@ async function cleanupDevData() {
     await withRetry(() => prisma.teamInvite.deleteMany(), "cleanup teamInvite");
     await withRetry(() => prisma.teamJoinRequest.deleteMany(), "cleanup teamJoinRequest");
     await withRetry(() => prisma.teamCreationRequest.deleteMany(), "cleanup teamCreationRequest");
+    if (prisma.leaderboardHistory?.deleteMany) {
+        await withRetry(() => prisma.leaderboardHistory.deleteMany(), "cleanup leaderboardHistory");
+    } else {
+        console.warn("[Seed] leaderboardHistory model unavailable. Run `npx prisma generate` for full seed.");
+    }
     if (prisma.teamLeaderboardEntry?.deleteMany) {
         await withRetry(() => prisma.teamLeaderboardEntry.deleteMany(), "cleanup teamLeaderboardEntry");
     } else {
@@ -491,10 +496,16 @@ function getRankTier(elo) {
     return "Bronze";
 }
 
-async function seedLeaderboards(createdUsers, teamMap, seasonId, participantIds) {
+async function seedLeaderboards(createdUsers, teamMap, gameMap, seasonId, participantIds) {
     console.log("Seeding leaderboards...");
     if (!prisma.leaderboardEntry?.create || !prisma.teamLeaderboardEntry?.create) {
         console.warn("[Seed] leaderboard models unavailable. Skipping leaderboard seeding.");
+        return;
+    }
+
+    const gameIds = Array.from(gameMap.values());
+    if (gameIds.length === 0) {
+        console.warn("[Seed] No games available. Skipping leaderboard seeding.");
         return;
     }
 
@@ -505,28 +516,16 @@ async function seedLeaderboards(createdUsers, teamMap, seasonId, participantIds)
 
     for (let index = 0; index < userCandidates.length; index += 1) {
         const user = userCandidates[index];
-        const stats = buildLeaderboardStats(index);
-        const lastMatchAt = getFixtureDate(-1 * ((index % 5) + 1), 20);
+        for (let gameIndex = 0; gameIndex < gameIds.length; gameIndex += 1) {
+            const stats = buildLeaderboardStats(index + gameIndex);
+            const lastMatchAt = getFixtureDate(-1 * ((index % 5) + 1), 20);
+            const gameId = gameIds[gameIndex];
 
-        await prisma.leaderboardEntry.create({
-            data: {
-                userId: user.id,
-                seasonId: null,
-                eloRating: stats.eloRating,
-                placementMatchesPlayed: stats.matchesPlayed,
-                rankTier: getRankTier(stats.eloRating),
-                wins: stats.wins,
-                losses: stats.losses,
-                matchesPlayed: stats.matchesPlayed,
-                lastMatchAt,
-            },
-        });
-
-        if (seasonId) {
             await prisma.leaderboardEntry.create({
                 data: {
                     userId: user.id,
-                    seasonId,
+                    gameId,
+                    seasonId: null,
                     eloRating: stats.eloRating,
                     placementMatchesPlayed: stats.matchesPlayed,
                     rankTier: getRankTier(stats.eloRating),
@@ -536,6 +535,23 @@ async function seedLeaderboards(createdUsers, teamMap, seasonId, participantIds)
                     lastMatchAt,
                 },
             });
+
+            if (seasonId) {
+                await prisma.leaderboardEntry.create({
+                    data: {
+                        userId: user.id,
+                        gameId,
+                        seasonId,
+                        eloRating: stats.eloRating,
+                        placementMatchesPlayed: stats.matchesPlayed,
+                        rankTier: getRankTier(stats.eloRating),
+                        wins: stats.wins,
+                        losses: stats.losses,
+                        matchesPlayed: stats.matchesPlayed,
+                        lastMatchAt,
+                    },
+                });
+            }
         }
 
         process.stdout.write(`\r  -> ${index + 1}/${userCandidates.length}`);
@@ -544,26 +560,16 @@ async function seedLeaderboards(createdUsers, teamMap, seasonId, participantIds)
     const teams = Array.from(teamMap.entries());
     for (let index = 0; index < teams.length; index += 1) {
         const [, teamId] = teams[index];
-        const stats = buildLeaderboardStats(index + 1);
-        const lastMatchAt = getFixtureDate(-1 * ((index % 4) + 1), 21);
+        for (let gameIndex = 0; gameIndex < gameIds.length; gameIndex += 1) {
+            const stats = buildLeaderboardStats(index + 1 + gameIndex);
+            const lastMatchAt = getFixtureDate(-1 * ((index % 4) + 1), 21);
+            const gameId = gameIds[gameIndex];
 
-        await prisma.teamLeaderboardEntry.create({
-            data: {
-                teamId,
-                seasonId: null,
-                eloRating: stats.eloRating,
-                wins: stats.wins,
-                losses: stats.losses,
-                matchesPlayed: stats.matchesPlayed,
-                lastMatchAt,
-            },
-        });
-
-        if (seasonId) {
             await prisma.teamLeaderboardEntry.create({
                 data: {
                     teamId,
-                    seasonId,
+                    gameId,
+                    seasonId: null,
                     eloRating: stats.eloRating,
                     wins: stats.wins,
                     losses: stats.losses,
@@ -571,6 +577,21 @@ async function seedLeaderboards(createdUsers, teamMap, seasonId, participantIds)
                     lastMatchAt,
                 },
             });
+
+            if (seasonId) {
+                await prisma.teamLeaderboardEntry.create({
+                    data: {
+                        teamId,
+                        gameId,
+                        seasonId,
+                        eloRating: stats.eloRating,
+                        wins: stats.wins,
+                        losses: stats.losses,
+                        matchesPlayed: stats.matchesPlayed,
+                        lastMatchAt,
+                    },
+                });
+            }
         }
     }
 
@@ -641,7 +662,7 @@ async function main() {
     const seasonMap = await seedSeasons();
     const activeSeasonId = seasonMap.get(seasonFixtures[0].name) || null;
     const { participantIds } = await seedTournaments(createdUsers, adminUser.id, gameMap, activeSeasonId);
-    await seedLeaderboards(createdUsers, teamMap, activeSeasonId, participantIds);
+    await seedLeaderboards(createdUsers, teamMap, gameMap, activeSeasonId, participantIds);
     await seedTreasury(createdUsers);
     await seedAuditLogs(createdUsers);
 

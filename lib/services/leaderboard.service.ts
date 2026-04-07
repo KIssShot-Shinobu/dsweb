@@ -47,6 +47,7 @@ export type TeamLeaderboardEntrySummary = {
 
 type EnsureEntryOptions = {
     seasonId: string | null;
+    gameId: string | null;
     defaultElo: number;
 };
 
@@ -72,7 +73,6 @@ const getSeasonScopes = (seasonId: string | null) => {
 
 const PLACEMENT_MATCH_LIMIT = 10;
 const PLACEMENT_K_FACTOR = 50;
-const REPEAT_MATCH_WINDOW_HOURS = 2;
 const MAX_MATCHES_PER_OPPONENT_PER_DAY = 5;
 
 export function isPlacementPhase(placementMatchesPlayed: number) {
@@ -126,7 +126,7 @@ export async function ensurePlayerEntry(
     options: EnsureEntryOptions
 ) {
     const seasonId = normalizeSeasonId(options.seasonId);
-    const where = { userId, seasonId };
+    const where = { userId, seasonId, gameId: options.gameId };
     const existing = await prisma.leaderboardEntry.findFirst({ where });
     if (existing) return existing;
 
@@ -134,6 +134,7 @@ export async function ensurePlayerEntry(
         return await prisma.leaderboardEntry.create({
             data: {
                 userId,
+                gameId: options.gameId,
                 seasonId,
                 eloRating: options.defaultElo,
                 placementMatchesPlayed: 0,
@@ -153,7 +154,7 @@ export async function ensureTeamEntry(
     options: EnsureEntryOptions
 ) {
     const seasonId = normalizeSeasonId(options.seasonId);
-    const where = { teamId, seasonId };
+    const where = { teamId, seasonId, gameId: options.gameId };
     const existing = await prisma.teamLeaderboardEntry.findFirst({ where });
     if (existing) return existing;
 
@@ -161,6 +162,7 @@ export async function ensureTeamEntry(
         return await prisma.teamLeaderboardEntry.create({
             data: {
                 teamId,
+                gameId: options.gameId,
                 seasonId,
                 eloRating: options.defaultElo,
             },
@@ -193,13 +195,14 @@ async function normalizeLegacyPlayerEntry(
 
 export async function getTopPlayers(
     prisma: PrismaClient,
-    input: { limit: number; seasonId: string | null }
+    input: { limit: number; seasonId: string | null; gameId: string | null; skip?: number }
 ): Promise<LeaderboardEntrySummary[]> {
     const seasonId = normalizeSeasonId(input.seasonId);
     const entries = await prisma.leaderboardEntry.findMany({
-        where: { seasonId },
+        where: { seasonId, gameId: input.gameId },
         orderBy: [{ eloRating: "desc" }, { updatedAt: "asc" }, { id: "asc" }],
         take: input.limit,
+        skip: input.skip,
         select: {
             id: true,
             eloRating: true,
@@ -224,13 +227,14 @@ export async function getTopPlayers(
 
 export async function getTopTeams(
     prisma: PrismaClient,
-    input: { limit: number; seasonId: string | null }
+    input: { limit: number; seasonId: string | null; gameId: string | null; skip?: number }
 ): Promise<TeamLeaderboardEntrySummary[]> {
     const seasonId = normalizeSeasonId(input.seasonId);
     const entries = await prisma.teamLeaderboardEntry.findMany({
-        where: { seasonId },
+        where: { seasonId, gameId: input.gameId },
         orderBy: [{ eloRating: "desc" }, { updatedAt: "asc" }, { id: "asc" }],
         take: input.limit,
+        skip: input.skip,
         select: {
             id: true,
             eloRating: true,
@@ -255,14 +259,16 @@ export async function getTopTeams(
 async function applyPlayerEloScope(
     prisma: LeaderboardClient,
     scopeSeasonId: string | null,
+    gameId: string,
+    matchId: string,
     playerAUserId: string,
     playerBUserId: string,
     winnerSide: "A" | "B",
     now: Date,
     defaultElo: number
 ) {
-    const entryA = await ensurePlayerEntry(prisma, playerAUserId, { seasonId: scopeSeasonId, defaultElo });
-    const entryB = await ensurePlayerEntry(prisma, playerBUserId, { seasonId: scopeSeasonId, defaultElo });
+    const entryA = await ensurePlayerEntry(prisma, playerAUserId, { seasonId: scopeSeasonId, gameId, defaultElo });
+    const entryB = await ensurePlayerEntry(prisma, playerBUserId, { seasonId: scopeSeasonId, gameId, defaultElo });
     const normalizedA = await normalizeLegacyPlayerEntry(prisma, entryA);
     const normalizedB = await normalizeLegacyPlayerEntry(prisma, entryB);
     const result = calculateElo({
@@ -302,19 +308,46 @@ async function applyPlayerEloScope(
             lastMatchAt: now,
         },
     });
+
+    await prisma.leaderboardHistory.createMany({
+        data: [
+            {
+                userId: normalizedA.userId,
+                gameId,
+                matchId,
+                seasonId: scopeSeasonId,
+                eloBefore: normalizedA.eloRating,
+                eloAfter: result.newRatingA,
+                delta: result.deltaA,
+                createdAt: now,
+            },
+            {
+                userId: normalizedB.userId,
+                gameId,
+                matchId,
+                seasonId: scopeSeasonId,
+                eloBefore: normalizedB.eloRating,
+                eloAfter: result.newRatingB,
+                delta: result.deltaB,
+                createdAt: now,
+            },
+        ],
+    });
 }
 
 async function applyTeamEloScope(
     prisma: LeaderboardClient,
     scopeSeasonId: string | null,
+    gameId: string,
+    matchId: string,
     teamAId: string,
     teamBId: string,
     winnerSide: "A" | "B",
     now: Date,
     defaultElo: number
 ) {
-    const entryA = await ensureTeamEntry(prisma, teamAId, { seasonId: scopeSeasonId, defaultElo });
-    const entryB = await ensureTeamEntry(prisma, teamBId, { seasonId: scopeSeasonId, defaultElo });
+    const entryA = await ensureTeamEntry(prisma, teamAId, { seasonId: scopeSeasonId, gameId, defaultElo });
+    const entryB = await ensureTeamEntry(prisma, teamBId, { seasonId: scopeSeasonId, gameId, defaultElo });
     const result = calculateElo({
         ratingA: entryA.eloRating,
         ratingB: entryB.eloRating,
@@ -344,11 +377,38 @@ async function applyTeamEloScope(
             lastMatchAt: now,
         },
     });
+
+    await prisma.leaderboardHistory.createMany({
+        data: [
+            {
+                teamId: entryA.teamId,
+                gameId,
+                matchId,
+                seasonId: scopeSeasonId,
+                eloBefore: entryA.eloRating,
+                eloAfter: result.newRatingA,
+                delta: result.deltaA,
+                createdAt: now,
+            },
+            {
+                teamId: entryB.teamId,
+                gameId,
+                matchId,
+                seasonId: scopeSeasonId,
+                eloBefore: entryB.eloRating,
+                eloAfter: result.newRatingB,
+                delta: result.deltaB,
+                createdAt: now,
+            },
+        ],
+    });
 }
 
 async function applyLineupEloScope(
     prisma: LeaderboardClient,
     scopeSeasonId: string | null,
+    gameId: string,
+    matchId: string,
     lineupA: string[],
     lineupB: string[],
     winnerSide: "A" | "B",
@@ -358,10 +418,10 @@ async function applyLineupEloScope(
     if (lineupA.length === 0 || lineupB.length === 0) return false;
 
     const entriesA = await Promise.all(lineupA.map((userId) =>
-        ensurePlayerEntry(prisma, userId, { seasonId: scopeSeasonId, defaultElo })
+        ensurePlayerEntry(prisma, userId, { seasonId: scopeSeasonId, gameId, defaultElo })
     ));
     const entriesB = await Promise.all(lineupB.map((userId) =>
-        ensurePlayerEntry(prisma, userId, { seasonId: scopeSeasonId, defaultElo })
+        ensurePlayerEntry(prisma, userId, { seasonId: scopeSeasonId, gameId, defaultElo })
     ));
     const normalizedEntriesA = await Promise.all(entriesA.map((entry) => normalizeLegacyPlayerEntry(prisma, entry)));
     const normalizedEntriesB = await Promise.all(entriesB.map((entry) => normalizeLegacyPlayerEntry(prisma, entry)));
@@ -415,6 +475,33 @@ async function applyLineupEloScope(
         )
     );
 
+    const historyPayload = [
+        ...normalizedEntriesA.map((entry) => ({
+            userId: entry.userId,
+            gameId,
+            matchId,
+            seasonId: scopeSeasonId,
+            eloBefore: entry.eloRating,
+            eloAfter: entry.eloRating + deltaA,
+            delta: deltaA,
+            createdAt: now,
+        })),
+        ...normalizedEntriesB.map((entry) => ({
+            userId: entry.userId,
+            gameId,
+            matchId,
+            seasonId: scopeSeasonId,
+            eloBefore: entry.eloRating,
+            eloAfter: entry.eloRating + deltaB,
+            delta: deltaB,
+            createdAt: now,
+        })),
+    ];
+
+    if (historyPayload.length > 0) {
+        await prisma.leaderboardHistory.createMany({ data: historyPayload });
+    }
+
     return true;
 }
 
@@ -424,29 +511,14 @@ async function shouldApplyLeaderboardUpdate(
     now: Date,
     participants: { userA?: string | null; userB?: string | null; teamA?: string | null; teamB?: string | null }
 ) {
-    const windowStart = new Date(now.getTime() - REPEAT_MATCH_WINDOW_HOURS * 60 * 60 * 1000);
-    const dayStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
     if (participants.userA && participants.userB) {
-        const repeatCount = await prisma.matchResult.count({
-            where: {
-                matchId: { not: matchId },
-                createdAt: { gte: windowStart },
-                match: {
-                    status: "COMPLETED",
-                    OR: [
-                        { playerA: { userId: participants.userA }, playerB: { userId: participants.userB } },
-                        { playerA: { userId: participants.userB }, playerB: { userId: participants.userA } },
-                    ],
-                },
-            },
-        });
-        if (repeatCount > 0) return false;
-
         const dailyCount = await prisma.matchResult.count({
             where: {
                 matchId: { not: matchId },
-                createdAt: { gte: dayStart },
+                leaderboardAppliedAt: { gte: dayStart, lt: dayEnd },
                 match: {
                     status: "COMPLETED",
                     OR: [
@@ -460,25 +532,10 @@ async function shouldApplyLeaderboardUpdate(
     }
 
     if (participants.teamA && participants.teamB) {
-        const repeatCount = await prisma.matchResult.count({
-            where: {
-                matchId: { not: matchId },
-                createdAt: { gte: windowStart },
-                match: {
-                    status: "COMPLETED",
-                    OR: [
-                        { playerA: { teamId: participants.teamA }, playerB: { teamId: participants.teamB } },
-                        { playerA: { teamId: participants.teamB }, playerB: { teamId: participants.teamA } },
-                    ],
-                },
-            },
-        });
-        if (repeatCount > 0) return false;
-
         const dailyCount = await prisma.matchResult.count({
             where: {
                 matchId: { not: matchId },
-                createdAt: { gte: dayStart },
+                leaderboardAppliedAt: { gte: dayStart, lt: dayEnd },
                 match: {
                     status: "COMPLETED",
                     OR: [
@@ -511,7 +568,7 @@ export async function applyLeaderboardForMatch(
             playerBId: true,
             playerA: { select: { userId: true, teamId: true } },
             playerB: { select: { userId: true, teamId: true } },
-            tournament: { select: { seasonId: true, isTeamTournament: true, mode: true } },
+            tournament: { select: { seasonId: true, isTeamTournament: true, mode: true, gameId: true } },
         },
     });
 
@@ -520,6 +577,7 @@ export async function applyLeaderboardForMatch(
     }
 
     const winnerSide = match.winnerId === match.playerAId ? "A" : match.winnerId === match.playerBId ? "B" : null;
+    const gameId = match.tournament?.gameId ?? null;
     let seasonId = match.tournament?.seasonId ?? null;
     if (!seasonId) {
         const activeSeason = await prisma.season.findFirst({
@@ -528,6 +586,13 @@ export async function applyLeaderboardForMatch(
             select: { id: true },
         });
         seasonId = activeSeason?.id ?? null;
+    }
+    if (!gameId) {
+        await prisma.matchResult.update({
+            where: { matchId },
+            data: { leaderboardAppliedAt: now },
+        });
+        return { applied: false };
     }
     const scopes = getSeasonScopes(seasonId);
     let applied = false;
@@ -559,7 +624,7 @@ export async function applyLeaderboardForMatch(
         const teamBId = match.playerB?.teamId ?? null;
         if (teamAId && teamBId) {
             for (const scopeSeasonId of scopes) {
-                await applyTeamEloScope(prisma, scopeSeasonId, teamAId, teamBId, winnerSide, now, defaultElo);
+                await applyTeamEloScope(prisma, scopeSeasonId, gameId, matchId, teamAId, teamBId, winnerSide, now, defaultElo);
                 applied = true;
             }
 
@@ -577,6 +642,8 @@ export async function applyLeaderboardForMatch(
                     const appliedLineup = await applyLineupEloScope(
                         prisma,
                         scopeSeasonId,
+                        gameId,
+                        matchId,
                         memberIdsA,
                         memberIdsB,
                         winnerSide,
@@ -595,6 +662,8 @@ export async function applyLeaderboardForMatch(
                 await applyPlayerEloScope(
                     prisma,
                     scopeSeasonId,
+                    gameId,
+                    matchId,
                     playerAUserId,
                     playerBUserId,
                     winnerSide,
@@ -614,5 +683,5 @@ export async function applyLeaderboardForMatch(
     return { applied };
 }
 
-export const leaderboardSeasonFilter = (seasonId: string | null) =>
-    seasonId ? Prisma.sql`le.seasonId = ${seasonId}` : Prisma.sql`le.seasonId IS NULL`;
+export const leaderboardSeasonGameFilter = (seasonId: string | null, gameId: string) =>
+    Prisma.sql`le.gameId = ${gameId} AND ${seasonId ? Prisma.sql`le.seasonId = ${seasonId}` : Prisma.sql`le.seasonId IS NULL`}`;

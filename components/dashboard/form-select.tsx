@@ -14,6 +14,7 @@ type FormSelectProps = {
     options: Option[];
     disabled?: boolean;
     placeholder?: string;
+    showPlaceholder?: boolean;
     className?: string;
 };
 
@@ -23,6 +24,7 @@ export function FormSelect({
     options,
     disabled = false,
     placeholder,
+    showPlaceholder = true,
     className = "",
 }: FormSelectProps) {
     const { t } = useLocale();
@@ -34,7 +36,7 @@ export function FormSelect({
             onChange={(event) => onChange(event.target.value)}
             className={cn("select select-bordered w-full bg-base-100", className)}
         >
-            {!value ? <option value="">{resolvedPlaceholder}</option> : null}
+            {showPlaceholder && !value ? <option value="">{resolvedPlaceholder}</option> : null}
             {options.map((option) => (
                 <option key={option.value} value={option.value}>
                     {option.label}

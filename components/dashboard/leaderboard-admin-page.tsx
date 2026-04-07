@@ -97,6 +97,9 @@ export default function LeaderboardAdminPage() {
     }, [loadSeasons]);
 
     const activeSeason = useMemo(() => seasons.find((season) => season.isActive) || null, [seasons]);
+    const sortedSeasons = useMemo(() => {
+        return [...seasons].sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
+    }, [seasons]);
 
     const isValid = useMemo(() => {
         if (!form.name.trim() || form.name.trim().length < 3) return false;
@@ -323,6 +326,54 @@ export default function LeaderboardAdminPage() {
                             </div>
                         </div>
                     </div>
+                </DashboardPanel>
+
+                <DashboardPanel
+                    title={t.dashboard.leaderboardAdmin.listTitle}
+                    description={t.dashboard.leaderboardAdmin.listDescription}
+                >
+                    {loading ? (
+                        <div className="space-y-2">
+                            {[1, 2, 3].map((item) => (
+                                <div key={item} className="h-12 w-full animate-pulse rounded-box bg-base-200/60" />
+                            ))}
+                        </div>
+                    ) : sortedSeasons.length === 0 ? (
+                        <div className="rounded-box border border-dashed border-base-300 bg-base-200/40 px-4 py-6 text-center text-sm text-base-content/60">
+                            {t.dashboard.leaderboardAdmin.listEmpty}
+                        </div>
+                    ) : (
+                        <div className="overflow-hidden rounded-2xl border border-base-300">
+                            <table className="table">
+                                <thead>
+                                    <tr className="text-xs uppercase tracking-widest text-base-content/60">
+                                        <th>{t.dashboard.leaderboardAdmin.listColumns.season}</th>
+                                        <th>{t.dashboard.leaderboardAdmin.listColumns.range}</th>
+                                        <th>{t.dashboard.leaderboardAdmin.listColumns.status}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {sortedSeasons.map((season) => (
+                                        <tr key={season.id}>
+                                            <td className="text-sm font-semibold text-base-content">{season.name}</td>
+                                            <td className="text-sm text-base-content/70">
+                                                {formatDateTime(season.startAt, locale, { day: "numeric", month: "short", year: "numeric" })}
+                                                {" - "}
+                                                {formatDateTime(season.endAt, locale, { day: "numeric", month: "short", year: "numeric" })}
+                                            </td>
+                                            <td>
+                                                <span className={`badge badge-sm ${season.isActive ? "badge-success" : "badge-ghost"}`}>
+                                                    {season.isActive
+                                                        ? t.dashboard.leaderboardAdmin.statusActive
+                                                        : t.dashboard.leaderboardAdmin.statusInactive}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </DashboardPanel>
             </div>
 

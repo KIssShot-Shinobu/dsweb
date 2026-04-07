@@ -49,30 +49,30 @@ export async function POST(request: NextRequest) {
             let sourceSeasonId = archivedSeasonId;
             let playerSource = await tx.leaderboardEntry.findMany({
                 where: { seasonId: sourceSeasonId },
-                select: { userId: true, eloRating: true },
+                select: { userId: true, eloRating: true, gameId: true },
             });
 
             let teamSource = await tx.teamLeaderboardEntry.findMany({
                 where: { seasonId: sourceSeasonId },
-                select: { teamId: true, eloRating: true },
+                select: { teamId: true, eloRating: true, gameId: true },
             });
 
             if (sourceSeasonId && playerSource.length === 0) {
                 sourceSeasonId = null;
                 playerSource = await tx.leaderboardEntry.findMany({
                     where: { seasonId: null },
-                    select: { userId: true, eloRating: true },
+                    select: { userId: true, eloRating: true, gameId: true },
                 });
                 teamSource = await tx.teamLeaderboardEntry.findMany({
                     where: { seasonId: null },
-                    select: { teamId: true, eloRating: true },
+                    select: { teamId: true, eloRating: true, gameId: true },
                 });
             }
 
             if (sourceSeasonId && teamSource.length === 0) {
                 teamSource = await tx.teamLeaderboardEntry.findMany({
                     where: { seasonId: null },
-                    select: { teamId: true, eloRating: true },
+                    select: { teamId: true, eloRating: true, gameId: true },
                 });
             }
 
@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
                 const nextElo = applySeasonReset(entry.eloRating, defaultElo);
                 return {
                     userId: entry.userId,
+                    gameId: entry.gameId,
                     seasonId: newSeason.id,
                     eloRating: nextElo,
                     rankTier: getRankTier(nextElo),
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
                 const nextElo = applySeasonReset(entry.eloRating, defaultElo);
                 return {
                     teamId: entry.teamId,
+                    gameId: entry.gameId,
                     seasonId: newSeason.id,
                     eloRating: nextElo,
                     wins: 0,
