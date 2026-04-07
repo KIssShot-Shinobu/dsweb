@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { leaderboardListQuerySchema, leaderboardTeamParamsSchema } from "@/lib/validators";
 import { getRankTier } from "@/lib/services/leaderboard.service";
+import { enforceLeaderboardRateLimit } from "@/lib/leaderboard-rate-limit";
 
 const NEIGHBOR_WINDOW = 5;
 
@@ -24,6 +25,9 @@ type RankedTeamRow = {
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ teamId: string }> }) {
     try {
+        const rateLimitResponse = enforceLeaderboardRateLimit(request, "teams:detail");
+        if (rateLimitResponse) return rateLimitResponse;
+
         const { teamId } = await params;
         const parsedParams = leaderboardTeamParamsSchema.safeParse({ teamId });
         if (!parsedParams.success) {

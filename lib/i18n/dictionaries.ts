@@ -2413,6 +2413,15 @@ const id = {
             close: "Tutup",
             moreLink: "Pelajari lebih lanjut",
         },
+        myRank: {
+            title: "Peringkat Kamu",
+            subtitle: "Snapshot posisi terakhir kamu di leaderboard ini.",
+            empty: "Kamu belum memiliki peringkat di game/season ini.",
+            rankLabel: "Rank",
+            eloLabel: "ELO",
+            recordLabel: "W/L",
+            winRateLabel: "Win Rate",
+        },
         detail: {
             badge: "Leaderboard Detail",
             title: "Riwayat ELO",
@@ -5222,6 +5231,15 @@ const en: typeof id = {
             seasonBody: "If a tournament has a season, seasonal ELO is updated as well; otherwise only global.",
             close: "Close",
             moreLink: "Learn more",
+        },
+        myRank: {
+            title: "Your Rank",
+            subtitle: "Latest snapshot of your position on this leaderboard.",
+            empty: "You do not have a rank for this game/season yet.",
+            rankLabel: "Rank",
+            eloLabel: "ELO",
+            recordLabel: "W/L",
+            winRateLabel: "Win Rate",
         },
         detail: {
             badge: "Leaderboard Detail",

@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { enforceLeaderboardRateLimit } from "@/lib/leaderboard-rate-limit";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        const rateLimitResponse = enforceLeaderboardRateLimit(request, "seasons");
+        if (rateLimitResponse) return rateLimitResponse;
+
         const seasons = await prisma.season.findMany({
             orderBy: [{ isActive: "desc" }, { startAt: "desc" }],
             select: {

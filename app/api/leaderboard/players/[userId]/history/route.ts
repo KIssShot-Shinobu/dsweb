@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { leaderboardListQuerySchema, leaderboardUserParamsSchema } from "@/lib/validators";
+import { enforceLeaderboardRateLimit } from "@/lib/leaderboard-rate-limit";
 
 const DEFAULT_LIMIT = 20;
 const DEFAULT_PAGE = 1;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
     try {
+        const rateLimitResponse = enforceLeaderboardRateLimit(request, "players:history");
+        if (rateLimitResponse) return rateLimitResponse;
+
         const { userId } = await params;
         const parsedParams = leaderboardUserParamsSchema.safeParse({ userId });
         if (!parsedParams.success) {

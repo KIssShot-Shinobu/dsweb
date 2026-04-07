@@ -9,8 +9,11 @@ const DEFAULT_EMSIFA_API_BASE_URL = "https://www.emsifa.com/api-wilayah-indonesi
 const DEFAULT_RATE_LIMIT_ENABLED = true;
 const DEFAULT_RATE_LIMIT_TOURNAMENT_REGISTER = { max: 5, windowSeconds: 600 };
 const DEFAULT_RATE_LIMIT_MATCH_REPORT = { max: 10, windowSeconds: 300 };
+const DEFAULT_RATE_LIMIT_LEADERBOARD = { max: 120, windowSeconds: 60 };
 const DEFAULT_LEADERBOARD_K_FACTOR = 32;
 const DEFAULT_LEADERBOARD_DEFAULT_ELO = 1500;
+const DEFAULT_LEADERBOARD_SEASON_DAYS = 90;
+const DEFAULT_LEADERBOARD_SEASON_AUTO_ENABLED = false;
 
 export function getAppUrl() {
     const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -95,12 +98,29 @@ export function getRateLimitMatchReport() {
     return { max, windowSeconds };
 }
 
+export function getRateLimitLeaderboard() {
+    const max = parsePositiveInt(process.env.RATE_LIMIT_LEADERBOARD_MAX) ?? DEFAULT_RATE_LIMIT_LEADERBOARD.max;
+    const windowSeconds =
+        parsePositiveInt(process.env.RATE_LIMIT_LEADERBOARD_WINDOW_SECONDS) ??
+        DEFAULT_RATE_LIMIT_LEADERBOARD.windowSeconds;
+
+    return { max, windowSeconds };
+}
+
 export function getLeaderboardKFactor() {
     return parsePositiveInt(process.env.LEADERBOARD_K_FACTOR) ?? DEFAULT_LEADERBOARD_K_FACTOR;
 }
 
 export function getLeaderboardDefaultElo() {
     return parsePositiveInt(process.env.LEADERBOARD_DEFAULT_ELO) ?? DEFAULT_LEADERBOARD_DEFAULT_ELO;
+}
+
+export function getLeaderboardSeasonDurationDays() {
+    return parsePositiveInt(process.env.LEADERBOARD_SEASON_DURATION_DAYS) ?? DEFAULT_LEADERBOARD_SEASON_DAYS;
+}
+
+export function getLeaderboardSeasonAutoEnabled() {
+    return parseBooleanEnv(process.env.LEADERBOARD_SEASON_AUTO_ENABLED, DEFAULT_LEADERBOARD_SEASON_AUTO_ENABLED);
 }
 
 export function getCronSecret() {

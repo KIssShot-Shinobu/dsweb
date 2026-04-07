@@ -100,6 +100,117 @@ export function applySeasonReset(elo: number, baseElo = 1500) {
     return baseElo + (elo - baseElo) * 0.5;
 }
 
+export async function resetLeaderboardSeason(
+    prisma: LeaderboardClient,
+    input: { name: string; startAt: Date; endAt: Date; defaultElo?: number }
+) {
+    const defaultElo = input.defaultElo ?? getLeaderboardDefaultElo();
+
+    const activeSeason = await prisma.season.findFirst({
+        where: { isActive: true },
+        orderBy: { startAt: "desc" },
+        select: { id: true },
+    });
+
+    if (activeSeason) {
+        await prisma.season.updateMany({
+            where: { isActive: true },
+            data: { isActive: false },
+        });
+    }
+
+    const newSeason = await prisma.season.create({
+        data: {
+            name: input.name,
+            startAt: input.startAt,
+            endAt: input.endAt,
+            isActive: true,
+        },
+    });
+
+    const archivedSeasonId = activeSeason?.id ?? null;
+    let sourceSeasonId = archivedSeasonId;
+    let playerSource = await prisma.leaderboardEntry.findMany({
+        where: { seasonId: sourceSeasonId },
+        select: { userId: true, eloRating: true, gameId: true },
+    });
+
+    let teamSource = await prisma.teamLeaderboardEntry.findMany({
+        where: { seasonId: sourceSeasonId },
+        select: { teamId: true, eloRating: true, gameId: true },
+    });
+
+    if (sourceSeasonId && playerSource.length === 0) {
+        sourceSeasonId = null;
+        playerSource = await prisma.leaderboardEntry.findMany({
+            where: { seasonId: null },
+            select: { userId: true, eloRating: true, gameId: true },
+        });
+        teamSource = await prisma.teamLeaderboardEntry.findMany({
+            where: { seasonId: null },
+            select: { teamId: true, eloRating: true, gameId: true },
+        });
+    }
+
+    if (sourceSeasonId && teamSource.length === 0) {
+        teamSource = await prisma.teamLeaderboardEntry.findMany({
+            where: { seasonId: null },
+            select: { teamId: true, eloRating: true, gameId: true },
+        });
+    }
+
+    const playerPayload = playerSource.map((entry) => {
+        const nextElo = applySeasonReset(entry.eloRating, defaultElo);
+        return {
+            userId: entry.userId,
+            gameId: entry.gameId,
+            seasonId: newSeason.id,
+            eloRating: nextElo,
+            rankTier: getRankTier(nextElo),
+            placementMatchesPlayed: 0,
+            wins: 0,
+            losses: 0,
+            matchesPlayed: 0,
+            lastMatchAt: null,
+        };
+    });
+
+    const teamPayload = teamSource.map((entry) => {
+        const nextElo = applySeasonReset(entry.eloRating, defaultElo);
+        return {
+            teamId: entry.teamId,
+            gameId: entry.gameId,
+            seasonId: newSeason.id,
+            eloRating: nextElo,
+            wins: 0,
+            losses: 0,
+            matchesPlayed: 0,
+            lastMatchAt: null,
+        };
+    });
+
+    if (playerPayload.length > 0) {
+        await prisma.leaderboardEntry.createMany({
+            data: playerPayload,
+            skipDuplicates: true,
+        });
+    }
+
+    if (teamPayload.length > 0) {
+        await prisma.teamLeaderboardEntry.createMany({
+            data: teamPayload,
+            skipDuplicates: true,
+        });
+    }
+
+    return {
+        newSeason,
+        archivedSeasonId,
+        playersSeeded: playerPayload.length,
+        teamsSeeded: teamPayload.length,
+    };
+}
+
 export function calculateElo(input: EloInput): EloResult {
     const kFactorA = getKFactor(input.matchesPlayedA, input.ratingA, input.placementMatchesPlayedA);
     const kFactorB = getKFactor(input.matchesPlayedB, input.ratingB, input.placementMatchesPlayedB);

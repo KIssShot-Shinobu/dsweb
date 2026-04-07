@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { leaderboardListQuerySchema } from "@/lib/validators";
+import { enforceLeaderboardRateLimit } from "@/lib/leaderboard-rate-limit";
 
 const DEFAULT_LIMIT = 50;
 const DEFAULT_PAGE = 1;
@@ -27,6 +28,9 @@ type RankedPlayerRow = {
 
 export async function GET(request: NextRequest) {
     try {
+        const rateLimitResponse = enforceLeaderboardRateLimit(request, "players");
+        if (rateLimitResponse) return rateLimitResponse;
+
         const { searchParams } = new URL(request.url);
         const seasonIdParam = searchParams.get("seasonId")?.trim() || undefined;
         const payload = {

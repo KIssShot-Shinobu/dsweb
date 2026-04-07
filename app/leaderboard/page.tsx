@@ -35,6 +35,19 @@ type PlayerEntry = {
     game: { id: string; name: string; code: string };
 };
 
+type MyRankSummary = {
+    rank: number;
+    eloRating: number;
+    rankTier: string;
+    wins: number;
+    losses: number;
+    matchesPlayed: number;
+    winRate: number;
+    lastMatchAt: string | null;
+    ign: string | null;
+    game: { id: string; name: string; code: string };
+};
+
 type TeamEntry = {
     rank: number;
     eloRating: number;
@@ -67,6 +80,9 @@ export default function LeaderboardPage() {
     const [winRateFilter, setWinRateFilter] = useState("ALL");
     const [players, setPlayers] = useState<PlayerEntry[]>([]);
     const [teams, setTeams] = useState<TeamEntry[]>([]);
+    const [currentUser, setCurrentUser] = useState<{ id: string; username: string | null; fullName: string | null } | null>(null);
+    const [myRank, setMyRank] = useState<MyRankSummary | null>(null);
+    const [myRankLoading, setMyRankLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showInfo, setShowInfo] = useState(false);
@@ -95,6 +111,25 @@ export default function LeaderboardPage() {
             })
             .catch(() => {
                 setGames([]);
+            });
+    }, []);
+
+    useEffect(() => {
+        fetch("/api/auth/me")
+            .then((response) => response.json())
+            .then((payload) => {
+                if (payload?.success && payload?.authenticated && payload?.user) {
+                    setCurrentUser({
+                        id: payload.user.id,
+                        username: payload.user.username ?? null,
+                        fullName: payload.user.fullName ?? null,
+                    });
+                } else {
+                    setCurrentUser(null);
+                }
+            })
+            .catch(() => {
+                setCurrentUser(null);
             });
     }, []);
 
@@ -158,6 +193,32 @@ export default function LeaderboardPage() {
             })
             .finally(() => setLoading(false));
     }, [activeTab, seasonId, gameId, page, perPage, search, searchBy, tierFilter, winRateFilter, t.leaderboard.errors.loadFailed]);
+
+    useEffect(() => {
+        if (!currentUser || activeTab !== "players" || !gameId) {
+            setMyRank(null);
+            return;
+        }
+
+        setMyRankLoading(true);
+        const params = new URLSearchParams();
+        params.set("gameId", gameId);
+        if (seasonId && seasonId !== "all") params.set("seasonId", seasonId);
+
+        fetch(`/api/leaderboard/players/${currentUser.id}?${params.toString()}`)
+            .then((response) => response.json())
+            .then((payload) => {
+                if (payload?.success) {
+                    setMyRank(payload.data || null);
+                } else {
+                    setMyRank(null);
+                }
+            })
+            .catch(() => {
+                setMyRank(null);
+            })
+            .finally(() => setMyRankLoading(false));
+    }, [activeTab, currentUser, gameId, seasonId]);
 
     const seasonOptions = useMemo(() => {
         return [
@@ -307,6 +368,64 @@ export default function LeaderboardPage() {
                 {error ? (
                     <div className="alert alert-error mb-6 rounded-box text-sm">
                         {error}
+                    </div>
+                ) : null}
+
+                {activeTab === "players" && currentUser ? (
+                    <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <div className="text-sm font-semibold text-base-content/60">{t.leaderboard.myRank.title}</div>
+                                <div className="mt-1 text-lg font-black text-base-content">
+                                    {t.leaderboard.myRank.subtitle}
+                                </div>
+                                <div className="mt-2 text-sm text-base-content/60">
+                                    {myRank?.ign || currentUser.username || currentUser.fullName || t.common.userFallback}
+                                </div>
+                            </div>
+                            {myRank ? (
+                                <span className={`badge badge-sm ${tierClass(myRank.rankTier)}`}>
+                                    {myRank.rankTier}
+                                </span>
+                            ) : null}
+                        </div>
+                        {myRankLoading ? (
+                            <div className="mt-4 space-y-2">
+                                <div className="skeleton h-6 w-1/3 rounded-box" />
+                                <div className="skeleton h-4 w-2/3 rounded-box" />
+                            </div>
+                        ) : myRank ? (
+                            <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                                <div className="rounded-box border border-base-300 bg-base-200/40 px-3 py-2">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-base-content/60">
+                                        {t.leaderboard.myRank.rankLabel}
+                                    </div>
+                                    <div className="mt-1 text-lg font-bold">#{myRank.rank}</div>
+                                </div>
+                                <div className="rounded-box border border-base-300 bg-base-200/40 px-3 py-2">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-base-content/60">
+                                        {t.leaderboard.myRank.eloLabel}
+                                    </div>
+                                    <div className="mt-1 text-lg font-bold">{myRank.eloRating.toFixed(2)}</div>
+                                </div>
+                                <div className="rounded-box border border-base-300 bg-base-200/40 px-3 py-2">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-base-content/60">
+                                        {t.leaderboard.myRank.recordLabel}
+                                    </div>
+                                    <div className="mt-1 text-lg font-bold">{myRank.wins}-{myRank.losses}</div>
+                                </div>
+                                <div className="rounded-box border border-base-300 bg-base-200/40 px-3 py-2">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-base-content/60">
+                                        {t.leaderboard.myRank.winRateLabel}
+                                    </div>
+                                    <div className="mt-1 text-lg font-bold">{(myRank.winRate * 100).toFixed(1)}%</div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="mt-4 text-sm text-base-content/60">
+                                {t.leaderboard.myRank.empty}
+                            </div>
+                        )}
                     </div>
                 ) : null}
 
