@@ -9,7 +9,7 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_MIN_WIN_RATE = 0;
 
 type RankedPlayerRow = {
-    rank: number;
+    rankPosition: number;
     userId: string;
     gameId: string;
     eloRating: number;
@@ -63,16 +63,16 @@ export async function GET(request: NextRequest) {
         }
 
         const conditions: Prisma.Sql[] = [
-            seasonId ? Prisma.sql`le.seasonId = ${seasonId}` : Prisma.sql`le.seasonId IS NULL`,
-            Prisma.sql`le.gameId = ${gameId}`,
+            seasonId ? Prisma.sql`le."seasonId" = ${seasonId}` : Prisma.sql`le."seasonId" IS NULL`,
+            Prisma.sql`le."gameId" = ${gameId}`,
         ];
 
         if (search) {
             const likeValue = `%${search}%`;
             if (searchBy === "user") {
-                conditions.push(Prisma.sql`(u.username LIKE ${likeValue} OR u.fullName LIKE ${likeValue})`);
+                conditions.push(Prisma.sql`(u."username" ILIKE ${likeValue} OR u."fullName" ILIKE ${likeValue})`);
             } else {
-                conditions.push(Prisma.sql`(pga.ign LIKE ${likeValue})`);
+                conditions.push(Prisma.sql`(pga."ign" ILIKE ${likeValue})`);
             }
         }
 
@@ -81,61 +81,59 @@ export async function GET(request: NextRequest) {
         }
 
         if (minWinRate > 0) {
-            conditions.push(Prisma.sql`COALESCE(le.wins / NULLIF(le.matchesPlayed, 0), 0) >= ${minWinRate}`);
+            conditions.push(Prisma.sql`COALESCE(CAST(le."wins" AS float) / NULLIF(le."matchesPlayed", 0), 0) >= ${minWinRate}`);
         }
 
         const whereSql = Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`;
 
         const rowsPromise = Prisma.sql`
-            SELECT ranked.rank,
-                   ranked.userId,
-                   ranked.gameId,
-                   ranked.eloRating,
-                   ranked.rankTier,
-                   ranked.wins,
-                   ranked.losses,
-                   ranked.matchesPlayed,
-                   ranked.lastMatchAt,
-                   ranked.ign,
-                   ranked.username,
-                   ranked.fullName,
-                   ranked.avatarUrl,
-                   ranked.gameName,
-                   ranked.gameCode
+            SELECT ranked.rank_position AS "rankPosition",
+                   ranked."userId",
+                   ranked."gameId",
+                   ranked."eloRating",
+                   ranked."rankTier",
+                   ranked."wins",
+                   ranked."losses",
+                   ranked."matchesPlayed",
+                   ranked."lastMatchAt",
+                   ranked."ign",
+                   ranked."username",
+                   ranked."fullName",
+                   ranked."avatarUrl",
+                   ranked."gameName",
+                   ranked."gameCode"
             FROM (
-                SELECT le.id,
-                       le.userId,
-                       le.gameId,
-                       le.eloRating,
-                       le.rankTier,
-                       le.wins,
-                       le.losses,
-                       le.matchesPlayed,
-                       le.lastMatchAt,
-                       le.updatedAt,
-                       pga.ign,
-                       u.username,
-                       u.fullName,
-                       u.avatarUrl,
-                       g.name AS gameName,
-                       g.code AS gameCode,
-                       ROW_NUMBER() OVER (ORDER BY le.eloRating DESC, le.updatedAt ASC, le.id ASC) AS rank
-                FROM LeaderboardEntry le
-                JOIN User u ON u.id = le.userId
-                JOIN Game g ON g.id = le.gameId
-                LEFT JOIN PlayerGameAccount pga ON pga.userId = le.userId AND pga.gameId = le.gameId
+                SELECT ROW_NUMBER() OVER (ORDER BY le."eloRating" DESC, le."updatedAt" ASC, le."id" ASC) AS rank_position,
+                       le."userId" AS "userId",
+                       le."gameId" AS "gameId",
+                       le."eloRating" AS "eloRating",
+                       le."rankTier" AS "rankTier",
+                       le."wins" AS "wins",
+                       le."losses" AS "losses",
+                       le."matchesPlayed" AS "matchesPlayed",
+                       le."lastMatchAt" AS "lastMatchAt",
+                       pga."ign" AS "ign",
+                       u."username" AS "username",
+                       u."fullName" AS "fullName",
+                       u."avatarUrl" AS "avatarUrl",
+                       g."name" AS "gameName",
+                       g."code" AS "gameCode"
+                FROM "LeaderboardEntry" le
+                JOIN "User" u ON u."id" = le."userId"
+                JOIN "Game" g ON g."id" = le."gameId"
+                LEFT JOIN "PlayerGameAccount" pga ON pga."userId" = le."userId" AND pga."gameId" = le."gameId"
                 ${whereSql}
             ) ranked
-            ORDER BY ranked.rank ASC
+            ORDER BY ranked.rank_position ASC
             LIMIT ${limit} OFFSET ${skip}
         `;
 
         const totalPromise = Prisma.sql`
             SELECT COUNT(*) AS total
-            FROM LeaderboardEntry le
-            JOIN User u ON u.id = le.userId
-            JOIN Game g ON g.id = le.gameId
-            LEFT JOIN PlayerGameAccount pga ON pga.userId = le.userId AND pga.gameId = le.gameId
+            FROM "LeaderboardEntry" le
+            JOIN "User" u ON u."id" = le."userId"
+            JOIN "Game" g ON g."id" = le."gameId"
+            LEFT JOIN "PlayerGameAccount" pga ON pga."userId" = le."userId" AND pga."gameId" = le."gameId"
             ${whereSql}
         `;
 
@@ -147,7 +145,7 @@ export async function GET(request: NextRequest) {
         const total = Number(totalRows[0]?.total ?? 0);
 
         const data = rows.map((entry) => {
-            const rankValue = typeof entry.rank === "bigint" ? Number(entry.rank) : entry.rank;
+            const rankValue = typeof entry.rankPosition === "bigint" ? Number(entry.rankPosition) : entry.rankPosition;
             const matchesPlayed = entry.matchesPlayed || 0;
             const winRate = matchesPlayed > 0 ? entry.wins / matchesPlayed : 0;
             return {

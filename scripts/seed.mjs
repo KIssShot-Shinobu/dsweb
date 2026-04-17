@@ -1,7 +1,8 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -12,16 +13,66 @@ const MAX_SEED_ATTEMPTS = 2;
 const MAX_QUERY_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
 
-function createPrismaClient() {
-    const adapter = new PrismaMariaDb(databaseUrl, {
-        onConnectionError: (error) => {
-            console.error("[Seed][MariaDB] Connection error:", error?.message || error);
-        },
-    });
-    return new PrismaClient({ adapter });
+function parseNumber(value, fallback) {
+    if (!value) return fallback;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-let prisma = createPrismaClient();
+function parseBoolean(value, fallback) {
+    if (value === null || value === undefined) return fallback;
+    const normalized = String(value).trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) return true;
+    if (["0", "false", "no", "off"].includes(normalized)) return false;
+    return fallback;
+}
+
+function shouldEnablePgSsl(url) {
+    try {
+        const parsed = new URL(url);
+        const sslMode = parsed.searchParams.get("sslmode") ?? parsed.searchParams.get("ssl-mode");
+        const sslValue = parsed.searchParams.get("ssl");
+        if (sslMode && sslMode.toLowerCase() === "require") return true;
+        if (sslValue && sslValue.toLowerCase() === "true") return true;
+    } catch {
+        // ignore parsing errors
+    }
+    return false;
+}
+
+function normalizePgConnectionString(url) {
+    try {
+        const parsed = new URL(url);
+        const sslMode = parsed.searchParams.get("sslmode") ?? parsed.searchParams.get("ssl-mode");
+        const compatFlag = parsed.searchParams.get("uselibpqcompat");
+        if (sslMode?.toLowerCase() === "require" && !compatFlag) {
+            parsed.searchParams.set("uselibpqcompat", "true");
+            return parsed.toString();
+        }
+    } catch {
+        // ignore parsing errors
+    }
+    return url;
+}
+
+function createPool() {
+    const normalizedConnectionString = normalizePgConnectionString(databaseUrl);
+    return new Pool({
+        connectionString: normalizedConnectionString,
+        max: parseNumber(process.env.PRISMA_POOL_LIMIT, 10),
+        connectionTimeoutMillis: parseNumber(process.env.PRISMA_POOL_ACQUIRE_TIMEOUT_MS, 10000),
+        ssl: shouldEnablePgSsl(normalizedConnectionString)
+            ? { rejectUnauthorized: parseBoolean(process.env.PG_SSL_REJECT_UNAUTHORIZED, true) }
+            : undefined,
+    });
+}
+
+function createPrismaClient(pool) {
+    return new PrismaClient({ adapter: new PrismaPg(pool) });
+}
+
+let pool = createPool();
+let prisma = createPrismaClient(pool);
 
 function isConnectionClosed(error) {
     if (!error) return false;
@@ -42,10 +93,12 @@ function isRetryableError(error) {
 async function reconnectPrisma() {
     try {
         await prisma.$disconnect();
+        await pool.end();
     } catch {
         // ignore disconnect errors
     }
-    prisma = createPrismaClient();
+    pool = createPool();
+    prisma = createPrismaClient(pool);
 }
 
 async function delay(ms) {
@@ -691,6 +744,9 @@ runSeedWithRetry()
         console.error("Dev seed failed:", error);
         process.exit(1);
     })
-    .finally(async () => prisma.$disconnect());
+    .finally(async () => {
+        await prisma.$disconnect();
+        await pool.end();
+    });
 
 

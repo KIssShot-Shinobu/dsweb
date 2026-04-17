@@ -16,7 +16,7 @@ function parseBooleanEnv(value: string | undefined, defaultValue: boolean): bool
     return defaultValue;
 }
 
-export function useConsoleEmailMode(): boolean {
+export function isConsoleEmailMode(): boolean {
     return parseBooleanEnv(
         process.env.RESETPASSCONSOLE ?? process.env.resetpassconsole,
         true
@@ -39,7 +39,7 @@ function getSmtpConfig() {
 }
 
 export async function sendEmail(input: SendEmailInput): Promise<void> {
-    if (useConsoleEmailMode()) {
+    if (isConsoleEmailMode()) {
         const tag = input.debugTag || "EMAIL";
         console.info(
             `[${tag}] To: ${input.to} | Subject: ${input.subject}\n${input.text}`

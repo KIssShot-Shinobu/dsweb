@@ -1,34 +1,15 @@
 ﻿const { execSync } = require("child_process");
-const { URL } = require("url");
 const fs = require("fs");
 const path = require("path");
+const { assertUnsafeSchemaSyncAllowed, runPrismaPreflight } = require("./scripts/prisma-preflight");
 
 process.env.APP_ROOT = process.env.APP_ROOT || __dirname;
 const APP_ROOT = process.env.APP_ROOT;
 const DEFAULT_PORT = "5116";
 const DEFAULT_HOST = "0.0.0.0";
 
-const MIGRATE_STRATEGY = (process.env.PRISMA_MIGRATE_STRATEGY || "deploy").toLowerCase();
-const ALLOW_DEV_FALLBACK = process.env.ALLOW_DEV_FALLBACK === "1";
-
-function getRequiredDatabaseUrl() {
-    const databaseUrl = process.env.DATABASE_URL?.trim();
-
-    if (!databaseUrl) {
-        throw new Error(
-            "DATABASE_URL is not set. Add it in Pterodactyl server variables or provide it in a .env file before starting the app."
-        );
-    }
-
-    try {
-        new URL(databaseUrl);
-    } catch {
-        throw new Error(
-            "DATABASE_URL is invalid. If the database password contains reserved characters such as @, :, /, ?, or #, URL-encode the password first."
-        );
-    }
-
-    return databaseUrl;
+function isTruthy(value) {
+    return ["1", "true", "yes", "on"].includes(String(value || "").toLowerCase());
 }
 
 function run(cmd, options = {}) {
@@ -80,7 +61,6 @@ function installDependencies() {
     run("npm install --include=dev --legacy-peer-deps");
 }
 
-
 function loadDotEnv() {
     try {
         require("dotenv/config");
@@ -91,30 +71,84 @@ function loadDotEnv() {
 }
 
 function runMigrations() {
-    if (MIGRATE_STRATEGY === "deploy") {
+    const strategy = (process.env.PRISMA_MIGRATE_STRATEGY || "deploy").toLowerCase();
+    const acceptDataLoss = isTruthy(process.env.PRISMA_DB_PUSH_ACCEPT_DATA_LOSS);
+    const dbPushCommand = `npx prisma db push${acceptDataLoss ? " --accept-data-loss" : ""}`;
+    assertUnsafeSchemaSyncAllowed(strategy);
+
+    if (strategy === "deploy") {
         run("npx prisma migrate deploy");
         return;
     }
-    if (MIGRATE_STRATEGY === "push") {
+    if (strategy === "push") {
         console.warn("\nWARNING: Using prisma db push. This is not recommended for production.");
-        run("npx prisma db push");
+        run(dbPushCommand);
         return;
     }
-    throw new Error(`Unknown PRISMA_MIGRATE_STRATEGY: ${MIGRATE_STRATEGY}`);
+    if (strategy === "deploy_then_push") {
+        run("npx prisma migrate deploy");
+        console.warn("\nWARNING: Running prisma db push after migrate. Use only on dev/empty databases.");
+        run(dbPushCommand);
+        return;
+    }
+    if (strategy === "bootstrap") {
+        console.warn("\nWARNING: Running bootstrap schema sync via prisma db push.");
+        run(dbPushCommand);
+        return;
+    }
+    if (strategy === "none") {
+        console.warn("\nWARNING: PRISMA_MIGRATE_STRATEGY=none (skipping migrations).");
+        return;
+    }
+    throw new Error(`Unknown PRISMA_MIGRATE_STRATEGY: ${strategy}`);
+}
+
+function runSeed() {
+    if (!isTruthy(process.env.RUN_SEED)) {
+        console.log("\n=== Seed skipped (RUN_SEED not enabled) ===");
+        return;
+    }
+    const seedStrategy = (process.env.SEED_STRATEGY || "admin").toLowerCase();
+    if (seedStrategy === "admin") {
+        console.log("\n=== Seeding admin user ===");
+        run("npm run seed:admin");
+        return;
+    }
+    if (seedStrategy === "dev") {
+        console.warn("\nWARNING: Dev seed will wipe existing data. Use only on empty/dev databases.");
+        run("npm run seed:dev");
+        return;
+    }
+    throw new Error(`Unknown SEED_STRATEGY: ${seedStrategy}`);
+}
+
+function ensureStandaloneBuildAvailable() {
+    const standalonePath = path.join(APP_ROOT, ".next", "standalone", "server.js");
+    if (!fs.existsSync(standalonePath)) {
+        throw new Error(
+            "SKIP_BUILD is enabled but .next/standalone/server.js is missing. Build locally and upload .next/standalone and .next/static, or disable SKIP_BUILD."
+        );
+    }
 }
 
 process.env.NODE_ENV = process.env.NODE_ENV || "production";
 
 installDependencies();
 loadDotEnv();
-getRequiredDatabaseUrl();
+runPrismaPreflight({ appRoot: APP_ROOT, env: process.env });
 run("npx prisma generate");
 runMigrations();
+runSeed();
 
 try {
-    run("npm run build");
+    if (isTruthy(process.env.SKIP_BUILD)) {
+        console.log("\n=== Build skipped (SKIP_BUILD enabled) ===");
+        ensureStandaloneBuildAvailable();
+    } else {
+        run("npm run build");
+    }
 } catch (error) {
-    if (ALLOW_DEV_FALLBACK && shouldFallbackToDev(error)) {
+    if (isTruthy(process.env.ALLOW_DEV_FALLBACK) && shouldFallbackToDev(error)) {
         startDevServer();
         process.exit(0);
     }

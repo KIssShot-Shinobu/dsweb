@@ -1,6 +1,6 @@
 # DSWeb (DuelStandby Web)
 
-Aplikasi web komunitas DuelStandby berbasis Next.js 16 + Prisma + MySQL.
+Aplikasi web komunitas DuelStandby berbasis Next.js 16 + Prisma + PostgreSQL.
 
 ## Ringkasan
 
@@ -93,7 +93,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - TypeScript
 - Tailwind CSS 4
 - Prisma 7
-- MariaDB/MySQL driver adapter: `@prisma/adapter-mariadb` + `mariadb`
+- PostgreSQL driver adapter: `@prisma/adapter-pg` + `pg`
 - Auth.js + password hashing (`bcryptjs`)
 - Zod untuk validasi request
 - OpenAPI spec manual di `docs/openapi.yaml`
@@ -104,7 +104,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 - `app/api/*`: endpoint backend internal Next.js
 - `app/dashboard/*`: UI dashboard
 - `components/*`: komponen UI/section
-- `lib/prisma.ts`: inisialisasi Prisma client + adapter MariaDB
+- `lib/prisma.ts`: inisialisasi Prisma client + adapter PostgreSQL
 - `lib/auth.ts`: helper password, role guard, dan invalidasi session version
 - `lib/validators.ts`: schema validasi (register/login/tournament/dll)
 - `context/ThemeContext.tsx`: state tema global + sinkronisasi `localStorage` (`ds-theme`)
@@ -120,7 +120,7 @@ Auth utama kini menggunakan Auth.js untuk login dan pembacaan sesi server, denga
 ## Prasyarat
 
 - Node.js 20+ (disarankan LTS)
-- MySQL/MariaDB server aktif
+- PostgreSQL server aktif
 - npm
 
 ## Konfigurasi Environment
@@ -129,7 +129,7 @@ Salin `.env.example` menjadi `.env`, lalu isi nilainya.
 
 Variabel penting:
 
-- `DATABASE_URL`: koneksi utama Prisma ke MySQL.
+- `DATABASE_URL`: koneksi utama Prisma ke PostgreSQL.
 - `AUTH_SECRET`: secret utama Auth.js untuk sesi aplikasi.
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`: kredensial Google OAuth untuk Auth.js.
 - `AUTH_DISCORD_ID` / `AUTH_DISCORD_SECRET`: kredensial Discord OAuth untuk Auth.js.
@@ -149,9 +149,11 @@ Variabel penting:
 - `RATE_LIMIT_MATCH_REPORT_WINDOW_SECONDS`: window rate limit report match dalam detik (default `300`).
 - `ALLOW_DEV_SEED_ENDPOINT`: aktifkan `/api/seed` hanya untuk dev lokal yang memang membutuhkan seed admin cepat.
 - `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD`: kredensial seed admin untuk script dan endpoint seed.
-- `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS`: kredensial SMTP provider email.
-- `EMAIL_FROM`: alamat pengirim email untuk verifikasi/reset password.
-- `RESETPASSCONSOLE` (atau `resetpassconsole`): mode pengiriman email (`true` = `console.info`, `false` = SMTP/provider email).
+  - `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS`: kredensial SMTP provider email.
+  - `EMAIL_FROM`: alamat pengirim email untuk verifikasi/reset password.
+  - `RESETPASSCONSOLE` (atau `resetpassconsole`): mode pengiriman email (`true` = `console.info`, `false` = SMTP/provider email).
+  - `PRISMA_POOL_LIMIT`: batas koneksi pool PostgreSQL (default 10, naikkan jika query paralel).
+  - `PRISMA_POOL_ACQUIRE_TIMEOUT_MS`: timeout mendapatkan koneksi pool (default 10000ms).
 
 ## Auth.js Migration (Phase 4)
 
@@ -241,6 +243,68 @@ Lalu jalankan SQL manual:
 - Admin hanya melakukan moderasi global user dan tidak lagi memindahkan roster team dari dashboard admin.
 
 ## Seeding Data
+
+### Auto seed saat startup
+
+Jika menjalankan lewat `start.js`, kamu bisa mengaktifkan seed otomatis dengan env:
+
+```bash
+set RUN_SEED=1
+set SEED_STRATEGY=admin
+```
+
+`SEED_STRATEGY=admin` akan menjalankan `npm run seed:admin` (aman untuk data existing).
+Gunakan `SEED_STRATEGY=dev` hanya untuk database kosong/dev karena akan menghapus data.
+
+### Skip build saat startup (untuk resource kecil)
+
+Jika panel punya RAM kecil dan build sering hang, kamu bisa build di lokal lalu upload hasilnya, kemudian set:
+
+```bash
+set SKIP_BUILD=1
+```
+
+Saat `SKIP_BUILD=1`, `start.js` tidak menjalankan `npm run build` dan langsung memakai `.next/standalone`.
+
+### Strategi migrasi Prisma saat startup
+
+Default `start.js` menjalankan `prisma migrate deploy`. Kamu bisa mengubah strategi lewat env:
+
+```bash
+set PRISMA_MIGRATE_STRATEGY=deploy
+```
+
+Opsi:
+
+- `deploy` (default): apply migrations
+- `push`: `prisma db push` (hanya untuk database kosong/dev)
+- `deploy_then_push`: deploy lalu push (dev/empty DB)
+- `bootstrap`: `prisma db push` only, untuk controlled bootstrap window
+- `none`: skip migrations
+
+Jalankan preflight sebelum deploy/startup untuk memastikan provider dan strategy konsisten:
+
+```bash
+npm run db:preflight
+```
+
+Jika strategy memakai schema sync (`push`, `deploy_then_push`, `bootstrap`) di production, wajib explicit opt-in:
+
+```bash
+set PRISMA_ALLOW_UNSAFE_SCHEMA_SYNC=1
+```
+
+Jika `migration_lock.toml` masih provider lama (mis. mysql) sementara schema sudah postgresql, gunakan flag berikut hanya saat bootstrap:
+
+```bash
+set ALLOW_MIGRATION_PROVIDER_MISMATCH=1
+```
+
+Jika memilih `push` dan ada perubahan destruktif, set:
+
+```bash
+set PRISMA_DB_PUSH_ACCEPT_DATA_LOSS=1
+```
 
 ### 1) Seed akun admin
 
@@ -394,7 +458,7 @@ Aturan ke depan:
 
 ### PrismaClientInitializationError saat `new PrismaClient()`
 
-Pastikan inisialisasi Prisma pakai adapter MariaDB (Prisma 7) dan `DATABASE_URL` valid.
+Pastikan inisialisasi Prisma pakai adapter PostgreSQL (Prisma 7) dan `DATABASE_URL` valid.
 Referensi implementasi: `lib/prisma.ts`.
 
 ### `api/upload` 401 saat registrasi
@@ -422,11 +486,11 @@ Lalu restart dev server.
 Ini berarti `DATABASE_URL` tidak terbaca saat container start.
 
 - Pastikan variable `DATABASE_URL` benar-benar diisi di panel Pterodactyl atau tersedia di file `.env`.
-- Jika password MySQL mengandung karakter khusus seperti `@`, `:`, `/`, `?`, atau `#`, password wajib di-URL-encode sebelum dimasukkan ke connection string.
+- Jika password PostgreSQL mengandung karakter khusus seperti `@`, `:`, `/`, `?`, atau `#`, password wajib di-URL-encode sebelum dimasukkan ke connection string.
 - Format yang benar:
 
 ```env
-DATABASE_URL="mysql://USERNAME:ENCODED_PASSWORD@HOST:3306/DATABASE_NAME?connection_limit=1"
+DATABASE_URL="postgresql://USERNAME:ENCODED_PASSWORD@HOST:5432/DATABASE_NAME?sslmode=require&uselibpqcompat=true"
 ```
 
 ### Error PowerShell `npm.ps1 cannot be loaded`
@@ -440,6 +504,7 @@ cmd /c npm run dev
 ## Deploy Notes
 
 - Pastikan `DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_DISCORD_ID`, `AUTH_DISCORD_SECRET`, `DATA_ENCRYPTION_KEY`, `NEXT_PUBLIC_APP_URL`, `UPLOAD_DIR` terpasang di server.
+- Ikuti runbook deploy bertahap di `docs/runbook-staging-production.md`.
 - Untuk production, gunakan nilai `AUTH_SECRET` acak yang panjang dan jangan pernah reuse secret dari environment lain.
 - Di Google/Discord Console, daftarkan callback URL Auth.js yang tepat:
   - Dev lokal: `http://localhost:3000/api/auth/callback/google` dan `http://localhost:3000/api/auth/callback/discord`
@@ -448,7 +513,9 @@ cmd /c npm run dev
 - Untuk Pterodactyl, isi `DATABASE_URL` di server variables. Jangan mengandalkan `prisma db push` tanpa env ini.
 - Jika password DB memakai karakter khusus, gunakan versi URL-encoded pada `DATABASE_URL`.
 - Pastikan folder upload persistent jika deploy container/panel.
-- Jalankan `npx prisma generate` dan `npx prisma db push` di environment target.
+- Jalankan preflight sebelum startup/deploy: `npm run db:preflight`.
+- Gunakan `PRISMA_MIGRATE_STRATEGY=deploy` sebagai default production.
+- Untuk bootstrap terkontrol, gunakan `PRISMA_MIGRATE_STRATEGY=bootstrap`, `ALLOW_MIGRATION_PROVIDER_MISMATCH=1` (jika perlu), dan `PRISMA_ALLOW_UNSAFE_SCHEMA_SYNC=1` hanya sementara.
 
 ### Checklist Deploy Auth.js Production
 
@@ -468,9 +535,10 @@ cmd /c npm run dev
 ## Migration Notes
 
 - Setiap perubahan schema wajib disertai migration script dan rollback plan.
-- Prisma migrate (core constraints + creator tracking) gunakan migration berikut:
-  - `prisma/migrations/00000000000000_baseline` (baseline untuk DB yang sudah ada)
-  - `prisma/migrations/20260311120000_add-core-constraints` (creator tournament, currency treasury, unique/index updates)
+- Migration chain aktif sekarang memakai baseline PostgreSQL:
+  - `prisma/migrations/20260417000000_postgresql_baseline`
+- Legacy chain MySQL dipindahkan ke arsip:
+  - `prisma/migrations_legacy_mysql/`
 - Untuk update ini, gunakan:
   - `prisma/migrations_manual/20260307_sensitive_user_fields.sql`
   - `prisma/migrations_manual/20260307_sensitive_user_fields.rollback.sql`

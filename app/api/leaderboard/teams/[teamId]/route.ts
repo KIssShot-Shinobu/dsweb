@@ -8,7 +8,7 @@ import { enforceLeaderboardRateLimit } from "@/lib/leaderboard-rate-limit";
 const NEIGHBOR_WINDOW = 5;
 
 type RankedTeamRow = {
-    rank: number;
+    rankPosition: number;
     teamId: string;
     gameId: string;
     eloRating: number;
@@ -50,20 +50,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ success: false, message: "Game wajib dipilih." }, { status: 400 });
         }
         const seasonFilter = seasonId
-            ? Prisma.sql`tle.seasonId = ${seasonId} AND tle.gameId = ${gameId}`
-            : Prisma.sql`tle.seasonId IS NULL AND tle.gameId = ${gameId}`;
+            ? Prisma.sql`tle."seasonId" = ${seasonId} AND tle."gameId" = ${gameId}`
+            : Prisma.sql`tle."seasonId" IS NULL AND tle."gameId" = ${gameId}`;
 
-        const targetRows = await prisma.$queryRaw<{ rank: number }[]>`
-            SELECT ranked.rank FROM (
-                SELECT tle.teamId,
-                       ROW_NUMBER() OVER (ORDER BY tle.eloRating DESC, tle.updatedAt ASC, tle.id ASC) AS rank
-                FROM TeamLeaderboardEntry tle
+        const targetRows = await prisma.$queryRaw<{ rankPosition: number }[]>`
+            SELECT ranked.rank_position AS "rankPosition"
+            FROM (
+                SELECT ROW_NUMBER() OVER (ORDER BY tle."eloRating" DESC, tle."updatedAt" ASC, tle."id" ASC) AS rank_position,
+                       tle."teamId" AS "teamId"
+                FROM "TeamLeaderboardEntry" tle
                 WHERE ${seasonFilter}
             ) ranked
-            WHERE ranked.teamId = ${teamId}
+            WHERE ranked."teamId" = ${teamId}
         `;
 
-        const targetRankValue = targetRows[0]?.rank;
+        const targetRankValue = targetRows[0]?.rankPosition;
         const targetRank = typeof targetRankValue === "bigint" ? Number(targetRankValue) : targetRankValue;
         if (!targetRank) {
             return NextResponse.json({ success: false, message: "Leaderboard entry tidak ditemukan" }, { status: 404 });
@@ -73,39 +74,40 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const endRank = targetRank + NEIGHBOR_WINDOW;
 
         const neighbors = await prisma.$queryRaw<RankedTeamRow[]>`
-            SELECT ranked.rank,
-                   ranked.teamId,
-                   ranked.gameId,
-                   ranked.eloRating,
-                   ranked.wins,
-                   ranked.losses,
-                   ranked.matchesPlayed,
-                   ranked.lastMatchAt,
-                   t.name,
-                   t.slug,
-                   t.logoUrl,
-                   ranked.gameName,
-                   ranked.gameCode
+            SELECT ranked.rank_position AS "rankPosition",
+                   ranked."teamId",
+                   ranked."gameId",
+                   ranked."eloRating",
+                   ranked."wins",
+                   ranked."losses",
+                   ranked."matchesPlayed",
+                   ranked."lastMatchAt",
+                   ranked."name",
+                   ranked."slug",
+                   ranked."logoUrl",
+                   ranked."gameName",
+                   ranked."gameCode"
             FROM (
-                SELECT tle.id,
-                       tle.teamId,
-                       tle.gameId,
-                       tle.eloRating,
-                       tle.wins,
-                       tle.losses,
-                       tle.matchesPlayed,
-                       tle.lastMatchAt,
-                       tle.updatedAt,
-                       g.name AS gameName,
-                       g.code AS gameCode,
-                       ROW_NUMBER() OVER (ORDER BY tle.eloRating DESC, tle.updatedAt ASC, tle.id ASC) AS rank
-                FROM TeamLeaderboardEntry tle
-                JOIN Game g ON g.id = tle.gameId
+                SELECT ROW_NUMBER() OVER (ORDER BY tle."eloRating" DESC, tle."updatedAt" ASC, tle."id" ASC) AS rank_position,
+                       tle."teamId" AS "teamId",
+                       tle."gameId" AS "gameId",
+                       tle."eloRating" AS "eloRating",
+                       tle."wins" AS "wins",
+                       tle."losses" AS "losses",
+                       tle."matchesPlayed" AS "matchesPlayed",
+                       tle."lastMatchAt" AS "lastMatchAt",
+                       t."name" AS "name",
+                       t."slug" AS "slug",
+                       t."logoUrl" AS "logoUrl",
+                       g."name" AS "gameName",
+                       g."code" AS "gameCode"
+                FROM "TeamLeaderboardEntry" tle
+                JOIN "Team" t ON t."id" = tle."teamId"
+                JOIN "Game" g ON g."id" = tle."gameId"
                 WHERE ${seasonFilter}
             ) ranked
-            JOIN Team t ON t.id = ranked.teamId
-            WHERE ranked.rank BETWEEN ${startRank} AND ${endRank}
-            ORDER BY ranked.rank ASC
+            WHERE ranked.rank_position BETWEEN ${startRank} AND ${endRank}
+            ORDER BY ranked.rank_position ASC
         `;
 
         const targetEntry = neighbors.find((entry) => entry.teamId === teamId);
@@ -114,7 +116,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         const normalizedNeighbors = neighbors.map((entry) => {
-            const rankValue = typeof entry.rank === "bigint" ? Number(entry.rank) : entry.rank;
+            const rankValue = typeof entry.rankPosition === "bigint" ? Number(entry.rankPosition) : entry.rankPosition;
             const winRate = entry.matchesPlayed > 0 ? entry.wins / entry.matchesPlayed : 0;
             return {
                 rank: rankValue,

@@ -7,7 +7,7 @@ import { enforceLeaderboardRateLimit } from "@/lib/leaderboard-rate-limit";
 const NEIGHBOR_WINDOW = 5;
 
 type RankedPlayerRow = {
-    rank: number;
+    rankPosition: number;
     userId: string;
     gameId: string;
     eloRating: number;
@@ -53,17 +53,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         const seasonFilter = leaderboardSeasonGameFilter(seasonId, gameId);
 
-        const targetRows = await prisma.$queryRaw<{ rank: number }[]>`
-            SELECT ranked.rank FROM (
-                SELECT le.userId,
-                       ROW_NUMBER() OVER (ORDER BY le.eloRating DESC, le.updatedAt ASC, le.id ASC) AS rank
-                FROM LeaderboardEntry le
+        const targetRows = await prisma.$queryRaw<{ rankPosition: number }[]>`
+            SELECT ranked.rank_position AS "rankPosition"
+            FROM (
+                SELECT ROW_NUMBER() OVER (ORDER BY le."eloRating" DESC, le."updatedAt" ASC, le."id" ASC) AS rank_position,
+                       le."userId" AS "userId"
+                FROM "LeaderboardEntry" le
                 WHERE ${seasonFilter}
             ) ranked
-            WHERE ranked.userId = ${userId}
+            WHERE ranked."userId" = ${userId}
         `;
 
-        const targetRankValue = targetRows[0]?.rank;
+        const targetRankValue = targetRows[0]?.rankPosition;
         const targetRank = typeof targetRankValue === "bigint" ? Number(targetRankValue) : targetRankValue;
         if (!targetRank) {
             return NextResponse.json({ success: false, message: "Leaderboard entry tidak ditemukan" }, { status: 404 });
@@ -73,44 +74,45 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const endRank = targetRank + NEIGHBOR_WINDOW;
 
         const neighbors = await prisma.$queryRaw<RankedPlayerRow[]>`
-            SELECT ranked.rank,
-                   ranked.userId,
-                   ranked.gameId,
-                   ranked.eloRating,
-                   ranked.rankTier,
-                   ranked.wins,
-                   ranked.losses,
-                   ranked.matchesPlayed,
-                   ranked.lastMatchAt,
-                   ranked.ign,
-                   u.username,
-                   u.fullName,
-                   u.avatarUrl,
-                   ranked.gameName,
-                   ranked.gameCode
+            SELECT ranked.rank_position AS "rankPosition",
+                   ranked."userId",
+                   ranked."gameId",
+                   ranked."eloRating",
+                   ranked."rankTier",
+                   ranked."wins",
+                   ranked."losses",
+                   ranked."matchesPlayed",
+                   ranked."lastMatchAt",
+                   ranked."ign",
+                   ranked."username",
+                   ranked."fullName",
+                   ranked."avatarUrl",
+                   ranked."gameName",
+                   ranked."gameCode"
             FROM (
-                SELECT le.id,
-                       le.userId,
-                       le.gameId,
-                       le.eloRating,
-                       le.rankTier,
-                       le.wins,
-                       le.losses,
-                       le.matchesPlayed,
-                       le.lastMatchAt,
-                       le.updatedAt,
-                       pga.ign,
-                       g.name AS gameName,
-                       g.code AS gameCode,
-                       ROW_NUMBER() OVER (ORDER BY le.eloRating DESC, le.updatedAt ASC, le.id ASC) AS rank
-                FROM LeaderboardEntry le
-                JOIN Game g ON g.id = le.gameId
-                LEFT JOIN PlayerGameAccount pga ON pga.userId = le.userId AND pga.gameId = le.gameId
+                SELECT ROW_NUMBER() OVER (ORDER BY le."eloRating" DESC, le."updatedAt" ASC, le."id" ASC) AS rank_position,
+                       le."userId" AS "userId",
+                       le."gameId" AS "gameId",
+                       le."eloRating" AS "eloRating",
+                       le."rankTier" AS "rankTier",
+                       le."wins" AS "wins",
+                       le."losses" AS "losses",
+                       le."matchesPlayed" AS "matchesPlayed",
+                       le."lastMatchAt" AS "lastMatchAt",
+                       pga."ign" AS "ign",
+                       u."username" AS "username",
+                       u."fullName" AS "fullName",
+                       u."avatarUrl" AS "avatarUrl",
+                       g."name" AS "gameName",
+                       g."code" AS "gameCode"
+                FROM "LeaderboardEntry" le
+                JOIN "User" u ON u."id" = le."userId"
+                JOIN "Game" g ON g."id" = le."gameId"
+                LEFT JOIN "PlayerGameAccount" pga ON pga."userId" = le."userId" AND pga."gameId" = le."gameId"
                 WHERE ${seasonFilter}
             ) ranked
-            JOIN User u ON u.id = ranked.userId
-            WHERE ranked.rank BETWEEN ${startRank} AND ${endRank}
-            ORDER BY ranked.rank ASC
+            WHERE ranked.rank_position BETWEEN ${startRank} AND ${endRank}
+            ORDER BY ranked.rank_position ASC
         `;
 
         const targetEntry = neighbors.find((entry) => entry.userId === userId);
@@ -119,7 +121,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         const normalizedNeighbors = neighbors.map((entry) => ({
-            rank: typeof entry.rank === "bigint" ? Number(entry.rank) : entry.rank,
+            rank: typeof entry.rankPosition === "bigint" ? Number(entry.rankPosition) : entry.rankPosition,
             eloRating: entry.eloRating,
             rankTier: entry.rankTier,
             wins: entry.wins,

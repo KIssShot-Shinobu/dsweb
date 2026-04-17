@@ -64,6 +64,7 @@ export function MemberDistributionMap() {
     const mapRef = useRef<any>(null);
     const clusterRef = useRef<any>(null);
     const leafletRef = useRef<any>(null);
+    const mapMountedRef = useRef(false);
     const [items, setItems] = useState<DistributionItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -137,23 +138,37 @@ export function MemberDistributionMap() {
             clusterGroup.addTo(map);
             mapRef.current = map;
             clusterRef.current = clusterGroup;
+            mapMountedRef.current = true;
             setMapReady(true);
         })();
 
         return () => {
             mounted = false;
+            mapMountedRef.current = false;
+            if (clusterRef.current) {
+                try {
+                    clusterRef.current.clearLayers();
+                    clusterRef.current.remove();
+                } catch {
+                    // ignore cleanup errors
+                }
+                clusterRef.current = null;
+            }
             if (mapRef.current) {
-                mapRef.current.remove();
+                try {
+                    mapRef.current.remove();
+                } catch {
+                    // ignore cleanup errors
+                }
                 mapRef.current = null;
             }
-            clusterRef.current = null;
             leafletRef.current = null;
             setMapReady(false);
         };
     }, []);
 
     useEffect(() => {
-        if (!mapReady || !mapRef.current || !clusterRef.current || !leafletRef.current) return;
+        if (!mapReady || !mapMountedRef.current || !mapRef.current || !clusterRef.current || !leafletRef.current) return;
 
         const L = leafletRef.current;
         const clusterGroup = clusterRef.current;

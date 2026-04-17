@@ -10,7 +10,7 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_MIN_WIN_RATE = 0;
 
 type RankedTeamRow = {
-    rank: number;
+    rankPosition: number;
     teamId: string;
     gameId: string;
     eloRating: number;
@@ -60,13 +60,13 @@ export async function GET(request: NextRequest) {
         }
 
         const conditions: Prisma.Sql[] = [
-            seasonId ? Prisma.sql`tle.seasonId = ${seasonId}` : Prisma.sql`tle.seasonId IS NULL`,
-            Prisma.sql`tle.gameId = ${gameId}`,
+            seasonId ? Prisma.sql`tle."seasonId" = ${seasonId}` : Prisma.sql`tle."seasonId" IS NULL`,
+            Prisma.sql`tle."gameId" = ${gameId}`,
         ];
 
         if (search) {
             const likeValue = `%${search}%`;
-            conditions.push(Prisma.sql`(t.name LIKE ${likeValue} OR t.slug LIKE ${likeValue})`);
+            conditions.push(Prisma.sql`(t."name" ILIKE ${likeValue} OR t."slug" ILIKE ${likeValue})`);
         }
 
         if (tier) {
@@ -87,55 +87,53 @@ export async function GET(request: NextRequest) {
         }
 
         if (minWinRate > 0) {
-            conditions.push(Prisma.sql`COALESCE(tle.wins / NULLIF(tle.matchesPlayed, 0), 0) >= ${minWinRate}`);
+            conditions.push(Prisma.sql`COALESCE(CAST(tle."wins" AS float) / NULLIF(tle."matchesPlayed", 0), 0) >= ${minWinRate}`);
         }
 
         const whereSql = Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`;
 
         const rowsPromise = Prisma.sql`
-            SELECT ranked.rank,
-                   ranked.teamId,
-                   ranked.gameId,
-                   ranked.eloRating,
-                   ranked.wins,
-                   ranked.losses,
-                   ranked.matchesPlayed,
-                   ranked.lastMatchAt,
-                   ranked.name,
-                   ranked.slug,
-                   ranked.logoUrl,
-                   ranked.gameName,
-                   ranked.gameCode
+            SELECT ranked.rank_position AS "rankPosition",
+                   ranked."teamId",
+                   ranked."gameId",
+                   ranked."eloRating",
+                   ranked."wins",
+                   ranked."losses",
+                   ranked."matchesPlayed",
+                   ranked."lastMatchAt",
+                   ranked."name",
+                   ranked."slug",
+                   ranked."logoUrl",
+                   ranked."gameName",
+                   ranked."gameCode"
             FROM (
-                SELECT tle.id,
-                       tle.teamId,
-                       tle.gameId,
-                       tle.eloRating,
-                       tle.wins,
-                       tle.losses,
-                       tle.matchesPlayed,
-                       tle.lastMatchAt,
-                       tle.updatedAt,
-                       t.name,
-                       t.slug,
-                       t.logoUrl,
-                       g.name AS gameName,
-                       g.code AS gameCode,
-                       ROW_NUMBER() OVER (ORDER BY tle.eloRating DESC, tle.updatedAt ASC, tle.id ASC) AS rank
-                FROM TeamLeaderboardEntry tle
-                JOIN Team t ON t.id = tle.teamId
-                JOIN Game g ON g.id = tle.gameId
+                SELECT ROW_NUMBER() OVER (ORDER BY tle."eloRating" DESC, tle."updatedAt" ASC, tle."id" ASC) AS rank_position,
+                       tle."teamId" AS "teamId",
+                       tle."gameId" AS "gameId",
+                       tle."eloRating" AS "eloRating",
+                       tle."wins" AS "wins",
+                       tle."losses" AS "losses",
+                       tle."matchesPlayed" AS "matchesPlayed",
+                       tle."lastMatchAt" AS "lastMatchAt",
+                       t."name" AS "name",
+                       t."slug" AS "slug",
+                       t."logoUrl" AS "logoUrl",
+                       g."name" AS "gameName",
+                       g."code" AS "gameCode"
+                FROM "TeamLeaderboardEntry" tle
+                JOIN "Team" t ON t."id" = tle."teamId"
+                JOIN "Game" g ON g."id" = tle."gameId"
                 ${whereSql}
             ) ranked
-            ORDER BY ranked.rank ASC
+            ORDER BY ranked.rank_position ASC
             LIMIT ${limit} OFFSET ${skip}
         `;
 
         const totalPromise = Prisma.sql`
             SELECT COUNT(*) AS total
-            FROM TeamLeaderboardEntry tle
-            JOIN Team t ON t.id = tle.teamId
-            JOIN Game g ON g.id = tle.gameId
+            FROM "TeamLeaderboardEntry" tle
+            JOIN "Team" t ON t."id" = tle."teamId"
+            JOIN "Game" g ON g."id" = tle."gameId"
             ${whereSql}
         `;
 
@@ -146,7 +144,7 @@ export async function GET(request: NextRequest) {
 
         const total = Number(totalRows[0]?.total ?? 0);
         const data = rows.map((entry) => {
-            const rankValue = typeof entry.rank === "bigint" ? Number(entry.rank) : entry.rank;
+            const rankValue = typeof entry.rankPosition === "bigint" ? Number(entry.rankPosition) : entry.rankPosition;
             const matchesPlayed = entry.matchesPlayed || 0;
             const winRate = matchesPlayed > 0 ? entry.wins / matchesPlayed : 0;
             return {

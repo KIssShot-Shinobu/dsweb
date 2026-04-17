@@ -50,15 +50,15 @@ export default async function ProfilePage() {
             orderBy: { createdAt: "desc" },
             take: 3,
         }),
-        prisma.$queryRaw<{ rank: bigint | number }[]>`
-            SELECT ranked.rank
+        prisma.$queryRaw<{ rankPosition: bigint | number }[]>`
+            SELECT ranked.rank_position AS "rankPosition"
             FROM (
-                SELECT le.userId,
-                       ROW_NUMBER() OVER (ORDER BY le.eloRating DESC, le.updatedAt ASC, le.id ASC) AS rank
-                FROM LeaderboardEntry le
-                WHERE le.seasonId IS NULL
+                SELECT ROW_NUMBER() OVER (ORDER BY le."eloRating" DESC, le."updatedAt" ASC, le."id" ASC) AS rank_position,
+                       le."userId" AS "userId"
+                FROM "LeaderboardEntry" le
+                WHERE le."seasonId" IS NULL
             ) ranked
-            WHERE ranked.userId = ${user.id}
+            WHERE ranked."userId" = ${user.id}
         `,
     ]);
 
@@ -96,7 +96,7 @@ export default async function ProfilePage() {
     const totalProfiles = gameProfiles.length || 0;
     const verifiedProfiles = gameProfiles.filter((profile) => Boolean(profile.screenshotUrl)).length || 0;
     const reputationPoints = reputation._sum.points || 0;
-    const leaderboardRankValue = leaderboardRankRows?.[0]?.rank;
+    const leaderboardRankValue = leaderboardRankRows?.[0]?.rankPosition;
     const leaderboardRank = typeof leaderboardRankValue === "bigint" ? Number(leaderboardRankValue) : leaderboardRankValue ?? null;
     const leaderboardRankSafe = leaderboardRank ?? 0;
     const showLeaderboardBadge = leaderboardRank !== null && leaderboardRank <= 3;

@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: validBody.error.issues[0].message }, { status: 400 });
         }
 
-        const transaction = await createTreasuryEntry(prisma as any, validBody.data);
+        const transaction = await createTreasuryEntry(prisma, validBody.data);
 
         await logAudit({
             userId: currentUser.id,

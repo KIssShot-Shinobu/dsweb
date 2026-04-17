@@ -795,4 +795,4 @@ export async function applyLeaderboardForMatch(
 }
 
 export const leaderboardSeasonGameFilter = (seasonId: string | null, gameId: string) =>
-    Prisma.sql`le.gameId = ${gameId} AND ${seasonId ? Prisma.sql`le.seasonId = ${seasonId}` : Prisma.sql`le.seasonId IS NULL`}`;
+    Prisma.sql`le."gameId" = ${gameId} AND ${seasonId ? Prisma.sql`le."seasonId" = ${seasonId}` : Prisma.sql`le."seasonId" IS NULL`}`;
