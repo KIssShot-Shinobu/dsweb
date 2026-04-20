@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit-logger";
 import { profileAvatarSchema } from "@/lib/validators";
-import { deleteUploadFileByUrl, getUploadSegmentsFromUrl, resolveUploadFile } from "@/lib/upload-files";
+import { deleteUploadFileByUrl, resolveUploadFile, resolveUploadLocationFromUrl } from "@/lib/upload-files";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 
 export async function PATCH(request: NextRequest) {
@@ -20,8 +20,12 @@ export async function PATCH(request: NextRequest) {
 
         const nextAvatarUrl = parsed.data.avatarUrl;
         if (nextAvatarUrl) {
-            const segments = getUploadSegmentsFromUrl(nextAvatarUrl);
-            if (!segments || !resolveUploadFile(segments)) {
+            const uploadLocation = resolveUploadLocationFromUrl(nextAvatarUrl);
+            if (!uploadLocation) {
+                return NextResponse.json({ success: false, message: "File avatar tidak ditemukan" }, { status: 400 });
+            }
+
+            if (uploadLocation.kind === "local" && !resolveUploadFile(uploadLocation.segments)) {
                 return NextResponse.json({ success: false, message: "File avatar tidak ditemukan" }, { status: 400 });
             }
         }

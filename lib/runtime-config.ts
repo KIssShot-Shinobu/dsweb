@@ -14,6 +14,7 @@ const DEFAULT_LEADERBOARD_K_FACTOR = 32;
 const DEFAULT_LEADERBOARD_DEFAULT_ELO = 1500;
 const DEFAULT_LEADERBOARD_SEASON_DAYS = 90;
 const DEFAULT_LEADERBOARD_SEASON_AUTO_ENABLED = false;
+const DEFAULT_R2_ENABLED = false;
 
 export function getAppUrl() {
     const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -121,6 +122,43 @@ export function getLeaderboardSeasonDurationDays() {
 
 export function getLeaderboardSeasonAutoEnabled() {
     return parseBooleanEnv(process.env.LEADERBOARD_SEASON_AUTO_ENABLED, DEFAULT_LEADERBOARD_SEASON_AUTO_ENABLED);
+}
+
+export function isR2Enabled() {
+    return parseBooleanEnv(process.env.R2_ENABLED, DEFAULT_R2_ENABLED);
+}
+
+function getRequiredEnv(name: string) {
+    const value = process.env[name]?.trim();
+    if (!value) {
+        throw new Error(`${name} is required when R2 is enabled`);
+    }
+    return value;
+}
+
+export function getR2AccountId() {
+    return getRequiredEnv("R2_ACCOUNT_ID");
+}
+
+export function getR2Bucket() {
+    return getRequiredEnv("R2_BUCKET");
+}
+
+export function getR2AccessKeyId() {
+    return getRequiredEnv("R2_ACCESS_KEY_ID");
+}
+
+export function getR2SecretAccessKey() {
+    return getRequiredEnv("R2_SECRET_ACCESS_KEY");
+}
+
+export function getR2PublicBaseUrl() {
+    const configured = getRequiredEnv("R2_PUBLIC_BASE_URL");
+    return configured.replace(/\/+$/, "");
+}
+
+export function getR2Endpoint() {
+    return `https://${getR2AccountId()}.r2.cloudflarestorage.com`;
 }
 
 export function getCronSecret() {

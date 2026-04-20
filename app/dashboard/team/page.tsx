@@ -3,7 +3,6 @@ import { TeamManageClient } from "@/components/teams/team-manage-client";
 import { TeamRequestPanel } from "@/components/teams/team-request-panel";
 import type { TeamView } from "@/components/teams/types";
 import {
-    DashboardEmptyState,
     DashboardPageHeader,
     DashboardPageShell,
     DashboardPanel,
@@ -57,52 +56,28 @@ export default async function MyTeamPage() {
         notFound();
     }
 
-    const canManage =
-        team.viewerMembership &&
-        (team.permissions.canEditTeam ||
-            team.permissions.canInvite ||
-            team.permissions.canPromote ||
-            team.permissions.canTransferCaptain);
-
-    if (!canManage) {
-        return (
-            <DashboardPageShell>
-                <div className={dashboardStackCls}>
-                    <DashboardPageHeader
-                        kicker={t.dashboard.myTeam.kicker}
-                        title={t.dashboard.myTeam.title}
-                        description={t.dashboard.myTeam.descriptionRestricted}
-                    />
-                    <DashboardPanel title={t.dashboard.myTeam.restrictedPanelTitle} description={t.dashboard.myTeam.restrictedPanelDescription}>
-                        <DashboardEmptyState
-                            title={t.dashboard.myTeam.restrictedEmptyTitle}
-                            description={t.dashboard.myTeam.restrictedEmptyDescription}
-                        />
-                    </DashboardPanel>
-                </div>
-            </DashboardPageShell>
-        );
-    }
-
-    const candidates = await prisma.user.findMany({
-        where: {
-            deletedAt: null,
-            status: "ACTIVE",
-            id: { not: user.id },
-            teamMemberships: {
-                none: { leftAt: null },
-            },
-        },
-        select: {
-            id: true,
-            fullName: true,
-            username: true,
-            email: true,
-            avatarUrl: true,
-        },
-        orderBy: [{ fullName: "asc" }],
-        take: 100,
-    });
+    const canInvite = team.permissions.canInvite;
+    const candidates = canInvite
+        ? await prisma.user.findMany({
+              where: {
+                  deletedAt: null,
+                  status: "ACTIVE",
+                  id: { not: user.id },
+                  teamMemberships: {
+                      none: { leftAt: null },
+                  },
+              },
+              select: {
+                  id: true,
+                  fullName: true,
+                  username: true,
+                  email: true,
+                  avatarUrl: true,
+              },
+              orderBy: [{ fullName: "asc" }],
+              take: 100,
+          })
+        : [];
 
     return (
         <DashboardPageShell>

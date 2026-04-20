@@ -534,8 +534,32 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
                       });
 
                 const updatedRequest = await txRepository.updateJoinRequestStatus(joinRequest.id, "ACCEPTED");
+                const otherPendingRequests = await tx.teamJoinRequest.findMany({
+                    where: {
+                        userId: joinRequest.userId,
+                        status: "PENDING",
+                        id: { not: joinRequest.id },
+                    },
+                    select: {
+                        id: true,
+                        teamId: true,
+                        team: {
+                            select: {
+                                id: true,
+                                name: true,
+                                slug: true,
+                            },
+                        },
+                    },
+                });
+                const clearedOtherRequests = otherPendingRequests.length
+                    ? await tx.teamJoinRequest.updateMany({
+                          where: { id: { in: otherPendingRequests.map((request) => request.id) } },
+                          data: { status: "DECLINED" },
+                      })
+                    : { count: 0 };
                 const team = await txRepository.findTeamById(joinRequest.teamId);
-                return { membership, updatedRequest, team };
+                return { membership, updatedRequest, clearedOtherRequests, otherPendingRequests, team };
             });
 
             await deps.audit({
@@ -543,11 +567,16 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
                 action: AUDIT_ACTIONS.TEAM_JOIN_REQUEST_ACCEPTED,
                 targetId: joinRequest.id,
                 targetType: "TeamJoinRequest",
-                details: { teamId: joinRequest.teamId, userId: joinRequest.userId },
+                details: {
+                    teamId: joinRequest.teamId,
+                    userId: joinRequest.userId,
+                    declinedOtherPendingRequests: result.clearedOtherRequests.count,
+                },
             });
 
             const teamName = result.team?.name ?? "team";
             const teamSlug = result.team?.slug;
+            const requesterName = joinRequest.user.fullName || joinRequest.user.username;
             await notifications.createNotification({
                 userId: joinRequest.userId,
                 type: "SYSTEM_ALERT",
@@ -555,6 +584,59 @@ export function createTeamService(deps: TeamServiceDeps = { prisma, audit: logAu
                 message: `Request join Anda telah disetujui. Selamat bergabung di ${teamName}.`,
                 link: teamSlug ? `/teams/${teamSlug}` : "/dashboard/team",
             });
+
+            if (result.otherPendingRequests.length > 0) {
+                const teamIds = Array.from(new Set(result.otherPendingRequests.map((request) => request.teamId)));
+                const managementMembers = await deps.prisma.teamMember.findMany({
+                    where: {
+                        teamId: { in: teamIds },
+                        leftAt: null,
+                        role: { in: ["CAPTAIN", "VICE_CAPTAIN", "MANAGER"] },
+                    },
+                    select: {
+                        userId: true,
+                        teamId: true,
+                        team: {
+                            select: {
+                                name: true,
+                                slug: true,
+                            },
+                        },
+                    },
+                });
+
+                await Promise.all(
+                    managementMembers.map((member) =>
+                        notifications.createNotification({
+                            userId: member.userId,
+                            type: "SYSTEM_ALERT",
+                            title: "Request Join Ditutup Otomatis",
+                            message: `Permintaan join dari ${requesterName} ditutup otomatis karena sudah diterima oleh ${teamName}.`,
+                            link: member.team.slug ? `/teams/${member.team.slug}` : "/dashboard/team",
+                        })
+                    )
+                );
+
+                await Promise.all(
+                    result.otherPendingRequests.map((request) =>
+                        deps.audit({
+                            userId: actorUserId,
+                            action: AUDIT_ACTIONS.TEAM_JOIN_REQUEST_AUTO_DECLINED,
+                            targetId: request.id,
+                            targetType: "TeamJoinRequest",
+                            details: {
+                                requesterUserId: joinRequest.userId,
+                                acceptedRequestId: joinRequest.id,
+                                acceptedByTeamId: joinRequest.teamId,
+                                acceptedByTeamName: teamName,
+                                affectedTeamId: request.team.id,
+                                affectedTeamName: request.team.name,
+                                affectedTeamSlug: request.team.slug,
+                            },
+                        })
+                    )
+                );
+            }
 
             return formatTeam(result.team, actorUserId);
         },

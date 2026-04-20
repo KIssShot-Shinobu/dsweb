@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/hooks/use-locale";
 
 type DistributionItem = {
@@ -31,20 +31,37 @@ type ApiResponse = {
 };
 
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-const TILE_ATTRIBUTION = "© OpenStreetMap contributors • © CARTO";
+const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors | &copy; CARTO";
 const DEFAULT_CENTER: [number, number] = [-2.5, 118.0];
 const DEFAULT_ZOOM = 4;
+
+function escapeHtml(value: string) {
+    return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
+function buildDisplayName(item: DistributionItem) {
+    if (!item.memberCount || item.memberCount <= 1) return item.username;
+    const remaining = Math.max(item.memberCount - 1, 0);
+    return remaining > 0 ? `${item.username} +${remaining}` : item.username;
+}
 
 function buildPopupContent(
     item: DistributionItem,
     labels: { members: string; member: string; international: string }
 ) {
-    const label = item.memberCount && item.memberCount > 1 ? `${item.memberCount} ${labels.members}` : item.username;
-    const location = item.city || item.province || item.country || labels.international;
+    const displayName = escapeHtml(buildDisplayName(item));
+    const countLabel = escapeHtml(item.memberCount && item.memberCount > 1 ? `${item.memberCount} ${labels.members}` : `1 ${labels.member}`);
+    const location = escapeHtml(item.city || item.province || item.country || labels.international);
     return `
-        <div style="min-width: 140px; font-size: 12px;">
-            <div style="font-weight: 700; color: #e5feff; margin-bottom: 4px;">${label}</div>
-            <div style="color: rgba(229,254,255,0.75);">${location}</div>
+        <div class="ds-member-popup-content">
+            <div class="ds-member-popup-name">${displayName}</div>
+            <div class="ds-member-popup-location">${location}</div>
+            <div class="ds-member-popup-count">${countLabel}</div>
         </div>
     `;
 }
@@ -54,9 +71,7 @@ function buildTooltipContent(
     labels: { members: string; member: string; international: string }
 ) {
     const location = item.city || item.province || item.country || labels.international;
-    return item.memberCount && item.memberCount > 1
-        ? `${location} • ${item.memberCount} ${labels.members}`
-        : `${item.username} • ${location}`;
+    return `${buildDisplayName(item)} | ${location}`;
 }
 
 export function MemberDistributionMap() {
@@ -71,34 +86,45 @@ export function MemberDistributionMap() {
     const [mapReady, setMapReady] = useState(false);
     const { t } = useLocale();
 
-    useEffect(() => {
-        let cancelled = false;
+    const loadDistribution = useCallback(async (signal?: AbortSignal) => {
         setLoading(true);
         setError(null);
 
-        fetch("/api/public/members/distribution")
-            .then(async (response) => {
-                const json = (await response.json()) as ApiResponse;
-                if (!response.ok || !json.success) {
-                    throw new Error(t.map.error);
-                }
-                if (!cancelled) {
-                    setItems(json.data || []);
-                }
-            })
-            .catch((err: unknown) => {
-                if (!cancelled) {
-                    setError(err instanceof Error ? err.message : t.map.error);
-                }
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
-            });
+        try {
+            const response = await fetch("/api/public/members/distribution", { cache: "no-store", signal });
+            const json = (await response.json()) as ApiResponse;
+            if (!response.ok || !json.success) {
+                throw new Error(t.map.error);
+            }
+            setItems(json.data || []);
+        } catch (err: unknown) {
+            // Ignore abort errors from unmount/refresh cancellation.
+            if (err instanceof DOMException && err.name === "AbortError") return;
+            setError(err instanceof Error ? err.message : t.map.error);
+        } finally {
+            setLoading(false);
+        }
+    }, [t.map.error]);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        void loadDistribution(controller.signal);
+
+        const intervalId = window.setInterval(() => {
+            void loadDistribution();
+        }, 15000);
+
+        const handleFocus = () => {
+            void loadDistribution();
+        };
+        window.addEventListener("focus", handleFocus);
 
         return () => {
-            cancelled = true;
+            controller.abort();
+            window.clearInterval(intervalId);
+            window.removeEventListener("focus", handleFocus);
         };
-    }, [t.map.error]);
+    }, [loadDistribution]);
 
     useEffect(() => {
         if (!mapContainerRef.current || mapRef.current) return;
@@ -189,7 +215,7 @@ export function MemberDistributionMap() {
                     member: t.map.memberLabel,
                     international: t.map.locationFallback,
                 }),
-                { direction: "top", opacity: 0.9, offset: [0, -8] }
+                { direction: "top", opacity: 1, offset: [0, -8], className: "ds-map-tooltip" }
             );
             marker.bindPopup(
                 buildPopupContent(item, {
@@ -197,7 +223,7 @@ export function MemberDistributionMap() {
                     member: t.map.memberLabel,
                     international: t.map.locationFallback,
                 }),
-                { closeButton: false, maxWidth: 220 }
+                { closeButton: false, maxWidth: 240, className: "ds-map-popup" }
             );
             marker.on("click", () => {
                 const nextZoom = Math.min(mapRef.current.getZoom() + 2, 8);
@@ -269,6 +295,61 @@ export function MemberDistributionMap() {
                     margin: 0 6px 6px 0;
                     border-radius: 999px;
                     background: rgba(10, 12, 16, 0.65);
+                }
+
+                .leaflet-tooltip.ds-map-tooltip {
+                    background: rgba(8, 16, 26, 0.95);
+                    border: 1px solid rgba(0, 255, 255, 0.35);
+                    color: #e5feff;
+                    font-size: 11px;
+                    font-weight: 600;
+                    border-radius: 10px;
+                    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+                }
+
+                .leaflet-tooltip.ds-map-tooltip:before {
+                    border-top-color: rgba(8, 16, 26, 0.95);
+                }
+
+                .ds-map-popup .leaflet-popup-content-wrapper {
+                    background: rgba(8, 16, 26, 0.97);
+                    color: #e5feff;
+                    border: 1px solid rgba(0, 255, 255, 0.35);
+                    border-radius: 12px;
+                    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+                }
+
+                .ds-map-popup .leaflet-popup-content {
+                    margin: 10px 12px;
+                }
+
+                .ds-map-popup .leaflet-popup-tip {
+                    background: rgba(8, 16, 26, 0.97);
+                    border: 1px solid rgba(0, 255, 255, 0.35);
+                    box-shadow: none;
+                }
+
+                .ds-member-popup-content {
+                    min-width: 150px;
+                    font-size: 12px;
+                    line-height: 1.35;
+                }
+
+                .ds-member-popup-name {
+                    font-weight: 700;
+                    color: #e5feff;
+                    margin-bottom: 4px;
+                }
+
+                .ds-member-popup-location {
+                    color: rgba(229, 254, 255, 0.78);
+                    margin-bottom: 2px;
+                }
+
+                .ds-member-popup-count {
+                    color: rgba(255, 252, 210, 0.88);
+                    font-weight: 600;
+                    font-size: 11px;
                 }
 
                 .leaflet-container {

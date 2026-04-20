@@ -6,7 +6,7 @@ import { TREASURY_CATEGORIES, TREASURY_METHODS, TREASURY_STATUS } from "@/lib/tr
 const IGN_REGEX = /^[A-Za-z0-9 _.\-\[\]()]{2,32}$/;
 const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
 const SAFE_TEXT_REGEX = /^[\p{L}\p{N}\s'.,()\-_/]+$/u;
-const LOCAL_UPLOAD_PATH_REGEX = /^\/uploads\/[A-Za-z0-9._/-]+$/;
+const LOCAL_UPLOAD_PATH_REGEX = /^(?:\/uploads\/[A-Za-z0-9._/-]+|https?:\/\/[^/\s?#]+(?:\/[^?\s#]*)?\/uploads\/[A-Za-z0-9._/-]+(?:\?[^\s#]*)?)$/;
 const USERNAME_REGEX = /^[a-zA-Z0-9._-]{3,24}$/;
 const TIMEZONE_REGEX = /^[A-Za-z_]+(?:\/[A-Za-z0-9_+\-]+)+$/;
 
@@ -92,7 +92,7 @@ export const approveSchema = z.object({
 export const teamSchema = z.object({
     name: z.string().trim().min(2, "Nama team minimal 2 karakter").max(191, "Nama team terlalu panjang"),
     description: z.string().trim().max(500, "Deskripsi team terlalu panjang").optional().or(z.literal("")),
-    logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload lokal").optional().or(z.literal("")),
+    logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload").optional().or(z.literal("")),
     isActive: z.boolean().optional(),
 });
 
@@ -223,13 +223,13 @@ export const notificationReadSchema = z.object({
 export const teamCreateSchema = z.object({
     name: z.string().trim().min(2, "Nama team minimal 2 karakter").max(191, "Nama team terlalu panjang"),
     description: z.string().trim().max(500, "Deskripsi team terlalu panjang").optional().or(z.literal("")),
-    logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload lokal").optional().or(z.literal("")),
+    logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload").optional().or(z.literal("")),
 });
 
 export const teamRequestCreateSchema = z.object({
     name: z.string().trim().min(2, "Nama team minimal 2 karakter").max(191, "Nama team terlalu panjang"),
     description: z.string().trim().max(500, "Deskripsi team terlalu panjang").optional().or(z.literal("")),
-    logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload lokal").optional().or(z.literal("")),
+    logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload").optional().or(z.literal("")),
 });
 
 export const teamRequestQuerySchema = z.object({
@@ -475,7 +475,7 @@ export const adminSeasonResetSchema = z
     });
 
 export const profileAvatarSchema = z.object({
-    avatarUrl: z.union([z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload lokal"), z.null()]),
+    avatarUrl: z.union([z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload"), z.null()]),
 });
 
 export type ProfileAvatarInput = z.infer<typeof profileAvatarSchema>;
@@ -575,7 +575,7 @@ const tournamentBaseSchema = z.object({
     forfeitGraceMinutes: z.coerce.number().int().min(1, "Grace minutes minimal 1").optional(),
     forfeitMode: z.enum(TOURNAMENT_FORFEIT_MODE_VALUES, { message: "Mode forfeit tidak valid" }).optional(),
     lineupSize: z.union([z.coerce.number().int().min(1, "Lineup size minimal 1"), z.null()]).optional(),
-    image: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload lokal").optional().or(z.literal("")),
+    image: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload").optional().or(z.literal("")),
 });
 
 export const tournamentSchema = tournamentBaseSchema.superRefine((data, ctx) => {

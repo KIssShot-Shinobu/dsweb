@@ -94,6 +94,7 @@ export function TeamManageClient({
     const canDelete = team.permissions.canDelete;
     const isBusy = isPending || isWorking || uploadingLogo;
     const canOpenSettings = canEdit || canDelete;
+    const showMemberActionColumn = viewerRole !== "PLAYER";
 
     const runAction = async (url: string, init: RequestInit, successMessage: string) => {
         setIsWorking(true);
@@ -545,7 +546,7 @@ export function TeamManageClient({
                                                     <th>{t.teams.manage.table.username}</th>
                                                     <th>{t.teams.manage.table.role}</th>
                                                     <th>{t.teams.manage.table.joinedAt}</th>
-                                                    <th className="text-right">{t.teams.manage.table.actions}</th>
+                                                    {showMemberActionColumn ? <th className="text-right">{t.teams.manage.table.actions}</th> : null}
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -564,7 +565,7 @@ export function TeamManageClient({
                                                             <span className={`badge ${getRoleBadgeClass(member.role)}`}>{getRoleLabel(member.role)}</span>
                                                         </td>
                                                         <td>{formatDateLabel(member.joinedAt)}</td>
-                                                        <td className="text-right">{renderMemberActions(member)}</td>
+                                                        {showMemberActionColumn ? <td className="text-right">{renderMemberActions(member)}</td> : null}
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -589,10 +590,14 @@ export function TeamManageClient({
                                                 </div>
                                                 <span className={`badge ${getRoleBadgeClass(member.role)}`}>{getRoleLabel(member.role)}</span>
                                             </div>
-                                            <div className="flex items-center justify-between text-xs text-base-content/60">
-                                                <span>{t.teams.manage.joinedAt(formatDateLabel(member.joinedAt))}</span>
-                                                {renderMemberActions(member)}
-                                            </div>
+                                            {showMemberActionColumn ? (
+                                                <div className="flex items-center justify-between text-xs text-base-content/60">
+                                                    <span>{t.teams.manage.joinedAt(formatDateLabel(member.joinedAt))}</span>
+                                                    {renderMemberActions(member)}
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs text-base-content/60">{t.teams.manage.joinedAt(formatDateLabel(member.joinedAt))}</div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

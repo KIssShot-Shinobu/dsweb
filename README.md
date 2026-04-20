@@ -136,7 +136,12 @@ Variabel penting:
 - `DATA_ENCRYPTION_KEY`: kunci enkripsi data sensitif at-rest (`phoneWhatsapp`, `accountNumber`, `twoFactorSecret`).
 - `NEXT_PUBLIC_APP_URL`: base URL app (dipakai URL hasil upload).
 - `NEXT_PUBLIC_SOCIAL_DISCORD` / `NEXT_PUBLIC_SOCIAL_YOUTUBE` / `NEXT_PUBLIC_SOCIAL_INSTAGRAM`: link sosial publik untuk footer + landing page (opsional).
-- `UPLOAD_DIR`: lokasi simpan file upload permanen (default `./public/uploads`). `APP_ROOT` ditetapkan otomatis oleh `start.js` agar runtime build lokal dan standalone memakai root upload yang sama. Asset `/uploads/*` juga dilayani oleh route server agar gambar tetap tampil meski static copy berbeda antar runtime.
+- `R2_ENABLED`: aktifkan storage upload permanen ke Cloudflare R2 (`true`/`false`).
+- `R2_ACCOUNT_ID`: Account ID Cloudflare untuk endpoint S3 R2.
+- `R2_BUCKET`: nama bucket R2 untuk upload permanen.
+- `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`: kredensial API token R2 (S3 compatible).
+- `R2_PUBLIC_BASE_URL`: custom domain publik untuk akses object R2 (contoh `https://assets.example.com`).
+- `UPLOAD_DIR`: lokasi upload lokal. Dipakai untuk flow upload sementara/public preview dan kompatibilitas route `/uploads/*`.
 - `MAX_FILE_SIZE`: batas upload byte (default 5MB).
 - `REGION_CACHE_DIR`: lokasi cache lokal dataset wilayah Indonesia (default `./data/regions-cache`).
 - `REGION_CACHE_TTL_HOURS`: TTL cache wilayah lokal dalam jam (default 720 / 30 hari).
@@ -503,7 +508,7 @@ cmd /c npm run dev
 
 ## Deploy Notes
 
-- Pastikan `DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_DISCORD_ID`, `AUTH_DISCORD_SECRET`, `DATA_ENCRYPTION_KEY`, `NEXT_PUBLIC_APP_URL`, `UPLOAD_DIR` terpasang di server.
+- Pastikan `DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_DISCORD_ID`, `AUTH_DISCORD_SECRET`, `DATA_ENCRYPTION_KEY`, `NEXT_PUBLIC_APP_URL`, `R2_ENABLED`, `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_BASE_URL` terpasang di server.
 - Ikuti runbook deploy bertahap di `docs/runbook-staging-production.md`.
 - Untuk production, gunakan nilai `AUTH_SECRET` acak yang panjang dan jangan pernah reuse secret dari environment lain.
 - Di Google/Discord Console, daftarkan callback URL Auth.js yang tepat:
@@ -512,7 +517,7 @@ cmd /c npm run dev
 - Pastikan `NEXT_PUBLIC_APP_URL` memakai HTTPS domain production yang sama dengan callback Google dan link email.
 - Untuk Pterodactyl, isi `DATABASE_URL` di server variables. Jangan mengandalkan `prisma db push` tanpa env ini.
 - Jika password DB memakai karakter khusus, gunakan versi URL-encoded pada `DATABASE_URL`.
-- Pastikan folder upload persistent jika deploy container/panel.
+- Jika masih memakai flow upload lokal sementara/public preview, pastikan folder upload persistent untuk `UPLOAD_DIR`.
 - Jalankan preflight sebelum startup/deploy: `npm run db:preflight`.
 - Gunakan `PRISMA_MIGRATE_STRATEGY=deploy` sebagai default production.
 - Untuk bootstrap terkontrol, gunakan `PRISMA_MIGRATE_STRATEGY=bootstrap`, `ALLOW_MIGRATION_PROVIDER_MISMATCH=1` (jika perlu), dan `PRISMA_ALLOW_UNSAFE_SCHEMA_SYNC=1` hanya sementara.

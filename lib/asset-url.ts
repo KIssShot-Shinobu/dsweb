@@ -6,10 +6,7 @@ export function normalizeAssetUrl(url: string | null | undefined) {
     }
 
     try {
-        const parsed = new URL(url);
-        if (parsed.pathname.startsWith("/uploads/")) {
-            return parsed.pathname;
-        }
+        new URL(url);
         return url;
     } catch {
         return url;

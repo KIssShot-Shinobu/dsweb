@@ -3,7 +3,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { buildMemberDistribution } from "@/lib/services/member-distribution";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 const distributionItemSchema = z.object({
     id: z.string(),
@@ -34,7 +34,12 @@ export async function GET() {
         const payload = { success: true as const, data: result.data, stats: result.stats };
         const parsed = responseSchema.parse(payload);
 
-        return NextResponse.json(parsed, { status: 200 });
+        return NextResponse.json(parsed, {
+            status: 200,
+            headers: {
+                "Cache-Control": "no-store, max-age=0",
+            },
+        });
     } catch (error) {
         console.error("[Public Member Distribution API]", error);
         return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });

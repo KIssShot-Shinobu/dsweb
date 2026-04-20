@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TeamAvatar } from "@/components/teams/team-avatar";
@@ -38,9 +37,11 @@ function RoleBlock({
     title,
     members,
     description,
+    emptyLabel,
 }: {
     title: string;
     description?: string;
+    emptyLabel: string;
     members: Array<{
         id: string;
         role: string;
@@ -68,7 +69,7 @@ function RoleBlock({
                     <span className="badge badge-outline">{members.length}</span>
                 </div>
                 {members.length === 0 ? (
-                    <div className="alert alert-info mt-4">{t.teams.public.detail.roleEmpty}</div>
+                    <div className="alert alert-info mt-4">{emptyLabel}</div>
                 ) : (
                     <div className="mt-4 space-y-3">
                         {members.map((member) => (
@@ -168,16 +169,19 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ slu
                         <RoleBlock
                             title={t.teams.public.detail.roles.captain}
                             description={t.teams.public.detail.roleDescriptions.captain}
+                            emptyLabel={t.teams.public.detail.roleEmpty}
                             members={team.captain ? [team.captain] : []}
                         />
                         <RoleBlock
                             title={t.teams.public.detail.roles.viceCaptains}
                             description={t.teams.public.detail.roleDescriptions.viceCaptains}
+                            emptyLabel={t.teams.public.detail.roleEmpty}
                             members={team.viceCaptains}
                         />
                         <RoleBlock
                             title={t.teams.public.detail.roles.players}
                             description={t.teams.public.detail.roleDescriptions.players}
+                            emptyLabel={t.teams.public.detail.roleEmpty}
                             members={team.players}
                         />
                     </div>
@@ -185,11 +189,13 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ slu
                         <RoleBlock
                             title={t.teams.public.detail.roles.managers}
                             description={t.teams.public.detail.roleDescriptions.managers}
+                            emptyLabel={t.teams.public.detail.roleEmpty}
                             members={team.managers}
                         />
                         <RoleBlock
                             title={t.teams.public.detail.roles.coaches}
                             description={t.teams.public.detail.roleDescriptions.coaches}
+                            emptyLabel={t.teams.public.detail.roleEmpty}
                             members={team.coaches}
                         />
                         <section className="card border border-base-300 bg-base-100 shadow-sm">

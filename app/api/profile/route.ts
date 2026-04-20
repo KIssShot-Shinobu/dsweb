@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import { logAudit } from "@/lib/audit-logger";
@@ -172,6 +173,14 @@ export async function PATCH(request: NextRequest) {
                 ),
             },
         });
+
+        const hasRegionChange = changedFields.some((field) =>
+            ["provinceCode", "provinceName", "cityCode", "city", "countryCode", "countryName"].includes(field)
+        );
+
+        if (hasRegionChange) {
+            revalidatePath("/api/public/members/distribution");
+        }
 
         return NextResponse.json({
             success: true,

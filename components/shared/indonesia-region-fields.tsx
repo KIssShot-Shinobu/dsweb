@@ -35,6 +35,7 @@ function getFieldErrorMessage(input?: string | string[]) {
 
 export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth" }: IndonesiaRegionFieldsProps) {
     const { t } = useLocale();
+    const regionText = t.dashboard?.profile?.account?.region ?? t.profile?.account?.region;
     const [provinces, setProvinces] = useState<SearchableOption[]>([]);
     const [regencies, setRegencies] = useState<SearchableOption[]>([]);
     const [loadingProvinces, setLoadingProvinces] = useState(true);
@@ -47,7 +48,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
             .then(async (response) => {
                 const data = (await response.json()) as RegionApiResponse<{ provinces: Array<{ code: string; name: string }> }>;
                 if (!response.ok || !data.success) {
-                    throw new Error(data.message || t.profile.account.region.loadProvinceFailed);
+                    throw new Error(data.message || regionText?.loadProvinceFailed || "Failed to load provinces");
                 }
                 if (!isMounted) return;
                 setProvinces(data.provinces.map((item) => ({ value: item.code, label: item.name })));
@@ -62,7 +63,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
         return () => {
             isMounted = false;
         };
-    }, [t]);
+    }, [regionText]);
 
     useEffect(() => {
         let isMounted = true;
@@ -77,7 +78,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
             .then(async (response) => {
                 const data = (await response.json()) as RegionApiResponse<{ regencies: Array<{ code: string; name: string }> }>;
                 if (!response.ok || !data.success) {
-                    throw new Error(data.message || t.profile.account.region.loadCityFailed);
+                    throw new Error(data.message || regionText?.loadCityFailed || "Failed to load cities");
                 }
                 if (!isMounted) return;
                 setRegencies(data.regencies.map((item) => ({ value: item.code, label: item.name })));
@@ -93,7 +94,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
         return () => {
             isMounted = false;
         };
-    }, [value.provinceCode, t]);
+    }, [regionText, value.provinceCode]);
 
     const provinceError = getFieldErrorMessage(errors?.provinceCode);
     const cityError = getFieldErrorMessage(errors?.cityCode);
@@ -118,7 +119,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
     return (
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-4">
             <div>
-                <label className={labelClass}>{t.profile.account.region.provinceLabel} *</label>
+                <label className={labelClass}>{regionText?.provinceLabel || "Province"} *</label>
                 <SearchableCombobox
                     value={value.provinceCode}
                     onChange={(option) =>
@@ -130,9 +131,9 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
                         })
                     }
                     options={provinces}
-                    placeholder={loadingProvinces ? t.profile.account.region.provinceLoading : t.profile.account.region.provincePlaceholder}
-                    searchPlaceholder={t.profile.account.region.provinceSearchPlaceholder}
-                    emptyMessage={t.profile.account.region.provinceEmpty}
+                    placeholder={loadingProvinces ? regionText?.provinceLoading || "Loading provinces..." : regionText?.provincePlaceholder || "Select province"}
+                    searchPlaceholder={regionText?.provinceSearchPlaceholder || "Search province"}
+                    emptyMessage={regionText?.provinceEmpty || "Province not found"}
                     disabled={loadingProvinces}
                     triggerClassName={triggerClass}
                     menuClassName={menuClass}
@@ -143,7 +144,7 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
             </div>
 
             <div>
-                <label className={labelClass}>{t.profile.account.region.cityLabel} *</label>
+                <label className={labelClass}>{regionText?.cityLabel || "City / Regency"} *</label>
                 <SearchableCombobox
                     value={value.cityCode}
                     onChange={(option) =>
@@ -155,9 +156,9 @@ export function IndonesiaRegionFields({ value, onChange, errors, variant = "auth
                         })
                     }
                     options={availableRegencies}
-                    placeholder={value.provinceCode ? t.profile.account.region.cityPlaceholder : t.profile.account.region.cityPlaceholderDisabled}
-                    searchPlaceholder={t.profile.account.region.citySearchPlaceholder}
-                    emptyMessage={t.profile.account.region.cityEmpty}
+                    placeholder={value.provinceCode ? regionText?.cityPlaceholder || "Select city" : regionText?.cityPlaceholderDisabled || "Select province first"}
+                    searchPlaceholder={regionText?.citySearchPlaceholder || "Search city"}
+                    emptyMessage={regionText?.cityEmpty || "City not found"}
                     disabled={!value.provinceCode}
                     triggerClassName={triggerClass}
                     menuClassName={menuClass}
