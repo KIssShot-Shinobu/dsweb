@@ -189,6 +189,7 @@ export default function TeamsPage() {
         try {
             const body = new FormData();
             body.append("file", file);
+            body.append("purpose", "logo");
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -606,7 +607,7 @@ export default function TeamsPage() {
                                 <label className={labelCls}>{t.dashboard.teams.modal.uploadLabel}</label>
                                 <input
                                     type="file"
-                                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                                    accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
                                     className={`${inputCls} file:mr-3 file:rounded-xl file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:font-semibold file:text-primary`}
                                     onChange={async (event) => {
                                         const inputEl = event.currentTarget;

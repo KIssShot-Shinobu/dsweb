@@ -95,6 +95,7 @@ export function TeamRequestPanel() {
         try {
             const body = new FormData();
             body.append("file", file);
+            body.append("purpose", "logo");
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -216,12 +217,17 @@ export function TeamRequestPanel() {
                         <label className={labelCls}>{t.teams.request.logoUploadLabel}</label>
                         <input
                             type="file"
-                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                            accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
                             className={`${inputCls} file:mr-3 file:rounded-xl file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:font-semibold file:text-primary`}
                             onChange={async (event) => {
                                 const inputEl = event.currentTarget;
                                 const file = event.target.files?.[0];
                                 if (!file) return;
+                                if (file.type === "image/svg+xml") {
+                                    await handleLogoUpload(file);
+                                    inputEl.value = "";
+                                    return;
+                                }
                                 try {
                                     const previewUrl = await readFileAsDataUrl(file);
                                     setCropState({

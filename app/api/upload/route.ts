@@ -6,12 +6,14 @@ import { getMaxFileSize, isR2Enabled } from "@/lib/runtime-config";
 import { getServerCurrentUser } from "@/lib/server-current-user";
 
 const MAX_FILE_SIZE = getMaxFileSize();
-const ALLOWED_EXTENSIONS = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+const DEFAULT_ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"] as const;
+const LOGO_ALLOWED_MIME_TYPES = [...DEFAULT_ALLOWED_MIME_TYPES, "image/svg+xml"] as const;
 const MIME_EXTENSION_MAP = {
     "image/png": "png",
     "image/jpeg": "jpg",
     "image/jpg": "jpg",
     "image/webp": "webp",
+    "image/svg+xml": "svg",
 } as const;
 
 export async function POST(request: NextRequest) {
@@ -23,6 +25,9 @@ export async function POST(request: NextRequest) {
 
         const formData = await request.formData();
         const file = formData.get("file") as File | null;
+        const uploadPurpose = typeof formData.get("purpose") === "string" ? String(formData.get("purpose")) : "";
+        const allowsSvg = uploadPurpose === "logo";
+        const allowedMimeTypes = allowsSvg ? LOGO_ALLOWED_MIME_TYPES : DEFAULT_ALLOWED_MIME_TYPES;
         if (!file) {
             return NextResponse.json({ success: false, message: "File required" }, { status: 400 });
         }
@@ -31,8 +36,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "File melebihi maksimal ukuran (5MB)" }, { status: 400 });
         }
 
-        if (!ALLOWED_EXTENSIONS.includes(file.type)) {
-            return NextResponse.json({ success: false, message: "Format tidak didukung. Harap gunakan PNG, JPG, atau WEBP" }, { status: 400 });
+        if (!allowedMimeTypes.includes(file.type as (typeof allowedMimeTypes)[number])) {
+            return NextResponse.json(
+                { success: false, message: allowsSvg ? "Format tidak didukung. Harap gunakan PNG, JPG, WEBP, atau SVG" : "Format tidak didukung. Harap gunakan PNG, JPG, atau WEBP" },
+                { status: 400 }
+            );
         }
 
         if (!isR2Enabled()) {

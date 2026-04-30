@@ -186,6 +186,7 @@ export function TeamManageClient({
         try {
             const payload = new FormData();
             payload.append("file", file);
+            payload.append("purpose", "logo");
 
             const response = await fetch("/api/upload", { method: "POST", body: payload });
             const data = await response.json();
@@ -675,12 +676,17 @@ export function TeamManageClient({
                             <input
                                 ref={logoInputRef}
                                 type="file"
-                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
                                 className="hidden"
                                 onChange={async (event) => {
                                     const inputEl = event.currentTarget;
                                     const file = event.target.files?.[0];
                                     if (!file) return;
+                                    if (file.type === "image/svg+xml") {
+                                        await handleLogoUpload(file);
+                                        inputEl.value = "";
+                                        return;
+                                    }
                                     try {
                                         const previewUrl = await readFileAsDataUrl(file);
                                         setCropState({

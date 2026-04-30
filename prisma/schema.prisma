@@ -79,6 +79,11 @@ enum PendingUploadStatus {
   EXPIRED
 }
 
+enum PartnerLogoCategory {
+  PARTNER
+  SPONSOR
+}
+
 enum TeamRole {
   CAPTAIN
   VICE_CAPTAIN
@@ -595,6 +600,21 @@ model Game {
   leaderboardEntries     LeaderboardEntry[]
   teamLeaderboardEntries TeamLeaderboardEntry[]
   leaderboardHistory     LeaderboardHistory[]
+}
+
+model PartnerLogo {
+  id        String              @id @default(cuid())
+  name      String              @db.VarChar(191)
+  category  PartnerLogoCategory
+  logoUrl   String
+  websiteUrl String?            @db.VarChar(500)
+  isActive  Boolean             @default(true)
+  sortOrder Int                 @default(0)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([category, isActive, sortOrder])
+  @@index([isActive, sortOrder])
 }
 
 model PlayerGameAccount {

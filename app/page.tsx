@@ -3,6 +3,7 @@ import { Navbar } from "@/components/ui/navbar";
 import { Hero } from "@/components/sections/hero";
 import { About } from "@/components/sections/about";
 import { Socials } from "@/components/sections/socials";
+import { Partners } from "@/components/sections/partners";
 import { Tournaments } from "@/components/sections/tournaments";
 import { Footer } from "@/components/ui/footer";
 import { prisma } from "@/lib/prisma";
@@ -24,9 +25,10 @@ export default async function Home() {
   let activeUserCount = 0;
   let tournamentCount = 0;
   let tournaments: PublicTournamentCardData[] = [];
+  let partnerLogos: { id: string; name: string; category: "PARTNER" | "SPONSOR"; logoUrl: string; websiteUrl: string | null }[] = [];
 
   try {
-    const [activeUsers, totalTournaments, dbTournaments] = await Promise.all([
+    const [activeUsers, totalTournaments, dbTournaments, dbPartnerLogos] = await Promise.all([
       prisma.user.count({ where: { status: "ACTIVE" } }),
       prisma.tournament.count(),
       prisma.tournament.findMany({
@@ -46,6 +48,19 @@ export default async function Home() {
         },
         orderBy: { startAt: "asc" },
         take: 12,
+      }),
+      prisma.partnerLogo.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          logoUrl: true,
+          websiteUrl: true,
+          sortOrder: true,
+          createdAt: true,
+        },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       }),
     ]);
 
@@ -79,6 +94,14 @@ export default async function Home() {
         return new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
       })
       .slice(0, 6);
+
+    partnerLogos = dbPartnerLogos.map((item) => ({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      logoUrl: item.logoUrl,
+      websiteUrl: item.websiteUrl,
+    }));
   } catch (error) {
     console.error("[Public Home] Failed to load DB data:", error);
   }
@@ -105,6 +128,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      <Partners logos={partnerLogos} />
       <Socials />
       <Footer />
     </main>

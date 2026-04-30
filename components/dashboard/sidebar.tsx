@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     HelpCircle,
+    Handshake,
     Home,
     Gamepad2,
     LayoutDashboard,
@@ -44,6 +45,7 @@ const ICONS = {
     audit: ScrollText,
     games: Gamepad2,
     leaderboard: Medal,
+    partners: Handshake,
     logout: LogOut,
     home: Home,
 } as const;
@@ -74,6 +76,7 @@ export function Sidebar() {
             section: t.dashboard.sidebar.sectionSelf,
             items: [
                 { name: t.dashboard.sidebar.items.profile, href: "/dashboard/profile", icon: "profile" },
+                { name: t.dashboard.sidebar.items.myTournaments, href: "/dashboard/my-tournaments", icon: "tournaments" },
                 { name: t.dashboard.sidebar.items.myTeam, href: "/dashboard/team", icon: "teams", minRole: "MEMBER" },
                 { name: t.dashboard.sidebar.items.settings, href: "/dashboard/settings", icon: "settings" },
                 { name: t.dashboard.sidebar.items.help, href: "/dashboard/help", icon: "help" },
@@ -97,6 +100,7 @@ export function Sidebar() {
                 { name: t.dashboard.sidebar.items.auditLogs, href: "/dashboard/audit-logs", icon: "audit", minRole: "ADMIN" },
                 { name: t.dashboard.sidebar.items.games, href: "/dashboard/games", icon: "games", minRole: "ADMIN" },
                 { name: t.dashboard.sidebar.items.leaderboard, href: "/dashboard/leaderboard", icon: "leaderboard", minRole: "ADMIN" },
+                { name: t.dashboard.sidebar.items.partners, href: "/dashboard/partners", icon: "partners", minRole: "ADMIN" },
             ],
         },
     ];

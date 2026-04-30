@@ -110,7 +110,12 @@ export function NotificationItem({
                     <button
                         type="button"
                         className="btn btn-ghost btn-xs btn-circle opacity-60 transition hover:opacity-100"
-                        onClick={() => onDelete(notification.id)}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onClick={async (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            await onDelete(notification.id);
+                        }}
                         disabled={loading}
                         aria-label={t.notifications.delete}
                         title={t.notifications.delete}

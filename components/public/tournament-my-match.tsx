@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/dashboard/toast";
 import { btnOutline, btnPrimary, inputCls, labelCls } from "@/components/dashboard/form-styles";
@@ -35,6 +35,8 @@ type MatchSummary = {
     hasOpenDispute: boolean;
     disputeReason?: string | null;
 };
+
+type MatchView = "full" | "summary" | "report" | "dispute" | "chat";
 
 type AvailabilitySlot = {
     value: string;
@@ -115,7 +117,11 @@ function EvidenceUploader({
             }
             onChange([...value, data.url]);
         } catch (err) {
-            err instanceof Error ? error(err.message) : error(t.common.uploadFailed);
+            if (err instanceof Error) {
+                error(err.message);
+            } else {
+                error(t.common.uploadFailed);
+            }
         } finally {
             setUploading(false);
         }
@@ -173,6 +179,7 @@ export function TournamentMyMatch({
     tournamentUrl,
     tournamentTimeZone,
     lineupSize,
+    view = "full",
 }: {
     match: MatchSummary;
     currentUserId?: string | null;
@@ -180,6 +187,7 @@ export function TournamentMyMatch({
     tournamentUrl: string;
     tournamentTimeZone: string;
     lineupSize?: number | null;
+    view?: MatchView;
 }) {
     const { t, locale } = useLocale();
     const router = useRouter();
@@ -213,11 +221,17 @@ export function TournamentMyMatch({
     const canReport = !["COMPLETED", "DISPUTED"].includes(match.status);
     const canDispute = !match.hasOpenDispute && match.status !== "COMPLETED";
     const readOnlyChat = match.status === "COMPLETED";
+    const showSummary = view === "full" || view === "summary";
+    const showAvailability = view === "full";
+    const showLineup = view === "full";
+    const showReport = view === "full" || view === "report";
+    const showDispute = view === "full" || view === "dispute";
+    const showChat = view === "full" || view === "chat";
     const availabilityDisabled = match.status === "COMPLETED";
-    const lineupEnabled = lineupSize !== null && lineupSize !== undefined;
+    const lineupEnabled = showLineup && lineupSize !== null && lineupSize !== undefined;
     const lineupSizeValue = lineupData?.lineupSize ?? (lineupSize ?? null);
 
-    const fetchAvailability = async () => {
+    const fetchAvailability = useCallback(async () => {
         setAvailabilityLoading(true);
         try {
             const res = await fetch(`/api/matches/${match.id}/availability`);
@@ -232,13 +246,14 @@ export function TournamentMyMatch({
         } finally {
             setAvailabilityLoading(false);
         }
-    };
+    }, [error, match.id, t.common.networkError, t.match.availability.errors.loadFailed]);
 
     useEffect(() => {
+        if (!showAvailability) return;
         fetchAvailability();
-    }, [match.id]);
+    }, [fetchAvailability, showAvailability]);
 
-    const fetchLineup = async () => {
+    const fetchLineup = useCallback(async () => {
         if (!lineupEnabled) return;
         setLineupLoading(true);
         try {
@@ -254,12 +269,12 @@ export function TournamentMyMatch({
         } finally {
             setLineupLoading(false);
         }
-    };
+    }, [error, lineupEnabled, match.id, t.common.networkError, t.match.lineup.errors.loadFailed]);
 
     useEffect(() => {
         if (!lineupEnabled) return;
         fetchLineup();
-    }, [match.id, lineupEnabled]);
+    }, [fetchLineup, lineupEnabled]);
 
     useEffect(() => {
         if (!lineupData?.enabled || !lineupData.myTeamId) return;
@@ -309,7 +324,11 @@ export function TournamentMyMatch({
             setAvailabilitySlots([""]);
             fetchAvailability();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error(t.match.availability.errors.sendFailed);
+            if (err instanceof Error) {
+                error(err.message);
+            } else {
+                error(t.match.availability.errors.sendFailed);
+            }
         } finally {
             setAvailabilitySubmitting(false);
         }
@@ -331,7 +350,11 @@ export function TournamentMyMatch({
             router.refresh();
             fetchAvailability();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error(t.match.availability.errors.selectFailed);
+            if (err instanceof Error) {
+                error(err.message);
+            } else {
+                error(t.match.availability.errors.selectFailed);
+            }
         } finally {
             setSelectingSlot(null);
         }
@@ -372,7 +395,11 @@ export function TournamentMyMatch({
             router.refresh();
             fetchLineup();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error(t.match.lineup.errors.saveFailed);
+            if (err instanceof Error) {
+                error(err.message);
+            } else {
+                error(t.match.lineup.errors.saveFailed);
+            }
         } finally {
             setLineupSubmitting(false);
         }
@@ -390,7 +417,11 @@ export function TournamentMyMatch({
             router.refresh();
             fetchLineup();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error(t.match.lineup.errors.startFailed);
+            if (err instanceof Error) {
+                error(err.message);
+            } else {
+                error(t.match.lineup.errors.startFailed);
+            }
         } finally {
             setStartingMatch(false);
         }
@@ -420,7 +451,11 @@ export function TournamentMyMatch({
             success(data.message || t.match.report.success.sent);
             router.refresh();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error(t.match.report.errors.sendFailed);
+            if (err instanceof Error) {
+                error(err.message);
+            } else {
+                error(t.match.report.errors.sendFailed);
+            }
         } finally {
             setSubmittingReport(false);
         }
@@ -444,7 +479,11 @@ export function TournamentMyMatch({
             success(data.message || t.match.dispute.success.sent);
             router.refresh();
         } catch (err) {
-            err instanceof Error ? error(err.message) : error(t.match.dispute.errors.sendFailed);
+            if (err instanceof Error) {
+                error(err.message);
+            } else {
+                error(t.match.dispute.errors.sendFailed);
+            }
         } finally {
             setSubmittingDispute(false);
         }
@@ -463,36 +502,39 @@ export function TournamentMyMatch({
 
     return (
         <div className="space-y-4">
-            <div>
-                <div className="mb-3 text-sm font-bold uppercase tracking-[0.28em] text-primary">{t.match.title}</div>
-                <div className="rounded-box border border-base-300 bg-base-200/50 p-4 text-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="min-w-0 break-words font-semibold text-base-content">
-                            {match.playerA?.name ?? t.match.tbd} vs {match.playerB?.name ?? t.match.tbd}
+            {showSummary ? (
+                <div>
+                    <div className="mb-3 text-sm font-bold uppercase tracking-[0.28em] text-primary">{t.match.title}</div>
+                    <div className="rounded-box border border-base-300 bg-base-200/50 p-4 text-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="min-w-0 break-words font-semibold text-base-content">
+                                {match.playerA?.name ?? t.match.tbd} vs {match.playerB?.name ?? t.match.tbd}
+                            </div>
+                            <span className="badge badge-outline">{match.status}</span>
                         </div>
-                        <span className="badge badge-outline">{match.status}</span>
-                    </div>
-                    <div className="mt-2 text-xs text-base-content/60">
-                        {match.scheduledAtLabel || match.scheduledAt
-                            ? t.match.scheduleLabel(match.scheduledAtLabel ?? match.scheduledAt ?? "")
-                            : t.match.scheduleTbd}
-                    </div>
-                    {match.scheduledAt ? (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {googleCalendarUrl ? (
-                                <a className={`${btnPrimary} btn-xs`} href={googleCalendarUrl} target="_blank" rel="noreferrer">
-                                    {t.tournamentDetail.addToCalendar}
+                        <div className="mt-2 text-xs text-base-content/60">
+                            {match.scheduledAtLabel || match.scheduledAt
+                                ? t.match.scheduleLabel(match.scheduledAtLabel ?? match.scheduledAt ?? "")
+                                : t.match.scheduleTbd}
+                        </div>
+                        {match.scheduledAt ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {googleCalendarUrl ? (
+                                    <a className={`${btnPrimary} btn-xs`} href={googleCalendarUrl} target="_blank" rel="noreferrer">
+                                        {t.tournamentDetail.addToCalendar}
+                                    </a>
+                                ) : null}
+                                <a className={`${btnOutline} btn-xs`} href={`/api/matches/${match.id}/calendar`} target="_blank" rel="noreferrer">
+                                    {t.tournamentDetail.downloadIcs}
                                 </a>
-                            ) : null}
-                            <a className={`${btnOutline} btn-xs`} href={`/api/matches/${match.id}/calendar`} target="_blank" rel="noreferrer">
-                                {t.tournamentDetail.downloadIcs}
-                            </a>
-                        </div>
-                    ) : null}
+                            </div>
+                        ) : null}
+                    </div>
                 </div>
-            </div>
+            ) : null}
 
-            <div className="rounded-box border border-base-300 bg-base-200/40 p-4 text-sm">
+            {showAvailability ? (
+                <div className="rounded-box border border-base-300 bg-base-200/40 p-4 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/60">{t.match.availability.title}</div>
@@ -584,7 +626,8 @@ export function TournamentMyMatch({
                 ) : (
                     <div className="mt-3 text-xs text-base-content/50">{t.match.availability.closed}</div>
                 )}
-            </div>
+                </div>
+            ) : null}
 
             {lineupEnabled ? (
                 <div className="rounded-box border border-base-300 bg-base-200/40 p-4 text-sm">
@@ -714,7 +757,8 @@ export function TournamentMyMatch({
                 </div>
             ) : null}
 
-            <div className="space-y-3">
+            {showReport ? (
+                <div className="space-y-3">
                 <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">{t.match.report.title}</div>
                 <div className="text-xs text-base-content/60">{t.match.report.subtitle}</div>
                 {!canReport ? (
@@ -771,11 +815,13 @@ export function TournamentMyMatch({
                         </div>
                     </>
                 )}
-            </div>
+                </div>
+            ) : null}
 
-            <div className="divider my-1" />
+            {showReport && showDispute ? <div className="divider my-1" /> : null}
 
-            <div className="space-y-3">
+            {showDispute ? (
+                <div className="space-y-3">
                 <div className="text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">{t.match.dispute.title}</div>
                 {!canDispute ? (
                     <div className="rounded-box border border-base-300 bg-base-200/40 p-3 text-xs text-base-content/60">
@@ -804,13 +850,16 @@ export function TournamentMyMatch({
                         </div>
                     </>
                 )}
-            </div>
+                </div>
+            ) : null}
 
-            <div className="divider my-1" />
+            {showDispute && showChat ? <div className="divider my-1" /> : null}
 
-            <div className="rounded-box border border-base-300 bg-base-100/80 p-4">
+            {showChat ? (
+                <div className="rounded-box border border-base-300 bg-base-100/80 p-4">
                 <MatchChatThread matchId={match.id} currentUserId={currentUserId} readOnly={readOnlyChat} />
-            </div>
+                </div>
+            ) : null}
         </div>
     );
 }

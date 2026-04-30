@@ -115,7 +115,7 @@ export function NotificationBell({ isLoggedIn }: { isLoggedIn: boolean }) {
     }
 
     return (
-        <div className="dropdown dropdown-end" ref={ref}>
+        <div className={`dropdown dropdown-end ${open ? "dropdown-open" : ""}`} ref={ref}>
             <button
                 type="button"
                 onClick={() => setOpen((current) => !current)}

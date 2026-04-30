@@ -136,9 +136,11 @@ export function MemberDistributionMap() {
             await import("leaflet.markercluster");
 
             if (!mounted) return;
+            const container = mapContainerRef.current;
+            if (!container) return;
 
             leafletRef.current = L;
-            const map = L.map(mapContainerRef.current, {
+            const map = L.map(container, {
                 zoomControl: false,
                 attributionControl: true,
             }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
@@ -244,16 +246,13 @@ export function MemberDistributionMap() {
         }
     }, [items, mapReady, t.map.membersLabel, t.map.memberLabel, t.map.locationFallback]);
 
-    if (error) {
-        return (
-            <div className="flex h-full w-full items-center justify-center rounded-box border border-base-300 bg-base-200/40 px-6 text-center text-sm text-error">
-                {error}
-            </div>
-        );
-    }
-
     return (
         <div className="relative isolate z-0 h-full w-full">
+            {error && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center rounded-box border border-base-300 bg-base-200/85 px-6 text-center text-sm text-error">
+                    {error}
+                </div>
+            )}
             {loading && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-box bg-base-200/70 text-sm text-base-content/70">
                     {t.map.loading}

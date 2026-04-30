@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -6,12 +5,11 @@ import { Footer } from "@/components/ui/footer";
 import { Navbar } from "@/components/ui/navbar";
 import { TournamentRegisterButton } from "@/components/public/tournament-register-button";
 import { TournamentBracketSection } from "@/components/public/tournament-bracket-section";
-import { TournamentMyMatch } from "@/components/public/tournament-my-match";
 import { prisma } from "@/lib/prisma";
 import { normalizeAssetUrl } from "@/lib/asset-url";
 import { resolveTournamentImage } from "@/lib/tournament-image";
 import { getCurrentUser } from "@/lib/auth";
-import { formatLocalDateTimeInTimeZone, formatDisplayDateTimeInTimeZone } from "@/lib/datetime";
+import { formatDisplayDateTimeInTimeZone } from "@/lib/datetime";
 import { DEFAULT_TIMEZONE } from "@/lib/timezones";
 import { buildGoogleCalendarUrl } from "@/lib/google-calendar";
 import { getAppUrl } from "@/lib/runtime-config";
@@ -42,11 +40,6 @@ function getStatusTone(status: string) {
 
 function getStatusLabel(status: string, labels: Record<string, string>) {
     return labels[status] ?? status;
-}
-
-function resolveParticipantName(participant?: { guestName: string | null; user?: { fullName: string | null; username: string | null } | null }) {
-    if (!participant) return "TBD";
-    return participant.user?.username || participant.user?.fullName || participant.guestName || "TBD";
 }
 
 export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -105,36 +98,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           })
         : [];
 
-    const myMatch = currentUser && participantForUser
-        ? await prisma.match.findFirst({
-              where: {
-                  tournamentId: id,
-                  status: { not: "COMPLETED" },
-                  OR: [{ playerAId: participantForUser.id }, { playerBId: participantForUser.id }],
-              },
-              orderBy: [{ round: { roundNumber: "asc" } }, { bracketIndex: "asc" }],
-              select: {
-                  id: true,
-                  status: true,
-                  scheduledAt: true,
-                  playerA: { select: { id: true, guestName: true, user: { select: { fullName: true, username: true } } } },
-                  playerB: { select: { id: true, guestName: true, user: { select: { fullName: true, username: true } } } },
-                  reports: {
-                      where: { reportedById: currentUser.id },
-                      select: { scoreA: true, scoreB: true, winnerId: true, evidenceUrls: true },
-                      orderBy: { createdAt: "desc" },
-                      take: 1,
-                  },
-                  disputes: {
-                      where: { status: "OPEN" },
-                      select: { reason: true, evidenceUrls: true },
-                      orderBy: { createdAt: "desc" },
-                      take: 1,
-                  },
-              },
-          })
-        : null;
-
     const tournamentTimeZone = tournament.timezone ?? DEFAULT_TIMEZONE;
     const appUrl = getAppUrl();
     const tournamentUrl = `${appUrl}/tournaments/${tournament.id}`;
@@ -147,30 +110,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               timeZone: tournamentTimeZone,
           })
         : null;
-    const myMatchPayload = myMatch
-        ? {
-              id: myMatch.id,
-              status: myMatch.status,
-              scheduledAt: myMatch.scheduledAt ? formatLocalDateTimeInTimeZone(myMatch.scheduledAt, tournamentTimeZone) : null,
-              scheduledAtLabel: myMatch.scheduledAt ? formatDisplayDateTimeInTimeZone(myMatch.scheduledAt, tournamentTimeZone, locale) : null,
-              scheduledAtUtc: myMatch.scheduledAt ? myMatch.scheduledAt.toISOString() : null,
-              playerA: myMatch.playerA ? { id: myMatch.playerA.id, name: resolveParticipantName(myMatch.playerA) } : null,
-              playerB: myMatch.playerB ? { id: myMatch.playerB.id, name: resolveParticipantName(myMatch.playerB) } : null,
-              report: myMatch.reports[0]
-                  ? {
-                        scoreA: myMatch.reports[0].scoreA,
-                        scoreB: myMatch.reports[0].scoreB,
-                        winnerId: myMatch.reports[0].winnerId,
-                        evidenceUrls: Array.isArray(myMatch.reports[0].evidenceUrls)
-                            ? myMatch.reports[0].evidenceUrls
-                            : null,
-                    }
-                  : null,
-              hasOpenDispute: myMatch.disputes.length > 0,
-              disputeReason: myMatch.disputes[0]?.reason ?? null,
-          }
-        : null;
-
     const renderPaymentStatus = () => {
         if (!participantForUser || tournament.entryFee <= 0) return null;
         const status = participantForUser.paymentStatus;
@@ -312,6 +251,11 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                             participantStatus={participantForUser?.status ?? null}
                                         />
                                         {renderPaymentStatus()}
+                                        {currentUser && isRegistered ? (
+                                            <Link href={`/dashboard/my-tournaments/${tournament.id}/your-match`} className="btn btn-outline mt-3 w-full">
+                                                {t.tournamentDetail.openWorkspace}
+                                            </Link>
+                                        ) : null}
                                         {paymentNotifications.length > 0 ? (
                                             <div className="rounded-box border border-base-300 bg-base-200/50 p-4 text-sm">
                                                 <div className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">
@@ -326,19 +270,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                                                     ))}
                                                 </div>
                                             </div>
-                                        ) : null}
-                                        {myMatchPayload ? (
-                                            <>
-                                                <div className="divider my-1" />
-                                                <TournamentMyMatch
-                                                    match={myMatchPayload}
-                                                    currentUserId={currentUser?.id ?? null}
-                                                    tournamentTitle={tournament.title}
-                                                    tournamentUrl={tournamentUrl}
-                                                    tournamentTimeZone={tournamentTimeZone}
-                                                    lineupSize={tournament.lineupSize ?? null}
-                                                />
-                                            </>
                                         ) : null}
                                     </div>
 

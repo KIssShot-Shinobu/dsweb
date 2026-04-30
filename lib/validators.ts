@@ -41,6 +41,7 @@ export const TOURNAMENT_STAFF_ROLE_VALUES = ["REFEREE", "STAFF"] as const;
 export const TOURNAMENT_MAX_PLAYERS_VALUES = [8, 16, 32, 64, 128, 256] as const;
 export const TOURNAMENT_PAYMENT_STATUS_VALUES = ["PENDING", "VERIFIED", "REJECTED"] as const;
 export const MATCH_STATUS_VALUES = ["PENDING", "READY", "ONGOING", "RESULT_SUBMITTED", "CONFIRMED", "DISPUTED", "COMPLETED"] as const;
+export const PARTNER_LOGO_CATEGORY_VALUES = ["PARTNER", "SPONSOR"] as const;
 
 export const registerSchema = z
     .object({
@@ -478,8 +479,33 @@ export const profileAvatarSchema = z.object({
     avatarUrl: z.union([z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan gambar hasil upload"), z.null()]),
 });
 
+export const adminPartnerLogoCreateSchema = z
+    .object({
+        name: z.string().trim().min(2, "Nama minimal 2 karakter").max(191, "Nama terlalu panjang"),
+        category: z.enum(PARTNER_LOGO_CATEGORY_VALUES),
+        logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload"),
+        websiteUrl: z.string().trim().url("URL website tidak valid").max(500, "URL terlalu panjang").optional().or(z.literal("")),
+        isActive: z.boolean().optional(),
+        sortOrder: z.coerce.number().int().min(0, "Urutan tidak valid").max(9999, "Urutan terlalu besar").optional(),
+    })
+    .strict();
+
+export const adminPartnerLogoUpdateSchema = z
+    .object({
+        name: z.string().trim().min(2, "Nama minimal 2 karakter").max(191, "Nama terlalu panjang").optional(),
+        category: z.enum(PARTNER_LOGO_CATEGORY_VALUES).optional(),
+        logoUrl: z.string().regex(LOCAL_UPLOAD_PATH_REGEX, "Gunakan logo hasil upload").optional(),
+        websiteUrl: z.string().trim().url("URL website tidak valid").max(500, "URL terlalu panjang").optional().or(z.literal("")),
+        isActive: z.boolean().optional(),
+        sortOrder: z.coerce.number().int().min(0, "Urutan tidak valid").max(9999, "Urutan terlalu besar").optional(),
+    })
+    .strict()
+    .refine((data) => Object.keys(data).length > 0, { message: "Tidak ada perubahan" });
+
 export type ProfileAvatarInput = z.infer<typeof profileAvatarSchema>;
 export type AdminSeasonResetInput = z.infer<typeof adminSeasonResetSchema>;
+export type AdminPartnerLogoCreateInput = z.infer<typeof adminPartnerLogoCreateSchema>;
+export type AdminPartnerLogoUpdateInput = z.infer<typeof adminPartnerLogoUpdateSchema>;
 
 const countryCodeSchema = z
     .string()
