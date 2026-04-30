@@ -28,20 +28,3 @@ npx prisma db push
 npm run dev
 ```
 
-App jalan di `http://localhost:3000`.
-
-## Dokumentasi Lanjutan
-
-Semua detail teknis untuk developer, setup lanjutan, migrasi, seeding, API ringkas, deploy, troubleshooting, dan daftar variabel sensitif dipindahkan ke:
-
-- `detail.md`
-
-Runbook staging/production:
-
-- `docs/runbook-staging-production.md`
-
-## Catatan Keamanan
-
-- Jangan commit file `.env`.
-- Jangan taruh credential/token di kode atau README.
-- Simpan semua secret via environment variables (lihat `detail.md`).
